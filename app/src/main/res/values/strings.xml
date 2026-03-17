@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Strimma</string>
+    <string name="notification_channel_name">Glucose Readings</string>
+</resources>

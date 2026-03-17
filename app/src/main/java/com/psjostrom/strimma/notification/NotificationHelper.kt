@@ -1,0 +1,129 @@
+package com.psjostrom.strimma.notification
+
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import android.graphics.*
+import android.widget.RemoteViews
+import androidx.core.app.NotificationCompat
+import androidx.core.graphics.drawable.IconCompat
+import com.psjostrom.strimma.R
+import com.psjostrom.strimma.data.Direction
+import com.psjostrom.strimma.data.GlucoseReading
+import com.psjostrom.strimma.ui.MainActivity
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class NotificationHelper @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
+    companion object {
+        const val CHANNEL_ID = "strimma_glucose"
+        const val NOTIFICATION_ID = 1
+        private const val GRAPH_WINDOW_MS = 60 * 60 * 1000L // 1 hour for notifications
+    }
+
+    private val notificationManager = context.getSystemService(NotificationManager::class.java)
+
+    fun createChannel() {
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            context.getString(R.string.notification_channel_name),
+            NotificationManager.IMPORTANCE_LOW
+        ).apply {
+            setShowBadge(false)
+        }
+        notificationManager.createNotificationChannel(channel)
+    }
+
+    fun buildNotification(
+        reading: GlucoseReading?,
+        recentReadings: List<GlucoseReading>,
+        bgLow: Double,
+        bgHigh: Double
+    ): android.app.Notification {
+        val contentIntent = PendingIntent.getActivity(
+            context, 0,
+            Intent(context, MainActivity::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setOngoing(true)
+            .setContentIntent(contentIntent)
+            .setStyle(NotificationCompat.DecoratedCustomViewStyle())
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setSilent(true)
+
+        if (reading != null) {
+            val direction = try { Direction.valueOf(reading.direction) } catch (_: Exception) { Direction.NONE }
+            val bgText = "%.1f".format(reading.mmol)
+            val deltaText = reading.deltaMmol?.let {
+                val sign = if (it >= 0) "+" else ""
+                "$sign%.1f mmol/l".format(it)
+            } ?: ""
+
+            // Small icon: BG number
+            builder.setSmallIcon(createBgIcon(bgText))
+
+            // Collapsed view
+            val collapsed = RemoteViews(context.packageName, R.layout.notification_collapsed)
+            collapsed.setTextViewText(R.id.tv_bg, bgText)
+            collapsed.setTextViewText(R.id.tv_arrow, direction.arrow)
+            collapsed.setTextViewText(R.id.tv_delta, deltaText)
+            val miniGraph = GraphRenderer.render(
+                recentReadings, 800, 160, bgLow, bgHigh, GRAPH_WINDOW_MS
+            )
+            collapsed.setImageViewBitmap(R.id.iv_graph, miniGraph)
+            builder.setCustomContentView(collapsed)
+
+            // Expanded view
+            val expanded = RemoteViews(context.packageName, R.layout.notification_expanded)
+            expanded.setTextViewText(R.id.tv_bg, bgText)
+            expanded.setTextViewText(R.id.tv_arrow, direction.arrow)
+            expanded.setTextViewText(R.id.tv_delta, deltaText)
+            val bigGraph = GraphRenderer.render(
+                recentReadings, 800, 400, bgLow, bgHigh, GRAPH_WINDOW_MS
+            )
+            expanded.setImageViewBitmap(R.id.iv_graph, bigGraph)
+            builder.setCustomBigContentView(expanded)
+        } else {
+            builder.setSmallIcon(createBgIcon("--"))
+            builder.setContentTitle("Strimma")
+            builder.setContentText("Waiting for glucose data…")
+        }
+
+        return builder.build()
+    }
+
+    fun updateNotification(
+        reading: GlucoseReading?,
+        recentReadings: List<GlucoseReading>,
+        bgLow: Double,
+        bgHigh: Double
+    ) {
+        val notification = buildNotification(reading, recentReadings, bgLow, bgHigh)
+        notificationManager.notify(NOTIFICATION_ID, notification)
+    }
+
+    private fun createBgIcon(text: String): IconCompat {
+        val size = 96
+        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            textAlign = Paint.Align.CENTER
+            typeface = Typeface.DEFAULT_BOLD
+            // Auto-size text to fit
+            textSize = if (text.length <= 3) 36f else 28f
+        }
+        val x = size / 2f
+        val y = size / 2f - (paint.descent() + paint.ascent()) / 2f
+        canvas.drawText(text, x, y, paint)
+        return IconCompat.createWithBitmap(bitmap)
+    }
+}
