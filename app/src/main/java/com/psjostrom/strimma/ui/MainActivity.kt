@@ -3,7 +3,10 @@ package com.psjostrom.strimma.ui
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
+import android.os.PowerManager
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -13,12 +16,15 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.psjostrom.strimma.receiver.GlucoseNotificationListener
 import com.psjostrom.strimma.service.StrimmaService
 import com.psjostrom.strimma.ui.theme.StrimmaTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    private var permissionsChecked = false
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -27,14 +33,28 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Request notification permission (API 33+)
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-            != PackageManager.PERMISSION_GRANTED
-        ) {
-            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        // Only prompt permissions once per process, not on every onCreate
+        if (!permissionsChecked) {
+            permissionsChecked = true
+
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED
+            ) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+
+            val pm = getSystemService(PowerManager::class.java)
+            if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+                startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                    data = Uri.parse("package:$packageName")
+                })
+            }
+
+            if (!GlucoseNotificationListener.isEnabled(this)) {
+                GlucoseNotificationListener.openSettings(this)
+            }
         }
 
-        // Start foreground service
         startForegroundService(Intent(this, StrimmaService::class.java))
 
         setContent {
@@ -57,7 +77,11 @@ class MainActivity : ComponentActivity() {
                             bgLow = bgLow,
                             bgHigh = bgHigh,
                             graphWindowHours = graphWindowHours,
-                            onSettingsClick = { navController.navigate("settings") }
+                            onSettingsClick = {
+                                navController.navigate("settings") {
+                                    launchSingleTop = true
+                                }
+                            }
                         )
                     }
                     composable("settings") {

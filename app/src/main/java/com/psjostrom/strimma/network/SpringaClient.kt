@@ -57,13 +57,22 @@ class SpringaClient @Inject constructor() {
         }
 
         return try {
-            val response = client.post("${baseUrl.trimEnd('/')}/api/v1/strimma/entries") {
+            val fullUrl = "${baseUrl.trimEnd('/')}/api/v1/strimma/entries"
+            val response = client.post(fullUrl) {
                 contentType(ContentType.Application.Json)
                 header("api-secret", hashedSecret)
                 setBody(entries)
             }
+            if (!response.status.isSuccess()) {
+                com.psjostrom.strimma.receiver.DebugLog.log(
+                    message = "Push HTTP ${response.status.value}: $fullUrl"
+                )
+            }
             response.status.isSuccess()
         } catch (e: Exception) {
+            com.psjostrom.strimma.receiver.DebugLog.log(
+                message = "Push error: ${e.message?.take(80)}"
+            )
             false
         }
     }

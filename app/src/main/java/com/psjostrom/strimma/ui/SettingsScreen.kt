@@ -52,17 +52,27 @@ fun SettingsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            var urlText by remember(springaUrl) { mutableStateOf(springaUrl) }
             OutlinedTextField(
-                value = springaUrl,
-                onValueChange = onSpringaUrlChange,
+                value = urlText,
+                onValueChange = { text ->
+                    urlText = text
+                    onSpringaUrlChange(text)
+                },
                 label = { Text("Springa URL") },
+                placeholder = { Text("https://springa.vercel.app") },
+                supportingText = { Text("Base URL only — no /api path") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
 
+            var secretText by remember(apiSecret) { mutableStateOf(apiSecret) }
             OutlinedTextField(
-                value = apiSecret,
-                onValueChange = onApiSecretChange,
+                value = secretText,
+                onValueChange = { text ->
+                    secretText = text
+                    onApiSecretChange(text)
+                },
                 label = { Text("API Secret") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
