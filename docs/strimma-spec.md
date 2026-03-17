@@ -13,7 +13,7 @@ Strimma is a new Android app that replaces xDrip+ for CGM monitoring. It receive
 1. [Context & Rationale](#1-context--rationale)
 2. [System Architecture](#2-system-architecture)
 3. [Phase 1 Scope](#3-phase-1-scope)
-4. [Data Input: Aidex Broadcast Receiver](#4-data-input-aidex-broadcast-receiver)
+4. [Data Input: CamAPS Notification Listener](#4-data-input-aidex-broadcast-receiver-camaps-notification-listener)
 5. [Direction Computation](#5-direction-computation)
 6. [Data Output: Springa Push](#6-data-output-springa-push)
 7. [Local Storage](#7-local-storage)
@@ -63,7 +63,7 @@ Libre 3 sensor
   │ (BLE)
   ▼
 CamAPS FX (closed-loop pump control)
-  │ (Aidex broadcast intents)
+  │ (notification with glucose value)
   ▼
 ┌──────────────────────────────────────────────┐
 │  Android                                      │
@@ -71,8 +71,8 @@ CamAPS FX (closed-loop pump control)
 │  ┌─────────┐     ┌─────────┐                 │
 │  │ xDrip+  │     │ Strimma │  (side by side) │
 │  │         │     │         │                  │
-│  │ Aidex   │     │ Aidex   │                  │
-│  │ Receiver│     │ Receiver│                  │
+│  │ Aidex   │     │ Notif.  │                  │
+│  │ Receiver│     │ Listener│                  │
 │  └────┬────┘     └────┬────┘                  │
 │       │               │                       │
 │       ▼               ▼                       │
@@ -97,7 +97,7 @@ CamAPS FX (closed-loop pump control)
     (Garmin, unchanged)
 ```
 
-Android delivers broadcast intents to all registered receivers. Both apps receive every CamAPS FX reading independently — no interference.
+xDrip+ receives CamAPS FX data via Aidex broadcast intents. Strimma uses a `NotificationListenerService` to parse glucose values from CamAPS FX's ongoing notification — the Aidex broadcast approach did not work (see §4). Both apps receive every reading independently.
 
 ---
 
@@ -107,7 +107,7 @@ Android delivers broadcast intents to all registered receivers. Both apps receiv
 
 | Feature | Description |
 |---------|-------------|
-| Aidex broadcast receiver | Receive glucose data from CamAPS FX |
+| CamAPS notification listener | Receive glucose data from CamAPS FX (via NotificationListenerService) |
 | Direction computation | 3-point averaged sgv, EASD/ISPAD thresholds (same algorithm as Springa) |
 | Local Room DB | Store readings locally |
 | Springa push | POST to `/api/v1/strimma/entries` (separate from xDrip) |
@@ -126,9 +126,11 @@ Low/high glucose alerts, 24h overview timeline, home screen widget, prediction/e
 
 ---
 
-## 4. Data Input: Aidex Broadcast Receiver
+## 4. Data Input: ~~Aidex Broadcast Receiver~~ CamAPS Notification Listener
 
-### How Companion Mode Works
+> **Note (2026-03-17):** The Aidex broadcast approach described below did not work — CamAPS FX does not actually send the Aidex broadcast intents reliably (or at all) on modern Android. Instead, Strimma reads glucose data by parsing CamAPS FX's notification via a `NotificationListenerService`. The notification contains the BG value and trend arrow, which Strimma extracts on each notification update. The rest of the spec (direction computation, push strategy, storage, etc.) remains unchanged — only the data input mechanism differs.
+
+### ~~How Companion Mode Works~~ (original spec, kept for reference)
 
 Strimma does NOT connect to the Libre 3 sensor directly. The Libre 3 bonds exclusively to CamAPS FX via BLE — only one app can hold that bond. Dual-connection is not possible with current Libre 3 firmware.
 
@@ -310,7 +312,7 @@ All queries are indexed by `ts DESC`.
 ### Why a Foreground Service
 
 The app must:
-1. Receive broadcasts at any time (CamAPS FX sends Libre 3 readings every ~1 minute, 24/7)
+1. Receive glucose readings at any time (CamAPS FX updates its notification every ~1 minute with Libre 3, 24/7)
 2. Push to Springa immediately after receiving a reading (zero delay)
 3. Update the notification with the latest reading
 
@@ -322,10 +324,25 @@ On Android 16 / API 36 (Pixel 9 Pro), a foreground service with a persistent not
 <service
     android:name=".service.StrimmaService"
     android:foregroundServiceType="specialUse"
-    android:exported="false" />
+    android:exported="false">
+    <property
+        android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+        android:value="Continuous glucose monitor display — receives medical glucose readings and must maintain persistent notification with real-time graph" />
+</service>
+
+<service
+    android:name=".receiver.GlucoseNotificationListener"
+    android:exported="true"
+    android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+    <intent-filter>
+        <action android:name="android.service.notification.NotificationListenerService" />
+    </intent-filter>
+</service>
 ```
 
-`foregroundServiceType="specialUse"` because Strimma doesn't directly connect to any device via BLE/USB (which `connectedDevice` requires). The `specialUse` type is appropriate for medical monitoring apps that need persistent execution. xDrip+ uses `connectedDevice` because it actually does BLE — Strimma only receives broadcasts, so `connectedDevice` would be rejected by the system on API 34+.
+> **Note (2026-03-17):** Two services instead of one. `StrimmaService` is the foreground service that owns the notification and processes readings. `GlucoseNotificationListener` is a `NotificationListenerService` that reads CamAPS FX's notification and forwards parsed glucose values to `StrimmaService` via `startForegroundService()`. The listener requires "Notification access" permission granted in Android system settings.
+
+`foregroundServiceType="specialUse"` because Strimma doesn't directly connect to any device via BLE/USB (which `connectedDevice` requires). The `specialUse` type is appropriate for medical monitoring apps that need persistent execution. xDrip+ uses `connectedDevice` because it actually does BLE — Strimma reads notifications, so `connectedDevice` would be rejected by the system on API 34+.
 
 ### Lifecycle
 
@@ -343,7 +360,7 @@ On Android 16 / API 36 (Pixel 9 Pro), a foreground service with a persistent not
 <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 <uses-permission android:name="android.permission.INTERNET" />
-<uses-permission android:name="com.microtechmd.cgms.aidex.permissions.RECEIVE_BG_ESTIMATE" />
+<!-- Aidex permission removed — not used. Notification access granted via system settings instead. -->
 ```
 
 ---
