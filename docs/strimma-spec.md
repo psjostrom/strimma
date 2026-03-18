@@ -4,7 +4,7 @@
 **Status:** Draft
 **Author:** Steg
 
-Strimma is a new Android app that replaces xDrip+ for CGM monitoring. It receives glucose data from CamAPS FX via the Aidex broadcast protocol, displays it with notifications and an in-app graph, and pushes readings to Springa.
+Strimma is an open-source Android CGM app inspired by xDrip+. It receives glucose data from CamAPS FX, displays it with notifications and an in-app graph, and pushes readings to Springa. Built on modern Android conventions (Kotlin, Compose, Room, Hilt), it aims to be an approachable, well-tested alternative for the CGM community.
 
 ---
 
@@ -31,28 +31,22 @@ Strimma is a new Android app that replaces xDrip+ for CGM monitoring. It receive
 
 ## 1. Context & Rationale
 
-### Why not modernize xDrip+?
+### Background
 
-xDrip+ is a 10+ year old codebase with 976 Java files, 3,880-line god classes, dual OkHttp versions, RxJava 1.x (EOL), targetSdk 24 (Android 7, 2016), and no architectural pattern. The full modernization spec (`Documentation/technical/modernization-spec.md`) details every issue.
+xDrip+ is an extraordinary open-source project that has served the diabetes community for over 10 years. It supports 15+ CGM types, 5 watch platforms, pump integration, calibration, and much more. It is actively maintained, widely used, and has genuinely saved lives. Strimma would not exist without xDrip+ — it serves as direct inspiration for both features and implementation approaches.
 
-For this use case — a single user with a Libre 3 sensor connected to CamAPS FX — xDrip+ provides approximately 5% of its feature surface:
+Strimma started as a focused CGM app for a specific setup (Libre 3 + CamAPS FX), but is designed from the ground up as an open-source project that can grow to serve a broader audience. It uses modern Android conventions (Kotlin, Compose, Room, Coroutines, targetSdk 36) to provide a codebase that is approachable for contributors familiar with current Android development.
 
-- Receive glucose broadcasts from CamAPS FX (AidexReceiver)
-- Display glucose + trend + graph
-- Push readings to Springa (Nightscout-compatible REST API)
+The open-source roadmap for broader sensor support, Nightscout integration, and community features is documented in `docs/strimma-p2-roadmap.md`.
 
-The other 95% (15 CGM plugins, 5 watch platforms, pump integration, calibration engine, multi-user support, Tidepool sync, etc.) is unused dead weight.
+### Side-by-side validation
 
-Starting fresh with modern Android (Kotlin, Compose, Room, Coroutines) for this narrow scope is less work than fixing xDrip+'s mixed-case package names alone.
-
-### Why it must run side-by-side with xDrip first
-
-Strimma handles medical data depended on 24/7. Before xDrip can be decommissioned:
+Strimma handles medical data depended on 24/7. Before transitioning away from xDrip+:
 
 1. Both apps run simultaneously, receiving the same CamAPS FX broadcasts
 2. Both push to Springa — into **separate tables** so data can be compared
 3. Validate: graph accuracy, data completeness, push reliability, direction computation quality
-4. Only after Strimma proves 100% reliable does xDrip get uninstalled
+4. Only after Strimma proves 100% reliable is xDrip+ no longer needed for this use case
 
 ---
 
@@ -97,7 +91,7 @@ CamAPS FX (closed-loop pump control)
     (Garmin, unchanged)
 ```
 
-xDrip+ receives CamAPS FX data via Aidex broadcast intents. Strimma uses a `NotificationListenerService` to parse glucose values from CamAPS FX's ongoing notification — the Aidex broadcast approach did not work (see §4). Both apps receive every reading independently.
+Both apps run in companion mode, receiving glucose data from CamAPS FX independently. Strimma uses a `NotificationListenerService` to parse glucose values from CamAPS FX's ongoing notification (see §4).
 
 ---
 
@@ -105,20 +99,20 @@ xDrip+ receives CamAPS FX data via Aidex broadcast intents. Strimma uses a `Noti
 
 ### In Scope
 
-| Feature | Description |
-|---------|-------------|
-| CamAPS notification listener | Receive glucose data from CamAPS FX (via NotificationListenerService) |
-| Direction computation | 3-point averaged sgv, EASD/ISPAD thresholds (same algorithm as Springa) |
-| Local Room DB | Store readings locally |
-| Springa push | POST to `/api/v1/strimma/entries` (separate from xDrip) |
-| Foreground service | Persistent process with notification |
-| Expanded notification | BG number + trend arrow + delta + graph bitmap |
-| Collapsed notification | BG number + delta + mini graph bitmap |
-| Status bar icon | BG number rendered as notification small icon |
-| Main app | Large BG number + trend arrow + delta + interactive graph |
-| Graph coloring | Blue dots = in range, yellow/orange dots = above high, red dots = below low |
-| Threshold lines | Dashed horizontal lines at low (4.0) and high (10.0) thresholds |
-| Settings screen | Springa URL, API secret, graph time window, threshold values |
+| Feature                      | Description                                                                 |
+| ---------------------------- | --------------------------------------------------------------------------- |
+| CamAPS notification listener | Receive glucose data from CamAPS FX (via NotificationListenerService)       |
+| Direction computation        | 3-point averaged sgv, EASD/ISPAD thresholds (same algorithm as Springa)     |
+| Local Room DB                | Store readings locally                                                      |
+| Springa push                 | POST to `/api/v1/strimma/entries` (separate from xDrip)                     |
+| Foreground service           | Persistent process with notification                                        |
+| Expanded notification        | BG number + trend arrow + delta + graph bitmap                              |
+| Collapsed notification       | BG number + delta + mini graph bitmap                                       |
+| Status bar icon              | BG number rendered as notification small icon                               |
+| Main app                     | Large BG number + trend arrow + delta + interactive graph                   |
+| Graph coloring               | Blue dots = in range, yellow/orange dots = above high, red dots = below low |
+| Threshold lines              | Dashed horizontal lines at low (4.0) and high (10.0) thresholds             |
+| Settings screen              | Springa URL, API secret, graph time window, threshold values                |
 
 ### Out of Scope (Phase 2)
 
@@ -134,7 +128,7 @@ Low/high glucose alerts, 24h overview timeline, home screen widget, prediction/e
 
 Strimma does NOT connect to the Libre 3 sensor directly. The Libre 3 bonds exclusively to CamAPS FX via BLE — only one app can hold that bond. Dual-connection is not possible with current Libre 3 firmware.
 
-Instead, Strimma receives glucose data via broadcast intents that CamAPS FX sends using the Aidex protocol. This is the same "companion mode" hack that xDrip+ uses. CamAPS FX broadcasts every reading it receives from the sensor, and any app with the correct intent filter and permission picks it up.
+Instead, Strimma receives glucose data via broadcast intents that CamAPS FX sends using the Aidex protocol. This is the same "companion mode" approach that xDrip+ uses. CamAPS FX broadcasts every reading it receives from the sensor, and any app with the correct intent filter and permission picks it up.
 
 ### Broadcast Receiver Registration
 
@@ -153,23 +147,24 @@ The `RECEIVER_EXPORTED` flag (required on API 33+) tells the system this receive
 We only listen for `BgEstimate`. Sensor lifecycle (start/stop/restart) is entirely managed by CamAPS FX — Strimma has no role in it.
 
 Required permission in manifest:
+
 ```xml
 <uses-permission android:name="com.microtechmd.cgms.aidex.permissions.RECEIVE_BG_ESTIMATE" />
 ```
 
-**Why not a manifest receiver?** xDrip+ gets away with a manifest-registered receiver because its `targetSdk` is 24 (pre-API 26 restriction). Strimma targets API 36, where this restriction is enforced. Dynamic registration from a foreground service is the correct modern approach — the service keeps the process alive, and the receiver stays registered as long as the service runs.
+**Why not a manifest receiver?** xDrip+ uses a manifest-registered receiver, which works with its `targetSdk` of 24 (pre-API 26 restriction). Strimma targets API 36, where implicit broadcast delivery to manifest receivers is restricted. Dynamic registration from a foreground service is the standard approach on modern Android.
 
 ### Broadcast Bundle Fields
 
 Extracted from xDrip's `AidexBroadcastIntents.java`:
 
-| Extra Key | Type | Description |
-|-----------|------|-------------|
-| `com.microtechmd.cgms.aidex.Time` | `long` | Reading timestamp (epoch ms) |
-| `com.microtechmd.cgms.aidex.BgType` | `String` | `"mg/dl"` or `"mmol/l"` |
-| `com.microtechmd.cgms.aidex.BgValue` | `double` | Glucose value |
-| `com.microtechmd.cgms.aidex.BgSlopeName` | `String` | Trend direction (NOT TRUSTED — see §5) |
-| `com.microtechmd.cgms.aidex.SensorId` | `String` | Sensor identifier (logged but not used) |
+| Extra Key                                | Type     | Description                             |
+| ---------------------------------------- | -------- | --------------------------------------- |
+| `com.microtechmd.cgms.aidex.Time`        | `long`   | Reading timestamp (epoch ms)            |
+| `com.microtechmd.cgms.aidex.BgType`      | `String` | `"mg/dl"` or `"mmol/l"`                 |
+| `com.microtechmd.cgms.aidex.BgValue`     | `double` | Glucose value                           |
+| `com.microtechmd.cgms.aidex.BgSlopeName` | `String` | Trend direction (NOT TRUSTED — see §5)  |
+| `com.microtechmd.cgms.aidex.SensorId`    | `String` | Sensor identifier (logged but not used) |
 
 ### Processing Rules
 
@@ -185,7 +180,7 @@ Extracted from xDrip's `AidexBroadcastIntents.java`:
 
 ## 5. Direction Computation
 
-xDrip+ companion mode returns stale/wrong direction fields ~31% of the time (documented in Springa's `lib/xdrip.ts`). Strimma computes direction locally and is the source of truth.
+In companion mode, the direction field received from the CGM app can be outdated — Springa's `lib/xdrip.ts` documents a ~31% mismatch rate between received and recomputed directions. Strimma computes direction locally for accuracy.
 
 ### Algorithm
 
@@ -197,15 +192,15 @@ Identical to Springa's `recomputeDirections()` (`/Users/persjo/code/private/Spri
 4. Calculate `deltaMgdlPerMin = (avgSgvNow - avgSgvPast) / timeMinutes`
 5. Map delta to direction using **EASD/ISPAD 2020 thresholds** (Moser et al., Diabetologia 2020):
 
-| Delta (mg/dL/min) | Direction | Arrow |
-|-------------------|-----------|-------|
-| ≤ -3.0 | DoubleDown | ⇊ |
-| ≤ -2.0 | SingleDown | ↓ |
-| ≤ -1.1 | FortyFiveDown | ↘ |
-| ≤ +1.1 | Flat | → |
-| ≤ +2.0 | FortyFiveUp | ↗ |
-| ≤ +3.0 | SingleUp | ↑ |
-| > +3.0 | DoubleUp | ⇈ |
+| Delta (mg/dL/min) | Direction     | Arrow |
+| ----------------- | ------------- | ----- |
+| ≤ -3.0            | DoubleDown    | ⇊     |
+| ≤ -2.0            | SingleDown    | ↓     |
+| ≤ -1.1            | FortyFiveDown | ↘     |
+| ≤ +1.1            | Flat          | →     |
+| ≤ +2.0            | FortyFiveUp   | ↗     |
+| ≤ +3.0            | SingleUp      | ↑     |
+| > +3.0            | DoubleUp      | ⇈     |
 
 ### Edge Cases
 
@@ -253,6 +248,7 @@ Nightscout-compatible JSON array:
 ```
 
 Fields:
+
 - `sgv` — Integer, mg/dL (even though display is mmol/L — Nightscout protocol uses mg/dL)
 - `date` — Epoch milliseconds (from the Aidex broadcast timestamp)
 - `dateString` — ISO 8601 formatted timestamp
@@ -280,14 +276,14 @@ If the device is offline, readings accumulate in the local DB with `pushed = 0`.
 
 **Table: `readings`**
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `ts` | `INTEGER` | Timestamp ms (PRIMARY KEY) |
-| `sgv` | `INTEGER` | Glucose in mg/dL |
-| `mmol` | `REAL` | Glucose in mmol/L |
-| `direction` | `TEXT` | Computed direction string |
-| `delta_mmol` | `REAL` | 5-min delta in mmol/L (nullable) |
-| `pushed` | `INTEGER` | 0 = pending, 1 = pushed to Springa |
+| Column       | Type      | Description                        |
+| ------------ | --------- | ---------------------------------- |
+| `ts`         | `INTEGER` | Timestamp ms (PRIMARY KEY)         |
+| `sgv`        | `INTEGER` | Glucose in mg/dL                   |
+| `mmol`       | `REAL`    | Glucose in mmol/L                  |
+| `direction`  | `TEXT`    | Computed direction string          |
+| `delta_mmol` | `REAL`    | 5-min delta in mmol/L (nullable)   |
+| `pushed`     | `INTEGER` | 0 = pending, 1 = pushed to Springa |
 
 No sensor table. Sensor lifecycle is managed entirely by CamAPS FX.
 
@@ -298,6 +294,7 @@ Keep 30 days of readings locally. Older readings are pruned daily. Springa is th
 ### Queries
 
 The app needs fast access to:
+
 - Latest reading (for notification/UI update)
 - Last N readings within time window (for graph rendering)
 - Last 3 readings (for direction computation)
@@ -312,6 +309,7 @@ All queries are indexed by `ts DESC`.
 ### Why a Foreground Service
 
 The app must:
+
 1. Receive glucose readings at any time (CamAPS FX updates its notification every ~1 minute with Libre 3, 24/7)
 2. Push to Springa immediately after receiving a reading (zero delay)
 3. Update the notification with the latest reading
@@ -508,13 +506,13 @@ Single-screen app in phase 1. Settings accessible via gear icon in toolbar. No d
 
 ### Phase 1 Settings Screen
 
-| Setting | Type | Default | Description |
-|---------|------|---------|-------------|
-| Springa URL | Text | (empty) | Base URL for Springa API |
-| API Secret | Text (masked) | (empty) | Shared secret for Springa authentication |
-| Graph Window | Slider | 4 hours | Time range for graph display (1-8 hours) |
-| BG Low Threshold | Number | 4.0 mmol/L | Below this = red dots, low threshold line |
-| BG High Threshold | Number | 10.0 mmol/L | Above this = yellow dots, high threshold line |
+| Setting           | Type          | Default     | Description                                   |
+| ----------------- | ------------- | ----------- | --------------------------------------------- |
+| Springa URL       | Text          | (empty)     | Base URL for Springa API                      |
+| API Secret        | Text (masked) | (empty)     | Shared secret for Springa authentication      |
+| Graph Window      | Slider        | 4 hours     | Time range for graph display (1-8 hours)      |
+| BG Low Threshold  | Number        | 4.0 mmol/L  | Below this = red dots, low threshold line     |
+| BG High Threshold | Number        | 10.0 mmol/L | Above this = yellow dots, high threshold line |
 
 ### Storage
 
@@ -543,13 +541,13 @@ Non-sensitive settings (thresholds, graph window) stored in Jetpack `DataStore` 
 
 ### What to Compare
 
-| Metric | How to Validate |
-|--------|----------------|
-| **Completeness** | Count readings per hour in both tables — should be identical |
-| **Timing** | Compare timestamps — both should receive within seconds of each other |
-| **Direction accuracy** | Compare direction fields — Strimma should match Springa's recomputed direction more closely than xDrip's stale direction |
-| **Push reliability** | Check for gaps — Strimma should have zero gaps over 24+ hours |
-| **Graph quality** | Visual comparison — Strimma's graph should look as good or better than xDrip's |
+| Metric                 | How to Validate                                                                           |
+| ---------------------- | ----------------------------------------------------------------------------------------- |
+| **Completeness**       | Count readings per hour in both tables — should be identical                              |
+| **Timing**             | Compare timestamps — both should receive within seconds of each other                     |
+| **Direction accuracy** | Compare direction fields — both should match Springa's independently recomputed direction |
+| **Push reliability**   | Check for gaps — Strimma should have zero gaps over 24+ hours                             |
+| **Graph quality**      | Visual comparison — Strimma's graph should look as good or better than xDrip's            |
 
 ### Validation Endpoint
 
@@ -558,6 +556,7 @@ Springa gets a comparison endpoint (phase 1):
 `GET /api/debug/compare-readings?hours=24`
 
 Returns:
+
 ```json
 {
   "xdrip": { "count": 1440, "gaps": 0, "direction_mismatches": 446 },
@@ -569,7 +568,8 @@ Returns:
 
 ### Transition Criteria
 
-Strimma is ready to replace xDrip when:
+Strimma is ready for standalone use (xDrip+ no longer needed for this setup) when:
+
 1. Zero gaps over 72 continuous hours
 2. Direction matches Springa's recomputation > 98% of the time
 3. Push latency (reading timestamp to Springa receipt) is ≤ 10 seconds
@@ -577,9 +577,10 @@ Strimma is ready to replace xDrip when:
 
 ### Switching Over
 
-When ready:
+When validation criteria are met:
+
 1. Update Springa's `/api/sgv` endpoint to read from `strimma_readings` instead of `xdrip_readings`
-2. Uninstall xDrip
+2. xDrip+ is no longer needed for this specific setup
 3. Keep `xdrip_readings` table for historical data
 
 ---
@@ -626,7 +627,7 @@ GET /api/sgv?source=strimma  → reads from strimma_readings
 GET /api/sgv                 → reads from xdrip_readings (default, unchanged)
 ```
 
-When Strimma is validated, flip the default. When xDrip is uninstalled, the `source` parameter can be removed and `strimma_readings` becomes the only table.
+When Strimma is validated, flip the default. When Strimma is the sole data source, the `source` parameter can be removed and `strimma_readings` becomes the primary table.
 
 ---
 
@@ -636,29 +637,30 @@ When Strimma is validated, flip the default. When xDrip is uninstalled, the `sou
 
 **Package name:** `com.psjostrom.strimma`
 
-| Component | Choice | Rationale |
-|-----------|--------|-----------|
-| Language | Kotlin | Modern, concise, coroutine-native |
-| UI | Jetpack Compose + Material 3 | Current Android UI standard, dark/light theme built-in |
-| Database | Room | Type-safe, migration-aware, Flow integration |
-| Networking | Ktor Client | Kotlin-native, coroutine-based, no OkHttp legacy |
-| DI | Hilt | Standard for single-module Android apps |
-| Concurrency | Kotlin Coroutines + Flow | Structured concurrency, lifecycle-aware |
-| Settings | Jetpack DataStore + EncryptedSharedPreferences | DataStore for prefs, EncryptedSharedPreferences for API secret |
-| Graph | Custom Compose Canvas + shared GraphColors | Dot+line+prediction graphs, shared color/range logic |
-| Widget | Jetpack Glance | Compose-based widget API with AppWidgetManager updates |
-| Notifications | NotificationCompat + RemoteViews | Custom layouts with bitmap graphs |
-| Alerts | 5 notification channels | Per-alarm sound/vibration/DND via Android channel settings |
-| Testing | JUnit 4 + Robolectric 4.16 + Room in-memory | 66 tests on JVM, SDK 36, no emulator |
-| Java | 21 (Zulu) | Repo-specific via `gradle.properties`, needed for Robolectric SDK 36 |
-| Build | Gradle 8.x + AGP 8.x | Current |
-| compileSdk | 36 | Android 16 |
-| targetSdk | 36 | Android 16 |
-| minSdk | 36 | Single device (Pixel 9 Pro, Android 16) |
+| Component     | Choice                                         | Rationale                                                            |
+| ------------- | ---------------------------------------------- | -------------------------------------------------------------------- |
+| Language      | Kotlin                                         | Modern, concise, coroutine-native                                    |
+| UI            | Jetpack Compose + Material 3                   | Current Android UI standard, dark/light theme built-in               |
+| Database      | Room                                           | Type-safe, migration-aware, Flow integration                         |
+| Networking    | Ktor Client                                    | Kotlin-native, coroutine-based, no OkHttp legacy                     |
+| DI            | Hilt                                           | Standard for single-module Android apps                              |
+| Concurrency   | Kotlin Coroutines + Flow                       | Structured concurrency, lifecycle-aware                              |
+| Settings      | Jetpack DataStore + EncryptedSharedPreferences | DataStore for prefs, EncryptedSharedPreferences for API secret       |
+| Graph         | Custom Compose Canvas + shared GraphColors     | Dot+line+prediction graphs, shared color/range logic                 |
+| Widget        | Jetpack Glance                                 | Compose-based widget API with AppWidgetManager updates               |
+| Notifications | NotificationCompat + RemoteViews               | Custom layouts with bitmap graphs                                    |
+| Alerts        | 5 notification channels                        | Per-alarm sound/vibration/DND via Android channel settings           |
+| Testing       | JUnit 4 + Robolectric 4.16 + Room in-memory    | 66 tests on JVM, SDK 36, no emulator                                 |
+| Java          | 21 (Zulu)                                      | Repo-specific via `gradle.properties`, needed for Robolectric SDK 36 |
+| Build         | Gradle 8.x + AGP 8.x                           | Current                                                              |
+| compileSdk    | 36                                             | Android 16                                                           |
+| targetSdk     | 36                                             | Android 16                                                           |
+| minSdk        | 36                                             | Android 16 (to be lowered for broader device support — see roadmap)  |
 
 ### Springa
 
 No new dependencies. Changes are:
+
 - 1 new Turso table
 - 2 new API routes (copy of existing with table name change)
 - 1 modified API route (source param on `/api/sgv`)
@@ -669,36 +671,34 @@ No new dependencies. Changes are:
 
 ### Delivered
 
-| Feature | Description |
-|---------|-------------|
-| **Alerts** | 5 alert types (urgent low, low, high, urgent high, stale) with per-alarm notification channels, configurable thresholds, persistent snooze, DND bypass for urgent alerts |
-| **Prediction** | 30-minute linear extrapolation using direction computation rate, white dots on both main graph and notification graphs |
-| **Home screen widget** | Jetpack Glance widget with BG, arrow, delta, mini graph, configurable opacity |
-| **Statistics** | TIR, GMI, average glucose, CV%, coverage — with period selector (24h/7d/14d/30d) and CSV export |
-| **Theme** | Dark / Light / System picker with theme-adaptive graph surfaces |
-| **Persistent logging** | File-based debug logs with 7-day rotation, shareable via FileProvider |
-| **Settings debounce** | URL and API secret save on field blur instead of every keystroke |
-| **Graph consolidation** | Shared `graph/GraphColors.kt` module, compact top gradient for widget readability |
-| **Testing** | 66 tests: 46 unit (DirectionComputer, GlucoseParser, GraphColors, SecretHash) + 20 integration (Room DAO, reading pipeline via Robolectric 4.16) |
+| Feature                 | Description                                                                                                                                                              |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Alerts**              | 5 alert types (urgent low, low, high, urgent high, stale) with per-alarm notification channels, configurable thresholds, persistent snooze, DND bypass for urgent alerts |
+| **Prediction**          | 30-minute linear extrapolation using direction computation rate, white dots on both main graph and notification graphs                                                   |
+| **Home screen widget**  | Jetpack Glance widget with BG, arrow, delta, mini graph, configurable opacity                                                                                            |
+| **Statistics**          | TIR, GMI, average glucose, CV%, coverage — with period selector (24h/7d/14d/30d) and CSV export                                                                          |
+| **Theme**               | Dark / Light / System picker with theme-adaptive graph surfaces                                                                                                          |
+| **Persistent logging**  | File-based debug logs with 7-day rotation, shareable via FileProvider                                                                                                    |
+| **Settings debounce**   | URL and API secret save on field blur instead of every keystroke                                                                                                         |
+| **Graph consolidation** | Shared `graph/GraphColors.kt` module, compact top gradient for widget readability                                                                                        |
+| **Testing**             | 66 tests: 46 unit (DirectionComputer, GlucoseParser, GraphColors, SecretHash) + 20 integration (Room DAO, reading pipeline via Robolectric 4.16)                         |
 
 ### Remaining
 
-| Feature | Description |
-|---------|-------------|
-| **Unit switching** | mmol/L ↔ mg/dL toggle |
-| **BG broadcast** | `com.eveningoutpost.dexdrip.BgEstimate` intent for external app compat |
+| Feature            | Description                                                            |
+| ------------------ | ---------------------------------------------------------------------- |
+| **Unit switching** | mmol/L ↔ mg/dL toggle                                                  |
+| **BG broadcast**   | `com.eveningoutpost.dexdrip.BgEstimate` intent for external app compat |
 
 ---
 
-## 16. Non-Goals
+## 16. Phase 1 Non-Goals
 
-These are explicitly out of scope for all phases:
+These are out of scope for phase 1. Several are planned for later phases — see the open-source roadmap in `docs/strimma-p2-roadmap.md`.
 
-- **BLE CGM collection** — Libre 3 bonds exclusively to CamAPS FX; dual-connection is not possible with current firmware
-- **Calibration** — Not applicable for factory-calibrated Libre 3
-- **Treatment tracking** — Insulin/carb management is done elsewhere
-- **Watch sync** — SugarWave/SugarRun talk to Springa directly
-- **Multi-user** — Single user app
-- **Cloud sync** — No Nightscout, Tidepool, MongoDB, InfluxDB upload. Only Springa.
-- **Multi-device** — Pixel 9 Pro only
-- **Play Store distribution** — APK sideload only
+- **BLE CGM collection** — Phase 1 uses CamAPS FX notification listener. Direct BLE planned for later phases.
+- **Calibration** — Not applicable for factory-calibrated Libre 3. Planned for sensors that need it.
+- **Treatment tracking** — Low priority. Insulin/carb management typically handled by AAPS or pen apps.
+- **Nightscout / cloud sync** — Phase 1 uses Springa only. Nightscout upload/download planned.
+- **Watch integration** — Phase 1 uses Springa for watch data. Wear OS complications planned.
+- **Broader device support** — Phase 1 targets Android 16 (minSdk 36). Lowering to API 26 planned.

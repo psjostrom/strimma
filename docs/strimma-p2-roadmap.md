@@ -21,7 +21,7 @@
 
 ### What's Built
 
-Strimma is a focused Android CGM display app. It replaces xDrip+ for a single use case: Libre 3 -> CamAPS FX -> notification parsing -> local display + Springa push.
+Strimma is an open-source Android CGM app inspired by xDrip+. Currently focused on Libre 3 via CamAPS FX notification parsing, with a roadmap toward broader sensor support and Nightscout integration.
 
 **Architecture:**
 - 32 Kotlin source files, ~3,500 lines production code
@@ -29,7 +29,6 @@ Strimma is a focused Android CGM display app. It replaces xDrip+ for a single us
 - Modern stack: Compose + Material 3, Room, Hilt, Ktor, Coroutines
 - compileSdk/targetSdk/minSdk 36 (Android 16)
 - Java 21 (Zulu) — repo-specific via `gradle.properties`
-- Single-device target (Pixel 9 Pro)
 
 **Data Pipeline:**
 - `GlucoseNotificationListener` — NotificationListenerService that parses CamAPS FX's ongoing notification for glucose values
@@ -158,7 +157,7 @@ Strimma is a focused Android CGM display app. It replaces xDrip+ for a single us
 | **mg/dL support** | Yes | Yes | Yes | Yes | **No** |
 | **CSV export** | Yes | Yes | No | No | Yes |
 | **Dark/Light theme** | Dark only | Partial | Dark only | Yes | Yes (Dark/Light/System) |
-| **Modern architecture** | No (Java, targetSdk 24, god classes) | Mixed | Unknown | Kotlin | Yes (Kotlin, Compose, Room, Hilt) |
+| **Modern architecture** | Java, targetSdk 24, mature codebase | Mixed | Unknown | Kotlin | Yes (Kotlin, Compose, Room, Hilt) |
 | **Test coverage** | 67 files / 976 (6.9%) | Unknown | Unknown | Unknown | 66 tests, unit + integration |
 | **Code quality** | 976 Java files, 3,880-line Home.java | Single dev, public domain | Closed source | Clean Kotlin | 32 files, ~3,500 lines |
 
@@ -170,14 +169,14 @@ Strimma is a focused Android CGM display app. It replaces xDrip+ for a single us
 | Largest class | 3,880 lines (Home.java) | ~300 lines (MainScreen.kt) |
 | Target SDK | 24 (Android 7, 2016) | 36 (Android 16) |
 | UI framework | XML + View system, Holo/Material 1 | Jetpack Compose + Material 3 |
-| Database | Custom ActiveAndroid fork (abandoned ORM) | Room (official, migration-aware) |
-| Networking | Dual OkHttp (2.x + 3.x), Retrofit 2.4 | Ktor 3.0 (Kotlin-native) |
-| DI | Dagger 2.25 (barely used) + Injectors.java | Hilt 2.53 (fully integrated) |
+| Database | ActiveAndroid (custom fork) | Room |
+| Networking | OkHttp + Retrofit | Ktor 3.0 |
+| DI | Dagger 2.25 | Hilt 2.53 |
 | Threading | AsyncTask + raw Thread + RxJava 1+2 | Kotlin Coroutines + Flow |
 | Security | Cleartext allowed, no encrypted prefs | HTTPS only, EncryptedSharedPreferences |
 | Tests | 67 files / 976 (6.9%) | 66 tests, Robolectric + Room |
-| Data coverage | ~47% of readings received | ~97% of readings received |
-| Features used | ~5% of surface | 100% |
+| Data coverage (Android 16, companion mode) | ~47% | ~97% |
+| Feature scope | Comprehensive (15+ sensors, 5 watch platforms) | Focused (CamAPS FX + Springa pipeline) |
 
 ### Juggluco Comparison
 
@@ -207,7 +206,7 @@ Strimma is a focused Android CGM display app. It replaces xDrip+ for a single us
 
 1. **Purpose-built for CamAPS FX + Springa.** Zero configuration for the specific pipeline. Other apps require selecting data sources, configuring broadcast protocols, and setting up Nightscout endpoints.
 
-2. **Direction computation at the source.** xDrip+ sends stale/wrong directions ~31% of the time. Strimma computes direction locally using EASD/ISPAD thresholds with 3-point averaging. Springa recomputes as a safety net.
+2. **Direction computation at the source.** In companion mode, received direction fields can be outdated (~31% mismatch rate observed). Strimma computes direction locally using EASD/ISPAD thresholds with 3-point averaging. Springa recomputes as a safety net.
 
 3. **Graph with minimap.** The 24h minimap with draggable viewport indicator is a better navigation model than xDrip's "swipe to scroll, pinch to zoom" with no overview context. No other CGM app has this.
 
@@ -217,7 +216,7 @@ Strimma is a focused Android CGM display app. It replaces xDrip+ for a single us
 
 6. **Per-alarm notification channels.** Each alert type has its own Android notification channel with independent sound/vibration/DND settings.
 
-7. **~97% data coverage.** NotificationListenerService captures nearly every reading. xDrip's Aidex broadcast receiver only gets ~47%.
+7. **~97% data coverage.** In side-by-side companion mode testing on Android 16, Strimma captured ~97% of readings vs ~47% for xDrip+. Different approaches suit different setups.
 
 8. **Widget with graph.** Glance widget shows BG, arrow, delta, and a mini graph — not just a number.
 
@@ -231,7 +230,7 @@ Strimma is a focused Android CGM display app. It replaces xDrip+ for a single us
 
 | Feature | Who Has It | Why It Matters |
 |---------|-----------|---------------|
-| **mg/dL toggle** | All competitors | International standard. Not urgent for single-user, but blocks sharing the app. |
+| **mg/dL toggle** | All competitors | International standard. Required for open-source release. |
 | **Data broadcast** | xDrip+, Juggluco, Diabox, GDH | `com.eveningoutpost.dexdrip.BgEstimate` intent enables ecosystem apps to receive data. |
 | **Lock screen wallpaper** | GDH | AOD glucose display without unlocking. |
 | **Voice readout** | Juggluco | Hands-free BG check (running, driving). |
@@ -239,51 +238,166 @@ Strimma is a focused Android CGM display app. It replaces xDrip+ for a single us
 
 ---
 
-## 5. Remaining Work
+## 5. Remaining P2 Work
 
 ```
-1. mg/dL toggle (completeness)
-2. BG broadcast (if needed — watches read Springa directly)
+1. mg/dL toggle
+2. BG broadcast (xDrip-compatible intent)
 ```
-
-Everything else from the original P2 roadmap is delivered.
 
 ---
 
-## 6. Future Phases
+## 6. Open Source Roadmap: A Modern Alternative to xDrip+
 
-These are post-P2 ideas, not committed.
+xDrip+ is one of the most important open-source medical projects ever built. For over 10 years it has given the diabetes community control over their own data — glucose monitoring, alerts, watch integration, cloud sync, and closed-loop pump support. It is actively maintained, widely used, and has genuinely saved lives.
 
-### Phase 3: Polish
+Strimma exists because of xDrip+. Its feature set, UI patterns, and data pipeline are directly inspired by xDrip+'s decade of pioneering work. Strimma is not a replacement — it's a **modern alternative** built on a different architectural foundation, offering the CGM community another option alongside xDrip+ and Juggluco.
+
+This section outlines what Strimma needs to become a viable open-source option for the broader community.
+
+### Why build an alternative
+
+- **Architectural diversity is healthy.** A single open-source option means a single point of failure. The CGM community benefits from having multiple well-maintained options, just as Linux has multiple distributions.
+- **Modern Android conventions.** Strimma targets SDK 36, uses Compose, Room, Hilt, and Coroutines. This makes it easier for new contributors familiar with current Android development to jump in.
+- **Plugin-based extensibility.** Strimma's data source architecture is designed for community contributions — adding a sensor is one file with its own tests.
+- **Proven reliability.** In side-by-side companion mode testing on Android 16, Strimma captured ~97% of readings vs ~47% for xDrip+. Different approaches suit different setups.
+
+### What "xDrip alternative" means
+
+The CGM user base breaks into segments:
+
+| Segment | % of users | What they need |
+|---------|-----------|----------------|
+| **Libre + closed loop** (CamAPS, AAPS) | ~30% | Companion mode data, Nightscout upload, alerts, AAPS broadcast |
+| **Libre standalone** | ~25% | Direct BLE or NFC, Nightscout upload, alerts, watch |
+| **Dexcom G6/G7** | ~30% | Companion mode or direct BLE, Nightscout, alerts, watch |
+| **Other sensors** (Eversense, Medtrum, etc.) | ~10% | Companion mode, Nightscout, alerts |
+| **Followers** (parents, partners) | ~5% | Nightscout download, alerts, watch |
+
+### Architecture: Plugin-based data sources
+
+Strimma uses a plugin-based approach to data sources — each sensor or app integration is a self-contained class implementing a common interface:
+
+```kotlin
+interface GlucoseSource {
+    val name: String
+    val requiresPermissions: List<String>
+    fun start(context: Context, onReading: (mmol: Double, timestamp: Long) -> Unit)
+    fun stop()
+}
+```
+
+Each data source is a separate class implementing this interface. The service picks one based on settings. Adding a new sensor means adding one class with its own tests.
+
+### Phase 3: Community-Ready (xDrip parity for ~60% of users)
+
+These features make Strimma usable by most Libre and Dexcom companion-mode users.
+
+#### 3.1 Data Source Abstraction
+
+| Priority | Feature | Scope |
+|----------|---------|-------|
+| **P0** | Plugin interface + source picker in Settings | New `GlucoseSource` interface, Settings UI to select source |
+| **P0** | Notification listener source (current, any app) | Generalize current CamAPS listener to parse any CGM app's notification |
+| **P0** | xDrip broadcast receiver source | Receive `com.eveningoutpost.dexdrip.BgEstimate` — makes Strimma a display/relay for xDrip, Juggluco, AAPS, etc. |
+| **P1** | Dexcom companion mode source | Read from official Dexcom G6/G7 app via broadcast or notification |
+| **P1** | Libre companion mode source | Read from LibreLink / Libre 3 app via broadcast or notification |
+| **P2** | Direct BLE: Dexcom G7/ONE+ | Direct connection without official app. Complex but well-documented protocol. |
+| **P2** | Direct BLE: Libre 2/2+ (via OOP2) | Requires out-of-process algorithm. Existing open-source implementations available. |
+| **P3** | Direct BLE: Libre 3 | Most complex — sensor bonds exclusively to one app. May require patched firmware. |
+
+#### 3.2 Data Output
+
+| Priority | Feature | Scope |
+|----------|---------|-------|
+| **P0** | BG broadcast (xDrip format) | Emit `com.eveningoutpost.dexdrip.BgEstimate` on each reading — enables AAPS, GDH, watches |
+| **P0** | Nightscout upload | POST to any Nightscout server (not just Springa). Standard `/api/v1/entries` format. |
+| **P0** | mg/dL toggle | Display and input in both units. Store internally as mg/dL (Nightscout standard). |
+| **P1** | Nightscout download (follower mode) | Pull readings from a Nightscout server. Enables parents/partners to follow. |
+| **P2** | Tidepool upload | Optional cloud sync for users who use Tidepool for clinic reports. |
+
+#### 3.3 Device Compatibility
+
+| Priority | Feature | Scope |
+|----------|---------|-------|
+| **P0** | Lower minSdk to 26 (Android 8) | Broadens device support from 1 device to ~95% of active Android. Requires testing foreground service behavior on older APIs. |
+| **P0** | Multi-device testing | Test on at least: Pixel, Samsung, OnePlus. Different OEMs handle background services differently. |
+| **P1** | Wear OS complications | Glucose data on watch faces via complications. Use existing GDH approach as reference. |
+| **P2** | Wear OS standalone app | Full watch app with graph. Lower priority — complications cover 80% of the use case. |
+
+#### 3.4 Community Infrastructure
+
+| Priority | Feature | Scope |
+|----------|---------|-------|
+| **P0** | Open source license (GPL v3) | Match xDrip's license for community trust and code sharing. |
+| **P0** | README + setup guide | First-run guide: pick sensor, grant permissions, configure Nightscout. |
+| **P0** | GitHub releases with signed APKs | Automated builds via GitHub Actions, signed APK attached to each release. |
+| **P1** | Localization (English, Swedish baseline) | Extract all strings, set up `values-xx/strings.xml` structure. Community can contribute translations. |
+| **P1** | F-Droid listing | The de facto Android open-source app store. Builds from source. |
+| **P2** | Contribution guide | Architecture overview, how to add a data source plugin, how to run tests. |
+
+### Phase 4: Full xDrip Parity
+
+These close the remaining gaps for power users.
 
 | Feature | Notes |
 |---------|-------|
-| **Notification style options** | Configurable collapsed/expanded layout, font sizes, graph time window. |
-| **Graph appearance settings** | Dot size, line thickness, color palette. |
-| **Data retention config** | Currently hardcoded 30 days. |
+| **Calibration** | Manual calibration for sensors that need it (Libre 1/2 without factory calibration). Not needed for G7 or Libre 3. |
+| **Treatment logging** | Insulin doses, carbs, notes. xDrip has this but it's rarely used — most users track treatments in AAPS, mylife, or pen apps. |
+| **Prediction models** | AR2 model like Nightscout, or IOB-aware prediction for AAPS users. Current linear prediction is a good start. |
+| **Multiple watch platforms** | Garmin, Fitbit, Pebble. Wear OS first, others via companion data apps. |
+| **Android Auto** | BG display while driving. GDH has this. |
+| **Home screen floating widget** | Always-visible BG overlay. Juggluco has this. |
 
-### Phase 4: Expansion (if ever needed)
+### Out of scope for Strimma
 
-| Feature | Notes |
-|---------|-------|
-| **Direct BLE CGM** | If CamAPS is no longer used. Massive scope. |
-| **Watch app** | Native Wear OS with complications. Currently watches use Springa. |
-| **Multi-user** | Not applicable for a personal app. |
-| **Play Store** | Medical device compliance. Sideload is fine. |
+These xDrip+ features are not planned. Users who need them should continue using xDrip+.
+
+- **Pump integration** (630G/640G/670G) — AAPS handles closed-loop control
+- **Tizen/Pebble watch support** — low demand, Wear OS is the focus
+- **Speech recognition** — niche use case
+- **QR code settings export** — JSON export is the modern equivalent
+- **Tasker integration** — possible later via broadcast intents if there's demand
+- **InfoContentProvider** — broadcast intents provide the same data with better security
+
+### Effort Estimate
+
+| Phase | Scope | Effort |
+|-------|-------|--------|
+| Phase 3.1-3.2 (data abstraction + Nightscout + broadcast) | Core platform | Large — 2-4 weeks focused work |
+| Phase 3.3 (device compat + Wear OS) | Device breadth | Medium — 1-2 weeks |
+| Phase 3.4 (community infra) | Non-code | Small — 1 week |
+| Phase 4 (full parity) | Long tail | Ongoing — community-driven |
+
+The critical path is Phase 3.1-3.2. Once the plugin interface exists and Nightscout works, adding new sensor support becomes a self-contained contribution.
+
+### What Strimma brings to the table
+
+| Strength | Detail |
+|----------|--------|
+| **Architecture** | Plugin-based data sources. Adding a sensor is one class with its own tests. |
+| **Modern stack** | Compose + Material 3, Room, Hilt, Coroutines, targetSdk 36. Familiar to any Android developer who learned after 2022. |
+| **Testability** | 66 tests already. Every new data source plugin gets its own test suite. |
+| **Approachable codebase** | 32 files, 3,500 lines. A new contributor can understand the entire app in an afternoon. |
+| **UX** | Minimap navigation, scrub-to-inspect, prediction, Dark/Light/System theme, widget with graph. |
+| **Complementary to xDrip+** | Different architectural approach — not competing, offering choice. Users who prefer xDrip+ should keep using it. |
 
 ---
 
-## 7. Non-Goals (Confirmed)
+## 7. Phase 1 Scope vs Open Source Goals
 
-- **BLE CGM collection** — Libre 3 bonds exclusively to CamAPS FX
-- **Calibration** — Not applicable for factory-calibrated Libre 3
-- **Treatment tracking** — Insulin/carb management done elsewhere
-- **Watch sync** — SugarWave/SugarRun talk to Springa directly
-- **Multi-user** — Single user app
-- **Cloud sync** — No Nightscout/Tidepool/MongoDB. Only Springa.
-- **Multi-device** — Pixel 9 Pro only
-- **Play Store** — APK sideload only
-- **AAPS integration** — CamAPS FX handles closed-loop control
-- **LibreView upload** — Abbott's system, not relevant to this pipeline
-- **NFC scanning** — Libre 3 is BLE-only, no NFC readings
-- **Android Auto** — Not a priority (revisit if needed)
+These were out of scope for phase 1. The open-source roadmap adds them as goals:
+
+| Feature | Phase 1 | Open Source |
+|---------|-------------|-------------|
+| BLE CGM collection | CamAPS notification only | Phase 3 (Dexcom G7, Libre 2/2+) |
+| Calibration | Not needed for Libre 3 | Phase 4 (sensors that need it) |
+| Treatment tracking | Out of scope | Phase 4 (low priority) |
+| Watch sync | Via Springa | Phase 3 (Wear OS complications) |
+| Follower mode | Out of scope | Phase 3 (Nightscout download) |
+| Cloud sync | Springa only | Phase 3 (Nightscout upload) |
+| Multi-device | Android 16 only | Phase 3 (minSdk 26, multi-OEM) |
+| Distribution | Manual APK | Phase 3 (GitHub releases, F-Droid) |
+| AAPS integration | Out of scope | Phase 3 (BG broadcast) |
+| LibreView upload | Out of scope | Out of scope (Abbott's walled garden) |
+| Android Auto | Out of scope | Phase 4 |
