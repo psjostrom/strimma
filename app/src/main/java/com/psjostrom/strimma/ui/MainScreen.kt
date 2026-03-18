@@ -88,13 +88,12 @@ fun MainScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Graph surfaces always dark for readability
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
                 shape = RoundedCornerShape(16.dp),
-                color = DarkSurfaceCard
+                color = MaterialTheme.colorScheme.surfaceVariant
             ) {
                 GlucoseGraph(
                     readings = readings,
@@ -116,7 +115,7 @@ fun MainScreen(
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(12.dp),
-                color = DarkSurfaceCard
+                color = MaterialTheme.colorScheme.surfaceVariant
             ) {
                 Minimap(
                     readings = readings,
@@ -229,6 +228,13 @@ fun GlucoseGraph(
     modifier: Modifier = Modifier
 ) {
     var selectedReading by remember { mutableStateOf<GlucoseReading?>(null) }
+    // Capture theme colors for use inside Canvas
+    val axisColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val tooltipBg = MaterialTheme.colorScheme.surfaceVariant
+    val tooltipText = MaterialTheme.colorScheme.onSurface
+    val tooltipSubtext = MaterialTheme.colorScheme.onSurfaceVariant
+    val crosshairColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+    val predictionColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
 
     val visibleMs = (windowMs / zoomScale).toLong()
     val visibleStart = viewportEnd - visibleMs
@@ -352,7 +358,7 @@ fun GlucoseGraph(
             val delta = last.deltaMmol
             if (delta != null) {
                 val ratePerMin = delta / 5.0
-                val predColor = Color.White.copy(alpha = 0.5f)
+                val predColor = predictionColor
                 val predDash = PathEffect.dashPathEffect(floatArrayOf(6f, 6f))
                 var prevPx = xFor(last.ts)
                 var prevPy = yFor(last.mmol)
@@ -382,7 +388,7 @@ fun GlucoseGraph(
             val pointY = yFor(sel.mmol)
 
             drawLine(
-                color = Color.White.copy(alpha = 0.4f),
+                color = crosshairColor,
                 start = Offset(pointX, marginTop),
                 end = Offset(pointX, size.height - marginBottom),
                 strokeWidth = 1.5f
@@ -398,12 +404,12 @@ fun GlucoseGraph(
             val line2 = if (deltaStr != null) "$timeStr  $deltaStr" else timeStr
 
             val tooltipPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-                this.color = 0xFFFFFFFF.toInt()
+                this.color = tooltipText.hashCode() or 0xFF000000.toInt()
                 textSize = 44f
                 typeface = android.graphics.Typeface.DEFAULT_BOLD
             }
             val subtextPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-                this.color = 0xFF8892A0.toInt()
+                this.color = tooltipSubtext.hashCode() or 0xFF000000.toInt()
                 textSize = 36f
             }
 
@@ -420,13 +426,13 @@ fun GlucoseGraph(
             if (ty < marginTop) ty = pointY + 24f
 
             drawRoundRect(
-                color = Color(0xE6151A23),
+                color = tooltipBg.copy(alpha = 0.95f),
                 topLeft = Offset(tx, ty),
                 size = Size(tooltipW, tooltipH),
                 cornerRadius = CornerRadius(cornerR)
             )
             drawRoundRect(
-                color = Color(0x30FFFFFF),
+                color = crosshairColor,
                 topLeft = Offset(tx, ty),
                 size = Size(tooltipW, tooltipH),
                 cornerRadius = CornerRadius(cornerR),
@@ -447,7 +453,7 @@ fun GlucoseGraph(
 
         // Axis labels
         val textPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-            this.color = 0xFF8892A0.toInt()
+            this.color = axisColor.hashCode() or 0xFF000000.toInt()
             textSize = 38f
             textAlign = android.graphics.Paint.Align.CENTER
         }
@@ -493,6 +499,9 @@ fun Minimap(
     onViewportChange: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val dimColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
+    val vpBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+    val miniAxisColor = MaterialTheme.colorScheme.onSurfaceVariant
     val now = System.currentTimeMillis()
     val minimapStart = now - MINIMAP_WINDOW_MS
     val sorted = remember(readings, minimapStart) {
@@ -552,12 +561,12 @@ fun Minimap(
         val vpX2 = xFor(viewportEnd).coerceIn(0f, w)
 
         // Dim areas outside viewport
-        drawRect(color = Color(0x60000000), topLeft = Offset.Zero, size = Size(vpX1, h))
-        drawRect(color = Color(0x60000000), topLeft = Offset(vpX2, 0f), size = Size(w - vpX2, h))
+        drawRect(color = dimColor, topLeft = Offset.Zero, size = Size(vpX1, h))
+        drawRect(color = dimColor, topLeft = Offset(vpX2, 0f), size = Size(w - vpX2, h))
 
         // Viewport border
         drawRect(
-            color = Color.White.copy(alpha = 0.6f),
+            color = vpBorderColor,
             topLeft = Offset(vpX1, 0f),
             size = Size(vpX2 - vpX1, h),
             style = Stroke(width = 2f)
@@ -565,7 +574,7 @@ fun Minimap(
 
         // Time labels
         val textPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-            this.color = 0xFF8892A0.toInt()
+            this.color = miniAxisColor.hashCode() or 0xFF000000.toInt()
             textSize = 28f
             textAlign = android.graphics.Paint.Align.CENTER
         }
