@@ -3,8 +3,10 @@
     android:description="@string/app_name"
     android:minWidth="110dp"
     android:minHeight="40dp"
-    android:targetCellWidth="2"
-    android:targetCellHeight="1"
+    android:targetCellWidth="3"
+    android:targetCellHeight="2"
     android:resizeMode="horizontal|vertical"
     android:updatePeriodMillis="300000"
-    android:widgetCategory="home_screen" />
+    android:widgetCategory="home_screen"
+    android:configure="com.psjostrom.strimma.widget.WidgetConfigActivity"
+    android:widgetFeatures="reconfigurable|configuration_optional" />

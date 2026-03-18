@@ -27,6 +27,11 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".widget.WidgetConfigActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Strimma" />
+
         <service
             android:name=".service.StrimmaService"
             android:foregroundServiceType="specialUse"
