@@ -96,8 +96,16 @@ class MainActivity : ComponentActivity() {
                             onGraphWindowChange = viewModel::setGraphWindowHours,
                             onBgLowChange = viewModel::setBgLow,
                             onBgHighChange = viewModel::setBgHigh,
-                            onBack = { navController.popBackStack() }
+                            onBack = { navController.popBackStack() },
+                            onDebugLog = {
+                                navController.navigate("debug") {
+                                    launchSingleTop = true
+                                }
+                            }
                         )
+                    }
+                    composable("debug") {
+                        DebugScreen(onBack = { navController.popBackStack() })
                     }
                 }
             }

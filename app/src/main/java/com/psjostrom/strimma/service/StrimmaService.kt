@@ -48,7 +48,14 @@ class StrimmaService : Service() {
         pusher.pushPending()
         scope.launch { updateNotification() }
 
-        pruneJob = scope.launch {
+        // Periodic retry for failed pushes + daily prune
+        scope.launch {
+            while (isActive) {
+                delay(5 * 60 * 1000L) // every 5 minutes
+                pusher.pushPending()
+            }
+        }
+        scope.launch {
             while (isActive) {
                 val thirtyDaysAgo = System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000
                 dao.pruneBefore(thirtyDaysAgo)
@@ -80,9 +87,10 @@ class StrimmaService : Service() {
         val sgv = (mmol * 18.0182).toInt()
         val roundedMmol = Math.round(mmol * 10.0) / 10.0
 
-        // Deduplicate
+        // Deduplicate: CamAPS fires onNotificationPosted multiple times per
+        // reading (~5-18ms apart). Libre 3 reads every ~60s, so 3s window is safe.
         val existing = dao.lastN(1)
-        if (existing.isNotEmpty() && existing[0].ts == timestamp) return
+        if (existing.isNotEmpty() && (timestamp - existing[0].ts) < 3_000) return
 
         // Direction computation
         val recentReadings = dao.since(timestamp - 15 * 60 * 1000)

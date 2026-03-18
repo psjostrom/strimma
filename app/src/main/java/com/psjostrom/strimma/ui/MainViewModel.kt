@@ -35,14 +35,11 @@ class MainViewModel @Inject constructor(
 
     val apiSecret: String get() = settings.getApiSecret()
 
-    val readings: StateFlow<List<GlucoseReading>> = combine(
-        graphWindowHours,
-        dao.latest() // Re-trigger when new reading arrives
-    ) { hours, _ ->
-        val since = System.currentTimeMillis() - hours * 3600_000L
-        dao.since(since)
-    }.flatMapLatest { flowOf(it) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val readings: StateFlow<List<GlucoseReading>> = dao.latest()
+        .map { _ ->
+            val since = System.currentTimeMillis() - 24 * 3600_000L
+            dao.since(since)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun setSpringaUrl(url: String) = viewModelScope.launch { settings.setSpringaUrl(url) }
     fun setApiSecret(secret: String) = settings.setApiSecret(secret)

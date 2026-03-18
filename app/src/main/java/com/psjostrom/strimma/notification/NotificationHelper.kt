@@ -70,11 +70,15 @@ class NotificationHelper @Inject constructor(
             // Small icon: BG number
             builder.setSmallIcon(createBgIcon(bgText))
 
-            // Collapsed view (text only — graph in expanded)
+            // Collapsed view with compact mini graph
             val collapsed = RemoteViews(context.packageName, R.layout.notification_collapsed)
             collapsed.setTextViewText(R.id.tv_bg, bgText)
             collapsed.setTextViewText(R.id.tv_arrow, direction.arrow)
             collapsed.setTextViewText(R.id.tv_delta, deltaText)
+            val miniGraph = GraphRenderer.render(
+                recentReadings, 900, 180, bgLow, bgHigh, GRAPH_WINDOW_MS, compact = true
+            )
+            collapsed.setImageViewBitmap(R.id.iv_graph, miniGraph)
             builder.setCustomContentView(collapsed)
 
             // Expanded view
@@ -114,8 +118,11 @@ class NotificationHelper @Inject constructor(
             color = Color.WHITE
             textAlign = Paint.Align.CENTER
             typeface = Typeface.DEFAULT_BOLD
-            // Auto-size text to fit
-            textSize = if (text.length <= 3) 36f else 28f
+            textSize = 96f
+        }
+        // Auto-size: shrink until text fits the bitmap width
+        while (paint.measureText(text) > size) {
+            paint.textSize -= 2f
         }
         val x = size / 2f
         val y = size / 2f - (paint.descent() + paint.ascent()) / 2f

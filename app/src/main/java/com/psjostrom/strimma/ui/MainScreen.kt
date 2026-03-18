@@ -1,18 +1,24 @@
 package com.psjostrom.strimma.ui
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
@@ -20,9 +26,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.psjostrom.strimma.data.Direction
 import com.psjostrom.strimma.data.GlucoseReading
-import com.psjostrom.strimma.receiver.DebugLog
 import com.psjostrom.strimma.ui.theme.*
 import kotlinx.coroutines.delay
+
+private const val MINIMAP_WINDOW_MS = 24L * 3600_000L
+private const val CRITICAL_LOW = 3.0
+private const val CRITICAL_HIGH = 13.0
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,18 +43,33 @@ fun MainScreen(
     graphWindowHours: Int,
     onSettingsClick: () -> Unit
 ) {
+    val mainWindowMs = graphWindowHours * 3600_000L
+
+    var viewportEnd by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    var zoomScale by remember { mutableFloatStateOf(1f) }
+
+    LaunchedEffect(readings) {
+        val now = System.currentTimeMillis()
+        if (now - viewportEnd < 2 * 60 * 1000) {
+            viewportEnd = now
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Strimma") },
+                title = { },
                 actions = {
                     IconButton(onClick = onSettingsClick) {
-                        Icon(Icons.Default.Settings, contentDescription = "Settings")
+                        Icon(
+                            Icons.Default.Settings,
+                            contentDescription = "Settings",
+                            tint = TextTertiary
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = BgDark,
-                    titleContentColor = TextPrimary
+                    containerColor = BgDark
                 )
             )
         },
@@ -57,42 +81,52 @@ fun MainScreen(
                 .padding(padding)
                 .padding(horizontal = 16.dp)
         ) {
-            // Header: time since, BG, arrow, delta
             BgHeader(latestReading, bgLow, bgHigh)
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // Interactive glucose graph
-            GlucoseGraph(
-                readings = readings,
-                bgLow = bgLow.toDouble(),
-                bgHigh = bgHigh.toDouble(),
-                windowMs = graphWindowHours * 3600_000L,
+            Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f)
-            )
-
-            // Debug log (remove in production)
-            val debugEntries by DebugLog.entries.collectAsState()
-            if (debugEntries.isNotEmpty()) {
-                HorizontalDivider(color = TextSecondary.copy(alpha = 0.3f))
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(120.dp)
-                        .padding(top = 4.dp)
-                ) {
-                    debugEntries.takeLast(8).forEach { entry ->
-                        Text(
-                            text = entry,
-                            color = TextSecondary,
-                            fontSize = 10.sp,
-                            maxLines = 1
-                        )
-                    }
-                }
+                    .weight(1f),
+                shape = RoundedCornerShape(16.dp),
+                color = SurfaceCard
+            ) {
+                GlucoseGraph(
+                    readings = readings,
+                    bgLow = bgLow.toDouble(),
+                    bgHigh = bgHigh.toDouble(),
+                    windowMs = mainWindowMs,
+                    viewportEnd = viewportEnd,
+                    zoomScale = zoomScale,
+                    onViewportChange = { viewportEnd = it },
+                    onZoomChange = { zoomScale = it },
+                    modifier = Modifier.fillMaxSize()
+                )
             }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = SurfaceCard
+            ) {
+                Minimap(
+                    readings = readings,
+                    bgLow = bgLow.toDouble(),
+                    bgHigh = bgHigh.toDouble(),
+                    mainWindowMs = mainWindowMs,
+                    viewportEnd = viewportEnd,
+                    zoomScale = zoomScale,
+                    onViewportChange = { viewportEnd = it },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
         }
     }
 }
@@ -122,46 +156,61 @@ private fun BgHeader(reading: GlucoseReading?, bgLow: Float, bgHigh: Float) {
         else -> InRange
     }
 
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.Bottom
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                Brush.radialGradient(
+                    colors = listOf(bgColor.copy(alpha = 0.10f), Color.Transparent),
+                    radius = 400f
+                )
+            )
+            .padding(vertical = 8.dp),
+        contentAlignment = Alignment.Center
     ) {
-        Column {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = reading?.let { "%.1f".format(it.mmol) } ?: "--",
+                    color = bgColor,
+                    fontSize = 64.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = " ${direction.arrow}",
+                    color = bgColor,
+                    fontSize = 40.sp
+                )
+            }
+
+            if (reading?.deltaMmol != null) {
+                val sign = if (reading.deltaMmol >= 0) "+" else ""
+                Text(
+                    text = "$sign%.1f mmol/l".format(reading.deltaMmol),
+                    color = TextSecondary,
+                    fontSize = 15.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(2.dp))
+
             Text(
                 text = when {
                     minutesAgo < 0 -> "No data"
                     minutesAgo == 0 -> "Just now"
                     else -> "$minutesAgo min ago"
                 },
-                color = if (isStale) BelowLow else TextSecondary,
-                fontSize = 14.sp
-            )
-            if (reading?.deltaMmol != null) {
-                val sign = if (reading.deltaMmol >= 0) "+" else ""
-                Text(
-                    text = "$sign%.1f mmol/l".format(reading.deltaMmol),
-                    color = TextSecondary,
-                    fontSize = 14.sp
-                )
-            }
-        }
-
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = reading?.let { "%.1f".format(it.mmol) } ?: "--",
-                color = bgColor,
-                fontSize = 48.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = " ${direction.arrow}",
-                color = bgColor,
-                fontSize = 36.sp
+                color = if (isStale) BelowLow else TextTertiary,
+                fontSize = 13.sp
             )
         }
     }
 }
+
+// --- Main graph ---
 
 @Composable
 fun GlucoseGraph(
@@ -169,66 +218,101 @@ fun GlucoseGraph(
     bgLow: Double,
     bgHigh: Double,
     windowMs: Long,
+    viewportEnd: Long,
+    zoomScale: Float,
+    onViewportChange: (Long) -> Unit,
+    onZoomChange: (Float) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val criticalLow = 3.0
-    val criticalHigh = 13.0
+    var selectedReading by remember { mutableStateOf<GlucoseReading?>(null) }
 
-    var scale by remember { mutableFloatStateOf(1f) }
-    var offsetX by remember { mutableFloatStateOf(0f) }
-    var offsetY by remember { mutableFloatStateOf(0f) }
+    val visibleMs = (windowMs / zoomScale).toLong()
+    val visibleStart = viewportEnd - visibleMs
+    val sorted = remember(readings, visibleStart, viewportEnd) {
+        readings.filter { it.ts in visibleStart..viewportEnd }.sortedBy { it.ts }
+    }
 
     Canvas(
         modifier = modifier
             .pointerInput(Unit) {
-                detectTransformGestures { centroid, pan, zoom, _ ->
-                    val newScale = (scale * zoom).coerceIn(1f, 5f)
-                    if (newScale != scale) {
-                        // Zoom relative to gesture centroid
-                        offsetX = centroid.x - (centroid.x - offsetX) * (newScale / scale)
-                        offsetY = centroid.y - (centroid.y - offsetY) * (newScale / scale)
-                        scale = newScale
-                    }
-                    offsetX += pan.x
-                    offsetY += pan.y
+                detectTransformGestures { _, pan, zoom, _ ->
+                    val newZoom = (zoomScale * zoom).coerceIn(1f, 5f)
+                    onZoomChange(newZoom)
 
-                    // Clamp to data bounds
-                    val plotW = size.width * scale
-                    val plotH = size.height * scale
-                    offsetX = offsetX.coerceIn(size.width - plotW, 0f)
-                    offsetY = offsetY.coerceIn(size.height - plotH, 0f)
+                    val marginLeft = 50f
+                    val marginRight = 16f
+                    val plotWidth = size.width - marginLeft - marginRight
+                    val currentVisibleMs = windowMs / newZoom
+                    val msPerPx = currentVisibleMs / plotWidth
+                    val timeShift = (-pan.x * msPerPx).toLong()
+                    val now = System.currentTimeMillis()
+                    val newEnd = (viewportEnd + timeShift).coerceIn(
+                        readings.minOfOrNull { it.ts }?.plus(currentVisibleMs.toLong()) ?: now,
+                        now
+                    )
+                    onViewportChange(newEnd)
+                }
+            }
+            .pointerInput(sorted, visibleStart, viewportEnd) {
+                awaitPointerEventScope {
+                    while (true) {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        selectedReading = findNearestByX(
+                            down.position.x, sorted, visibleStart, visibleMs,
+                            size.width.toFloat()
+                        )
+
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            val pos = event.changes.firstOrNull()?.position ?: break
+                            val pressed = event.changes.any { it.pressed }
+                            if (!pressed) {
+                                selectedReading = null
+                                break
+                            }
+                            selectedReading = findNearestByX(
+                                pos.x, sorted, visibleStart, visibleMs,
+                                size.width.toFloat()
+                            )
+                            event.changes.forEach { it.consume() }
+                        }
+                    }
                 }
             }
     ) {
-        val now = System.currentTimeMillis()
-        val startTime = now - windowMs
-
         val marginLeft = 50f
         val marginRight = 16f
         val marginTop = 16f
         val marginBottom = 40f
-        val baseWidth = size.width - marginLeft - marginRight
-        val baseHeight = size.height - marginTop - marginBottom
+        val plotWidth = size.width - marginLeft - marginRight
+        val plotHeight = size.height - marginTop - marginBottom
 
-        val allMmol = readings.filter { it.ts >= startTime }.map { it.mmol }
-        val yMin = minOf(bgLow - 0.5, criticalLow - 0.3,
+        val allMmol = sorted.map { it.mmol }
+        val yMin = minOf(bgLow - 0.5, CRITICAL_LOW - 0.3,
             if (allMmol.isEmpty()) bgLow - 0.5 else allMmol.min() - 0.3)
-        val yMax = maxOf(bgHigh + 0.5, criticalHigh + 0.3,
+        val yMax = maxOf(bgHigh + 0.5, CRITICAL_HIGH + 0.3,
             if (allMmol.isEmpty()) bgHigh + 0.5 else allMmol.max() + 0.3)
         val yRange = yMax - yMin
 
         fun xFor(ts: Long): Float =
-            marginLeft + ((ts - startTime).toFloat() / windowMs) * baseWidth * scale + offsetX
+            marginLeft + ((ts - visibleStart).toFloat() / visibleMs) * plotWidth
         fun yFor(mmol: Double): Float =
-            marginTop + ((yMax - mmol) / yRange).toFloat() * baseHeight * scale + offsetY
+            marginTop + ((yMax - mmol) / yRange).toFloat() * plotHeight
+
+        // In-range zone band
+        drawRect(
+            color = InRangeZone,
+            topLeft = Offset(marginLeft, yFor(bgHigh)),
+            size = Size(plotWidth, yFor(bgLow) - yFor(bgHigh))
+        )
 
         // Threshold lines
         val dashEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 6f))
         val thresholds = listOf(
-            criticalLow to BelowLow.copy(alpha = 0.5f),
-            bgLow to Color(0xAAFFB74D),
-            bgHigh to Color(0xAAFFB74D),
-            criticalHigh to BelowLow.copy(alpha = 0.5f),
+            CRITICAL_LOW to BelowLow.copy(alpha = 0.5f),
+            bgLow to Color(0xAAFFBE76),
+            bgHigh to Color(0xAAFFBE76),
+            CRITICAL_HIGH to BelowLow.copy(alpha = 0.5f),
         )
         for ((level, color) in thresholds) {
             val y = yFor(level)
@@ -242,18 +326,11 @@ fun GlucoseGraph(
         }
 
         // Readings
-        val sorted = readings.filter { it.ts >= startTime }.sortedBy { it.ts }
         for (i in sorted.indices) {
             val r = sorted[i]
             val x = xFor(r.ts)
             val y = yFor(r.mmol)
-            val color = when {
-                r.mmol <= criticalLow -> BelowLow
-                r.mmol < bgLow -> BelowLow
-                r.mmol >= criticalHigh -> BelowLow
-                r.mmol > bgHigh -> AboveHigh
-                else -> InRange
-            }
+            val color = dotColor(r.mmol, bgLow, bgHigh)
 
             if (i < sorted.lastIndex) {
                 val next = sorted[i + 1]
@@ -264,21 +341,91 @@ fun GlucoseGraph(
                     strokeWidth = 2f
                 )
             }
-            drawCircle(color = color, radius = 5f, center = Offset(x, y))
+
+            val isSelected = selectedReading?.ts == r.ts
+            drawCircle(color = color, radius = if (isSelected) 9f else 5f, center = Offset(x, y))
+        }
+
+        // Scrub crosshair + tooltip
+        selectedReading?.let { sel ->
+            val pointX = xFor(sel.ts)
+            val pointY = yFor(sel.mmol)
+
+            drawLine(
+                color = Color.White.copy(alpha = 0.4f),
+                start = Offset(pointX, marginTop),
+                end = Offset(pointX, size.height - marginBottom),
+                strokeWidth = 1.5f
+            )
+
+            val sdf = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+            val timeStr = sdf.format(java.util.Date(sel.ts))
+            val valueStr = "%.1f".format(sel.mmol)
+            val direction = try { Direction.valueOf(sel.direction) } catch (_: Exception) { Direction.NONE }
+            val deltaStr = sel.deltaMmol?.let { "%.1f".format(it) }
+
+            val line1 = "$valueStr ${direction.arrow}"
+            val line2 = if (deltaStr != null) "$timeStr  $deltaStr" else timeStr
+
+            val tooltipPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+                this.color = 0xFFFFFFFF.toInt()
+                textSize = 44f
+                typeface = android.graphics.Typeface.DEFAULT_BOLD
+            }
+            val subtextPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+                this.color = 0xFF8892A0.toInt()
+                textSize = 36f
+            }
+
+            val textWidth = maxOf(tooltipPaint.measureText(line1), subtextPaint.measureText(line2))
+            val padH = 28f
+            val padV = 20f
+            val spacing = 8f
+            val tooltipW = textWidth + padH * 2
+            val tooltipH = tooltipPaint.fontSpacing + subtextPaint.fontSpacing + spacing + padV * 2
+            val cornerR = 20f
+
+            val tx = (pointX - tooltipW / 2).coerceIn(marginLeft, size.width - marginRight - tooltipW)
+            var ty = pointY - tooltipH - 24f
+            if (ty < marginTop) ty = pointY + 24f
+
+            drawRoundRect(
+                color = Color(0xE6151A23),
+                topLeft = Offset(tx, ty),
+                size = Size(tooltipW, tooltipH),
+                cornerRadius = CornerRadius(cornerR)
+            )
+            drawRoundRect(
+                color = Color(0x30FFFFFF),
+                topLeft = Offset(tx, ty),
+                size = Size(tooltipW, tooltipH),
+                cornerRadius = CornerRadius(cornerR),
+                style = Stroke(width = 1f)
+            )
+
+            drawContext.canvas.nativeCanvas.drawText(
+                line1, tx + padH,
+                ty + padV + tooltipPaint.fontSpacing - tooltipPaint.descent(),
+                tooltipPaint
+            )
+            drawContext.canvas.nativeCanvas.drawText(
+                line2, tx + padH,
+                ty + padV + tooltipPaint.fontSpacing + spacing + subtextPaint.fontSpacing - subtextPaint.descent(),
+                subtextPaint
+            )
         }
 
         // Axis labels
         val textPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-            this.color = 0xFFB0B0B0.toInt()
-            textSize = 32f
+            this.color = 0xFF8892A0.toInt()
+            textSize = 38f
             textAlign = android.graphics.Paint.Align.CENTER
         }
 
-        // X axis
-        val intervalMs = if (windowMs <= 3600_000L) 15 * 60_000L else 30 * 60_000L
-        var tickTime = startTime - (startTime % intervalMs) + intervalMs
+        val intervalMs = if (visibleMs <= 3600_000L) 15 * 60_000L else 30 * 60_000L
+        var tickTime = visibleStart - (visibleStart % intervalMs) + intervalMs
         val sdf = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
-        while (tickTime < now) {
+        while (tickTime < viewportEnd) {
             val x = xFor(tickTime)
             if (x > marginLeft && x < size.width - marginRight) {
                 drawContext.canvas.nativeCanvas.drawText(
@@ -288,7 +435,6 @@ fun GlucoseGraph(
             tickTime += intervalMs
         }
 
-        // Y axis
         textPaint.textAlign = android.graphics.Paint.Align.RIGHT
         val yStep = if (yRange > 10) 2.0 else 1.0
         var yLabel = Math.ceil(yMin / yStep) * yStep
@@ -302,4 +448,149 @@ fun GlucoseGraph(
             yLabel += yStep
         }
     }
+}
+
+// --- Minimap ---
+
+@Composable
+fun Minimap(
+    readings: List<GlucoseReading>,
+    bgLow: Double,
+    bgHigh: Double,
+    mainWindowMs: Long,
+    viewportEnd: Long,
+    zoomScale: Float,
+    onViewportChange: (Long) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val now = System.currentTimeMillis()
+    val minimapStart = now - MINIMAP_WINDOW_MS
+    val sorted = remember(readings, minimapStart) {
+        readings.filter { it.ts >= minimapStart }.sortedBy { it.ts }
+    }
+
+    Canvas(
+        modifier = modifier
+            .pointerInput(minimapStart, mainWindowMs, zoomScale) {
+                awaitPointerEventScope {
+                    while (true) {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        val visibleMs = (mainWindowMs / zoomScale).toLong()
+                        val time = minimapStart + ((down.position.x / size.width) * MINIMAP_WINDOW_MS).toLong()
+                        val newEnd = (time + visibleMs / 2).coerceIn(minimapStart + visibleMs, now)
+                        onViewportChange(newEnd)
+
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            val pos = event.changes.firstOrNull()?.position ?: break
+                            val pressed = event.changes.any { it.pressed }
+                            if (!pressed) break
+                            val dragTime = minimapStart + ((pos.x.coerceIn(0f, size.width.toFloat()) / size.width) * MINIMAP_WINDOW_MS).toLong()
+                            val dragEnd = (dragTime + visibleMs / 2).coerceIn(minimapStart + visibleMs, now)
+                            onViewportChange(dragEnd)
+                            event.changes.forEach { it.consume() }
+                        }
+                    }
+                }
+            }
+    ) {
+        val w = size.width
+        val h = size.height
+
+        val allMmol = sorted.map { it.mmol }
+        val yMin = minOf(bgLow - 0.5, CRITICAL_LOW - 0.3,
+            if (allMmol.isEmpty()) bgLow - 0.5 else allMmol.min() - 0.3)
+        val yMax = maxOf(bgHigh + 0.5, CRITICAL_HIGH + 0.3,
+            if (allMmol.isEmpty()) bgHigh + 0.5 else allMmol.max() + 0.3)
+        val yRange = yMax - yMin
+
+        fun xFor(ts: Long): Float = ((ts - minimapStart).toFloat() / MINIMAP_WINDOW_MS) * w
+        fun yFor(mmol: Double): Float = ((yMax - mmol) / yRange).toFloat() * h
+
+        // Threshold lines (subtle)
+        val dashEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 4f))
+        drawLine(color = Color(0x40FFBE76), start = Offset(0f, yFor(bgLow)), end = Offset(w, yFor(bgLow)), pathEffect = dashEffect, strokeWidth = 1f)
+        drawLine(color = Color(0x40FFBE76), start = Offset(0f, yFor(bgHigh)), end = Offset(w, yFor(bgHigh)), pathEffect = dashEffect, strokeWidth = 1f)
+
+        // Data points
+        for (r in sorted) {
+            val x = xFor(r.ts)
+            val y = yFor(r.mmol)
+            drawCircle(color = dotColor(r.mmol, bgLow, bgHigh), radius = 2.5f, center = Offset(x, y))
+        }
+
+        // Viewport rectangle
+        val visibleMs = (mainWindowMs / zoomScale).toLong()
+        val vpStart = viewportEnd - visibleMs
+        val vpX1 = xFor(vpStart).coerceIn(0f, w)
+        val vpX2 = xFor(viewportEnd).coerceIn(0f, w)
+
+        // Dim areas outside viewport
+        drawRect(color = Color(0x60000000), topLeft = Offset.Zero, size = Size(vpX1, h))
+        drawRect(color = Color(0x60000000), topLeft = Offset(vpX2, 0f), size = Size(w - vpX2, h))
+
+        // Viewport border
+        drawRect(
+            color = Color.White.copy(alpha = 0.6f),
+            topLeft = Offset(vpX1, 0f),
+            size = Size(vpX2 - vpX1, h),
+            style = Stroke(width = 2f)
+        )
+
+        // Time labels
+        val textPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            this.color = 0xFF8892A0.toInt()
+            textSize = 28f
+            textAlign = android.graphics.Paint.Align.CENTER
+        }
+        val sdf = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+        val intervalMs = 3 * 3600_000L
+        var tickTime = minimapStart - (minimapStart % intervalMs) + intervalMs
+        while (tickTime < now) {
+            val x = xFor(tickTime)
+            if (x > 20f && x < w - 20f) {
+                drawContext.canvas.nativeCanvas.drawText(
+                    sdf.format(java.util.Date(tickTime)), x, h - 4f, textPaint
+                )
+            }
+            tickTime += intervalMs
+        }
+    }
+}
+
+// --- Helpers ---
+
+private fun dotColor(mmol: Double, bgLow: Double, bgHigh: Double): Color = when {
+    mmol <= CRITICAL_LOW -> BelowLow
+    mmol < bgLow -> BelowLow
+    mmol >= CRITICAL_HIGH -> BelowLow
+    mmol > bgHigh -> AboveHigh
+    else -> InRange
+}
+
+private fun findNearestByX(
+    fingerX: Float,
+    sorted: List<GlucoseReading>,
+    visibleStart: Long,
+    visibleMs: Long,
+    canvasWidth: Float
+): GlucoseReading? {
+    if (sorted.isEmpty()) return null
+    val marginLeft = 50f
+    val marginRight = 16f
+    val plotWidth = canvasWidth - marginLeft - marginRight
+
+    fun xFor(ts: Long): Float =
+        marginLeft + ((ts - visibleStart).toFloat() / visibleMs) * plotWidth
+
+    var closest: GlucoseReading? = null
+    var closestDist = Float.MAX_VALUE
+    for (r in sorted) {
+        val dist = kotlin.math.abs(xFor(r.ts) - fingerX)
+        if (dist < closestDist) {
+            closestDist = dist
+            closest = r
+        }
+    }
+    return closest
 }
