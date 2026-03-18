@@ -549,23 +549,6 @@ Non-sensitive settings (thresholds, graph window) stored in Jetpack `DataStore` 
 | **Push reliability**   | Check for gaps — Strimma should have zero gaps over 24+ hours                             |
 | **Graph quality**      | Visual comparison — Strimma's graph should look as good or better than xDrip's            |
 
-### Validation Endpoint
-
-Springa gets a comparison endpoint (phase 1):
-
-`GET /api/debug/compare-readings?hours=24`
-
-Returns:
-
-```json
-{
-  "xdrip": { "count": 1440, "gaps": 0, "direction_mismatches": 446 },
-  "strimma": { "count": 1440, "gaps": 0, "direction_mismatches": 2 },
-  "missing_in_strimma": [],
-  "missing_in_xdrip": []
-}
-```
-
 ### Transition Criteria
 
 Strimma is ready for standalone use (xDrip+ no longer needed for this setup) when:
@@ -613,10 +596,6 @@ Identical logic to the existing `POST /api/v1/entries` but writes to `strimma_re
 5. Return `{ ok: true, count: N }`
 
 Note: Springa still recomputes direction on its side as a safety net, even though Strimma now sends correct directions. Belt and suspenders — the two computations should agree. Any disagreement is a bug to investigate.
-
-### New Endpoint: GET /api/debug/compare-readings
-
-See §12. Compares `xdrip_readings` vs `strimma_readings` for the authenticated user over a configurable time window.
 
 ### Modified Endpoint: GET /api/sgv
 
