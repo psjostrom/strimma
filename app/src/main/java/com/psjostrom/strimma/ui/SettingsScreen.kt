@@ -27,6 +27,7 @@ fun SettingsScreen(
     graphWindowHours: Int,
     bgLow: Float,
     bgHigh: Float,
+    themeMode: String,
     alertLowEnabled: Boolean,
     alertHighEnabled: Boolean,
     alertUrgentLowEnabled: Boolean,
@@ -41,6 +42,7 @@ fun SettingsScreen(
     onGraphWindowChange: (Int) -> Unit,
     onBgLowChange: (Float) -> Unit,
     onBgHighChange: (Float) -> Unit,
+    onThemeModeChange: (String) -> Unit,
     onAlertLowEnabledChange: (Boolean) -> Unit,
     onAlertHighEnabledChange: (Boolean) -> Unit,
     onAlertUrgentLowEnabledChange: (Boolean) -> Unit,
@@ -54,6 +56,13 @@ fun SettingsScreen(
     onBack: () -> Unit,
     onDebugLog: () -> Unit = {}
 ) {
+    val bg = MaterialTheme.colorScheme.background
+    val onBg = MaterialTheme.colorScheme.onBackground
+    val onSurfaceVar = MaterialTheme.colorScheme.onSurfaceVariant
+    val outline = MaterialTheme.colorScheme.outline
+    val surfVar = MaterialTheme.colorScheme.surfaceVariant
+    val outlineVar = MaterialTheme.colorScheme.outlineVariant
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -64,12 +73,12 @@ fun SettingsScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = BgDark,
-                    titleContentColor = TextPrimary
+                    containerColor = bg,
+                    titleContentColor = onBg
                 )
             )
         },
-        containerColor = BgDark
+        containerColor = bg
     ) { padding ->
         Column(
             modifier = Modifier
@@ -81,7 +90,7 @@ fun SettingsScreen(
         ) {
             Spacer(modifier = Modifier.height(4.dp))
 
-            SettingsSection("Connection") {
+            SettingsSection("Connection", outline, surfVar) {
                 var urlText by remember(springaUrl) { mutableStateOf(springaUrl) }
                 OutlinedTextField(
                     value = urlText,
@@ -108,10 +117,10 @@ fun SettingsScreen(
                 )
             }
 
-            SettingsSection("Display") {
+            SettingsSection("Display", outline, surfVar) {
                 Text(
                     "Graph Window: $graphWindowHours hours",
-                    color = TextPrimary,
+                    color = onBg,
                     fontSize = 14.sp
                 )
                 Slider(
@@ -146,12 +155,25 @@ fun SettingsScreen(
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                 )
+
+                Text("Theme", color = onBg, fontSize = 14.sp)
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    listOf("Light", "Dark", "System").forEachIndexed { index, label ->
+                        SegmentedButton(
+                            selected = themeMode == label,
+                            onClick = { onThemeModeChange(label) },
+                            shape = SegmentedButtonDefaults.itemShape(index, 3)
+                        ) {
+                            Text(label)
+                        }
+                    }
+                }
             }
 
-            SettingsSection("Alerts") {
+            SettingsSection("Alerts", outline, surfVar) {
                 Text(
                     "Tap \"Sound\" to choose ringtone, vibration, and override settings per alarm.",
-                    color = TextTertiary,
+                    color = outline,
                     fontSize = 12.sp
                 )
 
@@ -163,10 +185,11 @@ fun SettingsScreen(
                     onThresholdChange = onAlertUrgentLowChange,
                     thresholdLabel = "Urgent Low (mmol/L)",
                     channelId = com.psjostrom.strimma.notification.AlertManager.CHANNEL_URGENT_LOW,
-                    onOpenSound = onOpenAlertSound
+                    onOpenSound = onOpenAlertSound,
+                    textColor = onBg
                 )
 
-                HorizontalDivider(color = SurfaceBorder)
+                HorizontalDivider(color = outlineVar)
 
                 AlertBlock(
                     label = "Low",
@@ -176,10 +199,11 @@ fun SettingsScreen(
                     onThresholdChange = onAlertLowChange,
                     thresholdLabel = "Low Alert (mmol/L)",
                     channelId = com.psjostrom.strimma.notification.AlertManager.CHANNEL_LOW,
-                    onOpenSound = onOpenAlertSound
+                    onOpenSound = onOpenAlertSound,
+                    textColor = onBg
                 )
 
-                HorizontalDivider(color = SurfaceBorder)
+                HorizontalDivider(color = outlineVar)
 
                 AlertBlock(
                     label = "High",
@@ -189,10 +213,11 @@ fun SettingsScreen(
                     onThresholdChange = onAlertHighChange,
                     thresholdLabel = "High Alert (mmol/L)",
                     channelId = com.psjostrom.strimma.notification.AlertManager.CHANNEL_HIGH,
-                    onOpenSound = onOpenAlertSound
+                    onOpenSound = onOpenAlertSound,
+                    textColor = onBg
                 )
 
-                HorizontalDivider(color = SurfaceBorder)
+                HorizontalDivider(color = outlineVar)
 
                 AlertBlock(
                     label = "Urgent High",
@@ -202,17 +227,18 @@ fun SettingsScreen(
                     onThresholdChange = onAlertUrgentHighChange,
                     thresholdLabel = "Urgent High (mmol/L)",
                     channelId = com.psjostrom.strimma.notification.AlertManager.CHANNEL_URGENT_HIGH,
-                    onOpenSound = onOpenAlertSound
+                    onOpenSound = onOpenAlertSound,
+                    textColor = onBg
                 )
 
-                HorizontalDivider(color = SurfaceBorder)
+                HorizontalDivider(color = outlineVar)
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Stale Data (10+ min)", color = TextPrimary, fontSize = 14.sp)
+                    Text("Stale Data (10+ min)", color = onBg, fontSize = 14.sp)
                     Switch(checked = alertStaleEnabled, onCheckedChange = onAlertStaleEnabledChange)
                 }
                 if (alertStaleEnabled) {
@@ -222,7 +248,7 @@ fun SettingsScreen(
                 }
             }
 
-            SettingsSection("Developer") {
+            SettingsSection("Developer", outline, surfVar) {
                 OutlinedButton(
                     onClick = onDebugLog,
                     modifier = Modifier.fillMaxWidth()
@@ -245,14 +271,15 @@ private fun AlertBlock(
     onThresholdChange: (Float) -> Unit,
     thresholdLabel: String,
     channelId: String,
-    onOpenSound: (String) -> Unit
+    onOpenSound: (String) -> Unit,
+    textColor: androidx.compose.ui.graphics.Color
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(label, color = TextPrimary, fontSize = 14.sp)
+        Text(label, color = textColor, fontSize = 14.sp)
         Switch(checked = enabled, onCheckedChange = onToggle)
     }
     if (enabled) {
@@ -277,12 +304,14 @@ private fun AlertBlock(
 @Composable
 private fun SettingsSection(
     title: String,
+    titleColor: androidx.compose.ui.graphics.Color,
+    cardColor: androidx.compose.ui.graphics.Color,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Column {
         Text(
             text = title.uppercase(),
-            color = TextTertiary,
+            color = titleColor,
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold,
             letterSpacing = 1.sp,
@@ -290,7 +319,7 @@ private fun SettingsSection(
         )
         Surface(
             shape = RoundedCornerShape(16.dp),
-            color = SurfaceCard
+            color = cardColor
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),

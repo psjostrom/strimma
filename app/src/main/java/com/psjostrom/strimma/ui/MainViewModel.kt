@@ -80,4 +80,8 @@ class MainViewModel @Inject constructor(
     fun setAlertUrgentHigh(value: Float) = viewModelScope.launch { settings.setAlertUrgentHigh(value) }
     fun setAlertStaleEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertStaleEnabled(enabled) }
     fun openAlertChannelSettings(channelId: String) = alertManager.openChannelSettings(channelId)
+
+    val themeMode: StateFlow<String> = settings.themeMode
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "System")
+    fun setThemeMode(mode: String) = viewModelScope.launch { settings.setThemeMode(mode) }
 }

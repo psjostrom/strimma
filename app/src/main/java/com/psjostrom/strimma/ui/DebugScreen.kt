@@ -15,9 +15,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import com.psjostrom.strimma.receiver.DebugLog
-import com.psjostrom.strimma.ui.theme.BgDark
-import com.psjostrom.strimma.ui.theme.TextPrimary
-import com.psjostrom.strimma.ui.theme.TextSecondary
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,12 +49,12 @@ fun DebugScreen(onBack: () -> Unit) {
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = BgDark,
-                    titleContentColor = TextPrimary
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
                 )
             )
         },
-        containerColor = BgDark
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
             modifier = Modifier
@@ -66,21 +63,18 @@ fun DebugScreen(onBack: () -> Unit) {
                 .padding(horizontal = 12.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            // Show live entries first (most recent session)
             val entries = if (liveEntries.isNotEmpty()) {
                 listOf("--- Live ---") + liveEntries.reversed()
             } else emptyList()
-
-            // Then file entries (older)
             val allEntries = entries + fileEntries
 
             if (allEntries.isEmpty()) {
-                Text("No log entries yet.", color = TextSecondary, fontSize = 14.sp)
+                Text("No log entries yet.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
             } else {
                 allEntries.forEach { entry ->
                     Text(
                         text = entry,
-                        color = TextSecondary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 13.sp,
                         modifier = Modifier.padding(vertical = 2.dp)
                     )

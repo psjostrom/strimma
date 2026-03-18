@@ -67,16 +67,16 @@ fun MainScreen(
                         Icon(
                             Icons.Default.Settings,
                             contentDescription = "Settings",
-                            tint = TextTertiary
+                            tint = MaterialTheme.colorScheme.outline
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = BgDark
+                    containerColor = MaterialTheme.colorScheme.background
                 )
             )
         },
-        containerColor = BgDark
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
             modifier = Modifier
@@ -88,12 +88,13 @@ fun MainScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
+            // Graph surfaces always dark for readability
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
                 shape = RoundedCornerShape(16.dp),
-                color = SurfaceCard
+                color = DarkSurfaceCard
             ) {
                 GlucoseGraph(
                     readings = readings,
@@ -115,7 +116,7 @@ fun MainScreen(
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(12.dp),
-                color = SurfaceCard
+                color = DarkSurfaceCard
             ) {
                 Minimap(
                     readings = readings,
@@ -193,7 +194,7 @@ private fun BgHeader(reading: GlucoseReading?, bgLow: Float, bgHigh: Float) {
                 val sign = if (reading.deltaMmol >= 0) "+" else ""
                 Text(
                     text = "$sign%.1f mmol/l".format(reading.deltaMmol),
-                    color = TextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 15.sp
                 )
             }
@@ -206,7 +207,7 @@ private fun BgHeader(reading: GlucoseReading?, bgLow: Float, bgHigh: Float) {
                     minutesAgo == 0 -> "Just now"
                     else -> "$minutesAgo min ago"
                 },
-                color = if (isStale) BelowLow else TextTertiary,
+                color = if (isStale) BelowLow else MaterialTheme.colorScheme.outline,
                 fontSize = 13.sp
             )
         }

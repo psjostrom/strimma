@@ -19,6 +19,7 @@ import androidx.navigation.compose.rememberNavController
 import com.psjostrom.strimma.receiver.GlucoseNotificationListener
 import com.psjostrom.strimma.service.StrimmaService
 import com.psjostrom.strimma.ui.theme.StrimmaTheme
+import com.psjostrom.strimma.ui.theme.ThemeMode
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -58,8 +59,11 @@ class MainActivity : ComponentActivity() {
         startForegroundService(Intent(this, StrimmaService::class.java))
 
         setContent {
-            StrimmaTheme {
-                val viewModel: MainViewModel = hiltViewModel()
+            val viewModel: MainViewModel = hiltViewModel()
+            val themeModeStr by viewModel.themeMode.collectAsState()
+            val themeMode = try { ThemeMode.valueOf(themeModeStr) } catch (_: Exception) { ThemeMode.System }
+
+            StrimmaTheme(themeMode = themeMode) {
                 val navController = rememberNavController()
 
                 val latestReading by viewModel.latestReading.collectAsState()
@@ -100,6 +104,7 @@ class MainActivity : ComponentActivity() {
                             graphWindowHours = graphWindowHours,
                             bgLow = bgLow,
                             bgHigh = bgHigh,
+                            themeMode = themeModeStr,
                             alertLowEnabled = alertLowEnabled,
                             alertHighEnabled = alertHighEnabled,
                             alertUrgentLowEnabled = alertUrgentLowEnabled,
@@ -114,6 +119,7 @@ class MainActivity : ComponentActivity() {
                             onGraphWindowChange = viewModel::setGraphWindowHours,
                             onBgLowChange = viewModel::setBgLow,
                             onBgHighChange = viewModel::setBgHigh,
+                            onThemeModeChange = viewModel::setThemeMode,
                             onAlertLowEnabledChange = viewModel::setAlertLowEnabled,
                             onAlertHighEnabledChange = viewModel::setAlertHighEnabled,
                             onAlertUrgentLowEnabledChange = viewModel::setAlertUrgentLowEnabled,

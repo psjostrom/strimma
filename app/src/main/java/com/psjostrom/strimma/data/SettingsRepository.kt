@@ -48,6 +48,7 @@ class SettingsRepository @Inject constructor(
         private val KEY_ALERT_URGENT_HIGH_ENABLED = booleanPreferencesKey("alert_urgent_high_enabled")
         private val KEY_ALERT_URGENT_HIGH = floatPreferencesKey("alert_urgent_high")
         private val KEY_ALERT_STALE_ENABLED = booleanPreferencesKey("alert_stale_enabled")
+        private val KEY_THEME_MODE = stringPreferencesKey("theme_mode")
     }
 
     val springaUrl: Flow<String> = dataStore.data.map { it[KEY_SPRINGA_URL] ?: "" }
@@ -94,4 +95,7 @@ class SettingsRepository @Inject constructor(
     suspend fun setAlertUrgentHighEnabled(enabled: Boolean) { dataStore.edit { it[KEY_ALERT_URGENT_HIGH_ENABLED] = enabled } }
     suspend fun setAlertUrgentHigh(value: Float) { dataStore.edit { it[KEY_ALERT_URGENT_HIGH] = value } }
     suspend fun setAlertStaleEnabled(enabled: Boolean) { dataStore.edit { it[KEY_ALERT_STALE_ENABLED] = enabled } }
+
+    val themeMode: Flow<String> = dataStore.data.map { it[KEY_THEME_MODE] ?: "System" }
+    suspend fun setThemeMode(mode: String) { dataStore.edit { it[KEY_THEME_MODE] = mode } }
 }
