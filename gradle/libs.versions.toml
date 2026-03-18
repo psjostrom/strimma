@@ -54,6 +54,9 @@ glance-material3 = { module = "androidx.glance:glance-material3", version.ref = 
 
 junit = { module = "junit:junit", version = "4.13.2" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+robolectric = { module = "org.robolectric:robolectric", version = "4.16" }
+androidx-test-core = { module = "androidx.test:core-ktx", version = "1.6.1" }
+room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
