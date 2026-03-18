@@ -102,6 +102,17 @@ class MainViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
     fun setBgBroadcastEnabled(enabled: Boolean) = viewModelScope.launch { settings.setBgBroadcastEnabled(enabled) }
 
+    val nightscoutEnabled: StateFlow<Boolean> = settings.nightscoutEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    fun setNightscoutEnabled(enabled: Boolean) = viewModelScope.launch { settings.setNightscoutEnabled(enabled) }
+
+    val nightscoutUrl: StateFlow<String> = settings.nightscoutUrl
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
+    fun setNightscoutUrl(url: String) = viewModelScope.launch { settings.setNightscoutUrl(url) }
+
+    val nightscoutSecret: String get() = settings.getNightscoutSecret()
+    fun setNightscoutSecret(secret: String) = settings.setNightscoutSecret(secret)
+
     suspend fun readingsForPeriod(hours: Int): List<com.psjostrom.strimma.data.GlucoseReading> {
         val since = System.currentTimeMillis() - hours * 3600_000L
         return dao.since(since)

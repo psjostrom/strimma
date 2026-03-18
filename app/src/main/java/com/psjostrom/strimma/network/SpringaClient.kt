@@ -42,7 +42,8 @@ class SpringaClient @Inject constructor() {
     suspend fun pushReadings(
         baseUrl: String,
         apiSecret: String,
-        readings: List<GlucoseReading>
+        readings: List<GlucoseReading>,
+        path: String = "/api/v1/entries"
     ): Boolean {
         if (baseUrl.isBlank() || apiSecret.isBlank() || readings.isEmpty()) return false
 
@@ -57,7 +58,7 @@ class SpringaClient @Inject constructor() {
         }
 
         return try {
-            val fullUrl = "${baseUrl.trimEnd('/')}/api/v1/strimma/entries"
+            val fullUrl = "${baseUrl.trimEnd('/')}$path"
             val response = client.post(fullUrl) {
                 contentType(ContentType.Application.Json)
                 header("api-secret", hashedSecret)

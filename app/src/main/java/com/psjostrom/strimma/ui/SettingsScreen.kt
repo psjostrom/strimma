@@ -33,6 +33,9 @@ fun SettingsScreen(
     notifPredictionMinutes: Int,
     glucoseUnit: GlucoseUnit,
     bgBroadcastEnabled: Boolean,
+    nightscoutEnabled: Boolean,
+    nightscoutUrl: String,
+    nightscoutSecret: String,
     alertLowEnabled: Boolean,
     alertHighEnabled: Boolean,
     alertUrgentLowEnabled: Boolean,
@@ -52,6 +55,9 @@ fun SettingsScreen(
     onNotifPredictionMinutesChange: (Int) -> Unit,
     onGlucoseUnitChange: (GlucoseUnit) -> Unit,
     onBgBroadcastEnabledChange: (Boolean) -> Unit,
+    onNightscoutEnabledChange: (Boolean) -> Unit,
+    onNightscoutUrlChange: (String) -> Unit,
+    onNightscoutSecretChange: (String) -> Unit,
     onAlertLowEnabledChange: (Boolean) -> Unit,
     onAlertHighEnabledChange: (Boolean) -> Unit,
     onAlertUrgentLowEnabledChange: (Boolean) -> Unit,
@@ -126,6 +132,48 @@ fun SettingsScreen(
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation()
                 )
+            }
+
+            SettingsSection("Nightscout", outline, surfVar) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                        Text("Upload to Nightscout", color = onBg, fontSize = 14.sp)
+                        Text(
+                            "Standard /api/v1/entries endpoint",
+                            color = outline,
+                            fontSize = 12.sp
+                        )
+                    }
+                    Switch(checked = nightscoutEnabled, onCheckedChange = onNightscoutEnabledChange)
+                }
+                if (nightscoutEnabled) {
+                    var nsUrlText by remember(nightscoutUrl) { mutableStateOf(nightscoutUrl) }
+                    OutlinedTextField(
+                        value = nsUrlText,
+                        onValueChange = { nsUrlText = it },
+                        label = { Text("Nightscout URL") },
+                        placeholder = { Text("https://my-ns.herokuapp.com") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onFocusChanged { if (!it.isFocused) onNightscoutUrlChange(nsUrlText) },
+                        singleLine = true
+                    )
+                    var nsSecretText by remember(nightscoutSecret) { mutableStateOf(nightscoutSecret) }
+                    OutlinedTextField(
+                        value = nsSecretText,
+                        onValueChange = { nsSecretText = it },
+                        label = { Text("API Secret") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onFocusChanged { if (!it.isFocused) onNightscoutSecretChange(nsSecretText) },
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation()
+                    )
+                }
             }
 
             SettingsSection("Display", outline, surfVar) {
