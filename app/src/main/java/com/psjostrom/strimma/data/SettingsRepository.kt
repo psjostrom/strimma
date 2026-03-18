@@ -45,6 +45,8 @@ class SettingsRepository @Inject constructor(
         private val KEY_ALERT_LOW = floatPreferencesKey("alert_low")
         private val KEY_ALERT_HIGH = floatPreferencesKey("alert_high")
         private val KEY_ALERT_URGENT_LOW = floatPreferencesKey("alert_urgent_low")
+        private val KEY_ALERT_URGENT_HIGH_ENABLED = booleanPreferencesKey("alert_urgent_high_enabled")
+        private val KEY_ALERT_URGENT_HIGH = floatPreferencesKey("alert_urgent_high")
         private val KEY_ALERT_STALE_ENABLED = booleanPreferencesKey("alert_stale_enabled")
     }
 
@@ -58,8 +60,10 @@ class SettingsRepository @Inject constructor(
     val alertHighEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_HIGH_ENABLED] ?: true }
     val alertUrgentLowEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_URGENT_LOW_ENABLED] ?: true }
     val alertLow: Flow<Float> = dataStore.data.map { it[KEY_ALERT_LOW] ?: 4.0f }
-    val alertHigh: Flow<Float> = dataStore.data.map { it[KEY_ALERT_HIGH] ?: 13.0f }
+    val alertHigh: Flow<Float> = dataStore.data.map { it[KEY_ALERT_HIGH] ?: 10.0f }
     val alertUrgentLow: Flow<Float> = dataStore.data.map { it[KEY_ALERT_URGENT_LOW] ?: 3.0f }
+    val alertUrgentHighEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_URGENT_HIGH_ENABLED] ?: true }
+    val alertUrgentHigh: Flow<Float> = dataStore.data.map { it[KEY_ALERT_URGENT_HIGH] ?: 13.0f }
     val alertStaleEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_STALE_ENABLED] ?: true }
 
     suspend fun setSpringaUrl(url: String) {
@@ -87,5 +91,7 @@ class SettingsRepository @Inject constructor(
     suspend fun setAlertLow(value: Float) { dataStore.edit { it[KEY_ALERT_LOW] = value } }
     suspend fun setAlertHigh(value: Float) { dataStore.edit { it[KEY_ALERT_HIGH] = value } }
     suspend fun setAlertUrgentLow(value: Float) { dataStore.edit { it[KEY_ALERT_URGENT_LOW] = value } }
+    suspend fun setAlertUrgentHighEnabled(enabled: Boolean) { dataStore.edit { it[KEY_ALERT_URGENT_HIGH_ENABLED] = enabled } }
+    suspend fun setAlertUrgentHigh(value: Float) { dataStore.edit { it[KEY_ALERT_URGENT_HIGH] = value } }
     suspend fun setAlertStaleEnabled(enabled: Boolean) { dataStore.edit { it[KEY_ALERT_STALE_ENABLED] = enabled } }
 }

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
+import com.psjostrom.strimma.notification.AlertManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
@@ -15,7 +16,8 @@ import javax.inject.Inject
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val dao: ReadingDao,
-    private val settings: SettingsRepository
+    val settings: SettingsRepository,
+    private val alertManager: AlertManager
 ) : ViewModel() {
 
     val latestReading: StateFlow<GlucoseReading?> = dao.latest()
@@ -51,9 +53,13 @@ class MainViewModel @Inject constructor(
     val alertLow: StateFlow<Float> = settings.alertLow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 4.0f)
     val alertHigh: StateFlow<Float> = settings.alertHigh
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 13.0f)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 10.0f)
     val alertUrgentLow: StateFlow<Float> = settings.alertUrgentLow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 3.0f)
+    val alertUrgentHighEnabled: StateFlow<Boolean> = settings.alertUrgentHighEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    val alertUrgentHigh: StateFlow<Float> = settings.alertUrgentHigh
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 13.0f)
     val alertStaleEnabled: StateFlow<Boolean> = settings.alertStaleEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
@@ -70,5 +76,8 @@ class MainViewModel @Inject constructor(
     fun setAlertLow(value: Float) = viewModelScope.launch { settings.setAlertLow(value) }
     fun setAlertHigh(value: Float) = viewModelScope.launch { settings.setAlertHigh(value) }
     fun setAlertUrgentLow(value: Float) = viewModelScope.launch { settings.setAlertUrgentLow(value) }
+    fun setAlertUrgentHighEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertUrgentHighEnabled(enabled) }
+    fun setAlertUrgentHigh(value: Float) = viewModelScope.launch { settings.setAlertUrgentHigh(value) }
     fun setAlertStaleEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertStaleEnabled(enabled) }
+    fun openAlertChannelSettings(channelId: String) = alertManager.openChannelSettings(channelId)
 }

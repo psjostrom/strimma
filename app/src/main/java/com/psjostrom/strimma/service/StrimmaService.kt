@@ -31,7 +31,7 @@ class StrimmaService : Service() {
     override fun onCreate() {
         super.onCreate()
         notificationHelper.createChannel()
-        alertManager.createChannel()
+        alertManager.createChannels()
 
         if (Build.VERSION.SDK_INT >= 29) {
             startForeground(

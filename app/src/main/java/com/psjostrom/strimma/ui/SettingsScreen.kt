@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.font.FontWeight
@@ -29,9 +30,11 @@ fun SettingsScreen(
     alertLowEnabled: Boolean,
     alertHighEnabled: Boolean,
     alertUrgentLowEnabled: Boolean,
+    alertUrgentHighEnabled: Boolean,
     alertLow: Float,
     alertHigh: Float,
     alertUrgentLow: Float,
+    alertUrgentHigh: Float,
     alertStaleEnabled: Boolean,
     onSpringaUrlChange: (String) -> Unit,
     onApiSecretChange: (String) -> Unit,
@@ -41,10 +44,13 @@ fun SettingsScreen(
     onAlertLowEnabledChange: (Boolean) -> Unit,
     onAlertHighEnabledChange: (Boolean) -> Unit,
     onAlertUrgentLowEnabledChange: (Boolean) -> Unit,
+    onAlertUrgentHighEnabledChange: (Boolean) -> Unit,
     onAlertLowChange: (Float) -> Unit,
     onAlertHighChange: (Float) -> Unit,
     onAlertUrgentLowChange: (Float) -> Unit,
+    onAlertUrgentHighChange: (Float) -> Unit,
     onAlertStaleEnabledChange: (Boolean) -> Unit,
+    onOpenAlertSound: (String) -> Unit,
     onBack: () -> Unit,
     onDebugLog: () -> Unit = {}
 ) {
@@ -143,55 +149,77 @@ fun SettingsScreen(
             }
 
             SettingsSection("Alerts") {
-                AlertToggleRow("Urgent Low", alertUrgentLowEnabled, onAlertUrgentLowEnabledChange)
-                if (alertUrgentLowEnabled) {
-                    var urgentLowText by remember(alertUrgentLow) { mutableStateOf("%.1f".format(alertUrgentLow)) }
-                    OutlinedTextField(
-                        value = urgentLowText,
-                        onValueChange = { text ->
-                            urgentLowText = text
-                            text.toFloatOrNull()?.let { onAlertUrgentLowChange(it) }
-                        },
-                        label = { Text("Urgent Low (mmol/L)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
-                    )
-                }
+                Text(
+                    "Tap \"Sound\" to choose ringtone, vibration, and override settings per alarm.",
+                    color = TextTertiary,
+                    fontSize = 12.sp
+                )
 
-                AlertToggleRow("Low", alertLowEnabled, onAlertLowEnabledChange)
-                if (alertLowEnabled) {
-                    var alertLowText by remember(alertLow) { mutableStateOf("%.1f".format(alertLow)) }
-                    OutlinedTextField(
-                        value = alertLowText,
-                        onValueChange = { text ->
-                            alertLowText = text
-                            text.toFloatOrNull()?.let { onAlertLowChange(it) }
-                        },
-                        label = { Text("Low Alert (mmol/L)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
-                    )
-                }
+                AlertBlock(
+                    label = "Urgent Low",
+                    enabled = alertUrgentLowEnabled,
+                    onToggle = onAlertUrgentLowEnabledChange,
+                    threshold = alertUrgentLow,
+                    onThresholdChange = onAlertUrgentLowChange,
+                    thresholdLabel = "Urgent Low (mmol/L)",
+                    channelId = com.psjostrom.strimma.notification.AlertManager.CHANNEL_URGENT_LOW,
+                    onOpenSound = onOpenAlertSound
+                )
 
-                AlertToggleRow("High", alertHighEnabled, onAlertHighEnabledChange)
-                if (alertHighEnabled) {
-                    var alertHighText by remember(alertHigh) { mutableStateOf("%.1f".format(alertHigh)) }
-                    OutlinedTextField(
-                        value = alertHighText,
-                        onValueChange = { text ->
-                            alertHighText = text
-                            text.toFloatOrNull()?.let { onAlertHighChange(it) }
-                        },
-                        label = { Text("High Alert (mmol/L)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
-                    )
-                }
+                HorizontalDivider(color = SurfaceBorder)
 
-                AlertToggleRow("Stale Data (10+ min)", alertStaleEnabled, onAlertStaleEnabledChange)
+                AlertBlock(
+                    label = "Low",
+                    enabled = alertLowEnabled,
+                    onToggle = onAlertLowEnabledChange,
+                    threshold = alertLow,
+                    onThresholdChange = onAlertLowChange,
+                    thresholdLabel = "Low Alert (mmol/L)",
+                    channelId = com.psjostrom.strimma.notification.AlertManager.CHANNEL_LOW,
+                    onOpenSound = onOpenAlertSound
+                )
+
+                HorizontalDivider(color = SurfaceBorder)
+
+                AlertBlock(
+                    label = "High",
+                    enabled = alertHighEnabled,
+                    onToggle = onAlertHighEnabledChange,
+                    threshold = alertHigh,
+                    onThresholdChange = onAlertHighChange,
+                    thresholdLabel = "High Alert (mmol/L)",
+                    channelId = com.psjostrom.strimma.notification.AlertManager.CHANNEL_HIGH,
+                    onOpenSound = onOpenAlertSound
+                )
+
+                HorizontalDivider(color = SurfaceBorder)
+
+                AlertBlock(
+                    label = "Urgent High",
+                    enabled = alertUrgentHighEnabled,
+                    onToggle = onAlertUrgentHighEnabledChange,
+                    threshold = alertUrgentHigh,
+                    onThresholdChange = onAlertUrgentHighChange,
+                    thresholdLabel = "Urgent High (mmol/L)",
+                    channelId = com.psjostrom.strimma.notification.AlertManager.CHANNEL_URGENT_HIGH,
+                    onOpenSound = onOpenAlertSound
+                )
+
+                HorizontalDivider(color = SurfaceBorder)
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Stale Data (10+ min)", color = TextPrimary, fontSize = 14.sp)
+                    Switch(checked = alertStaleEnabled, onCheckedChange = onAlertStaleEnabledChange)
+                }
+                if (alertStaleEnabled) {
+                    TextButton(onClick = { onOpenAlertSound(com.psjostrom.strimma.notification.AlertManager.CHANNEL_STALE) }) {
+                        Text("Sound", color = InRange, fontSize = 13.sp)
+                    }
+                }
             }
 
             SettingsSection("Developer") {
@@ -209,14 +237,40 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun AlertToggleRow(label: String, enabled: Boolean, onToggle: (Boolean) -> Unit) {
+private fun AlertBlock(
+    label: String,
+    enabled: Boolean,
+    onToggle: (Boolean) -> Unit,
+    threshold: Float,
+    onThresholdChange: (Float) -> Unit,
+    thresholdLabel: String,
+    channelId: String,
+    onOpenSound: (String) -> Unit
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Text(label, color = TextPrimary, fontSize = 14.sp)
         Switch(checked = enabled, onCheckedChange = onToggle)
+    }
+    if (enabled) {
+        var text by remember(threshold) { mutableStateOf("%.1f".format(threshold)) }
+        OutlinedTextField(
+            value = text,
+            onValueChange = { v ->
+                text = v
+                v.toFloatOrNull()?.let { onThresholdChange(it) }
+            },
+            label = { Text(thresholdLabel) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+        )
+        TextButton(onClick = { onOpenSound(channelId) }) {
+            Text("Sound", color = InRange, fontSize = 13.sp)
+        }
     }
 }
 
