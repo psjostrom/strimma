@@ -13,12 +13,17 @@ android {
 
     signingConfigs {
         create("release") {
-            val keystoreFile = System.getenv("STRIMMA_KEYSTORE_FILE")
+            val keystoreFile = providers.gradleProperty("STRIMMA_KEYSTORE_FILE")
+                .orElse(providers.environmentVariable("STRIMMA_KEYSTORE_FILE"))
+                .orNull
             if (keystoreFile != null) {
                 storeFile = file(keystoreFile)
-                storePassword = System.getenv("STRIMMA_KEYSTORE_PASSWORD")
-                keyAlias = System.getenv("STRIMMA_KEY_ALIAS")
-                keyPassword = System.getenv("STRIMMA_KEY_PASSWORD")
+                storePassword = providers.gradleProperty("STRIMMA_KEYSTORE_PASSWORD")
+                    .orElse(providers.environmentVariable("STRIMMA_KEYSTORE_PASSWORD")).get()
+                keyAlias = providers.gradleProperty("STRIMMA_KEY_ALIAS")
+                    .orElse(providers.environmentVariable("STRIMMA_KEY_ALIAS")).get()
+                keyPassword = providers.gradleProperty("STRIMMA_KEY_PASSWORD")
+                    .orElse(providers.environmentVariable("STRIMMA_KEY_PASSWORD")).get()
             }
         }
     }

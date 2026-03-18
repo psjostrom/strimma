@@ -16,7 +16,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textSize="32sp"
-            android:textColor="#FFFFFF"
+            android:textAppearance="@style/TextAppearance.Compat.Notification.Title"
             android:textStyle="bold"
             android:text="--" />
 
@@ -25,7 +25,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textSize="32sp"
-            android:textColor="#FFFFFF"
+            android:textAppearance="@style/TextAppearance.Compat.Notification.Title"
             android:layout_marginStart="6dp"
             android:text="→" />
 
@@ -36,7 +36,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textSize="16sp"
-        android:textColor="#BDBDBD"
+        android:textAppearance="@style/TextAppearance.Compat.Notification.Info"
         android:layout_marginTop="4dp"
         android:text="Δ --" />
 
