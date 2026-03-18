@@ -30,6 +30,9 @@ import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.graph.CRITICAL_HIGH
 import com.psjostrom.strimma.graph.CRITICAL_LOW
+import com.psjostrom.strimma.graph.PredictionComputer
+import com.psjostrom.strimma.graph.ThresholdCrossing
+import com.psjostrom.strimma.graph.CrossingType
 import com.psjostrom.strimma.graph.computeYRange
 import com.psjostrom.strimma.ui.theme.*
 import kotlinx.coroutines.delay
@@ -95,7 +98,10 @@ fun MainScreen(
                 .padding(padding)
                 .padding(horizontal = 16.dp)
         ) {
-            BgHeader(latestReading, bgLow, bgHigh, glucoseUnit)
+            val crossing = remember(readings, bgLow, bgHigh) {
+                PredictionComputer.compute(readings, 15, bgLow.toDouble(), bgHigh.toDouble())?.crossing
+            }
+            BgHeader(latestReading, bgLow, bgHigh, glucoseUnit, crossing)
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -147,7 +153,7 @@ fun MainScreen(
 }
 
 @Composable
-private fun BgHeader(reading: GlucoseReading?, bgLow: Float, bgHigh: Float, glucoseUnit: GlucoseUnit) {
+private fun BgHeader(reading: GlucoseReading?, bgLow: Float, bgHigh: Float, glucoseUnit: GlucoseUnit, crossing: ThresholdCrossing? = null) {
     var minutesAgo by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(reading?.ts) {
@@ -206,6 +212,24 @@ private fun BgHeader(reading: GlucoseReading?, bgLow: Float, bgHigh: Float, gluc
                     text = glucoseUnit.formatDelta(reading.deltaMmol),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 15.sp
+                )
+            }
+
+            if (crossing != null) {
+                val crossingColor = when (crossing.type) {
+                    CrossingType.LOW -> BelowLow
+                    CrossingType.HIGH -> AboveHigh
+                }
+                val crossingText = when (crossing.type) {
+                    CrossingType.LOW -> "Low in ${crossing.minutesUntil} min"
+                    CrossingType.HIGH -> "High in ${crossing.minutesUntil} min"
+                }
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = crossingText,
+                    color = crossingColor,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Medium
                 )
             }
 
@@ -365,34 +389,29 @@ fun GlucoseGraph(
             drawCircle(color = color, radius = if (isSelected) 9f else 5f, center = Offset(x, y))
         }
 
-        // Prediction dots — uses same rate as direction computation (deltaMmol / 5 min)
-        if (sorted.isNotEmpty()) {
-            val last = sorted.last()
-            val delta = last.deltaMmol
-            if (delta != null) {
-                val ratePerMin = delta / 5.0
-                val predColor = predictionColor
-                val predDash = PathEffect.dashPathEffect(floatArrayOf(6f, 6f))
-                var prevPx = xFor(last.ts)
-                var prevPy = yFor(last.mmol)
-                for (m in 1..15) {
-                    val predMmol = (last.mmol + ratePerMin * m).coerceIn(1.0, 30.0)
-                    val predTs = last.ts + m * 60_000L
-                    val px = xFor(predTs)
-                    val py = yFor(predMmol)
-                    if (px > size.width - marginRight) break
-                    drawLine(
-                        color = predColor,
-                        start = Offset(prevPx, prevPy),
-                        end = Offset(px, py),
-                        strokeWidth = 1.5f,
-                        pathEffect = predDash
-                    )
-                    drawCircle(color = predColor, radius = 2.5f, center = Offset(px, py))
-                    prevPx = px
-                    prevPy = py
-                }
+        // Prediction curve (least-squares fit to last 12 min of readings)
+        val prediction = PredictionComputer.compute(readings, 15, bgLow, bgHigh)
+        if (prediction != null) {
+            val predColor = predictionColor
+            val predDash = PathEffect.dashPathEffect(floatArrayOf(6f, 6f))
+            var prevPx = xFor(prediction.anchorTs)
+            var prevPy = yFor(prediction.anchorMmol)
+            for (pt in prediction.points) {
+                val px = xFor(prediction.anchorTs + pt.minuteOffset * 60_000L)
+                val py = yFor(pt.mmol)
+                if (px > size.width - marginRight) break
+                drawLine(
+                    color = predColor,
+                    start = Offset(prevPx, prevPy),
+                    end = Offset(px, py),
+                    strokeWidth = 1.5f,
+                    pathEffect = predDash
+                )
+                drawCircle(color = predColor, radius = 2.5f, center = Offset(px, py))
+                prevPx = px
+                prevPy = py
             }
+
         }
 
         // Scrub crosshair + tooltip

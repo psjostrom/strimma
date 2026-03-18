@@ -10,7 +10,7 @@ A modern alternative to xDrip+ — built with Kotlin, Jetpack Compose, and Mater
 - **xDrip Broadcast receiver** — receives `com.eveningoutpost.dexdrip.BgEstimate` intents from any app that broadcasts in xDrip format
 - **Nightscout upload** — pushes readings to any Nightscout server via `/api/v1/entries` with retry and offline resilience
 - **Interactive graph** — pinch to zoom, pan, scrub-to-inspect with tooltip, 24h minimap with draggable viewport
-- **30-minute prediction** — linear extrapolation matched to the direction arrow
+- **Prediction with threshold warnings** — least-squares curve fitting (linear/quadratic) on last 12 min of readings, with "Low in X min" / "High in X min" warnings when trending toward thresholds
 - **Persistent notification** — collapsed and expanded layouts with mini graph, BG value, trend arrow, and delta
 - **Status bar icon** — current BG rendered as a bitmap icon
 - **Glucose alerts** — urgent low, low, high, urgent high, and stale data, each with its own notification channel for independent sound/vibration/DND settings
@@ -123,7 +123,7 @@ Single-module app. 35 Kotlin source files, ~3,800 lines.
 | Package | Purpose |
 |---------|---------|
 | `data/` | Room entities, DAO, SettingsRepository, DirectionComputer, GlucoseUnit |
-| `graph/` | Shared graph constants, color functions, Y-range computation |
+| `graph/` | Shared graph constants, color functions, Y-range computation, prediction curve fitting |
 | `network/` | NightscoutClient + NightscoutPusher (Ktor, `/api/v1/entries`) |
 | `notification/` | NotificationHelper (collapsed/expanded with graph), GraphRenderer, AlertManager |
 | `receiver/` | GlucoseNotificationListener, XdripBroadcastReceiver, GlucoseParser, DebugLog |

@@ -3,7 +3,14 @@ package com.psjostrom.strimma.notification
 import android.graphics.*
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseUnit
-import com.psjostrom.strimma.graph.*
+import com.psjostrom.strimma.graph.CrossingType
+import com.psjostrom.strimma.graph.PredictionComputer
+import com.psjostrom.strimma.graph.canvasColorFor
+import com.psjostrom.strimma.graph.computeYRange
+import com.psjostrom.strimma.graph.CANVAS_HIGH
+import com.psjostrom.strimma.graph.CANVAS_LOW
+import com.psjostrom.strimma.graph.CRITICAL_HIGH
+import com.psjostrom.strimma.graph.CRITICAL_LOW
 
 object GraphRenderer {
 
@@ -103,36 +110,57 @@ object GraphRenderer {
             canvas.drawCircle(x, y, dotR, dotPaint)
         }
 
-        // Prediction — uses same rate as direction (deltaMmol / 5 min), white color
-        if (visible.isNotEmpty()) {
-            val last = visible.last()
-            val delta = last.deltaMmol
-            if (delta != null) {
-                val ratePerMin = delta / 5.0
-                val predPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    style = Paint.Style.FILL
-                    color = Color.WHITE
-                    alpha = 128
-                }
-                val predLinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    strokeWidth = LINE_WIDTH
-                    style = Paint.Style.STROKE
-                    pathEffect = DashPathEffect(floatArrayOf(6f, 6f), 0f)
-                    color = Color.WHITE
-                    alpha = 128
-                }
-                var prevPx = xFor(last.ts)
-                var prevPy = yFor(last.mmol)
-                for (m in 1..30) {
-                    val predMmol = (last.mmol + ratePerMin * m).coerceIn(1.0, 30.0)
-                    val predTs = last.ts + m * 60_000L
-                    val px = xFor(predTs)
-                    val py = yFor(predMmol)
-                    if (px > width - marginRight) break
-                    canvas.drawLine(prevPx, prevPy, px, py, predLinePaint)
-                    canvas.drawCircle(px, py, dotR * 0.6f, predPaint)
-                    prevPx = px
-                    prevPy = py
+        // Prediction curve (least-squares fit to last 12 min of readings)
+        val prediction = PredictionComputer.compute(readings, predictionMinutes, bgLow, bgHigh)
+        if (prediction != null) {
+            val predPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                style = Paint.Style.FILL
+                color = Color.WHITE
+                alpha = 128
+            }
+            val predLinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                strokeWidth = LINE_WIDTH
+                style = Paint.Style.STROKE
+                pathEffect = DashPathEffect(floatArrayOf(6f, 6f), 0f)
+                color = Color.WHITE
+                alpha = 128
+            }
+            var prevPx = xFor(prediction.anchorTs)
+            var prevPy = yFor(prediction.anchorMmol)
+            for (pt in prediction.points) {
+                val px = xFor(prediction.anchorTs + pt.minuteOffset * 60_000L)
+                val py = yFor(pt.mmol)
+                if (px > width - marginRight) break
+                canvas.drawLine(prevPx, prevPy, px, py, predLinePaint)
+                canvas.drawCircle(px, py, dotR * 0.6f, predPaint)
+                prevPx = px
+                prevPy = py
+            }
+
+            // "Low in X min" / "High in X min" label at crossing point (skip for compact/widget)
+            if (!compact) {
+                prediction.crossing?.let { crossing ->
+                    val crossTs = prediction.anchorTs + crossing.minutesUntil * 60_000L
+                    val cx = xFor(crossTs)
+                    val cy = yFor(crossing.mmolAtCrossing)
+                    if (cx <= width - marginRight) {
+                        val label = when (crossing.type) {
+                            CrossingType.LOW -> "Low ${crossing.minutesUntil}m"
+                            CrossingType.HIGH -> "High ${crossing.minutesUntil}m"
+                        }
+                        val labelColor = when (crossing.type) {
+                            CrossingType.LOW -> CANVAS_LOW
+                            CrossingType.HIGH -> CANVAS_HIGH
+                        }
+                        val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                            color = labelColor
+                            textSize = 18f
+                            typeface = android.graphics.Typeface.DEFAULT_BOLD
+                            textAlign = Paint.Align.CENTER
+                        }
+                        val ly = if (crossing.type == CrossingType.LOW) cy + 16f else cy - 8f
+                        canvas.drawText(label, cx, ly, labelPaint)
+                    }
                 }
             }
         }
