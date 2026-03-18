@@ -2,7 +2,6 @@ package com.psjostrom.strimma.service
 
 import android.app.Service
 import android.content.Intent
-import android.os.Build
 import android.os.IBinder
 import com.psjostrom.strimma.data.*
 import com.psjostrom.strimma.network.SpringaPusher
@@ -35,18 +34,11 @@ class StrimmaService : Service() {
         notificationHelper.createChannel()
         alertManager.createChannels()
 
-        if (Build.VERSION.SDK_INT >= 29) {
-            startForeground(
-                NotificationHelper.NOTIFICATION_ID,
-                notificationHelper.buildNotification(null, emptyList(), 4.0, 10.0),
-                android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
-            )
-        } else {
-            startForeground(
-                NotificationHelper.NOTIFICATION_ID,
-                notificationHelper.buildNotification(null, emptyList(), 4.0, 10.0)
-            )
-        }
+        startForeground(
+            NotificationHelper.NOTIFICATION_ID,
+            notificationHelper.buildNotification(null, emptyList(), 4.0, 10.0),
+            android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+        )
 
         DebugLog.log("Service started")
 

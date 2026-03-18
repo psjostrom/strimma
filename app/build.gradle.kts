@@ -13,7 +13,7 @@ android {
 
     defaultConfig {
         applicationId = "com.psjostrom.strimma"
-        minSdk = 36
+        minSdk = 33 // Only targets devices still receiving security updates — this is medical data
         targetSdk = 36
         versionCode = 1
         versionName = "0.1.0"

@@ -27,7 +27,7 @@ Strimma is an open-source Android CGM app inspired by xDrip+. Currently focused 
 - 33 Kotlin source files, ~3,800 lines production code
 - 7 test files, 77 tests (57 unit + 20 integration)
 - Modern stack: Compose + Material 3, Room, Hilt, Ktor, Coroutines
-- compileSdk/targetSdk/minSdk 36 (Android 16)
+- compileSdk/targetSdk 36 (Android 16), minSdk 33 (Android 13 — oldest version still receiving security updates)
 - Java 21 (Zulu) — repo-specific via `gradle.properties`
 
 **Data Pipeline:**
@@ -333,7 +333,7 @@ These features make Strimma usable by most Libre and Dexcom companion-mode users
 
 | Priority | Feature | Scope |
 |----------|---------|-------|
-| **P0** | Lower minSdk to 26 (Android 8) | Broadens device support from 1 device to ~95% of active Android. Requires testing foreground service behavior on older APIs. |
+| ~~**P0**~~ | ~~Lower minSdk~~ | ~~Done. Lowered to 33 (Android 13) — oldest version still receiving security updates. Medical data warrants this floor.~~ |
 | **P0** | Multi-device testing | Test on at least: Pixel, Samsung, OnePlus. Different OEMs handle background services differently. |
 | **P1** | Wear OS complications | Glucose data on watch faces via complications. Use existing GDH approach as reference. |
 | **P2** | Wear OS standalone app | Full watch app with graph. Lower priority — complications cover 80% of the use case. |

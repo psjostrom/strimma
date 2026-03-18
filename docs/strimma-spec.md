@@ -679,4 +679,4 @@ These are out of scope for phase 1. Several are planned for later phases — see
 - **Treatment tracking** — Low priority. Insulin/carb management typically handled by AAPS or pen apps.
 - **Nightscout / cloud sync** — Phase 1 uses Springa only. Nightscout upload/download planned.
 - **Watch integration** — Phase 1 uses Springa for watch data. Wear OS complications planned.
-- **Broader device support** — Phase 1 targets Android 16 (minSdk 36). Lowering to API 26 planned.
+- **Broader device support** — minSdk lowered to 33 (Android 13, oldest with security updates). Medical data warrants this floor.
