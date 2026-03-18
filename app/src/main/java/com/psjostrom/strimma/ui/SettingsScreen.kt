@@ -54,6 +54,7 @@ fun SettingsScreen(
     onAlertStaleEnabledChange: (Boolean) -> Unit,
     onOpenAlertSound: (String) -> Unit,
     onBack: () -> Unit,
+    onStats: () -> Unit = {},
     onDebugLog: () -> Unit = {}
 ) {
     val bg = MaterialTheme.colorScheme.background
@@ -245,6 +246,15 @@ fun SettingsScreen(
                     TextButton(onClick = { onOpenAlertSound(com.psjostrom.strimma.notification.AlertManager.CHANNEL_STALE) }) {
                         Text("Sound", color = InRange, fontSize = 13.sp)
                     }
+                }
+            }
+
+            SettingsSection("Data", outline, surfVar) {
+                OutlinedButton(
+                    onClick = onStats,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Statistics")
                 }
             }
 

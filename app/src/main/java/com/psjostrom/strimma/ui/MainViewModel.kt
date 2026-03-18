@@ -84,4 +84,20 @@ class MainViewModel @Inject constructor(
     val themeMode: StateFlow<String> = settings.themeMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "System")
     fun setThemeMode(mode: String) = viewModelScope.launch { settings.setThemeMode(mode) }
+
+    suspend fun readingsForPeriod(hours: Int): List<com.psjostrom.strimma.data.GlucoseReading> {
+        val since = System.currentTimeMillis() - hours * 3600_000L
+        return dao.since(since)
+    }
+
+    suspend fun exportCsv(hours: Int): String {
+        val readings = readingsForPeriod(hours)
+        return buildString {
+            appendLine("timestamp,datetime,mmol,sgv,direction,delta_mmol")
+            val sdf = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault())
+            for (r in readings) {
+                appendLine("${r.ts},${sdf.format(java.util.Date(r.ts))},${r.mmol},${r.sgv},${r.direction},${r.deltaMmol ?: ""}")
+            }
+        }
+    }
 }

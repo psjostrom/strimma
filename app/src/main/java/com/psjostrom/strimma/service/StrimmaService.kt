@@ -10,6 +10,8 @@ import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.notification.NotificationHelper
 import com.psjostrom.strimma.receiver.DebugLog
 import com.psjostrom.strimma.receiver.GlucoseNotificationListener
+import androidx.glance.appwidget.GlanceAppWidgetManager
+import com.psjostrom.strimma.widget.StrimmaWidget
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
@@ -119,6 +121,12 @@ class StrimmaService : Service() {
         pusher.pushReading(reading)
         updateNotification()
         alertManager.checkReading(reading)
+        try {
+            val mgr = GlanceAppWidgetManager(this@StrimmaService)
+            mgr.getGlanceIds(StrimmaWidget::class.java).forEach { id ->
+                StrimmaWidget().update(this@StrimmaService, id)
+            }
+        } catch (_: Exception) {}
     }
 
     private suspend fun updateNotification() {

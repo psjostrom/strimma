@@ -94,6 +94,11 @@ class MainActivity : ComponentActivity() {
                                 navController.navigate("settings") {
                                     launchSingleTop = true
                                 }
+                            },
+                            onStatsClick = {
+                                navController.navigate("stats") {
+                                    launchSingleTop = true
+                                }
                             }
                         )
                     }
@@ -131,11 +136,25 @@ class MainActivity : ComponentActivity() {
                             onAlertStaleEnabledChange = viewModel::setAlertStaleEnabled,
                             onOpenAlertSound = viewModel::openAlertChannelSettings,
                             onBack = { navController.popBackStack() },
+                            onStats = {
+                                navController.navigate("stats") {
+                                    launchSingleTop = true
+                                }
+                            },
                             onDebugLog = {
                                 navController.navigate("debug") {
                                     launchSingleTop = true
                                 }
                             }
+                        )
+                    }
+                    composable("stats") {
+                        StatsScreen(
+                            bgLow = bgLow,
+                            bgHigh = bgHigh,
+                            onLoadReadings = viewModel::readingsForPeriod,
+                            onExportCsv = viewModel::exportCsv,
+                            onBack = { navController.popBackStack() }
                         )
                     }
                     composable("debug") {

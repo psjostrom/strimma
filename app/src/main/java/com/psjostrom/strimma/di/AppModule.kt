@@ -18,11 +18,7 @@ object AppModule {
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): StrimmaDatabase {
-        return Room.databaseBuilder(
-            context,
-            StrimmaDatabase::class.java,
-            "strimma.db"
-        ).build()
+        return StrimmaDatabase.getInstance(context)
     }
 
     @Provides
