@@ -10,6 +10,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -64,26 +65,24 @@ fun SettingsScreen(
                 var urlText by remember(springaUrl) { mutableStateOf(springaUrl) }
                 OutlinedTextField(
                     value = urlText,
-                    onValueChange = { text ->
-                        urlText = text
-                        onSpringaUrlChange(text)
-                    },
+                    onValueChange = { urlText = it },
                     label = { Text("Springa URL") },
                     placeholder = { Text("https://springa.vercel.app") },
                     supportingText = { Text("Base URL only — no /api path") },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged { if (!it.isFocused) onSpringaUrlChange(urlText) },
                     singleLine = true
                 )
 
                 var secretText by remember(apiSecret) { mutableStateOf(apiSecret) }
                 OutlinedTextField(
                     value = secretText,
-                    onValueChange = { text ->
-                        secretText = text
-                        onApiSecretChange(text)
-                    },
+                    onValueChange = { secretText = it },
                     label = { Text("API Secret") },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged { if (!it.isFocused) onApiSecretChange(secretText) },
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation()
                 )
