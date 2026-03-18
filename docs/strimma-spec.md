@@ -663,15 +663,23 @@ No new dependencies. Changes are:
 
 ## 15. Phase 2 Roadmap
 
-Specced here for future reference. Not built in phase 1.
+### Delivered
 
 | Feature | Description |
 |---------|-------------|
-| **Alerts** | Configurable low/high glucose alarms with sound, vibration, and snooze |
-| **24h timeline** | Compressed overview graph at bottom of main screen (like xDrip screenshot 3) |
-| **Prediction** | Linear extrapolation from recent trend, shown as faded dots on graph |
+| **Alerts** | 5 alert types (urgent low, low, high, urgent high, stale) with per-alarm notification channels, configurable thresholds, 30-min snooze, DND bypass for urgent alerts |
+| **Prediction** | 30-minute linear extrapolation from current trend, rendered as faded dots on both main graph and notification graphs |
+| **Persistent logging** | File-based debug logs with 7-day rotation, shareable via FileProvider |
+| **Settings debounce** | URL and API secret save on field blur instead of every keystroke |
+| **Graph consolidation** | Shared `graph/GraphColors.kt` module used by both notification and Compose graph renderers |
+
+### Remaining
+
+| Feature | Description |
+|---------|-------------|
 | **Home screen widget** | Glanceable glucose display without opening the app |
 | **Unit switching** | mmol/L ↔ mg/dL toggle |
+| **Statistics** | TIR, GMI, average glucose, CV% — currently only in Springa |
 | **BG broadcast** | `com.eveningoutpost.dexdrip.BgEstimate` intent for external app compat |
 | **Settings expansion** | Graph appearance, notification options, data retention, export |
 
