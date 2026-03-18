@@ -41,7 +41,7 @@ Strimma is a focused Android CGM display app. It replaces xDrip+ for a single us
 - Main app: centered BG header (value, arrow, delta, staleness) + interactive Compose Canvas graph (pinch zoom, pan) + 24h minimap
 - Graph: color-coded dots (blue in-range, orange above high, red below low), threshold lines, in-range zone band, scrub-to-inspect tooltip
 - 30-minute prediction: faded dots with dashed lines extrapolated from current trend, visible in both main graph and notification graphs
-- Dark theme with refined palette (navy-dark backgrounds, surface cards)
+- Theme: Dark / Light / System picker in Settings. Graph surfaces always dark regardless of theme. Status colors fixed across both themes.
 
 **Alerts (P2 — delivered):**
 - 5 alert types, each with its own notification channel:
@@ -82,6 +82,7 @@ Strimma is a focused Android CGM display app. It replaces xDrip+ for a single us
 | Prediction / trend extrapolation (30 min) | Done | `200f2a2`, `a5f3d98` |
 | Settings debounce (save on blur) | Done | `1879739` |
 | Graph rendering consolidation (shared GraphColors) | Done | `200f2a2` |
+| Light mode + theme picker (Dark / Light / System) | Done | `67f2ac8` |
 
 ### Known Issues & Remaining Gaps
 
@@ -255,7 +256,6 @@ These are post-P2 ideas, not committed. Listed for completeness.
 
 | Feature | Notes |
 |---------|-------|
-| **Light theme option** | Some users prefer light mode. Not a priority for a single-user dark-mode-only app. |
 | **Notification style options** | Configurable collapsed/expanded layout, font sizes, graph time window for notifications (currently hardcoded 1h). |
 | **Graph appearance settings** | Dot size, line thickness, color palette. |
 | **Data export** | CSV/JSON export of readings. Backup/restore. |
