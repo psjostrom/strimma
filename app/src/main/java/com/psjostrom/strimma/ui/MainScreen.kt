@@ -26,12 +26,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.psjostrom.strimma.data.Direction
 import com.psjostrom.strimma.data.GlucoseReading
+import com.psjostrom.strimma.graph.CRITICAL_HIGH
+import com.psjostrom.strimma.graph.CRITICAL_LOW
+import com.psjostrom.strimma.graph.computeYRange
 import com.psjostrom.strimma.ui.theme.*
 import kotlinx.coroutines.delay
 
 private const val MINIMAP_WINDOW_MS = 24L * 3600_000L
-private const val CRITICAL_LOW = 3.0
-private const val CRITICAL_HIGH = 13.0
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -287,17 +288,12 @@ fun GlucoseGraph(
         val plotWidth = size.width - marginLeft - marginRight
         val plotHeight = size.height - marginTop - marginBottom
 
-        val allMmol = sorted.map { it.mmol }
-        val yMin = minOf(bgLow - 0.5, CRITICAL_LOW - 0.3,
-            if (allMmol.isEmpty()) bgLow - 0.5 else allMmol.min() - 0.3)
-        val yMax = maxOf(bgHigh + 0.5, CRITICAL_HIGH + 0.3,
-            if (allMmol.isEmpty()) bgHigh + 0.5 else allMmol.max() + 0.3)
-        val yRange = yMax - yMin
+        val yr = computeYRange(sorted.map { it.mmol }, bgLow, bgHigh)
 
         fun xFor(ts: Long): Float =
             marginLeft + ((ts - visibleStart).toFloat() / visibleMs) * plotWidth
         fun yFor(mmol: Double): Float =
-            marginTop + ((yMax - mmol) / yRange).toFloat() * plotHeight
+            marginTop + ((yr.yMax - mmol) / yr.range).toFloat() * plotHeight
 
         // In-range zone band
         drawRect(
@@ -344,6 +340,41 @@ fun GlucoseGraph(
 
             val isSelected = selectedReading?.ts == r.ts
             drawCircle(color = color, radius = if (isSelected) 9f else 5f, center = Offset(x, y))
+        }
+
+        // Prediction dots (linear extrapolation from last 2 readings)
+        if (sorted.size >= 2) {
+            val last = sorted.last()
+            val prev = sorted[sorted.size - 2]
+            val dtMin = (last.ts - prev.ts) / 60_000.0
+            if (dtMin > 0) {
+                val ratePerMin = (last.mmol - prev.mmol) / dtMin
+                val predDash = PathEffect.dashPathEffect(floatArrayOf(4f, 4f))
+                var prevPx = xFor(last.ts)
+                var prevPy = yFor(last.mmol)
+                for (m in 1..30) {
+                    val predMmol = (last.mmol + ratePerMin * m).coerceIn(1.0, 30.0)
+                    val predTs = last.ts + m * 60_000L
+                    val px = xFor(predTs)
+                    val py = yFor(predMmol)
+                    if (px > size.width - marginRight) break
+                    val color = dotColor(predMmol, bgLow, bgHigh)
+                    drawLine(
+                        color = color.copy(alpha = 0.3f),
+                        start = Offset(prevPx, prevPy),
+                        end = Offset(px, py),
+                        strokeWidth = 2f,
+                        pathEffect = predDash
+                    )
+                    drawCircle(
+                        color = color.copy(alpha = 0.3f),
+                        radius = 3.5f,
+                        center = Offset(px, py)
+                    )
+                    prevPx = px
+                    prevPy = py
+                }
+            }
         }
 
         // Scrub crosshair + tooltip
@@ -436,9 +467,9 @@ fun GlucoseGraph(
         }
 
         textPaint.textAlign = android.graphics.Paint.Align.RIGHT
-        val yStep = if (yRange > 10) 2.0 else 1.0
-        var yLabel = Math.ceil(yMin / yStep) * yStep
-        while (yLabel <= yMax) {
+        val yStep = if (yr.range > 10) 2.0 else 1.0
+        var yLabel = Math.ceil(yr.yMin / yStep) * yStep
+        while (yLabel <= yr.yMax) {
             val y = yFor(yLabel)
             if (y > marginTop + 10 && y < size.height - marginBottom - 10) {
                 drawContext.canvas.nativeCanvas.drawText(
@@ -471,23 +502,24 @@ fun Minimap(
 
     Canvas(
         modifier = modifier
-            .pointerInput(minimapStart, mainWindowMs, zoomScale) {
+            .pointerInput(mainWindowMs, zoomScale) {
                 awaitPointerEventScope {
                     while (true) {
                         val down = awaitFirstDown(requireUnconsumed = false)
                         val visibleMs = (mainWindowMs / zoomScale).toLong()
-                        val time = minimapStart + ((down.position.x / size.width) * MINIMAP_WINDOW_MS).toLong()
-                        val newEnd = (time + visibleMs / 2).coerceIn(minimapStart + visibleMs, now)
-                        onViewportChange(newEnd)
+                        val now0 = System.currentTimeMillis()
+                        val start0 = now0 - MINIMAP_WINDOW_MS
+                        val time = start0 + ((down.position.x / size.width) * MINIMAP_WINDOW_MS).toLong()
+                        onViewportChange((time + visibleMs / 2).coerceIn(start0 + visibleMs, now0))
 
                         while (true) {
                             val event = awaitPointerEvent()
                             val pos = event.changes.firstOrNull()?.position ?: break
-                            val pressed = event.changes.any { it.pressed }
-                            if (!pressed) break
-                            val dragTime = minimapStart + ((pos.x.coerceIn(0f, size.width.toFloat()) / size.width) * MINIMAP_WINDOW_MS).toLong()
-                            val dragEnd = (dragTime + visibleMs / 2).coerceIn(minimapStart + visibleMs, now)
-                            onViewportChange(dragEnd)
+                            if (!event.changes.any { it.pressed }) break
+                            val nowD = System.currentTimeMillis()
+                            val startD = nowD - MINIMAP_WINDOW_MS
+                            val dragTime = startD + ((pos.x.coerceIn(0f, size.width.toFloat()) / size.width) * MINIMAP_WINDOW_MS).toLong()
+                            onViewportChange((dragTime + visibleMs / 2).coerceIn(startD + visibleMs, nowD))
                             event.changes.forEach { it.consume() }
                         }
                     }
@@ -497,15 +529,10 @@ fun Minimap(
         val w = size.width
         val h = size.height
 
-        val allMmol = sorted.map { it.mmol }
-        val yMin = minOf(bgLow - 0.5, CRITICAL_LOW - 0.3,
-            if (allMmol.isEmpty()) bgLow - 0.5 else allMmol.min() - 0.3)
-        val yMax = maxOf(bgHigh + 0.5, CRITICAL_HIGH + 0.3,
-            if (allMmol.isEmpty()) bgHigh + 0.5 else allMmol.max() + 0.3)
-        val yRange = yMax - yMin
+        val yr = computeYRange(sorted.map { it.mmol }, bgLow, bgHigh)
 
         fun xFor(ts: Long): Float = ((ts - minimapStart).toFloat() / MINIMAP_WINDOW_MS) * w
-        fun yFor(mmol: Double): Float = ((yMax - mmol) / yRange).toFloat() * h
+        fun yFor(mmol: Double): Float = ((yr.yMax - mmol) / yr.range).toFloat() * h
 
         // Threshold lines (subtle)
         val dashEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 4f))

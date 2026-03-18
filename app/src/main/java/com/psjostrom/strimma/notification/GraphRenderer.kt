@@ -2,27 +2,19 @@ package com.psjostrom.strimma.notification
 
 import android.graphics.*
 import com.psjostrom.strimma.data.GlucoseReading
+import com.psjostrom.strimma.graph.*
 
 object GraphRenderer {
 
     private const val DOT_RADIUS = 4f
     private const val LINE_WIDTH = 2f
     private const val BG_COLOR = Color.TRANSPARENT
-    private const val COLOR_IN_RANGE = 0xFF56CCF2.toInt()
-    private const val COLOR_HIGH = 0xFFFFBE76.toInt()
-    private const val COLOR_LOW = 0xFFFF6B6B.toInt()
-    private const val COLOR_AXIS_TEXT = 0xFF8892A0.toInt()
 
     private const val ZONE_LOW = 0x20FF6B6B.toInt()
     private const val ZONE_HIGH = 0x20FFBE76.toInt()
     private const val ZONE_IN_RANGE = 0x1256CCF2.toInt()
+    private const val COLOR_AXIS_TEXT = 0xFF8892A0.toInt()
 
-    private const val CRITICAL_LOW = 3.0
-    private const val CRITICAL_HIGH = 13.0
-
-    /**
-     * @param compact If true, renders a mini graph (no axis labels, no margins, thicker dots).
-     */
     fun render(
         readings: List<GlucoseReading>,
         width: Int,
@@ -46,31 +38,21 @@ object GraphRenderer {
         val plotWidth = width - marginLeft - marginRight
         val plotHeight = height - marginTop - marginBottom
 
-        val allMmol = readings.filter { it.ts >= startTime }.map { it.mmol }
-        val yMin = minOf(bgLow - 0.5, CRITICAL_LOW - 0.3,
-            if (allMmol.isEmpty()) bgLow - 0.5 else allMmol.min() - 0.3)
-        val yMax = maxOf(bgHigh + 0.5, CRITICAL_HIGH + 0.3,
-            if (allMmol.isEmpty()) bgHigh + 0.5 else allMmol.max() + 0.3)
-        val yRange = yMax - yMin
+        val visible = readings.filter { it.ts >= startTime }.sortedBy { it.ts }
+        val yr = computeYRange(visible.map { it.mmol }, bgLow, bgHigh)
 
         fun xFor(ts: Long): Float = marginLeft + ((ts - startTime).toFloat() / windowMs) * plotWidth
-        fun yFor(mmol: Double): Float = marginTop + ((yMax - mmol) / yRange).toFloat() * plotHeight
+        fun yFor(mmol: Double): Float = marginTop + ((yr.yMax - mmol) / yr.range).toFloat() * plotHeight
 
         // Zone backgrounds
         val zonePaint = Paint().apply { style = Paint.Style.FILL }
-
         val highY = yFor(bgHigh)
         val lowY = yFor(bgLow)
 
-        // In-range zone
         zonePaint.color = ZONE_IN_RANGE
         canvas.drawRect(marginLeft, highY, width - marginRight, lowY, zonePaint)
-
-        // Low zone (below bgLow)
         zonePaint.color = ZONE_LOW
         canvas.drawRect(marginLeft, lowY, width - marginRight, height - marginBottom, zonePaint)
-
-        // High zone (above bgHigh)
         zonePaint.color = ZONE_HIGH
         canvas.drawRect(marginLeft, marginTop, width - marginRight, highY, zonePaint)
 
@@ -79,36 +61,31 @@ object GraphRenderer {
             strokeWidth = 2f
             style = Paint.Style.STROKE
         }
-
-        thresholdPaint.color = COLOR_HIGH
+        thresholdPaint.color = CANVAS_HIGH
         thresholdPaint.pathEffect = DashPathEffect(floatArrayOf(6f, 4f), 0f)
         canvas.drawLine(marginLeft, lowY, width - marginRight, lowY, thresholdPaint)
         canvas.drawLine(marginLeft, highY, width - marginRight, highY, thresholdPaint)
 
-        thresholdPaint.color = COLOR_LOW
+        thresholdPaint.color = CANVAS_LOW
         thresholdPaint.pathEffect = null
-        val critLowY = yFor(CRITICAL_LOW)
-        canvas.drawLine(marginLeft, critLowY, width - marginRight, critLowY, thresholdPaint)
-        val critHighY = yFor(CRITICAL_HIGH)
-        canvas.drawLine(marginLeft, critHighY, width - marginRight, critHighY, thresholdPaint)
+        canvas.drawLine(marginLeft, yFor(CRITICAL_LOW), width - marginRight, yFor(CRITICAL_LOW), thresholdPaint)
+        canvas.drawLine(marginLeft, yFor(CRITICAL_HIGH), width - marginRight, yFor(CRITICAL_HIGH), thresholdPaint)
 
-        // Readings
-        val visible = readings.filter { it.ts >= startTime }.sortedBy { it.ts }
         if (visible.isEmpty()) return bitmap
 
+        // Readings
         val dotPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
         val linePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             strokeWidth = LINE_WIDTH
             style = Paint.Style.STROKE
         }
-
         val dotR = if (compact) 3f else DOT_RADIUS
 
         for (i in visible.indices) {
             val r = visible[i]
             val x = xFor(r.ts)
             val y = yFor(r.mmol)
-            val color = colorFor(r.mmol, bgLow, bgHigh)
+            val color = canvasColorFor(r.mmol, bgLow, bgHigh)
 
             if (i < visible.lastIndex) {
                 val next = visible[i + 1]
@@ -118,6 +95,44 @@ object GraphRenderer {
 
             dotPaint.color = color
             canvas.drawCircle(x, y, dotR, dotPaint)
+        }
+
+        // Prediction dots
+        if (visible.size >= 2) {
+            val last = visible.last()
+            val prev = visible[visible.size - 2]
+            val dtMin = (last.ts - prev.ts) / 60_000.0
+            if (dtMin > 0) {
+                val ratePerMin = (last.mmol - prev.mmol) / dtMin
+                val predPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    style = Paint.Style.FILL
+                    alpha = 77 // ~0.3
+                }
+                val predLinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    strokeWidth = LINE_WIDTH
+                    style = Paint.Style.STROKE
+                    pathEffect = DashPathEffect(floatArrayOf(4f, 4f), 0f)
+                    alpha = 77
+                }
+                var prevPx = xFor(last.ts)
+                var prevPy = yFor(last.mmol)
+                for (m in 1..30) {
+                    val predMmol = (last.mmol + ratePerMin * m).coerceIn(1.0, 30.0)
+                    val predTs = last.ts + m * 60_000L
+                    val px = xFor(predTs)
+                    val py = yFor(predMmol)
+                    if (px > width - marginRight) break
+                    val color = canvasColorFor(predMmol, bgLow, bgHigh)
+                    predLinePaint.color = color
+                    predLinePaint.alpha = 77
+                    canvas.drawLine(prevPx, prevPy, px, py, predLinePaint)
+                    predPaint.color = color
+                    predPaint.alpha = 77
+                    canvas.drawCircle(px, py, dotR * 0.7f, predPaint)
+                    prevPx = px
+                    prevPy = py
+                }
+            }
         }
 
         // Axis labels (skip for compact)
@@ -140,9 +155,9 @@ object GraphRenderer {
             }
 
             textPaint.textAlign = Paint.Align.RIGHT
-            val yStep = if (yRange > 10) 2.0 else 1.0
-            var yLabel = Math.ceil(yMin / yStep) * yStep
-            while (yLabel <= yMax) {
+            val yStep = if (yr.range > 10) 2.0 else 1.0
+            var yLabel = Math.ceil(yr.yMin / yStep) * yStep
+            while (yLabel <= yr.yMax) {
                 val y = yFor(yLabel)
                 if (y > marginTop + 8 && y < height - marginBottom - 8) {
                     canvas.drawText("%.0f".format(yLabel), marginLeft - 4f, y + 6f, textPaint)
@@ -152,13 +167,5 @@ object GraphRenderer {
         }
 
         return bitmap
-    }
-
-    fun colorFor(mmol: Double, bgLow: Double, bgHigh: Double): Int = when {
-        mmol <= CRITICAL_LOW -> COLOR_LOW
-        mmol < bgLow -> COLOR_LOW
-        mmol >= CRITICAL_HIGH -> COLOR_LOW
-        mmol > bgHigh -> COLOR_HIGH
-        else -> COLOR_IN_RANGE
     }
 }
