@@ -71,6 +71,7 @@ dependencies {
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.tooling.preview)
     implementation(libs.compose.material3)
+    implementation("androidx.compose.material:material-icons-extended")
     debugImplementation(libs.compose.ui.tooling)
 
     implementation(libs.room.runtime)
@@ -91,4 +92,7 @@ dependencies {
 
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
+
+    implementation(libs.glance.appwidget)
+    implementation(libs.glance.material3)
 }

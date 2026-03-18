@@ -23,6 +23,9 @@ interface ReadingDao {
     @Query("SELECT * FROM readings ORDER BY ts DESC LIMIT :n")
     suspend fun lastN(n: Int): List<GlucoseReading>
 
+    @Query("SELECT * FROM readings ORDER BY ts DESC LIMIT 1")
+    suspend fun latestOnce(): GlucoseReading?
+
     @Query("SELECT * FROM readings WHERE pushed = 0 ORDER BY ts ASC LIMIT :limit")
     suspend fun unpushed(limit: Int = 100): List<GlucoseReading>
 
