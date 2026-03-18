@@ -13,42 +13,82 @@ import android.widget.TextView
 import com.psjostrom.strimma.data.GlucoseSource
 
 /**
- * Reads glucose values from CGM app notifications.
+ * Companion mode: reads glucose values from CGM app notifications.
  *
- * Depending on the selected GlucoseSource, this service accepts notifications
- * from CamAPS FX only, or from any known CGM app (Juggluco, Dexcom, LibreLink,
- * xDrip+, Diabox, etc.). Parses the glucose number and forwards it to
- * StrimmaService for processing.
+ * Accepts ongoing notifications from known CGM apps (CamAPS FX, Dexcom G6/G7/ONE,
+ * Juggluco, LibreLink, Libre 3, xDrip+, Diabox, Medtronic, Eversense, Aidex, etc.).
+ * Parses the glucose number and forwards it to StrimmaService for processing.
+ *
+ * Disabled when the data source is set to xDrip Broadcast (handled by
+ * XdripBroadcastReceiver instead).
  *
  * Requires "Notification access" permission granted in Android system settings.
  */
 class GlucoseNotificationListener : NotificationListenerService() {
 
     companion object {
-        private val CAMAPS_PACKAGES = setOf(
+        // Package list based on xDrip+'s UiBasedCollector.coOptedPackages
+        private val CGM_PACKAGES = setOf(
+            // CamAPS FX
             "com.camdiab.fx_alert.mmoll",
             "com.camdiab.fx_alert.mgdl",
             "com.camdiab.fx_alert.hx.mmoll",
             "com.camdiab.fx_alert.hx.mgdl",
             "com.camdiab.fx_alert.mmoll.ca",
-        )
-
-        private val ALL_CGM_PACKAGES = CAMAPS_PACKAGES + setOf(
-            "tk.glucodata",                        // Juggluco
-            "com.dexcom.g6",                       // Dexcom G6
-            "com.dexcom.g6.region1.mmol",          // Dexcom G6 (mmol regions)
-            "com.dexcom.g6.region3.mgdl",          // Dexcom G6 (mg/dL regions)
-            "com.dexcom.g7",                       // Dexcom G7
-            "com.dexcom.d1",                       // Dexcom ONE
-            "com.dexcom.one",                      // Dexcom ONE (alt)
-            "com.freestylelibre3.app",             // Libre 3
-            "com.freestylelibre3.app.de",          // Libre 3 (DE)
-            "com.freestylelibre.app",              // LibreLink
-            "com.freestylelibre.app.de",           // LibreLink (DE)
-            "com.eveningoutpost.dexdrip",          // xDrip+
-            "com.outshineiot.diabox",              // Diabox
-            "com.medtronic.diabetes.guardian",      // Medtronic Guardian
-            "com.senseonics.androidapp",           // Eversense
+            // Dexcom
+            "com.dexcom.g6",
+            "com.dexcom.g6.region1.mmol",
+            "com.dexcom.g6.region2.mgdl",
+            "com.dexcom.g6.region3.mgdl",
+            "com.dexcom.g6.region4.mmol",
+            "com.dexcom.g6.region5.mmol",
+            "com.dexcom.g6.region6.mgdl",
+            "com.dexcom.g6.region7.mmol",
+            "com.dexcom.g6.region8.mmol",
+            "com.dexcom.g6.region9.mgdl",
+            "com.dexcom.g6.region10.mgdl",
+            "com.dexcom.g6.region11.mmol",
+            "com.dexcom.g7",
+            "com.dexcom.dexcomone",
+            "com.dexcom.d1plus",
+            "com.dexcom.stelo",
+            // Libre
+            "com.freestylelibre3.app",
+            "com.freestylelibre3.app.de",
+            "com.freestylelibre.app",
+            "com.freestylelibre.app.de",
+            // Juggluco
+            "tk.glucodata",
+            // xDrip+
+            "com.eveningoutpost.dexdrip",
+            // Diabox
+            "com.outshineiot.diabox",
+            // Medtronic
+            "com.medtronic.diabetes.guardian",
+            "com.medtronic.diabetes.guardianconnect",
+            "com.medtronic.diabetes.guardianconnect.us",
+            "com.medtronic.diabetes.minimedmobile.eu",
+            "com.medtronic.diabetes.minimedmobile.us",
+            "com.medtronic.diabetes.simplera.eu",
+            // Eversense
+            "com.senseonics.androidapp",
+            "com.senseonics.gen12androidapp",
+            "com.senseonics.eversense365.us",
+            // Aidex
+            "com.microtech.aidexx.mgdl",
+            "com.microtech.aidexx.linxneo.mmoll",
+            "com.microtech.aidexx.equil.mmoll",
+            "com.microtech.aidexx.diaexport.mmoll",
+            "com.microtech.aidexx.smart.mmoll",
+            "com.microtech.aidexx",
+            // Other
+            "com.ottai.seas",
+            "com.ottai.tag",
+            "com.sinocare.cgm.ce",
+            "com.sinocare.ican.health.ce",
+            "com.sinocare.ican.health.ru",
+            "com.suswel.ai",
+            "com.glucotech.app.android",
         )
 
         const val ACTION_GLUCOSE_RECEIVED = "com.psjostrom.strimma.GLUCOSE_RECEIVED"
@@ -75,20 +115,13 @@ class GlucoseNotificationListener : NotificationListenerService() {
 
     private fun getSelectedSource(): GlucoseSource {
         val name = getSharedPreferences("strimma_sync", Context.MODE_PRIVATE)
-            .getString("glucose_source", null) ?: return GlucoseSource.CAMAPS_NOTIFICATION
-        return try { GlucoseSource.valueOf(name) } catch (_: Exception) { GlucoseSource.CAMAPS_NOTIFICATION }
+            .getString("glucose_source", null) ?: return GlucoseSource.COMPANION
+        return try { GlucoseSource.valueOf(name) } catch (_: Exception) { GlucoseSource.COMPANION }
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
-        val source = getSelectedSource()
-        if (source == GlucoseSource.XDRIP_BROADCAST) return
-
-        val acceptedPackages = when (source) {
-            GlucoseSource.CAMAPS_NOTIFICATION -> CAMAPS_PACKAGES
-            GlucoseSource.ANY_CGM_NOTIFICATION -> ALL_CGM_PACKAGES
-            GlucoseSource.XDRIP_BROADCAST -> return
-        }
-        if (sbn.packageName !in acceptedPackages) return
+        if (getSelectedSource() != GlucoseSource.COMPANION) return
+        if (sbn.packageName !in CGM_PACKAGES) return
         if (!sbn.isOngoing) return
 
         DebugLog.log(message = "Notification from: ${sbn.packageName}")
@@ -110,7 +143,6 @@ class GlucoseNotificationListener : NotificationListenerService() {
     }
 
     private fun extractGlucose(notification: Notification): Double? {
-        // Try RemoteViews first (CamAPS FX uses custom notification layout)
         notification.contentView?.let { rv ->
             try {
                 val applied = rv.apply(this, null)
@@ -127,14 +159,12 @@ class GlucoseNotificationListener : NotificationListenerService() {
             }
         }
 
-        // Fallback: try notification extras title
         notification.extras?.getString(Notification.EXTRA_TITLE)?.let { title ->
             DebugLog.log(message = "Title: $title")
             val parsed = tryParseGlucose(title)
             if (parsed != null) return parsed
         }
 
-        // Fallback: try notification extras text
         notification.extras?.getString(Notification.EXTRA_TEXT)?.let { text ->
             DebugLog.log(message = "Text: $text")
             val parsed = tryParseGlucose(text)

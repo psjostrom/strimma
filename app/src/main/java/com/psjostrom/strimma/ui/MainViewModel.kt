@@ -104,7 +104,7 @@ class MainViewModel @Inject constructor(
     fun setBgBroadcastEnabled(enabled: Boolean) = viewModelScope.launch { settings.setBgBroadcastEnabled(enabled) }
 
     val glucoseSource: StateFlow<GlucoseSource> = settings.glucoseSource
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), GlucoseSource.CAMAPS_NOTIFICATION)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), GlucoseSource.COMPANION)
     fun setGlucoseSource(source: GlucoseSource) = viewModelScope.launch { settings.setGlucoseSource(source) }
 
     suspend fun readingsForPeriod(hours: Int): List<GlucoseReading> {

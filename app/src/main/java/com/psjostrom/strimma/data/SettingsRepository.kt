@@ -110,8 +110,8 @@ class SettingsRepository @Inject constructor(
     suspend fun setBgBroadcastEnabled(enabled: Boolean) { dataStore.edit { it[KEY_BG_BROADCAST_ENABLED] = enabled } }
 
     val glucoseSource: Flow<GlucoseSource> = dataStore.data.map {
-        try { GlucoseSource.valueOf(it[KEY_GLUCOSE_SOURCE] ?: "CAMAPS_NOTIFICATION") }
-        catch (_: Exception) { GlucoseSource.CAMAPS_NOTIFICATION }
+        try { GlucoseSource.valueOf(it[KEY_GLUCOSE_SOURCE] ?: "COMPANION") }
+        catch (_: Exception) { GlucoseSource.COMPANION }
     }
     suspend fun setGlucoseSource(source: GlucoseSource) {
         dataStore.edit { it[KEY_GLUCOSE_SOURCE] = source.name }
@@ -120,7 +120,7 @@ class SettingsRepository @Inject constructor(
     }
     fun getGlucoseSourceSync(): GlucoseSource {
         val name = context.getSharedPreferences(SYNC_PREFS, Context.MODE_PRIVATE)
-            .getString(KEY_GLUCOSE_SOURCE_SYNC, null) ?: return GlucoseSource.CAMAPS_NOTIFICATION
-        return try { GlucoseSource.valueOf(name) } catch (_: Exception) { GlucoseSource.CAMAPS_NOTIFICATION }
+            .getString(KEY_GLUCOSE_SOURCE_SYNC, null) ?: return GlucoseSource.COMPANION
+        return try { GlucoseSource.valueOf(name) } catch (_: Exception) { GlucoseSource.COMPANION }
     }
 }
