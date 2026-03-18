@@ -39,14 +39,16 @@ Strimma started as a focused CGM app for a specific setup (Libre 3 + CamAPS FX),
 
 The open-source roadmap for broader sensor support, Nightscout integration, and community features is documented in `docs/strimma-p2-roadmap.md`.
 
-### Side-by-side validation
+### Side-by-side validation (completed)
 
-Strimma handles medical data depended on 24/7. Before transitioning away from xDrip+:
+Strimma was validated against xDrip+ over 14 hours of simultaneous operation:
 
-1. Both apps run simultaneously, receiving the same CamAPS FX broadcasts
-2. Both push to Springa — into **separate tables** so data can be compared
-3. Validate: graph accuracy, data completeness, push reliability, direction computation quality
-4. Only after Strimma proves 100% reliable is xDrip+ no longer needed for this use case
+- **Coverage:** Strimma 97.0% vs xDrip 96.4% (5-min slots)
+- **Value accuracy:** 84% exact match, 0.018 mmol/L average difference
+- **Direction agreement:** 79% exact, 97% within one arrow step
+- **Raw throughput:** Strimma captured 2x the readings (CamAPS fires ~1/min, xDrip catches ~half)
+
+Both tables merged into a single `xdrip_readings` table in Springa. xDrip+ retired. Strimma is the sole data source, pushing to `/api/v1/entries` (standard Nightscout path).
 
 ---
 

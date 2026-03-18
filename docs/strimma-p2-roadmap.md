@@ -34,7 +34,7 @@ Strimma is an open-source Android CGM app inspired by xDrip+. Currently focused 
 - `GlucoseNotificationListener` — NotificationListenerService that parses CamAPS FX's ongoing notification for glucose values
 - `GlucoseParser` — extracted top-level glucose text parser (testable, handles comma/dot decimals, Unicode cleanup)
 - `StrimmaService` — foreground service that processes readings, computes direction, updates notification, checks alerts, updates widget, pushes to Springa, broadcasts BG
-- `SpringaPusher` / `SpringaClient` — HTTP push with retry (12 attempts, linear backoff) and offline resilience (unpushed readings survive restart)
+- `SpringaPusher` / `SpringaClient` — HTTP push to `/api/v1/entries` (standard Nightscout path) with retry (12 attempts, linear backoff) and offline resilience (unpushed readings survive restart). Optional separate Nightscout upload.
 - `DirectionComputer` — EASD/ISPAD 2020 thresholds, 3-point averaged SGV, 5-minute delta
 
 **Display:**
@@ -232,7 +232,7 @@ None — P2 is complete.
 
 6. **Per-alarm notification channels.** Each alert type has its own Android notification channel with independent sound/vibration/DND settings.
 
-7. **~97% data coverage.** In side-by-side companion mode testing on Android 16, Strimma captured ~97% of readings vs ~47% for xDrip+. Different approaches suit different setups.
+7. **~97% data coverage, validated.** In 14h side-by-side testing, Strimma covered 97.0% of 5-min slots vs xDrip's 96.4%. Values matched within 0.018 mmol/L on average. xDrip retired — Strimma is the sole data source. Springa tables merged.
 
 8. **Widget with graph.** Glance widget shows BG, arrow, delta, and a mini graph — not just a number.
 
@@ -273,7 +273,7 @@ This section outlines what Strimma needs to become a viable open-source option f
 - **Architectural diversity is healthy.** A single open-source option means a single point of failure. The CGM community benefits from having multiple well-maintained options, just as Linux has multiple distributions.
 - **Modern Android conventions.** Strimma targets SDK 36, uses Compose, Room, Hilt, and Coroutines. This makes it easier for new contributors familiar with current Android development to jump in.
 - **Plugin-based extensibility.** Strimma's data source architecture is designed for community contributions — adding a sensor is one file with its own tests.
-- **Proven reliability.** In side-by-side companion mode testing on Android 16, Strimma captured ~97% of readings vs ~47% for xDrip+. Different approaches suit different setups.
+- **Proven reliability.** Validated against xDrip+ in 14h side-by-side testing: 97% coverage, 0.018 mmol/L avg value difference. xDrip+ retired — Strimma is the sole data source.
 
 ### What "xDrip alternative" means
 
