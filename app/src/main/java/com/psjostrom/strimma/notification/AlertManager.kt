@@ -48,7 +48,7 @@ class AlertManager @Inject constructor(
     }
 
     private val notificationManager = context.getSystemService(NotificationManager::class.java)
-    private val snoozedUntil = mutableMapOf<Int, Long>()
+    private val snoozePrefs = context.getSharedPreferences("strimma_snooze", Context.MODE_PRIVATE)
 
     private val alarmAudioAttrs = AudioAttributes.Builder()
         .setUsage(AudioAttributes.USAGE_ALARM)
@@ -157,12 +157,12 @@ class AlertManager @Inject constructor(
                 fireAlert(ALERT_LOW_ID, CHANNEL_LOW, "Low Glucose", "%.1f mmol/L".format(mmol))
             }
             notificationManager.cancel(ALERT_URGENT_LOW_ID)
-            snoozedUntil.remove(ALERT_URGENT_LOW_ID)
+            clearSnooze(ALERT_URGENT_LOW_ID)
         } else {
             notificationManager.cancel(ALERT_LOW_ID)
             notificationManager.cancel(ALERT_URGENT_LOW_ID)
-            snoozedUntil.remove(ALERT_LOW_ID)
-            snoozedUntil.remove(ALERT_URGENT_LOW_ID)
+            clearSnooze(ALERT_LOW_ID)
+            clearSnooze(ALERT_URGENT_LOW_ID)
         }
 
         // --- Highs (urgent takes priority) ---
@@ -176,12 +176,12 @@ class AlertManager @Inject constructor(
                 fireAlert(ALERT_HIGH_ID, CHANNEL_HIGH, "High Glucose", "%.1f mmol/L".format(mmol))
             }
             notificationManager.cancel(ALERT_URGENT_HIGH_ID)
-            snoozedUntil.remove(ALERT_URGENT_HIGH_ID)
+            clearSnooze(ALERT_URGENT_HIGH_ID)
         } else {
             notificationManager.cancel(ALERT_HIGH_ID)
             notificationManager.cancel(ALERT_URGENT_HIGH_ID)
-            snoozedUntil.remove(ALERT_HIGH_ID)
-            snoozedUntil.remove(ALERT_URGENT_HIGH_ID)
+            clearSnooze(ALERT_HIGH_ID)
+            clearSnooze(ALERT_URGENT_HIGH_ID)
         }
     }
 
@@ -196,20 +196,25 @@ class AlertManager @Inject constructor(
             }
         } else {
             notificationManager.cancel(ALERT_STALE_ID)
-            snoozedUntil.remove(ALERT_STALE_ID)
+            clearSnooze(ALERT_STALE_ID)
         }
     }
 
     fun snooze(alertId: Int) {
-        snoozedUntil[alertId] = System.currentTimeMillis() + SNOOZE_DURATION_MS
+        snoozePrefs.edit().putLong(alertId.toString(), System.currentTimeMillis() + SNOOZE_DURATION_MS).apply()
         notificationManager.cancel(alertId)
         DebugLog.log("Alert $alertId snoozed for 30 min")
     }
 
+    private fun clearSnooze(alertId: Int) {
+        snoozePrefs.edit().remove(alertId.toString()).apply()
+    }
+
     private fun isSnoozed(alertId: Int, now: Long): Boolean {
-        val until = snoozedUntil[alertId] ?: return false
+        val until = snoozePrefs.getLong(alertId.toString(), 0L)
+        if (until == 0L) return false
         if (now >= until) {
-            snoozedUntil.remove(alertId)
+            snoozePrefs.edit().remove(alertId.toString()).apply()
             return false
         }
         return true
