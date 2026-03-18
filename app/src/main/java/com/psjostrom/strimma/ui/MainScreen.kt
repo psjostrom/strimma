@@ -46,13 +46,15 @@ fun MainScreen(
 ) {
     val mainWindowMs = graphWindowHours * 3600_000L
 
-    var viewportEnd by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    var viewportEnd by remember { mutableLongStateOf(System.currentTimeMillis() + 30 * 60_000L) }
     var zoomScale by remember { mutableFloatStateOf(1f) }
 
+    // Auto-track "now" + 30 min of prediction space when viewport is near current time
+    val predictionMs = 30 * 60_000L
     LaunchedEffect(readings) {
         val now = System.currentTimeMillis()
-        if (now - viewportEnd < 2 * 60 * 1000) {
-            viewportEnd = now
+        if (now + predictionMs - viewportEnd < 2 * 60 * 1000) {
+            viewportEnd = now + predictionMs
         }
     }
 
@@ -247,9 +249,10 @@ fun GlucoseGraph(
                     val msPerPx = currentVisibleMs / plotWidth
                     val timeShift = (-pan.x * msPerPx).toLong()
                     val now = System.currentTimeMillis()
+                    val maxEnd = now + 30 * 60_000L // prediction space
                     val newEnd = (viewportEnd + timeShift).coerceIn(
-                        readings.minOfOrNull { it.ts }?.plus(currentVisibleMs.toLong()) ?: now,
-                        now
+                        readings.minOfOrNull { it.ts }?.plus(currentVisibleMs.toLong()) ?: maxEnd,
+                        maxEnd
                     )
                     onViewportChange(newEnd)
                 }

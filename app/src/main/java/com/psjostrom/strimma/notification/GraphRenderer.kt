@@ -29,7 +29,9 @@ object GraphRenderer {
         canvas.drawColor(BG_COLOR)
 
         val now = System.currentTimeMillis()
-        val startTime = now - windowMs
+        val predictionMs = 30 * 60_000L
+        val endTime = now + predictionMs
+        val startTime = endTime - windowMs - predictionMs
 
         val marginLeft = if (compact) 4f else 40f
         val marginRight = if (compact) 4f else 10f
@@ -41,7 +43,8 @@ object GraphRenderer {
         val visible = readings.filter { it.ts >= startTime }.sortedBy { it.ts }
         val yr = computeYRange(visible.map { it.mmol }, bgLow, bgHigh)
 
-        fun xFor(ts: Long): Float = marginLeft + ((ts - startTime).toFloat() / windowMs) * plotWidth
+        val totalMs = endTime - startTime
+        fun xFor(ts: Long): Float = marginLeft + ((ts - startTime).toFloat() / totalMs) * plotWidth
         fun yFor(mmol: Double): Float = marginTop + ((yr.yMax - mmol) / yr.range).toFloat() * plotHeight
 
         // Zone backgrounds
@@ -146,7 +149,7 @@ object GraphRenderer {
             val intervalMs = if (windowMs <= 3600_000L) 15 * 60_000L else 30 * 60_000L
             var tickTime = startTime - (startTime % intervalMs) + intervalMs
             val sdf = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
-            while (tickTime < now) {
+            while (tickTime < endTime) {
                 val x = xFor(tickTime)
                 if (x > marginLeft && x < width - marginRight) {
                     canvas.drawText(sdf.format(java.util.Date(tickTime)), x, height.toFloat() - 4f, textPaint)
