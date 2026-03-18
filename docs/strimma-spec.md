@@ -639,17 +639,21 @@ When Strimma is validated, flip the default. When xDrip is uninstalled, the `sou
 | Component | Choice | Rationale |
 |-----------|--------|-----------|
 | Language | Kotlin | Modern, concise, coroutine-native |
-| UI | Jetpack Compose + Material 3 | Current Android UI standard, dark theme built-in |
-| Database | Room | Type-safe, migration-aware, LiveData/Flow integration |
+| UI | Jetpack Compose + Material 3 | Current Android UI standard, dark/light theme built-in |
+| Database | Room | Type-safe, migration-aware, Flow integration |
 | Networking | Ktor Client | Kotlin-native, coroutine-based, no OkHttp legacy |
 | DI | Hilt | Standard for single-module Android apps |
 | Concurrency | Kotlin Coroutines + Flow | Structured concurrency, lifecycle-aware |
 | Settings | Jetpack DataStore + EncryptedSharedPreferences | DataStore for prefs, EncryptedSharedPreferences for API secret |
-| Graph | Custom Compose Canvas | No external lib needed for dot+line graphs |
+| Graph | Custom Compose Canvas + shared GraphColors | Dot+line+prediction graphs, shared color/range logic |
+| Widget | Jetpack Glance | Compose-based widget API with AppWidgetManager updates |
 | Notifications | NotificationCompat + RemoteViews | Custom layouts with bitmap graphs |
+| Alerts | 5 notification channels | Per-alarm sound/vibration/DND via Android channel settings |
+| Testing | JUnit 4 + Robolectric 4.16 + Room in-memory | 66 tests on JVM, SDK 36, no emulator |
+| Java | 21 (Zulu) | Repo-specific via `gradle.properties`, needed for Robolectric SDK 36 |
 | Build | Gradle 8.x + AGP 8.x | Current |
 | compileSdk | 36 | Android 16 |
-| targetSdk | 36 | Android 16 — no CGM BLE collection, so no reason for low target |
+| targetSdk | 36 | Android 16 |
 | minSdk | 36 | Single device (Pixel 9 Pro, Android 16) |
 
 ### Springa
@@ -667,21 +671,22 @@ No new dependencies. Changes are:
 
 | Feature | Description |
 |---------|-------------|
-| **Alerts** | 5 alert types (urgent low, low, high, urgent high, stale) with per-alarm notification channels, configurable thresholds, 30-min snooze, DND bypass for urgent alerts |
-| **Prediction** | 30-minute linear extrapolation from current trend, rendered as faded dots on both main graph and notification graphs |
+| **Alerts** | 5 alert types (urgent low, low, high, urgent high, stale) with per-alarm notification channels, configurable thresholds, persistent snooze, DND bypass for urgent alerts |
+| **Prediction** | 30-minute linear extrapolation using direction computation rate, white dots on both main graph and notification graphs |
+| **Home screen widget** | Jetpack Glance widget with BG, arrow, delta, mini graph, configurable opacity |
+| **Statistics** | TIR, GMI, average glucose, CV%, coverage — with period selector (24h/7d/14d/30d) and CSV export |
+| **Theme** | Dark / Light / System picker with theme-adaptive graph surfaces |
 | **Persistent logging** | File-based debug logs with 7-day rotation, shareable via FileProvider |
 | **Settings debounce** | URL and API secret save on field blur instead of every keystroke |
-| **Graph consolidation** | Shared `graph/GraphColors.kt` module used by both notification and Compose graph renderers |
+| **Graph consolidation** | Shared `graph/GraphColors.kt` module, compact top gradient for widget readability |
+| **Testing** | 66 tests: 46 unit (DirectionComputer, GlucoseParser, GraphColors, SecretHash) + 20 integration (Room DAO, reading pipeline via Robolectric 4.16) |
 
 ### Remaining
 
 | Feature | Description |
 |---------|-------------|
-| **Home screen widget** | Glanceable glucose display without opening the app |
 | **Unit switching** | mmol/L ↔ mg/dL toggle |
-| **Statistics** | TIR, GMI, average glucose, CV% — currently only in Springa |
 | **BG broadcast** | `com.eveningoutpost.dexdrip.BgEstimate` intent for external app compat |
-| **Settings expansion** | Graph appearance, notification options, data retention, export |
 
 ---
 
