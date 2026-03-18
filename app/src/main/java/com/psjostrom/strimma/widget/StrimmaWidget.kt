@@ -1,12 +1,15 @@
 package com.psjostrom.strimma.widget
 
 import android.content.Context
-import android.content.Intent
 import android.graphics.Bitmap
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.glance.*
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
@@ -14,6 +17,7 @@ import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
 import androidx.glance.layout.*
+import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
@@ -30,50 +34,57 @@ import kotlinx.coroutines.flow.first
 class StrimmaWidget : GlanceAppWidget() {
 
     companion object {
-        private const val PREFS = "widget_prefs"
+        val KEY_OPACITY = floatPreferencesKey("opacity")
+        val KEY_GRAPH_MINUTES = intPreferencesKey("graph_minutes")
+        val KEY_SHOW_PREDICTION = booleanPreferencesKey("show_prediction")
 
-        fun getPrefs(context: Context) =
-            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-
-        fun getOpacity(context: Context) = getPrefs(context).getFloat("opacity", 0.85f)
-
-        fun getGraphMinutes(context: Context) = getPrefs(context).getInt("graph_minutes", 60)
-
-        fun getShowPrediction(context: Context) = getPrefs(context).getBoolean("show_prediction", false)
+        const val DEFAULT_OPACITY = 0.85f
+        const val DEFAULT_GRAPH_MINUTES = 60
+        const val DEFAULT_SHOW_PREDICTION = false
     }
+
+    override val stateDefinition = PreferencesGlanceStateDefinition
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val db = StrimmaDatabase.getInstance(context)
         val dao = db.readingDao()
-        val latest = dao.latestOnce()
         val settings = SettingsRepository(context)
         val bgLow = settings.bgLow.first()
         val bgHigh = settings.bgHigh.first()
         val glucoseUnit = settings.glucoseUnit.first()
-        val opacity = getOpacity(context)
-        val graphMinutes = getGraphMinutes(context)
-        val showPrediction = getShowPrediction(context)
-        val graphWindowMs = graphMinutes * 60_000L
-        val predictionMinutes = if (showPrediction) 10 else 0
 
-        val since = System.currentTimeMillis() - graphWindowMs
-        val readings = dao.since(since)
-        val graphBitmap = GraphRenderer.render(
-            readings = readings,
-            width = 800,
-            height = 300,
-            bgLow = bgLow.toDouble(),
-            bgHigh = bgHigh.toDouble(),
-            windowMs = graphWindowMs,
-            compact = true,
-            predictionMinutes = predictionMinutes
-        )
+        // Fetch Room data here (needs suspend). Max 3h — filter down in provideContent.
+        val latest = dao.latestOnce()
+        val allReadings = dao.since(System.currentTimeMillis() - MAX_WINDOW_MS)
 
         provideContent {
+            // Read widget settings from Glance state — reactive to updateAppWidgetState
+            val state = currentState<Preferences>()
+            val opacity = state[KEY_OPACITY] ?: DEFAULT_OPACITY
+            val graphMinutes = state[KEY_GRAPH_MINUTES] ?: DEFAULT_GRAPH_MINUTES
+            val showPrediction = state[KEY_SHOW_PREDICTION] ?: DEFAULT_SHOW_PREDICTION
+            val graphWindowMs = graphMinutes * 60_000L
+            val predictionMinutes = if (showPrediction) 5 else 0
+
+            val since = System.currentTimeMillis() - graphWindowMs
+            val readings = allReadings.filter { it.ts >= since }
+            val graphBitmap = GraphRenderer.render(
+                readings = readings,
+                width = 800,
+                height = 300,
+                bgLow = bgLow.toDouble(),
+                bgHigh = bgHigh.toDouble(),
+                windowMs = graphWindowMs,
+                compact = true,
+                predictionMinutes = predictionMinutes
+            )
+
             WidgetContent(latest, bgLow, bgHigh, graphBitmap, opacity, glucoseUnit)
         }
     }
 }
+
+private const val MAX_WINDOW_MS = 180 * 60_000L // 3h — largest selectable graph window
 
 @Composable
 private fun WidgetContent(
@@ -85,7 +96,6 @@ private fun WidgetContent(
     glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL
 ) {
     val staleColor = ColorProvider(Color(0xFF636E7B))
-    val mutedColor = ColorProvider(Color(0xFF8892A0))
 
     val statusColor = when {
         reading == null -> staleColor

@@ -5,6 +5,9 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.glance.appwidget.GlanceAppWidgetManager
+import androidx.glance.appwidget.state.updateAppWidgetState
+import androidx.lifecycle.lifecycleScope
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -14,8 +17,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.glance.appwidget.GlanceAppWidgetManager
-import androidx.lifecycle.lifecycleScope
 import com.psjostrom.strimma.ui.theme.DarkBg
 import com.psjostrom.strimma.ui.theme.DarkSurfaceCard
 import com.psjostrom.strimma.ui.theme.DarkTextPrimary
@@ -52,15 +53,25 @@ class WidgetConfigActivity : ComponentActivity() {
                     initialGraphMinutes = prefs.getInt("graph_minutes", 60),
                     initialShowPrediction = prefs.getBoolean("show_prediction", false),
                     onSave = { opacity, graphMinutes, showPrediction ->
+                        // SharedPreferences for config UI initial values on next open
                         prefs.edit()
                             .putFloat("opacity", opacity)
                             .putInt("graph_minutes", graphMinutes)
                             .putBoolean("show_prediction", showPrediction)
-                            .apply()
+                            .commit()
+
+                        // Write settings to Glance state then update widget
+                        val appContext = applicationContext
                         lifecycleScope.launch {
-                            val manager = GlanceAppWidgetManager(this@WidgetConfigActivity)
-                            manager.getGlanceIds(StrimmaWidget::class.java).forEach { id ->
-                                StrimmaWidget().update(this@WidgetConfigActivity, id)
+                            val manager = GlanceAppWidgetManager(appContext)
+                            val ids = manager.getGlanceIds(StrimmaWidget::class.java)
+                            for (id in ids) {
+                                updateAppWidgetState(appContext, id) {
+                                    it[StrimmaWidget.KEY_OPACITY] = opacity
+                                    it[StrimmaWidget.KEY_GRAPH_MINUTES] = graphMinutes
+                                    it[StrimmaWidget.KEY_SHOW_PREDICTION] = showPrediction
+                                }
+                                StrimmaWidget().update(appContext, id)
                             }
                             if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
                                 setResult(
