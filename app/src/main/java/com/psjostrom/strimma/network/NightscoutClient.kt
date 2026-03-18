@@ -4,6 +4,7 @@ import com.psjostrom.strimma.data.GlucoseReading
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
@@ -26,8 +27,21 @@ data class NightscoutEntry(
     val device: String = "Strimma"
 )
 
+@Serializable
+data class NightscoutEntryResponse(
+    val sgv: Int? = null,
+    val date: Long? = null,
+    val type: String? = null
+)
+
 @Singleton
 class NightscoutClient @Inject constructor() {
+
+    companion object {
+        fun buildFetchUrl(baseUrl: String, since: Long, count: Int): String {
+            return "${baseUrl.trimEnd('/')}/api/v1/entries.json?find[date][\$gt]=$since&count=$count"
+        }
+    }
 
     private val client = HttpClient(CIO) {
         install(ContentNegotiation) {
@@ -74,6 +88,37 @@ class NightscoutClient @Inject constructor() {
                 message = "Push error: ${e.message?.take(80)}"
             )
             false
+        }
+    }
+
+    suspend fun fetchEntries(
+        baseUrl: String,
+        apiSecret: String,
+        since: Long,
+        count: Int = 2016
+    ): List<NightscoutEntryResponse>? {
+        if (baseUrl.isBlank() || apiSecret.isBlank()) return emptyList()
+
+        val hashedSecret = hashSecret(apiSecret)
+        val fullUrl = buildFetchUrl(baseUrl, since, count)
+
+        return try {
+            val response = client.get(fullUrl) {
+                header("api-secret", hashedSecret)
+            }
+            if (!response.status.isSuccess()) {
+                com.psjostrom.strimma.receiver.DebugLog.log(
+                    message = "Fetch HTTP ${response.status.value}: $fullUrl"
+                )
+                null
+            } else {
+                response.body<List<NightscoutEntryResponse>>()
+            }
+        } catch (e: Exception) {
+            com.psjostrom.strimma.receiver.DebugLog.log(
+                message = "Fetch error: ${e.message?.take(80)}"
+            )
+            null
         }
     }
 
