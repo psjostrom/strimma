@@ -92,5 +92,8 @@ lint-results*.xml
 # Android Profiling
 *.hprof
 
+# Release keystore (decoded from CI secrets)
+app/release.keystore
+
 # Claude
 .claude.local.md

@@ -11,6 +11,18 @@ android {
     namespace = "com.psjostrom.strimma"
     compileSdk = 36
 
+    signingConfigs {
+        create("release") {
+            val keystoreFile = System.getenv("STRIMMA_KEYSTORE_FILE")
+            if (keystoreFile != null) {
+                storeFile = file(keystoreFile)
+                storePassword = System.getenv("STRIMMA_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("STRIMMA_KEY_ALIAS")
+                keyPassword = System.getenv("STRIMMA_KEY_PASSWORD")
+            }
+        }
+    }
+
     defaultConfig {
         applicationId = "com.psjostrom.strimma"
         minSdk = 33 // Only targets devices still receiving security updates — this is medical data
@@ -35,6 +47,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
