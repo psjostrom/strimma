@@ -27,10 +27,8 @@ class GlucoseParserTest {
     }
 
     @Test
-    fun `strips mg unit suffix`() {
-        // mg/dL values like "120" won't match (no decimal) — this is correct,
-        // we only parse mmol values with decimals
-        assertNull(tryParseGlucose("120 mg/dL"))
+    fun `parses mg-dL with unit suffix`() {
+        assertEquals(120.0 / 18.0182, tryParseGlucose("120 mg/dL")!!, 0.01)
     }
 
     @Test
@@ -72,8 +70,23 @@ class GlucoseParserTest {
     }
 
     @Test
-    fun `rejects integer without decimal`() {
-        assertNull(tryParseGlucose("120"))
+    fun `parses mg-dL integer`() {
+        assertEquals(120.0 / 18.0182, tryParseGlucose("120")!!, 0.01)
+        assertEquals(180.0 / 18.0182, tryParseGlucose("180")!!, 0.01)
+        assertEquals(55.0 / 18.0182, tryParseGlucose("55")!!, 0.01)
+    }
+
+    @Test
+    fun `rejects ambiguous integers 20-50`() {
+        assertNull(tryParseGlucose("40"))
+        assertNull(tryParseGlucose("20"))
+        assertNull(tryParseGlucose("50"))
+    }
+
+    @Test
+    fun `rejects mg-dL out of range`() {
+        assertNull(tryParseGlucose("501"))
+        assertNull(tryParseGlucose("10"))
     }
 
     @Test
