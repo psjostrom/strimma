@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseStats
+import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.StatsCalculator
 import com.psjostrom.strimma.ui.theme.*
 import kotlinx.coroutines.launch
@@ -35,6 +36,7 @@ private val PERIODS = listOf(24 to "24h", 168 to "7d", 336 to "14d", 720 to "30d
 fun StatsScreen(
     bgLow: Float,
     bgHigh: Float,
+    glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
     onLoadReadings: suspend (Int) -> List<GlucoseReading>,
     onExportCsv: suspend (Int) -> String,
     onBack: () -> Unit
@@ -214,13 +216,13 @@ fun StatsScreen(
                         modifier = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        StatRow("Average", "%.1f mmol/L".format(s.averageMmol), onBg, onSurfaceVar)
+                        StatRow("Average", glucoseUnit.formatWithUnit(s.averageMmol), onBg, onSurfaceVar)
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                         StatRow("GMI (eHbA1c)", "%.1f%%".format(s.gmi), onBg, onSurfaceVar)
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                         StatRow("CV", "%.1f%%".format(s.cv), onBg, onSurfaceVar)
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                        StatRow("Std Dev", "%.2f mmol/L".format(s.stdDevMmol), onBg, onSurfaceVar)
+                        StatRow("Std Dev", glucoseUnit.formatWithUnit(s.stdDevMmol), onBg, onSurfaceVar)
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                         StatRow("Readings", "%,d".format(s.count), onBg, onSurfaceVar)
                     }
@@ -228,7 +230,7 @@ fun StatsScreen(
 
                 // Targets info
                 Text(
-                    "Range: %.1f – %.1f mmol/L".format(bgLow, bgHigh),
+                    "Range: ${glucoseUnit.formatThreshold(bgLow)} – ${glucoseUnit.formatThreshold(bgHigh)} ${glucoseUnit.label}",
                     color = outline,
                     fontSize = 12.sp,
                     modifier = Modifier.padding(start = 4.dp)

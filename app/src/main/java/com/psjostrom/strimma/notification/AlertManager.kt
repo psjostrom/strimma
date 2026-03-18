@@ -10,6 +10,7 @@ import android.media.RingtoneManager
 import android.provider.Settings
 import androidx.core.app.NotificationCompat
 import com.psjostrom.strimma.data.GlucoseReading
+import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.receiver.DebugLog
 import com.psjostrom.strimma.ui.MainActivity
@@ -136,6 +137,7 @@ class AlertManager @Inject constructor(
     suspend fun checkReading(reading: GlucoseReading) {
         val now = System.currentTimeMillis()
         val mmol = reading.mmol
+        val unit = settings.glucoseUnit.first()
 
         val urgentLowEnabled = settings.alertUrgentLowEnabled.first()
         val urgentLowThreshold = settings.alertUrgentLow.first()
@@ -149,12 +151,12 @@ class AlertManager @Inject constructor(
         // --- Lows (urgent takes priority) ---
         if (urgentLowEnabled && mmol <= urgentLowThreshold) {
             if (!isSnoozed(ALERT_URGENT_LOW_ID, now)) {
-                fireAlert(ALERT_URGENT_LOW_ID, CHANNEL_URGENT_LOW, "Urgent Low", "%.1f mmol/L".format(mmol))
+                fireAlert(ALERT_URGENT_LOW_ID, CHANNEL_URGENT_LOW, "Urgent Low", unit.formatWithUnit(mmol))
                 notificationManager.cancel(ALERT_LOW_ID)
             }
         } else if (lowEnabled && mmol < lowThreshold) {
             if (!isSnoozed(ALERT_LOW_ID, now)) {
-                fireAlert(ALERT_LOW_ID, CHANNEL_LOW, "Low Glucose", "%.1f mmol/L".format(mmol))
+                fireAlert(ALERT_LOW_ID, CHANNEL_LOW, "Low Glucose", unit.formatWithUnit(mmol))
             }
             notificationManager.cancel(ALERT_URGENT_LOW_ID)
             clearSnooze(ALERT_URGENT_LOW_ID)
@@ -168,12 +170,12 @@ class AlertManager @Inject constructor(
         // --- Highs (urgent takes priority) ---
         if (urgentHighEnabled && mmol >= urgentHighThreshold) {
             if (!isSnoozed(ALERT_URGENT_HIGH_ID, now)) {
-                fireAlert(ALERT_URGENT_HIGH_ID, CHANNEL_URGENT_HIGH, "Urgent High", "%.1f mmol/L".format(mmol))
+                fireAlert(ALERT_URGENT_HIGH_ID, CHANNEL_URGENT_HIGH, "Urgent High", unit.formatWithUnit(mmol))
                 notificationManager.cancel(ALERT_HIGH_ID)
             }
         } else if (highEnabled && mmol > highThreshold) {
             if (!isSnoozed(ALERT_HIGH_ID, now)) {
-                fireAlert(ALERT_HIGH_ID, CHANNEL_HIGH, "High Glucose", "%.1f mmol/L".format(mmol))
+                fireAlert(ALERT_HIGH_ID, CHANNEL_HIGH, "High Glucose", unit.formatWithUnit(mmol))
             }
             notificationManager.cancel(ALERT_URGENT_HIGH_ID)
             clearSnooze(ALERT_URGENT_HIGH_ID)

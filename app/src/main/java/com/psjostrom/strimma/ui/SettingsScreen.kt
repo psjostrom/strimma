@@ -17,6 +17,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -30,6 +31,8 @@ fun SettingsScreen(
     themeMode: String,
     notifGraphMinutes: Int,
     notifPredictionMinutes: Int,
+    glucoseUnit: GlucoseUnit,
+    bgBroadcastEnabled: Boolean,
     alertLowEnabled: Boolean,
     alertHighEnabled: Boolean,
     alertUrgentLowEnabled: Boolean,
@@ -47,6 +50,8 @@ fun SettingsScreen(
     onThemeModeChange: (String) -> Unit,
     onNotifGraphMinutesChange: (Int) -> Unit,
     onNotifPredictionMinutesChange: (Int) -> Unit,
+    onGlucoseUnitChange: (GlucoseUnit) -> Unit,
+    onBgBroadcastEnabledChange: (Boolean) -> Unit,
     onAlertLowEnabledChange: (Boolean) -> Unit,
     onAlertHighEnabledChange: (Boolean) -> Unit,
     onAlertUrgentLowEnabledChange: (Boolean) -> Unit,
@@ -124,6 +129,19 @@ fun SettingsScreen(
             }
 
             SettingsSection("Display", outline, surfVar) {
+                Text("Unit", color = onBg, fontSize = 14.sp)
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    GlucoseUnit.entries.forEachIndexed { index, unit ->
+                        SegmentedButton(
+                            selected = glucoseUnit == unit,
+                            onClick = { onGlucoseUnitChange(unit) },
+                            shape = SegmentedButtonDefaults.itemShape(index, GlucoseUnit.entries.size)
+                        ) {
+                            Text(unit.label)
+                        }
+                    }
+                }
+
                 Text(
                     "Graph Window: $graphWindowHours hours",
                     color = onBg,
@@ -136,27 +154,27 @@ fun SettingsScreen(
                     steps = 6
                 )
 
-                var bgLowText by remember(bgLow) { mutableStateOf("%.1f".format(bgLow)) }
+                var bgLowText by remember(bgLow, glucoseUnit) { mutableStateOf(glucoseUnit.formatThreshold(bgLow)) }
                 OutlinedTextField(
                     value = bgLowText,
                     onValueChange = { text ->
                         bgLowText = text
-                        text.toFloatOrNull()?.let { onBgLowChange(it) }
+                        glucoseUnit.parseThreshold(text)?.let { onBgLowChange(it) }
                     },
-                    label = { Text("Low Threshold (mmol/L)") },
+                    label = { Text("Low Threshold (${glucoseUnit.label})") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                 )
 
-                var bgHighText by remember(bgHigh) { mutableStateOf("%.1f".format(bgHigh)) }
+                var bgHighText by remember(bgHigh, glucoseUnit) { mutableStateOf(glucoseUnit.formatThreshold(bgHigh)) }
                 OutlinedTextField(
                     value = bgHighText,
                     onValueChange = { text ->
                         bgHighText = text
-                        text.toFloatOrNull()?.let { onBgHighChange(it) }
+                        glucoseUnit.parseThreshold(text)?.let { onBgHighChange(it) }
                     },
-                    label = { Text("High Threshold (mmol/L)") },
+                    label = { Text("High Threshold (${glucoseUnit.label})") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
@@ -225,7 +243,8 @@ fun SettingsScreen(
                     onToggle = onAlertUrgentLowEnabledChange,
                     threshold = alertUrgentLow,
                     onThresholdChange = onAlertUrgentLowChange,
-                    thresholdLabel = "Urgent Low (mmol/L)",
+                    thresholdLabel = "Urgent Low (${glucoseUnit.label})",
+                    glucoseUnit = glucoseUnit,
                     channelId = com.psjostrom.strimma.notification.AlertManager.CHANNEL_URGENT_LOW,
                     onOpenSound = onOpenAlertSound,
                     textColor = onBg
@@ -239,7 +258,8 @@ fun SettingsScreen(
                     onToggle = onAlertLowEnabledChange,
                     threshold = alertLow,
                     onThresholdChange = onAlertLowChange,
-                    thresholdLabel = "Low Alert (mmol/L)",
+                    thresholdLabel = "Low Alert (${glucoseUnit.label})",
+                    glucoseUnit = glucoseUnit,
                     channelId = com.psjostrom.strimma.notification.AlertManager.CHANNEL_LOW,
                     onOpenSound = onOpenAlertSound,
                     textColor = onBg
@@ -253,7 +273,8 @@ fun SettingsScreen(
                     onToggle = onAlertHighEnabledChange,
                     threshold = alertHigh,
                     onThresholdChange = onAlertHighChange,
-                    thresholdLabel = "High Alert (mmol/L)",
+                    thresholdLabel = "High Alert (${glucoseUnit.label})",
+                    glucoseUnit = glucoseUnit,
                     channelId = com.psjostrom.strimma.notification.AlertManager.CHANNEL_HIGH,
                     onOpenSound = onOpenAlertSound,
                     textColor = onBg
@@ -267,7 +288,8 @@ fun SettingsScreen(
                     onToggle = onAlertUrgentHighEnabledChange,
                     threshold = alertUrgentHigh,
                     onThresholdChange = onAlertUrgentHighChange,
-                    thresholdLabel = "Urgent High (mmol/L)",
+                    thresholdLabel = "Urgent High (${glucoseUnit.label})",
+                    glucoseUnit = glucoseUnit,
                     channelId = com.psjostrom.strimma.notification.AlertManager.CHANNEL_URGENT_HIGH,
                     onOpenSound = onOpenAlertSound,
                     textColor = onBg
@@ -287,6 +309,24 @@ fun SettingsScreen(
                     TextButton(onClick = { onOpenAlertSound(com.psjostrom.strimma.notification.AlertManager.CHANNEL_STALE) }) {
                         Text("Sound", color = InRange, fontSize = 13.sp)
                     }
+                }
+            }
+
+            SettingsSection("Integration", outline, surfVar) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                        Text("BG Broadcast", color = onBg, fontSize = 14.sp)
+                        Text(
+                            "xDrip-compatible intent for AAPS, GDH, watches",
+                            color = outline,
+                            fontSize = 12.sp
+                        )
+                    }
+                    Switch(checked = bgBroadcastEnabled, onCheckedChange = onBgBroadcastEnabledChange)
                 }
             }
 
@@ -327,6 +367,7 @@ private fun AlertBlock(
     threshold: Float,
     onThresholdChange: (Float) -> Unit,
     thresholdLabel: String,
+    glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
     channelId: String,
     onOpenSound: (String) -> Unit,
     textColor: androidx.compose.ui.graphics.Color
@@ -340,12 +381,12 @@ private fun AlertBlock(
         Switch(checked = enabled, onCheckedChange = onToggle)
     }
     if (enabled) {
-        var text by remember(threshold) { mutableStateOf("%.1f".format(threshold)) }
+        var text by remember(threshold, glucoseUnit) { mutableStateOf(glucoseUnit.formatThreshold(threshold)) }
         OutlinedTextField(
             value = text,
             onValueChange = { v ->
                 text = v
-                v.toFloatOrNull()?.let { onThresholdChange(it) }
+                glucoseUnit.parseThreshold(v)?.let { onThresholdChange(it) }
             },
             label = { Text(thresholdLabel) },
             modifier = Modifier.fillMaxWidth(),

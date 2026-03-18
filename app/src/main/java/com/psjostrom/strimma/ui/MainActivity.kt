@@ -83,6 +83,8 @@ class MainActivity : ComponentActivity() {
                 val alertStaleEnabled by viewModel.alertStaleEnabled.collectAsState()
                 val notifGraphMinutes by viewModel.notifGraphMinutes.collectAsState()
                 val notifPredictionMinutes by viewModel.notifPredictionMinutes.collectAsState()
+                val glucoseUnit by viewModel.glucoseUnit.collectAsState()
+                val bgBroadcastEnabled by viewModel.bgBroadcastEnabled.collectAsState()
 
                 NavHost(navController, startDestination = "main") {
                     composable("main") {
@@ -92,6 +94,7 @@ class MainActivity : ComponentActivity() {
                             bgLow = bgLow,
                             bgHigh = bgHigh,
                             graphWindowHours = graphWindowHours,
+                            glucoseUnit = glucoseUnit,
                             onSettingsClick = {
                                 navController.navigate("settings") {
                                     launchSingleTop = true
@@ -114,6 +117,8 @@ class MainActivity : ComponentActivity() {
                             themeMode = themeModeStr,
                             notifGraphMinutes = notifGraphMinutes,
                             notifPredictionMinutes = notifPredictionMinutes,
+                            glucoseUnit = glucoseUnit,
+                            bgBroadcastEnabled = bgBroadcastEnabled,
                             alertLowEnabled = alertLowEnabled,
                             alertHighEnabled = alertHighEnabled,
                             alertUrgentLowEnabled = alertUrgentLowEnabled,
@@ -131,6 +136,8 @@ class MainActivity : ComponentActivity() {
                             onThemeModeChange = viewModel::setThemeMode,
                             onNotifGraphMinutesChange = viewModel::setNotifGraphMinutes,
                             onNotifPredictionMinutesChange = viewModel::setNotifPredictionMinutes,
+                            onGlucoseUnitChange = viewModel::setGlucoseUnit,
+                            onBgBroadcastEnabledChange = viewModel::setBgBroadcastEnabled,
                             onAlertLowEnabledChange = viewModel::setAlertLowEnabled,
                             onAlertHighEnabledChange = viewModel::setAlertHighEnabled,
                             onAlertUrgentLowEnabledChange = viewModel::setAlertUrgentLowEnabled,
@@ -163,6 +170,7 @@ class MainActivity : ComponentActivity() {
                         StatsScreen(
                             bgLow = bgLow,
                             bgHigh = bgHigh,
+                            glucoseUnit = glucoseUnit,
                             onLoadReadings = viewModel::readingsForPeriod,
                             onExportCsv = viewModel::exportCsv,
                             onBack = { navController.popBackStack() }

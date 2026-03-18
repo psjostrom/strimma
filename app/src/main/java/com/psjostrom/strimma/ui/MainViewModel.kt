@@ -3,6 +3,7 @@ package com.psjostrom.strimma.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.psjostrom.strimma.data.GlucoseReading
+import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.notification.AlertManager
@@ -92,6 +93,14 @@ class MainViewModel @Inject constructor(
     val notifPredictionMinutes: StateFlow<Int> = settings.notifPredictionMinutes
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 10)
     fun setNotifPredictionMinutes(minutes: Int) = viewModelScope.launch { settings.setNotifPredictionMinutes(minutes) }
+
+    val glucoseUnit: StateFlow<GlucoseUnit> = settings.glucoseUnit
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), GlucoseUnit.MMOL)
+    fun setGlucoseUnit(unit: GlucoseUnit) = viewModelScope.launch { settings.setGlucoseUnit(unit) }
+
+    val bgBroadcastEnabled: StateFlow<Boolean> = settings.bgBroadcastEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    fun setBgBroadcastEnabled(enabled: Boolean) = viewModelScope.launch { settings.setBgBroadcastEnabled(enabled) }
 
     suspend fun readingsForPeriod(hours: Int): List<com.psjostrom.strimma.data.GlucoseReading> {
         val since = System.currentTimeMillis() - hours * 3600_000L

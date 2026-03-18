@@ -12,6 +12,7 @@ import androidx.core.graphics.drawable.IconCompat
 import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.Direction
 import com.psjostrom.strimma.data.GlucoseReading
+import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.ui.MainActivity
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -46,7 +47,8 @@ class NotificationHelper @Inject constructor(
         bgLow: Double,
         bgHigh: Double,
         graphWindowMs: Long = GRAPH_WINDOW_MS,
-        predictionMinutes: Int = 10
+        predictionMinutes: Int = 10,
+        glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL
     ): android.app.Notification {
         val contentIntent = PendingIntent.getActivity(
             context, 0,
@@ -63,13 +65,11 @@ class NotificationHelper @Inject constructor(
 
         if (reading != null) {
             val direction = try { Direction.valueOf(reading.direction) } catch (_: Exception) { Direction.NONE }
-            val bgText = "%.1f".format(reading.mmol)
+            val bgText = glucoseUnit.format(reading.mmol)
             val deltaText = reading.deltaMmol?.let {
-                val sign = if (it >= 0) "+" else ""
-                "$sign%.1f mmol/l".format(it)
+                glucoseUnit.formatDelta(it)
             } ?: ""
 
-            // Small icon: BG number
             builder.setSmallIcon(createBgIcon(bgText))
 
             // Collapsed view with compact mini graph
@@ -108,9 +108,10 @@ class NotificationHelper @Inject constructor(
         bgLow: Double,
         bgHigh: Double,
         graphWindowMs: Long = GRAPH_WINDOW_MS,
-        predictionMinutes: Int = 10
+        predictionMinutes: Int = 10,
+        glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL
     ) {
-        val notification = buildNotification(reading, recentReadings, bgLow, bgHigh, graphWindowMs, predictionMinutes)
+        val notification = buildNotification(reading, recentReadings, bgLow, bgHigh, graphWindowMs, predictionMinutes, glucoseUnit)
         notificationManager.notify(NOTIFICATION_ID, notification)
     }
 

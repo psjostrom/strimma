@@ -121,6 +121,7 @@ class StrimmaService : Service() {
         pusher.pushReading(reading)
         updateNotification()
         alertManager.checkReading(reading)
+        broadcastBgIfEnabled(reading)
         try {
             val mgr = GlanceAppWidgetManager(this@StrimmaService)
             mgr.getGlanceIds(StrimmaWidget::class.java).forEach { id ->
@@ -133,10 +134,30 @@ class StrimmaService : Service() {
         val latest = dao.latest().first()
         val notifMinutes = settings.notifGraphMinutes.first()
         val predMinutes = settings.notifPredictionMinutes.first()
+        val glucoseUnit = settings.glucoseUnit.first()
         val graphWindowMs = notifMinutes * 60_000L
         val recent = dao.since(System.currentTimeMillis() - graphWindowMs)
         val bgLow = settings.bgLow.first().toDouble()
         val bgHigh = settings.bgHigh.first().toDouble()
-        notificationHelper.updateNotification(latest, recent, bgLow, bgHigh, graphWindowMs, predMinutes)
+        notificationHelper.updateNotification(latest, recent, bgLow, bgHigh, graphWindowMs, predMinutes, glucoseUnit)
+    }
+
+    private suspend fun broadcastBgIfEnabled(reading: com.psjostrom.strimma.data.GlucoseReading) {
+        if (!settings.bgBroadcastEnabled.first()) return
+        val intent = Intent("com.eveningoutpost.dexdrip.BgEstimate").apply {
+            putExtra("com.eveningoutpost.dexdrip.Extras.BgEstimate", reading.sgv.toDouble())
+            putExtra("com.eveningoutpost.dexdrip.Extras.Raw", reading.sgv.toDouble())
+            putExtra("com.eveningoutpost.dexdrip.Extras.Time", reading.ts)
+            putExtra("com.eveningoutpost.dexdrip.Extras.BgSlope", (reading.deltaMmol ?: 0.0) / 5.0)
+            putExtra("com.eveningoutpost.dexdrip.Extras.SensorId", "Strimma")
+            val direction = try {
+                com.psjostrom.strimma.data.Direction.valueOf(reading.direction)
+            } catch (_: Exception) {
+                com.psjostrom.strimma.data.Direction.NONE
+            }
+            putExtra("com.eveningoutpost.dexdrip.Extras.BgSlopeName", direction.name)
+        }
+        sendBroadcast(intent)
+        DebugLog.log("Broadcast BG: ${reading.sgv} mg/dL")
     }
 }

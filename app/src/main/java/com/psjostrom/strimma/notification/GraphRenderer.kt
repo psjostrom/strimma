@@ -2,6 +2,7 @@ package com.psjostrom.strimma.notification
 
 import android.graphics.*
 import com.psjostrom.strimma.data.GlucoseReading
+import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.graph.*
 
 object GraphRenderer {
@@ -23,7 +24,8 @@ object GraphRenderer {
         bgHigh: Double,
         windowMs: Long,
         compact: Boolean = false,
-        predictionMinutes: Int = 30
+        predictionMinutes: Int = 30,
+        glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL
     ): Bitmap {
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
@@ -155,12 +157,22 @@ object GraphRenderer {
             }
 
             textPaint.textAlign = Paint.Align.RIGHT
-            val yStep = if (yr.range > 10) 2.0 else 1.0
+            val yStep = if (glucoseUnit == GlucoseUnit.MGDL) {
+                val mgStep = if (yr.range * GlucoseUnit.MGDL_FACTOR > 180) 50.0 else 25.0
+                mgStep / GlucoseUnit.MGDL_FACTOR
+            } else {
+                if (yr.range > 10) 2.0 else 1.0
+            }
             var yLabel = Math.ceil(yr.yMin / yStep) * yStep
             while (yLabel <= yr.yMax) {
                 val y = yFor(yLabel)
                 if (y > marginTop + 8 && y < height - marginBottom - 8) {
-                    canvas.drawText("%.0f".format(yLabel), marginLeft - 4f, y + 6f, textPaint)
+                    val labelText = if (glucoseUnit == GlucoseUnit.MGDL) {
+                        "%.0f".format(yLabel * GlucoseUnit.MGDL_FACTOR)
+                    } else {
+                        "%.0f".format(yLabel)
+                    }
+                    canvas.drawText(labelText, marginLeft - 4f, y + 6f, textPaint)
                 }
                 yLabel += yStep
             }

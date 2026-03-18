@@ -20,6 +20,7 @@ import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.psjostrom.strimma.data.Direction
 import com.psjostrom.strimma.data.GlucoseReading
+import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.StrimmaDatabase
 import com.psjostrom.strimma.notification.GraphRenderer
@@ -48,6 +49,7 @@ class StrimmaWidget : GlanceAppWidget() {
         val settings = SettingsRepository(context)
         val bgLow = settings.bgLow.first()
         val bgHigh = settings.bgHigh.first()
+        val glucoseUnit = settings.glucoseUnit.first()
         val opacity = getOpacity(context)
         val graphMinutes = getGraphMinutes(context)
         val showPrediction = getShowPrediction(context)
@@ -68,7 +70,7 @@ class StrimmaWidget : GlanceAppWidget() {
         )
 
         provideContent {
-            WidgetContent(latest, bgLow, bgHigh, graphBitmap, opacity)
+            WidgetContent(latest, bgLow, bgHigh, graphBitmap, opacity, glucoseUnit)
         }
     }
 }
@@ -79,7 +81,8 @@ private fun WidgetContent(
     bgLow: Float,
     bgHigh: Float,
     graphBitmap: Bitmap,
-    opacity: Float
+    opacity: Float,
+    glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL
 ) {
     val staleColor = ColorProvider(Color(0xFF636E7B))
     val mutedColor = ColorProvider(Color(0xFF8892A0))
@@ -101,10 +104,13 @@ private fun WidgetContent(
         try { Direction.valueOf(it.direction) } catch (_: Exception) { Direction.NONE }
     } ?: Direction.NONE
 
-    val bgValue = reading?.let { "%.1f".format(it.mmol) } ?: "--"
+    val bgValue = reading?.let { glucoseUnit.format(it.mmol) } ?: "--"
     val deltaText = reading?.deltaMmol?.let {
         val sign = if (it >= 0) "+" else ""
-        "$sign%.1f".format(it)
+        when (glucoseUnit) {
+            GlucoseUnit.MMOL -> "$sign%.1f".format(it)
+            GlucoseUnit.MGDL -> "$sign%.0f".format(it * GlucoseUnit.MGDL_FACTOR)
+        }
     } ?: ""
     val timeText = when {
         minutesAgo < 0 -> "No data"

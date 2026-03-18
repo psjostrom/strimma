@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.psjostrom.strimma.data.Direction
 import com.psjostrom.strimma.data.GlucoseReading
+import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.graph.CRITICAL_HIGH
 import com.psjostrom.strimma.graph.CRITICAL_LOW
 import com.psjostrom.strimma.graph.computeYRange
@@ -43,6 +44,7 @@ fun MainScreen(
     bgLow: Float,
     bgHigh: Float,
     graphWindowHours: Int,
+    glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
     onSettingsClick: () -> Unit,
     onStatsClick: () -> Unit = {}
 ) {
@@ -93,7 +95,7 @@ fun MainScreen(
                 .padding(padding)
                 .padding(horizontal = 16.dp)
         ) {
-            BgHeader(latestReading, bgLow, bgHigh)
+            BgHeader(latestReading, bgLow, bgHigh, glucoseUnit)
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -111,6 +113,7 @@ fun MainScreen(
                     windowMs = mainWindowMs,
                     viewportEnd = viewportEnd,
                     zoomScale = zoomScale,
+                    glucoseUnit = glucoseUnit,
                     onViewportChange = { viewportEnd = it },
                     onZoomChange = { zoomScale = it },
                     modifier = Modifier.fillMaxSize()
@@ -144,7 +147,7 @@ fun MainScreen(
 }
 
 @Composable
-private fun BgHeader(reading: GlucoseReading?, bgLow: Float, bgHigh: Float) {
+private fun BgHeader(reading: GlucoseReading?, bgLow: Float, bgHigh: Float, glucoseUnit: GlucoseUnit) {
     var minutesAgo by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(reading?.ts) {
@@ -186,7 +189,7 @@ private fun BgHeader(reading: GlucoseReading?, bgLow: Float, bgHigh: Float) {
                 horizontalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = reading?.let { "%.1f".format(it.mmol) } ?: "--",
+                    text = reading?.let { glucoseUnit.format(it.mmol) } ?: "--",
                     color = bgColor,
                     fontSize = 64.sp,
                     fontWeight = FontWeight.Bold
@@ -199,9 +202,8 @@ private fun BgHeader(reading: GlucoseReading?, bgLow: Float, bgHigh: Float) {
             }
 
             if (reading?.deltaMmol != null) {
-                val sign = if (reading.deltaMmol >= 0) "+" else ""
                 Text(
-                    text = "$sign%.1f mmol/l".format(reading.deltaMmol),
+                    text = glucoseUnit.formatDelta(reading.deltaMmol),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 15.sp
                 )
@@ -232,6 +234,7 @@ fun GlucoseGraph(
     windowMs: Long,
     viewportEnd: Long,
     zoomScale: Float,
+    glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
     onViewportChange: (Long) -> Unit,
     onZoomChange: (Float) -> Unit,
     modifier: Modifier = Modifier
@@ -253,12 +256,12 @@ fun GlucoseGraph(
 
     Canvas(
         modifier = modifier
-            .pointerInput(Unit) {
+            .pointerInput(glucoseUnit) {
                 detectTransformGestures { _, pan, zoom, _ ->
                     val newZoom = (zoomScale * zoom).coerceIn(1f, 5f)
                     onZoomChange(newZoom)
 
-                    val marginLeft = 50f
+                    val marginLeft = if (glucoseUnit == GlucoseUnit.MGDL) 70f else 50f
                     val marginRight = 16f
                     val plotWidth = size.width - marginLeft - marginRight
                     val currentVisibleMs = windowMs / newZoom
@@ -273,13 +276,14 @@ fun GlucoseGraph(
                     onViewportChange(newEnd)
                 }
             }
-            .pointerInput(sorted, visibleStart, viewportEnd) {
+            .pointerInput(sorted, visibleStart, viewportEnd, glucoseUnit) {
+                val mLeft = if (glucoseUnit == GlucoseUnit.MGDL) 70f else 50f
                 awaitPointerEventScope {
                     while (true) {
                         val down = awaitFirstDown(requireUnconsumed = false)
                         selectedReading = findNearestByX(
                             down.position.x, sorted, visibleStart, visibleMs,
-                            size.width.toFloat()
+                            size.width.toFloat(), mLeft
                         )
 
                         while (true) {
@@ -292,7 +296,7 @@ fun GlucoseGraph(
                             }
                             selectedReading = findNearestByX(
                                 pos.x, sorted, visibleStart, visibleMs,
-                                size.width.toFloat()
+                                size.width.toFloat(), mLeft
                             )
                             event.changes.forEach { it.consume() }
                         }
@@ -300,7 +304,7 @@ fun GlucoseGraph(
                 }
             }
     ) {
-        val marginLeft = 50f
+        val marginLeft = if (glucoseUnit == GlucoseUnit.MGDL) 70f else 50f
         val marginRight = 16f
         val marginTop = 16f
         val marginBottom = 40f
@@ -405,9 +409,9 @@ fun GlucoseGraph(
 
             val sdf = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
             val timeStr = sdf.format(java.util.Date(sel.ts))
-            val valueStr = "%.1f".format(sel.mmol)
+            val valueStr = glucoseUnit.format(sel.mmol)
             val direction = try { Direction.valueOf(sel.direction) } catch (_: Exception) { Direction.NONE }
-            val deltaStr = sel.deltaMmol?.let { "%.1f".format(it) }
+            val deltaStr = sel.deltaMmol?.let { glucoseUnit.format(kotlin.math.abs(it)) }
 
             val line1 = "$valueStr ${direction.arrow}"
             val line2 = if (deltaStr != null) "$timeStr  $deltaStr" else timeStr
@@ -481,13 +485,22 @@ fun GlucoseGraph(
         }
 
         textPaint.textAlign = android.graphics.Paint.Align.RIGHT
-        val yStep = if (yr.range > 10) 2.0 else 1.0
+        val yStepMmol = if (yr.range > 10) 2.0 else 1.0
+        val yStep = if (glucoseUnit == GlucoseUnit.MGDL) {
+            val mgStep = if (yr.range * GlucoseUnit.MGDL_FACTOR > 180) 50.0 else 25.0
+            mgStep / GlucoseUnit.MGDL_FACTOR
+        } else yStepMmol
         var yLabel = Math.ceil(yr.yMin / yStep) * yStep
         while (yLabel <= yr.yMax) {
             val y = yFor(yLabel)
             if (y > marginTop + 10 && y < size.height - marginBottom - 10) {
+                val labelText = if (glucoseUnit == GlucoseUnit.MGDL) {
+                    "%.0f".format(yLabel * GlucoseUnit.MGDL_FACTOR)
+                } else {
+                    "%.0f".format(yLabel)
+                }
                 drawContext.canvas.nativeCanvas.drawText(
-                    "%.0f".format(yLabel), marginLeft - 6f, y + 8f, textPaint
+                    labelText, marginLeft - 6f, y + 8f, textPaint
                 )
             }
             yLabel += yStep
@@ -617,10 +630,10 @@ private fun findNearestByX(
     sorted: List<GlucoseReading>,
     visibleStart: Long,
     visibleMs: Long,
-    canvasWidth: Float
+    canvasWidth: Float,
+    marginLeft: Float = 50f
 ): GlucoseReading? {
     if (sorted.isEmpty()) return null
-    val marginLeft = 50f
     val marginRight = 16f
     val plotWidth = canvasWidth - marginLeft - marginRight
 
