@@ -2,6 +2,7 @@ package com.psjostrom.strimma.service
 
 import android.app.Service
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.IBinder
 import com.psjostrom.strimma.data.*
 import com.psjostrom.strimma.network.NightscoutPusher
@@ -9,6 +10,7 @@ import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.notification.NotificationHelper
 import com.psjostrom.strimma.receiver.DebugLog
 import com.psjostrom.strimma.receiver.GlucoseNotificationListener
+import com.psjostrom.strimma.receiver.XdripBroadcastReceiver
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import com.psjostrom.strimma.widget.StrimmaWidget
 import dagger.hilt.android.AndroidEntryPoint
@@ -28,6 +30,7 @@ class StrimmaService : Service() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var pruneJob: Job? = null
+    private var xdripReceiver: XdripBroadcastReceiver? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -41,6 +44,17 @@ class StrimmaService : Service() {
         )
 
         DebugLog.log("Service started")
+
+        registerXdripReceiverIfNeeded()
+        scope.launch {
+            settings.glucoseSource.collect { source ->
+                if (source == GlucoseSource.XDRIP_BROADCAST) {
+                    registerXdripReceiver()
+                } else {
+                    unregisterXdripReceiver()
+                }
+            }
+        }
 
         pusher.pushPending()
         scope.launch { updateNotification() }
@@ -84,9 +98,33 @@ class StrimmaService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
+        unregisterXdripReceiver()
         pruneJob?.cancel()
         scope.cancel()
         super.onDestroy()
+    }
+
+    private fun registerXdripReceiverIfNeeded() {
+        if (settings.getGlucoseSourceSync() == GlucoseSource.XDRIP_BROADCAST) {
+            registerXdripReceiver()
+        }
+    }
+
+    private fun registerXdripReceiver() {
+        if (xdripReceiver != null) return
+        val receiver = XdripBroadcastReceiver()
+        val filter = IntentFilter(XdripBroadcastReceiver.ACTION)
+        registerReceiver(receiver, filter, RECEIVER_EXPORTED)
+        xdripReceiver = receiver
+        DebugLog.log("xDrip broadcast receiver registered")
+    }
+
+    private fun unregisterXdripReceiver() {
+        xdripReceiver?.let {
+            try { unregisterReceiver(it) } catch (_: Exception) {}
+            xdripReceiver = null
+            DebugLog.log("xDrip broadcast receiver unregistered")
+        }
     }
 
     private suspend fun processReading(mmol: Double, timestamp: Long) {
