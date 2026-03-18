@@ -27,7 +27,7 @@ data class NightscoutEntry(
 )
 
 @Singleton
-class SpringaClient @Inject constructor() {
+class NightscoutClient @Inject constructor() {
 
     private val client = HttpClient(CIO) {
         install(ContentNegotiation) {
@@ -42,8 +42,7 @@ class SpringaClient @Inject constructor() {
     suspend fun pushReadings(
         baseUrl: String,
         apiSecret: String,
-        readings: List<GlucoseReading>,
-        path: String = "/api/v1/entries"
+        readings: List<GlucoseReading>
     ): Boolean {
         if (baseUrl.isBlank() || apiSecret.isBlank() || readings.isEmpty()) return false
 
@@ -58,7 +57,7 @@ class SpringaClient @Inject constructor() {
         }
 
         return try {
-            val fullUrl = "${baseUrl.trimEnd('/')}$path"
+            val fullUrl = "${baseUrl.trimEnd('/')}/api/v1/entries"
             val response = client.post(fullUrl) {
                 contentType(ContentType.Application.Json)
                 header("api-secret", hashedSecret)

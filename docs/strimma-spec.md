@@ -4,7 +4,7 @@
 **Status:** Draft
 **Author:** Steg
 
-Strimma is an open-source Android CGM app inspired by xDrip+. It receives glucose data from CamAPS FX, displays it with notifications and an in-app graph, and pushes readings to Springa. Built on modern Android conventions (Kotlin, Compose, Room, Hilt), it aims to be an approachable, well-tested alternative for the CGM community.
+Strimma is an open-source Android CGM app inspired by xDrip+. It receives glucose data from CamAPS FX, displays it with notifications and an in-app graph, and pushes readings to Nightscout. Built on modern Android conventions (Kotlin, Compose, Room, Hilt), it aims to be an approachable, well-tested alternative for the CGM community.
 
 ---
 
@@ -15,14 +15,14 @@ Strimma is an open-source Android CGM app inspired by xDrip+. It receives glucos
 3. [Phase 1 Scope](#3-phase-1-scope)
 4. [Data Input: CamAPS Notification Listener](#4-data-input-aidex-broadcast-receiver-camaps-notification-listener)
 5. [Direction Computation](#5-direction-computation)
-6. [Data Output: Springa Push](#6-data-output-springa-push)
+6. [Data Output: Nightscout Push](#6-data-output-nightscout-push)
 7. [Local Storage](#7-local-storage)
 8. [Foreground Service & Lifecycle](#8-foreground-service--lifecycle)
 9. [Notification Display](#9-notification-display)
 10. [Main App UI](#10-main-app-ui)
 11. [Settings](#11-settings)
 12. [Side-by-Side Validation with xDrip](#12-side-by-side-validation-with-xdrip)
-13. [Springa Changes](#13-springa-changes)
+13. [Original Backend Changes (Historical)](#13-original-backend-changes-historical)
 14. [Tech Stack](#14-tech-stack)
 15. [Phase 2 Roadmap](#15-phase-2-roadmap)
 16. [Non-Goals](#16-non-goals)
@@ -48,7 +48,7 @@ Strimma was validated against xDrip+ over 14 hours of simultaneous operation:
 - **Direction agreement:** 79% exact, 97% within one arrow step
 - **Raw throughput:** Strimma captured 2x the readings (CamAPS fires ~1/min, xDrip catches ~half)
 
-Both tables merged into a single `xdrip_readings` table in Springa. xDrip+ retired. Strimma is the sole data source, pushing to `/api/v1/entries` (standard Nightscout path).
+Both tables merged into a single `xdrip_readings` table in the original backend. xDrip+ retired. Strimma is the sole data source, pushing to `/api/v1/entries` (standard Nightscout path).
 
 ---
 
@@ -61,39 +61,35 @@ Libre 3 sensor
 CamAPS FX (closed-loop pump control)
   │ (notification with glucose value)
   ▼
-┌──────────────────────────────────────────────┐
-│  Android                                      │
-│                                               │
-│  ┌─────────┐     ┌─────────┐                 │
-│  │ xDrip+  │     │ Strimma │  (side by side) │
-│  │         │     │         │                  │
-│  │ Aidex   │     │ Notif.  │                  │
-│  │ Receiver│     │ Listener│                  │
-│  └────┬────┘     └────┬────┘                  │
-│       │               │                       │
-│       ▼               ▼                       │
-│  POST /api/v1/   POST /api/v1/               │
-│  entries         strimma/entries              │
-│       │               │                       │
-└───────┼───────────────┼───────────────────────┘
-        │               │
-        ▼               ▼
 ┌──────────────────────────────────────┐
-│  Springa (Next.js + Turso)           │
+│  Android                             │
 │                                      │
-│  xdrip_readings    strimma_readings  │
-│  (existing)        (new, identical)  │
-│                                      │
-│  GET /api/sgv ◄── reads from         │
-│                   configurable table │
-└──────────┬───────────────────────────┘
+│  ┌─────────┐                         │
+│  │ Strimma │                         │
+│  │         │                         │
+│  │ Notif.  │                         │
+│  │ Listener│                         │
+│  └────┬────┘                         │
+│       │                              │
+│       ▼                              │
+│  POST /api/v1/entries                │
+│       │                              │
+└───────┼──────────────────────────────┘
+        │
+        ▼
+┌──────────────────────────────┐
+│  Nightscout                  │
+│                              │
+│  /api/v1/entries             │
+│  (standard Nightscout API)   │
+│                              │
+└──────────┬───────────────────┘
            │
            ▼
-    SugarWave / SugarRun
-    (Garmin, unchanged)
+    Watches / other consumers
 ```
 
-Both apps run in companion mode, receiving glucose data from CamAPS FX independently. Strimma uses a `NotificationListenerService` to parse glucose values from CamAPS FX's ongoing notification (see §4).
+Strimma uses a `NotificationListenerService` to parse glucose values from CamAPS FX's ongoing notification (see §4).
 
 ---
 
@@ -104,9 +100,9 @@ Both apps run in companion mode, receiving glucose data from CamAPS FX independe
 | Feature                      | Description                                                                 |
 | ---------------------------- | --------------------------------------------------------------------------- |
 | CamAPS notification listener | Receive glucose data from CamAPS FX (via NotificationListenerService)       |
-| Direction computation        | 3-point averaged sgv, EASD/ISPAD thresholds (same algorithm as Springa)     |
+| Direction computation        | 3-point averaged sgv, EASD/ISPAD thresholds                                |
 | Local Room DB                | Store readings locally                                                      |
-| Springa push                 | POST to `/api/v1/strimma/entries` (separate from xDrip)                     |
+| Nightscout push              | POST to `/api/v1/entries` (standard Nightscout API)                         |
 | Foreground service           | Persistent process with notification                                        |
 | Expanded notification        | BG number + trend arrow + delta + graph bitmap                              |
 | Collapsed notification       | BG number + delta + mini graph bitmap                                       |
@@ -114,7 +110,7 @@ Both apps run in companion mode, receiving glucose data from CamAPS FX independe
 | Main app                     | Large BG number + trend arrow + delta + interactive graph                   |
 | Graph coloring               | Blue dots = in range, yellow/orange dots = above high, red dots = below low |
 | Threshold lines              | Dashed horizontal lines at low (4.0) and high (10.0) thresholds             |
-| Settings screen              | Springa URL, API secret, graph time window, threshold values                |
+| Settings screen              | Nightscout URL, API secret, graph time window, threshold values             |
 
 ### Out of Scope (Phase 2)
 
@@ -176,17 +172,17 @@ Extracted from xDrip's `AidexBroadcastIntents.java`:
 4. **Deduplicate:** If a reading with the exact same timestamp already exists, discard. Libre 3 sends readings every ~1 minute, so the dedup window is by exact timestamp match, not a time range.
 5. **Compute direction:** Do NOT use the `BgSlopeName` from the broadcast — compute from stored readings (§5)
 6. **Store locally:** Insert into Room DB
-7. **Push to Springa:** Fire HTTP request immediately (§6) — zero delay, the data must reach the watch ASAP
+7. **Push to Nightscout:** Fire HTTP request immediately (§6) — zero delay, the data must reach downstream consumers ASAP
 
 ---
 
 ## 5. Direction Computation
 
-In companion mode, the direction field received from the CGM app can be outdated — Springa's `lib/xdrip.ts` documents a ~31% mismatch rate between received and recomputed directions. Strimma computes direction locally for accuracy.
+In companion mode, the direction field received from the CGM app can be outdated — the original backend documented a ~31% mismatch rate between received and recomputed directions. Strimma computes direction locally for accuracy.
 
 ### Algorithm
 
-Identical to Springa's `recomputeDirections()` (`/Users/persjo/code/private/Springa/lib/xdrip.ts` lines 103-140):
+Based on the EASD/ISPAD 2020 thresholds (Moser et al., Diabetologia 2020):
 
 1. For each new reading, find the stored reading closest to **5 minutes** before it
 2. If no reading exists within 10 minutes, direction = `"NONE"`
@@ -206,7 +202,7 @@ Identical to Springa's `recomputeDirections()` (`/Users/persjo/code/private/Spri
 
 ### Edge Cases
 
-- **Fewer than 3 readings (app just started):** The 3-point average degrades gracefully — clamp indices to array bounds. With 1 reading, the "average" is just that reading. With 2 readings, average 2 instead of 3. Same as Springa's `avgSgv()` implementation.
+- **Fewer than 3 readings (app just started):** The 3-point average degrades gracefully — clamp indices to array bounds. With 1 reading, the "average" is just that reading. With 2 readings, average 2 instead of 3.
 - **No reading within 10 minutes:** Direction = `"NONE"`, arrow = `"?"`. This handles sensor warmup, CamAPS FX restarts, or data gaps.
 - **First reading after a gap:** Delta is null, direction is `"NONE"`. The UI shows `"?"` for the arrow and omits the delta text.
 
@@ -216,11 +212,11 @@ Delta (the "change" value shown in the UI, e.g., "-1.1 mmol/l") is the differenc
 
 ---
 
-## 6. Data Output: Springa Push
+## 6. Data Output: Nightscout Push
 
 ### Endpoint
 
-`POST /api/v1/strimma/entries` (new endpoint, see §13)
+`POST /api/v1/entries` (standard Nightscout API)
 
 ### Authentication
 
@@ -259,14 +255,14 @@ Fields:
 
 ### Push Strategy
 
-1. On each new reading, fire HTTP POST immediately — zero delay. The reading must reach Springa (and therefore the watch) within seconds of arriving from CamAPS FX.
+1. On each new reading, fire HTTP POST immediately — zero delay. The reading must reach Nightscout (and therefore any downstream consumers) within seconds of arriving from CamAPS FX.
 2. If push fails, retry with linear backoff (5s, 10s, 15s, 20s, ...) up to 60s max interval
 3. Failed readings are marked `pushed = 0` in Room DB — survives app restart
 4. On app start / connectivity restore, push all pending readings in chronological batch (up to 100 per request)
 
 ### Offline Resilience
 
-If the device is offline, readings accumulate in the local DB with `pushed = 0`. When connectivity returns, all pending readings are pushed in chronological batches. Springa's `INSERT OR REPLACE` handles any edge-case duplicates.
+If the device is offline, readings accumulate in the local DB with `pushed = 0`. When connectivity returns, all pending readings are pushed in chronological batches. Nightscout's deduplication handles any edge-case duplicates.
 
 ---
 
@@ -285,13 +281,13 @@ If the device is offline, readings accumulate in the local DB with `pushed = 0`.
 | `mmol`       | `REAL`    | Glucose in mmol/L                  |
 | `direction`  | `TEXT`    | Computed direction string          |
 | `delta_mmol` | `REAL`    | 5-min delta in mmol/L (nullable)   |
-| `pushed`     | `INTEGER` | 0 = pending, 1 = pushed to Springa |
+| `pushed`     | `INTEGER` | 0 = pending, 1 = pushed to Nightscout |
 
 No sensor table. Sensor lifecycle is managed entirely by CamAPS FX.
 
 ### Retention
 
-Keep 30 days of readings locally. Older readings are pruned daily. Springa is the long-term store.
+Keep 30 days of readings locally. Older readings are pruned daily. Nightscout is the long-term store.
 
 ### Queries
 
@@ -300,7 +296,7 @@ The app needs fast access to:
 - Latest reading (for notification/UI update)
 - Last N readings within time window (for graph rendering)
 - Last 3 readings (for direction computation)
-- Unpushed readings (for Springa sync)
+- Unpushed readings (for Nightscout sync)
 
 All queries are indexed by `ts DESC`.
 
@@ -313,7 +309,7 @@ All queries are indexed by `ts DESC`.
 The app must:
 
 1. Receive glucose readings at any time (CamAPS FX updates its notification every ~1 minute with Libre 3, 24/7)
-2. Push to Springa immediately after receiving a reading (zero delay)
+2. Push to Nightscout immediately after receiving a reading (zero delay)
 3. Update the notification with the latest reading
 
 On Android 16 / API 36 (Pixel 9 Pro), a foreground service with a persistent notification is the correct mechanism. The notification itself is the user-facing value — it shows the glucose graph.
@@ -510,8 +506,8 @@ Single-screen app in phase 1. Settings accessible via gear icon in toolbar. No d
 
 | Setting           | Type          | Default     | Description                                   |
 | ----------------- | ------------- | ----------- | --------------------------------------------- |
-| Springa URL       | Text          | (empty)     | Base URL for Springa API                      |
-| API Secret        | Text (masked) | (empty)     | Shared secret for Springa authentication      |
+| Nightscout URL    | Text          | (empty)     | Base URL for Nightscout server                |
+| API Secret        | Text (masked) | (empty)     | Shared secret for Nightscout authentication   |
 | Graph Window      | Slider        | 4 hours     | Time range for graph display (1-8 hours)      |
 | BG Low Threshold  | Number        | 4.0 mmol/L  | Below this = red dots, low threshold line     |
 | BG High Threshold | Number        | 10.0 mmol/L | Above this = yellow dots, high threshold line |
@@ -539,7 +535,7 @@ Non-sensitive settings (thresholds, graph window) stored in Jetpack `DataStore` 
 2. CamAPS FX sends Aidex broadcasts — Android delivers to both receivers
 3. xDrip pushes to `POST /api/v1/entries` → `xdrip_readings` table (existing)
 4. Strimma pushes to `POST /api/v1/strimma/entries` → `strimma_readings` table (new)
-5. Both datasets accumulate independently in Springa's Turso DB
+5. Both datasets accumulate independently in the Nightscout-compatible backend
 
 ### What to Compare
 
@@ -547,7 +543,7 @@ Non-sensitive settings (thresholds, graph window) stored in Jetpack `DataStore` 
 | ---------------------- | ----------------------------------------------------------------------------------------- |
 | **Completeness**       | Count readings per hour in both tables — should be identical                              |
 | **Timing**             | Compare timestamps — both should receive within seconds of each other                     |
-| **Direction accuracy** | Compare direction fields — both should match Springa's independently recomputed direction |
+| **Direction accuracy** | Compare direction fields — both should match the independently recomputed direction       |
 | **Push reliability**   | Check for gaps — Strimma should have zero gaps over 24+ hours                             |
 | **Graph quality**      | Visual comparison — Strimma's graph should look as good or better than xDrip's            |
 
@@ -556,21 +552,23 @@ Non-sensitive settings (thresholds, graph window) stored in Jetpack `DataStore` 
 Strimma is ready for standalone use (xDrip+ no longer needed for this setup) when:
 
 1. Zero gaps over 72 continuous hours
-2. Direction matches Springa's recomputation > 98% of the time
-3. Push latency (reading timestamp to Springa receipt) is ≤ 10 seconds
+2. Direction matches server-side recomputation > 98% of the time
+3. Push latency (reading timestamp to Nightscout receipt) is ≤ 10 seconds
 4. Notification and graph render correctly with no crashes
 
 ### Switching Over
 
 When validation criteria are met:
 
-1. Update Springa's `/api/sgv` endpoint to read from `strimma_readings` instead of `xdrip_readings`
+1. Update the backend's `/api/sgv` endpoint to read from `strimma_readings` instead of `xdrip_readings`
 2. xDrip+ is no longer needed for this specific setup
 3. Keep `xdrip_readings` table for historical data
 
 ---
 
-## 13. Springa Changes
+## 13. Original Backend Changes (Historical)
+
+> **Note:** This section describes changes made to the original development backend ("Springa") during the side-by-side validation phase. It is not relevant to generic Nightscout setups. Strimma now pushes to the standard Nightscout `/api/v1/entries` endpoint and works with any Nightscout-compatible server.
 
 ### New Table
 
@@ -597,7 +595,7 @@ Identical logic to the existing `POST /api/v1/entries` but writes to `strimma_re
 4. `INSERT OR REPLACE` into `strimma_readings`
 5. Return `{ ok: true, count: N }`
 
-Note: Springa still recomputes direction on its side as a safety net, even though Strimma now sends correct directions. Belt and suspenders — the two computations should agree. Any disagreement is a bug to investigate.
+Note: The original backend still recomputes direction on its side as a safety net, even though Strimma now sends correct directions. Belt and suspenders — the two computations should agree. Any disagreement is a bug to investigate.
 
 ### Modified Endpoint: GET /api/sgv
 
@@ -638,13 +636,15 @@ When Strimma is validated, flip the default. When Strimma is the sole data sourc
 | targetSdk     | 36                                             | Android 16                                                           |
 | minSdk        | 36                                             | Android 16 (to be lowered for broader device support — see roadmap)  |
 
-### Springa
+### Backend (Historical)
 
-No new dependencies. Changes are:
+The original development backend required these changes (see §13 for details):
 
 - 1 new Turso table
 - 2 new API routes (copy of existing with table name change)
 - 1 modified API route (source param on `/api/sgv`)
+
+For generic Nightscout setups, no backend changes are needed — Strimma uses the standard `/api/v1/entries` API.
 
 ---
 
@@ -679,6 +679,6 @@ These are out of scope for phase 1. Several are planned for later phases — see
 - **BLE CGM collection** — Phase 1 uses CamAPS FX notification listener. Direct BLE planned for later phases.
 - **Calibration** — Not applicable for factory-calibrated Libre 3. Planned for sensors that need it.
 - **Treatment tracking** — Low priority. Insulin/carb management typically handled by AAPS or pen apps.
-- **Nightscout / cloud sync** — Phase 1 uses Springa only. Nightscout upload/download planned.
-- **Watch integration** — Phase 1 uses Springa for watch data. Wear OS complications planned.
+- **Nightscout download** — Strimma pushes to Nightscout but does not yet download or sync from it.
+- **Watch integration** — Watches read from Nightscout directly. Wear OS complications planned.
 - **Broader device support** — minSdk lowered to 33 (Android 13, oldest with security updates). Medical data warrants this floor.

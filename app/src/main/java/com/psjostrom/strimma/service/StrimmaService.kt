@@ -4,7 +4,7 @@ import android.app.Service
 import android.content.Intent
 import android.os.IBinder
 import com.psjostrom.strimma.data.*
-import com.psjostrom.strimma.network.SpringaPusher
+import com.psjostrom.strimma.network.NightscoutPusher
 import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.notification.NotificationHelper
 import com.psjostrom.strimma.receiver.DebugLog
@@ -21,7 +21,7 @@ class StrimmaService : Service() {
 
     @Inject lateinit var dao: ReadingDao
     @Inject lateinit var directionComputer: DirectionComputer
-    @Inject lateinit var pusher: SpringaPusher
+    @Inject lateinit var pusher: NightscoutPusher
     @Inject lateinit var notificationHelper: NotificationHelper
     @Inject lateinit var alertManager: AlertManager
     @Inject lateinit var settings: SettingsRepository

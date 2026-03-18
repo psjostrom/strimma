@@ -24,7 +24,7 @@ class MainViewModel @Inject constructor(
     val latestReading: StateFlow<GlucoseReading?> = dao.latest()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    val springaUrl: StateFlow<String> = settings.springaUrl
+    val nightscoutUrl: StateFlow<String> = settings.nightscoutUrl
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
 
     val graphWindowHours: StateFlow<Int> = settings.graphWindowHours
@@ -36,7 +36,7 @@ class MainViewModel @Inject constructor(
     val bgHigh: StateFlow<Float> = settings.bgHigh
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 10.0f)
 
-    val apiSecret: String get() = settings.getApiSecret()
+    val nightscoutSecret: String get() = settings.getNightscoutSecret()
 
     val readings: StateFlow<List<GlucoseReading>> = dao.latest()
         .map { _ ->
@@ -64,8 +64,8 @@ class MainViewModel @Inject constructor(
     val alertStaleEnabled: StateFlow<Boolean> = settings.alertStaleEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
-    fun setSpringaUrl(url: String) = viewModelScope.launch { settings.setSpringaUrl(url) }
-    fun setApiSecret(secret: String) = settings.setApiSecret(secret)
+    fun setNightscoutUrl(url: String) = viewModelScope.launch { settings.setNightscoutUrl(url) }
+    fun setNightscoutSecret(secret: String) = settings.setNightscoutSecret(secret)
     fun setGraphWindowHours(hours: Int) = viewModelScope.launch { settings.setGraphWindowHours(hours) }
     fun setBgLow(value: Float) = viewModelScope.launch { settings.setBgLow(value) }
     fun setBgHigh(value: Float) = viewModelScope.launch { settings.setBgHigh(value) }
@@ -102,18 +102,7 @@ class MainViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
     fun setBgBroadcastEnabled(enabled: Boolean) = viewModelScope.launch { settings.setBgBroadcastEnabled(enabled) }
 
-    val nightscoutEnabled: StateFlow<Boolean> = settings.nightscoutEnabled
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
-    fun setNightscoutEnabled(enabled: Boolean) = viewModelScope.launch { settings.setNightscoutEnabled(enabled) }
-
-    val nightscoutUrl: StateFlow<String> = settings.nightscoutUrl
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
-    fun setNightscoutUrl(url: String) = viewModelScope.launch { settings.setNightscoutUrl(url) }
-
-    val nightscoutSecret: String get() = settings.getNightscoutSecret()
-    fun setNightscoutSecret(secret: String) = settings.setNightscoutSecret(secret)
-
-    suspend fun readingsForPeriod(hours: Int): List<com.psjostrom.strimma.data.GlucoseReading> {
+    suspend fun readingsForPeriod(hours: Int): List<GlucoseReading> {
         val since = System.currentTimeMillis() - hours * 3600_000L
         return dao.since(since)
     }

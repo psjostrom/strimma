@@ -32,13 +32,12 @@ class SettingsRepository @Inject constructor(
     }
 
     companion object {
-        private val KEY_SPRINGA_URL = stringPreferencesKey("springa_url")
+        private val KEY_NIGHTSCOUT_URL = stringPreferencesKey("nightscout_url")
         private val KEY_GRAPH_WINDOW_HOURS = intPreferencesKey("graph_window_hours")
         private val KEY_BG_LOW = floatPreferencesKey("bg_low")
         private val KEY_BG_HIGH = floatPreferencesKey("bg_high")
-        private const val KEY_API_SECRET = "api_secret"
+        private const val KEY_NIGHTSCOUT_SECRET = "nightscout_secret"
 
-        // Alert settings
         private val KEY_ALERT_LOW_ENABLED = booleanPreferencesKey("alert_low_enabled")
         private val KEY_ALERT_HIGH_ENABLED = booleanPreferencesKey("alert_high_enabled")
         private val KEY_ALERT_URGENT_LOW_ENABLED = booleanPreferencesKey("alert_urgent_low_enabled")
@@ -53,17 +52,13 @@ class SettingsRepository @Inject constructor(
         private val KEY_NOTIF_PREDICTION_MINUTES = intPreferencesKey("notif_prediction_minutes")
         private val KEY_GLUCOSE_UNIT = stringPreferencesKey("glucose_unit")
         private val KEY_BG_BROADCAST_ENABLED = booleanPreferencesKey("bg_broadcast_enabled")
-        private val KEY_NIGHTSCOUT_URL = stringPreferencesKey("nightscout_url")
-        private const val KEY_NIGHTSCOUT_SECRET = "nightscout_secret"
-        private val KEY_NIGHTSCOUT_ENABLED = booleanPreferencesKey("nightscout_enabled")
     }
 
-    val springaUrl: Flow<String> = dataStore.data.map { it[KEY_SPRINGA_URL] ?: "" }
+    val nightscoutUrl: Flow<String> = dataStore.data.map { it[KEY_NIGHTSCOUT_URL] ?: "" }
     val graphWindowHours: Flow<Int> = dataStore.data.map { it[KEY_GRAPH_WINDOW_HOURS] ?: 4 }
     val bgLow: Flow<Float> = dataStore.data.map { it[KEY_BG_LOW] ?: 4.0f }
     val bgHigh: Flow<Float> = dataStore.data.map { it[KEY_BG_HIGH] ?: 10.0f }
 
-    // Alert settings
     val alertLowEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_LOW_ENABLED] ?: true }
     val alertHighEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_HIGH_ENABLED] ?: true }
     val alertUrgentLowEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_URGENT_LOW_ENABLED] ?: true }
@@ -74,25 +69,16 @@ class SettingsRepository @Inject constructor(
     val alertUrgentHigh: Flow<Float> = dataStore.data.map { it[KEY_ALERT_URGENT_HIGH] ?: 13.0f }
     val alertStaleEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_STALE_ENABLED] ?: true }
 
-    suspend fun setSpringaUrl(url: String) {
-        dataStore.edit { it[KEY_SPRINGA_URL] = url }
-    }
-    suspend fun setGraphWindowHours(hours: Int) {
-        dataStore.edit { it[KEY_GRAPH_WINDOW_HOURS] = hours }
-    }
-    suspend fun setBgLow(value: Float) {
-        dataStore.edit { it[KEY_BG_LOW] = value }
-    }
-    suspend fun setBgHigh(value: Float) {
-        dataStore.edit { it[KEY_BG_HIGH] = value }
+    suspend fun setNightscoutUrl(url: String) { dataStore.edit { it[KEY_NIGHTSCOUT_URL] = url } }
+    suspend fun setGraphWindowHours(hours: Int) { dataStore.edit { it[KEY_GRAPH_WINDOW_HOURS] = hours } }
+    suspend fun setBgLow(value: Float) { dataStore.edit { it[KEY_BG_LOW] = value } }
+    suspend fun setBgHigh(value: Float) { dataStore.edit { it[KEY_BG_HIGH] = value } }
+
+    fun getNightscoutSecret(): String = encryptedPrefs.getString(KEY_NIGHTSCOUT_SECRET, "") ?: ""
+    fun setNightscoutSecret(secret: String) {
+        encryptedPrefs.edit().putString(KEY_NIGHTSCOUT_SECRET, secret).apply()
     }
 
-    fun getApiSecret(): String = encryptedPrefs.getString(KEY_API_SECRET, "") ?: ""
-    fun setApiSecret(secret: String) {
-        encryptedPrefs.edit().putString(KEY_API_SECRET, secret).apply()
-    }
-
-    // Alert setters
     suspend fun setAlertLowEnabled(enabled: Boolean) { dataStore.edit { it[KEY_ALERT_LOW_ENABLED] = enabled } }
     suspend fun setAlertHighEnabled(enabled: Boolean) { dataStore.edit { it[KEY_ALERT_HIGH_ENABLED] = enabled } }
     suspend fun setAlertUrgentLowEnabled(enabled: Boolean) { dataStore.edit { it[KEY_ALERT_URGENT_LOW_ENABLED] = enabled } }
@@ -119,13 +105,4 @@ class SettingsRepository @Inject constructor(
 
     val bgBroadcastEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_BG_BROADCAST_ENABLED] ?: false }
     suspend fun setBgBroadcastEnabled(enabled: Boolean) { dataStore.edit { it[KEY_BG_BROADCAST_ENABLED] = enabled } }
-
-    val nightscoutUrl: Flow<String> = dataStore.data.map { it[KEY_NIGHTSCOUT_URL] ?: "" }
-    suspend fun setNightscoutUrl(url: String) { dataStore.edit { it[KEY_NIGHTSCOUT_URL] = url } }
-
-    fun getNightscoutSecret(): String = encryptedPrefs.getString(KEY_NIGHTSCOUT_SECRET, "") ?: ""
-    fun setNightscoutSecret(secret: String) { encryptedPrefs.edit().putString(KEY_NIGHTSCOUT_SECRET, secret).apply() }
-
-    val nightscoutEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_NIGHTSCOUT_ENABLED] ?: false }
-    suspend fun setNightscoutEnabled(enabled: Boolean) { dataStore.edit { it[KEY_NIGHTSCOUT_ENABLED] = enabled } }
 }

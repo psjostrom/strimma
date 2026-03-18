@@ -71,7 +71,7 @@ class MainActivity : ComponentActivity() {
                 val bgLow by viewModel.bgLow.collectAsState()
                 val bgHigh by viewModel.bgHigh.collectAsState()
                 val graphWindowHours by viewModel.graphWindowHours.collectAsState()
-                val springaUrl by viewModel.springaUrl.collectAsState()
+                val nightscoutUrl by viewModel.nightscoutUrl.collectAsState()
                 val alertLowEnabled by viewModel.alertLowEnabled.collectAsState()
                 val alertHighEnabled by viewModel.alertHighEnabled.collectAsState()
                 val alertUrgentLowEnabled by viewModel.alertUrgentLowEnabled.collectAsState()
@@ -85,8 +85,6 @@ class MainActivity : ComponentActivity() {
                 val notifPredictionMinutes by viewModel.notifPredictionMinutes.collectAsState()
                 val glucoseUnit by viewModel.glucoseUnit.collectAsState()
                 val bgBroadcastEnabled by viewModel.bgBroadcastEnabled.collectAsState()
-                val nightscoutEnabled by viewModel.nightscoutEnabled.collectAsState()
-                val nightscoutUrl by viewModel.nightscoutUrl.collectAsState()
 
                 NavHost(navController, startDestination = "main") {
                     composable("main") {
@@ -111,8 +109,8 @@ class MainActivity : ComponentActivity() {
                     }
                     composable("settings") {
                         SettingsScreen(
-                            springaUrl = springaUrl,
-                            apiSecret = viewModel.apiSecret,
+                            nightscoutUrl = nightscoutUrl,
+                            nightscoutSecret = viewModel.nightscoutSecret,
                             graphWindowHours = graphWindowHours,
                             bgLow = bgLow,
                             bgHigh = bgHigh,
@@ -121,9 +119,6 @@ class MainActivity : ComponentActivity() {
                             notifPredictionMinutes = notifPredictionMinutes,
                             glucoseUnit = glucoseUnit,
                             bgBroadcastEnabled = bgBroadcastEnabled,
-                            nightscoutEnabled = nightscoutEnabled,
-                            nightscoutUrl = nightscoutUrl,
-                            nightscoutSecret = viewModel.nightscoutSecret,
                             alertLowEnabled = alertLowEnabled,
                             alertHighEnabled = alertHighEnabled,
                             alertUrgentLowEnabled = alertUrgentLowEnabled,
@@ -133,8 +128,8 @@ class MainActivity : ComponentActivity() {
                             alertUrgentLow = alertUrgentLow,
                             alertUrgentHigh = alertUrgentHigh,
                             alertStaleEnabled = alertStaleEnabled,
-                            onSpringaUrlChange = viewModel::setSpringaUrl,
-                            onApiSecretChange = viewModel::setApiSecret,
+                            onNightscoutUrlChange = viewModel::setNightscoutUrl,
+                            onNightscoutSecretChange = viewModel::setNightscoutSecret,
                             onGraphWindowChange = viewModel::setGraphWindowHours,
                             onBgLowChange = viewModel::setBgLow,
                             onBgHighChange = viewModel::setBgHigh,
@@ -143,9 +138,6 @@ class MainActivity : ComponentActivity() {
                             onNotifPredictionMinutesChange = viewModel::setNotifPredictionMinutes,
                             onGlucoseUnitChange = viewModel::setGlucoseUnit,
                             onBgBroadcastEnabledChange = viewModel::setBgBroadcastEnabled,
-                            onNightscoutEnabledChange = viewModel::setNightscoutEnabled,
-                            onNightscoutUrlChange = viewModel::setNightscoutUrl,
-                            onNightscoutSecretChange = viewModel::setNightscoutSecret,
                             onAlertLowEnabledChange = viewModel::setAlertLowEnabled,
                             onAlertHighEnabledChange = viewModel::setAlertHighEnabled,
                             onAlertUrgentLowEnabledChange = viewModel::setAlertUrgentLowEnabled,

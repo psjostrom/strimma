@@ -23,8 +23,8 @@ import com.psjostrom.strimma.ui.theme.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    springaUrl: String,
-    apiSecret: String,
+    nightscoutUrl: String,
+    nightscoutSecret: String,
     graphWindowHours: Int,
     bgLow: Float,
     bgHigh: Float,
@@ -33,9 +33,6 @@ fun SettingsScreen(
     notifPredictionMinutes: Int,
     glucoseUnit: GlucoseUnit,
     bgBroadcastEnabled: Boolean,
-    nightscoutEnabled: Boolean,
-    nightscoutUrl: String,
-    nightscoutSecret: String,
     alertLowEnabled: Boolean,
     alertHighEnabled: Boolean,
     alertUrgentLowEnabled: Boolean,
@@ -45,8 +42,8 @@ fun SettingsScreen(
     alertUrgentLow: Float,
     alertUrgentHigh: Float,
     alertStaleEnabled: Boolean,
-    onSpringaUrlChange: (String) -> Unit,
-    onApiSecretChange: (String) -> Unit,
+    onNightscoutUrlChange: (String) -> Unit,
+    onNightscoutSecretChange: (String) -> Unit,
     onGraphWindowChange: (Int) -> Unit,
     onBgLowChange: (Float) -> Unit,
     onBgHighChange: (Float) -> Unit,
@@ -55,9 +52,6 @@ fun SettingsScreen(
     onNotifPredictionMinutesChange: (Int) -> Unit,
     onGlucoseUnitChange: (GlucoseUnit) -> Unit,
     onBgBroadcastEnabledChange: (Boolean) -> Unit,
-    onNightscoutEnabledChange: (Boolean) -> Unit,
-    onNightscoutUrlChange: (String) -> Unit,
-    onNightscoutSecretChange: (String) -> Unit,
     onAlertLowEnabledChange: (Boolean) -> Unit,
     onAlertHighEnabledChange: (Boolean) -> Unit,
     onAlertUrgentLowEnabledChange: (Boolean) -> Unit,
@@ -107,73 +101,31 @@ fun SettingsScreen(
         ) {
             Spacer(modifier = Modifier.height(4.dp))
 
-            SettingsSection("Connection", outline, surfVar) {
-                var urlText by remember(springaUrl) { mutableStateOf(springaUrl) }
+            SettingsSection("Nightscout", outline, surfVar) {
+                var urlText by remember(nightscoutUrl) { mutableStateOf(nightscoutUrl) }
                 OutlinedTextField(
                     value = urlText,
                     onValueChange = { urlText = it },
-                    label = { Text("Springa URL") },
-                    placeholder = { Text("https://springa.vercel.app") },
+                    label = { Text("Nightscout URL") },
+                    placeholder = { Text("https://your-nightscout.example.com") },
                     supportingText = { Text("Base URL only — no /api path") },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .onFocusChanged { if (!it.isFocused) onSpringaUrlChange(urlText) },
+                        .onFocusChanged { if (!it.isFocused) onNightscoutUrlChange(urlText) },
                     singleLine = true
                 )
 
-                var secretText by remember(apiSecret) { mutableStateOf(apiSecret) }
+                var secretText by remember(nightscoutSecret) { mutableStateOf(nightscoutSecret) }
                 OutlinedTextField(
                     value = secretText,
                     onValueChange = { secretText = it },
                     label = { Text("API Secret") },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .onFocusChanged { if (!it.isFocused) onApiSecretChange(secretText) },
+                        .onFocusChanged { if (!it.isFocused) onNightscoutSecretChange(secretText) },
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation()
                 )
-            }
-
-            SettingsSection("Nightscout", outline, surfVar) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-                        Text("Upload to Nightscout", color = onBg, fontSize = 14.sp)
-                        Text(
-                            "Standard /api/v1/entries endpoint",
-                            color = outline,
-                            fontSize = 12.sp
-                        )
-                    }
-                    Switch(checked = nightscoutEnabled, onCheckedChange = onNightscoutEnabledChange)
-                }
-                if (nightscoutEnabled) {
-                    var nsUrlText by remember(nightscoutUrl) { mutableStateOf(nightscoutUrl) }
-                    OutlinedTextField(
-                        value = nsUrlText,
-                        onValueChange = { nsUrlText = it },
-                        label = { Text("Nightscout URL") },
-                        placeholder = { Text("https://my-ns.herokuapp.com") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .onFocusChanged { if (!it.isFocused) onNightscoutUrlChange(nsUrlText) },
-                        singleLine = true
-                    )
-                    var nsSecretText by remember(nightscoutSecret) { mutableStateOf(nightscoutSecret) }
-                    OutlinedTextField(
-                        value = nsSecretText,
-                        onValueChange = { nsSecretText = it },
-                        label = { Text("API Secret") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .onFocusChanged { if (!it.isFocused) onNightscoutSecretChange(nsSecretText) },
-                        singleLine = true,
-                        visualTransformation = PasswordVisualTransformation()
-                    )
-                }
             }
 
             SettingsSection("Display", outline, surfVar) {

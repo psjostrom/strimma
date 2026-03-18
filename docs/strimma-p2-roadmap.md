@@ -33,8 +33,8 @@ Strimma is an open-source Android CGM app inspired by xDrip+. Currently focused 
 **Data Pipeline:**
 - `GlucoseNotificationListener` — NotificationListenerService that parses CamAPS FX's ongoing notification for glucose values
 - `GlucoseParser` — extracted top-level glucose text parser (testable, handles comma/dot decimals, Unicode cleanup)
-- `StrimmaService` — foreground service that processes readings, computes direction, updates notification, checks alerts, updates widget, pushes to Springa, broadcasts BG
-- `SpringaPusher` / `SpringaClient` — HTTP push to `/api/v1/entries` (standard Nightscout path) with retry (12 attempts, linear backoff) and offline resilience (unpushed readings survive restart). Optional separate Nightscout upload.
+- `StrimmaService` — foreground service that processes readings, computes direction, updates notification, checks alerts, updates widget, pushes to Nightscout, broadcasts BG
+- `NightscoutPusher` / `NightscoutClient` — HTTP push to `/api/v1/entries` (standard Nightscout path) with retry (12 attempts, linear backoff) and offline resilience (unpushed readings survive restart).
 - `DirectionComputer` — EASD/ISPAD 2020 thresholds, 3-point averaged SGV, 5-minute delta
 
 **Display:**
@@ -85,7 +85,7 @@ Strimma is an open-source Android CGM app inspired by xDrip+. Currently focused 
 - Verified working with GlucoDataHandler (GDH)
 
 **Settings (P2 — expanded):**
-- Springa URL and API secret (EncryptedSharedPreferences) — saved on field blur
+- Nightscout URL and API secret (EncryptedSharedPreferences) — saved on field blur
 - Graph window (1-8h slider), BG low/high thresholds
 - Unit toggle (mmol/L / mg/dL) — threshold fields adapt to selected unit
 - Theme picker (Dark / Light / System)
@@ -151,7 +151,7 @@ None — P2 is complete.
 | **GlucoDataHandler** | CGM hub + watch bridge | Any (receives from other apps) | Yes | Google Play |
 | **Nightscout** | Cloud CGM dashboard | Any (receives via uploaders) | Yes | Self-hosted web |
 | **CamAPS FX** | Closed-loop pump control | Libre 3 (direct BLE) | No | Prescription |
-| **Strimma** | CGM display + Springa push | Libre 3 (via CamAPS notification) | Private | Sideload APK |
+| **Strimma** | CGM display + Nightscout push | Libre 3 (via CamAPS notification) | Private | Sideload APK |
 
 ### Feature Matrix
 
@@ -160,8 +160,8 @@ None — P2 is complete.
 | **Direct BLE CGM** | Yes (15+ sensors) | Yes (Libre, Dexcom, etc.) | Yes (Libre + Bubble) | No (receives from others) | No (via CamAPS notification) |
 | **Glucose alerts** | Yes (highly configurable) | Yes (low/high + medication reminders) | Yes | Yes (5 levels) | Yes (5 levels, per-alarm channels) |
 | **Home screen widget** | Yes | Yes + floating overlay | Via complications | Yes + floating | Yes (Glance, with graph) |
-| **Watch support** | Yes (5 platforms) | Yes (Wear OS native) | Via G-Watch | Yes (Wear OS, MiBand, Amazfit, Garmin, Fitbit) | No (watch reads Springa) |
-| **Nightscout upload** | Yes | Yes | No | No | Custom (Springa) |
+| **Watch support** | Yes (5 platforms) | Yes (Wear OS native) | Via G-Watch | Yes (Wear OS, MiBand, Amazfit, Garmin, Fitbit) | No (watch reads Nightscout) |
+| **Nightscout upload** | Yes | Yes | No | No | Yes (Nightscout) |
 | **LibreView upload** | No | Yes (unique) | No | No | No |
 | **Calibration** | Yes | Yes (-40 to +20 mg/dL) | Yes (key feature) | No | No |
 | **Prediction** | Yes (multiple algorithms) | No | No | No | Yes (30-min linear) |
@@ -192,7 +192,7 @@ None — P2 is complete.
 | Security | Cleartext allowed, no encrypted prefs | HTTPS only, EncryptedSharedPreferences |
 | Tests | 67 files / 976 (6.9%) | 66 tests, Robolectric + Room |
 | Data coverage (Android 16, companion mode) | ~47% | ~97% |
-| Feature scope | Comprehensive (15+ sensors, 5 watch platforms) | Focused (CamAPS FX + Springa pipeline) |
+| Feature scope | Comprehensive (15+ sensors, 5 watch platforms) | Focused (CamAPS FX + Nightscout pipeline) |
 
 ### Juggluco Comparison
 
@@ -209,7 +209,7 @@ None — P2 is complete.
 **Strimma advantages:**
 - Cleaner graph UX (minimap + scrub tooltip vs. landscape-only)
 - 30-minute prediction extrapolation (Juggluco doesn't have prediction)
-- Purpose-built for the CamAPS FX + Springa pipeline (no configuration maze)
+- Purpose-built for the CamAPS FX + Nightscout pipeline (no configuration maze)
 - Modern Compose UI with Dark/Light/System theme (Juggluco's UI is functional but dated)
 - Per-alarm notification channels with independent sound/vibration/DND settings
 - Home screen widget with mini graph
@@ -220,9 +220,9 @@ None — P2 is complete.
 
 ## 3. What Strimma Does That Others Don't
 
-1. **Purpose-built for CamAPS FX + Springa.** Zero configuration for the specific pipeline. Other apps require selecting data sources, configuring broadcast protocols, and setting up Nightscout endpoints.
+1. **Purpose-built for CamAPS FX + Nightscout.** Zero configuration for the specific pipeline. Other apps require selecting data sources, configuring broadcast protocols, and setting up Nightscout endpoints.
 
-2. **Direction computation at the source.** In companion mode, received direction fields can be outdated (~31% mismatch rate observed). Strimma computes direction locally using EASD/ISPAD thresholds with 3-point averaging. Springa recomputes as a safety net.
+2. **Direction computation at the source.** In companion mode, received direction fields can be outdated (~31% mismatch rate observed). Strimma computes direction locally using EASD/ISPAD thresholds with 3-point averaging. the Nightscout server recomputes as a safety net.
 
 3. **Graph with minimap.** The 24h minimap with draggable viewport indicator is a better navigation model than xDrip's "swipe to scroll, pinch to zoom" with no overview context. No other CGM app has this.
 
@@ -232,7 +232,7 @@ None — P2 is complete.
 
 6. **Per-alarm notification channels.** Each alert type has its own Android notification channel with independent sound/vibration/DND settings.
 
-7. **~97% data coverage, validated.** In 14h side-by-side testing, Strimma covered 97.0% of 5-min slots vs xDrip's 96.4%. Values matched within 0.018 mmol/L on average. xDrip retired — Strimma is the sole data source. Springa tables merged.
+7. **~97% data coverage, validated.** In 14h side-by-side testing, Strimma covered 97.0% of 5-min slots vs xDrip's 96.4%. Values matched within 0.018 mmol/L on average. xDrip retired — Strimma is the sole data source.
 
 8. **Widget with graph.** Glance widget shows BG, arrow, delta, and a mini graph — not just a number.
 
@@ -324,7 +324,7 @@ These features make Strimma usable by most Libre and Dexcom companion-mode users
 | Priority | Feature | Scope |
 |----------|---------|-------|
 | ~~**P0**~~ | ~~BG broadcast (xDrip format)~~ | ~~Done (P2). Emits `com.eveningoutpost.dexdrip.BgEstimate`, verified with GDH.~~ |
-| **P0** | Nightscout upload | POST to any Nightscout server (not just Springa). Standard `/api/v1/entries` format. |
+| ~~**P0**~~ | ~~Nightscout upload~~ | ~~Done. POST to any Nightscout server via standard `/api/v1/entries` format.~~ |
 | ~~**P0**~~ | ~~mg/dL toggle~~ | ~~Done (P2). GlucoseUnit enum, display-time conversion, internal storage stays mmol/L.~~ |
 | **P1** | Nightscout download (follower mode) | Pull readings from a Nightscout server. Enables parents/partners to follow. |
 | **P2** | Tidepool upload | Optional cloud sync for users who use Tidepool for clinic reports. |
@@ -406,9 +406,9 @@ These were out of scope for phase 1. The open-source roadmap adds them as goals:
 | BLE CGM collection | CamAPS notification only | Phase 3 (Dexcom G7, Libre 2/2+) |
 | Calibration | Not needed for Libre 3 | Phase 4 (sensors that need it) |
 | Treatment tracking | Out of scope | Phase 4 (low priority) |
-| Watch sync | Via Springa | Phase 3 (Wear OS complications) |
+| Watch sync | Via Nightscout | Phase 3 (Wear OS complications) |
 | Follower mode | Out of scope | Phase 3 (Nightscout download) |
-| Cloud sync | Springa only | Phase 3 (Nightscout upload) |
+| Cloud sync | Nightscout (done) | Phase 3 (Nightscout download / follower mode) |
 | Multi-device | Android 16 only | Phase 3 (minSdk 26, multi-OEM) |
 | Distribution | Manual APK | Phase 3 (GitHub releases, F-Droid) |
 | AAPS integration | Out of scope | Phase 3 (BG broadcast) |
