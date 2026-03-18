@@ -141,6 +141,11 @@ class MainActivity : ComponentActivity() {
                                     launchSingleTop = true
                                 }
                             },
+                            onWidgetSettings = {
+                                startActivity(Intent(this@MainActivity, com.psjostrom.strimma.widget.WidgetConfigActivity::class.java).apply {
+                                    putExtra(android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_ID, 0)
+                                })
+                            },
                             onDebugLog = {
                                 navController.navigate("debug") {
                                     launchSingleTop = true

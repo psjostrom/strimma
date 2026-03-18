@@ -36,14 +36,11 @@ class WidgetConfigActivity : ComponentActivity() {
             AppWidgetManager.INVALID_APPWIDGET_ID
         ) ?: AppWidgetManager.INVALID_APPWIDGET_ID
 
-        setResult(
-            RESULT_CANCELED,
-            Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
-        )
-
-        if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) {
-            finish()
-            return
+        if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
+            setResult(
+                RESULT_CANCELED,
+                Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+            )
         }
 
         val prefs = getSharedPreferences("widget_prefs", MODE_PRIVATE)
@@ -60,10 +57,12 @@ class WidgetConfigActivity : ComponentActivity() {
                                 StrimmaWidget().update(this@WidgetConfigActivity, id)
                             }
                         }
-                        setResult(
-                            RESULT_OK,
-                            Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
-                        )
+                        if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
+                            setResult(
+                                RESULT_OK,
+                                Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+                            )
+                        }
                         finish()
                     }
                 )

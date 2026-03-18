@@ -1,17 +1,16 @@
 package com.psjostrom.strimma.widget
 
 import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.*
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
-import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
 import androidx.glance.layout.*
@@ -32,16 +31,11 @@ private const val GRAPH_WINDOW_MS = 2 * 60 * 60 * 1000L
 class StrimmaWidget : GlanceAppWidget() {
 
     companion object {
-        private val SMALL = DpSize(110.dp, 40.dp)
-        private val LARGE = DpSize(180.dp, 100.dp)
-
         fun getOpacity(context: Context): Float {
             return context.getSharedPreferences("widget_prefs", Context.MODE_PRIVATE)
                 .getFloat("opacity", 0.85f)
         }
     }
-
-    override val sizeMode = SizeMode.Responsive(setOf(SMALL, LARGE))
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val db = StrimmaDatabase.getInstance(context)
@@ -78,9 +72,6 @@ private fun WidgetContent(
     graphBitmap: Bitmap,
     opacity: Float
 ) {
-    val size = LocalSize.current
-    val showGraph = size.height >= 90.dp
-
     val staleColor = ColorProvider(Color(0xFF636E7B))
     val mutedColor = ColorProvider(Color(0xFF8892A0))
 
@@ -115,83 +106,52 @@ private fun WidgetContent(
 
     val bgColor = Color(0xFF0C1017).copy(alpha = opacity)
 
-    if (showGraph) {
-        // Large: graph background with text overlay
-        Box(
-            modifier = GlanceModifier
-                .fillMaxSize()
-                .background(bgColor)
-                .cornerRadius(16.dp)
-                .clickable(actionStartActivity<MainActivity>())
-        ) {
-            Image(
-                provider = ImageProvider(graphBitmap),
-                contentDescription = null,
-                modifier = GlanceModifier.fillMaxSize(),
-                contentScale = ContentScale.FillBounds
-            )
-            Column(
-                modifier = GlanceModifier
-                    .fillMaxSize()
-                    .padding(horizontal = 12.dp, vertical = 8.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = bgValue,
-                        style = TextStyle(
-                            color = textColor,
-                            fontSize = 26.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    )
-                    Text(
-                        text = " ${direction.arrow}",
-                        style = TextStyle(color = textColor, fontSize = 20.sp)
-                    )
-                    Spacer(modifier = GlanceModifier.defaultWeight())
-                    Text(
-                        text = subtitle,
-                        style = TextStyle(
-                            color = if (isStale) staleColor else mutedColor,
-                            fontSize = 12.sp
-                        )
-                    )
-                }
-            }
-        }
-    } else {
-        // Small: text only, centered
+    // Graph always shown as background, text overlaid — works at any size including 2×1
+    Box(
+        modifier = GlanceModifier
+            .fillMaxSize()
+            .background(bgColor)
+            .cornerRadius(16.dp)
+            .clickable(actionStartActivity<MainActivity>())
+    ) {
+        Image(
+            provider = ImageProvider(graphBitmap),
+            contentDescription = null,
+            modifier = GlanceModifier.fillMaxSize(),
+            contentScale = ContentScale.FillBounds
+        )
+
+        // Text overlay
         Column(
             modifier = GlanceModifier
                 .fillMaxSize()
-                .background(bgColor)
-                .cornerRadius(16.dp)
-                .padding(horizontal = 12.dp, vertical = 6.dp)
-                .clickable(actionStartActivity<MainActivity>()),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(horizontal = 10.dp, vertical = 4.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = GlanceModifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(
                     text = bgValue,
                     style = TextStyle(
                         color = textColor,
-                        fontSize = 24.sp,
+                        fontSize = 22.sp,
                         fontWeight = FontWeight.Bold
                     )
                 )
                 Text(
                     text = " ${direction.arrow}",
-                    style = TextStyle(color = textColor, fontSize = 18.sp)
+                    style = TextStyle(color = textColor, fontSize = 16.sp)
+                )
+                Spacer(modifier = GlanceModifier.defaultWeight())
+                Text(
+                    text = subtitle,
+                    style = TextStyle(
+                        color = if (isStale) staleColor else mutedColor,
+                        fontSize = 11.sp
+                    )
                 )
             }
-            Text(
-                text = subtitle,
-                style = TextStyle(
-                    color = if (isStale) staleColor else mutedColor,
-                    fontSize = 11.sp
-                )
-            )
         }
     }
 }
