@@ -52,6 +52,9 @@ class SettingsRepository @Inject constructor(
         private val KEY_NOTIF_PREDICTION_MINUTES = intPreferencesKey("notif_prediction_minutes")
         private val KEY_GLUCOSE_UNIT = stringPreferencesKey("glucose_unit")
         private val KEY_BG_BROADCAST_ENABLED = booleanPreferencesKey("bg_broadcast_enabled")
+        private val KEY_GLUCOSE_SOURCE = stringPreferencesKey("glucose_source")
+        private const val SYNC_PREFS = "strimma_sync"
+        private const val KEY_GLUCOSE_SOURCE_SYNC = "glucose_source"
     }
 
     val nightscoutUrl: Flow<String> = dataStore.data.map { it[KEY_NIGHTSCOUT_URL] ?: "" }
@@ -105,4 +108,19 @@ class SettingsRepository @Inject constructor(
 
     val bgBroadcastEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_BG_BROADCAST_ENABLED] ?: false }
     suspend fun setBgBroadcastEnabled(enabled: Boolean) { dataStore.edit { it[KEY_BG_BROADCAST_ENABLED] = enabled } }
+
+    val glucoseSource: Flow<GlucoseSource> = dataStore.data.map {
+        try { GlucoseSource.valueOf(it[KEY_GLUCOSE_SOURCE] ?: "CAMAPS_NOTIFICATION") }
+        catch (_: Exception) { GlucoseSource.CAMAPS_NOTIFICATION }
+    }
+    suspend fun setGlucoseSource(source: GlucoseSource) {
+        dataStore.edit { it[KEY_GLUCOSE_SOURCE] = source.name }
+        context.getSharedPreferences(SYNC_PREFS, Context.MODE_PRIVATE)
+            .edit().putString(KEY_GLUCOSE_SOURCE_SYNC, source.name).apply()
+    }
+    fun getGlucoseSourceSync(): GlucoseSource {
+        val name = context.getSharedPreferences(SYNC_PREFS, Context.MODE_PRIVATE)
+            .getString(KEY_GLUCOSE_SOURCE_SYNC, null) ?: return GlucoseSource.CAMAPS_NOTIFICATION
+        return try { GlucoseSource.valueOf(name) } catch (_: Exception) { GlucoseSource.CAMAPS_NOTIFICATION }
+    }
 }

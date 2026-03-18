@@ -85,6 +85,7 @@ class MainActivity : ComponentActivity() {
                 val notifPredictionMinutes by viewModel.notifPredictionMinutes.collectAsState()
                 val glucoseUnit by viewModel.glucoseUnit.collectAsState()
                 val bgBroadcastEnabled by viewModel.bgBroadcastEnabled.collectAsState()
+                val glucoseSource by viewModel.glucoseSource.collectAsState()
 
                 NavHost(navController, startDestination = "main") {
                     composable("main") {
@@ -109,6 +110,7 @@ class MainActivity : ComponentActivity() {
                     }
                     composable("settings") {
                         SettingsScreen(
+                            glucoseSource = glucoseSource,
                             nightscoutUrl = nightscoutUrl,
                             nightscoutSecret = viewModel.nightscoutSecret,
                             graphWindowHours = graphWindowHours,
@@ -128,6 +130,7 @@ class MainActivity : ComponentActivity() {
                             alertUrgentLow = alertUrgentLow,
                             alertUrgentHigh = alertUrgentHigh,
                             alertStaleEnabled = alertStaleEnabled,
+                            onGlucoseSourceChange = viewModel::setGlucoseSource,
                             onNightscoutUrlChange = viewModel::setNightscoutUrl,
                             onNightscoutSecretChange = viewModel::setNightscoutSecret,
                             onGraphWindowChange = viewModel::setGraphWindowHours,

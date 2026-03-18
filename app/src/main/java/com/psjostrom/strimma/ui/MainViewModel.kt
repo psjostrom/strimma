@@ -3,6 +3,7 @@ package com.psjostrom.strimma.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.psjostrom.strimma.data.GlucoseReading
+import com.psjostrom.strimma.data.GlucoseSource
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
@@ -101,6 +102,10 @@ class MainViewModel @Inject constructor(
     val bgBroadcastEnabled: StateFlow<Boolean> = settings.bgBroadcastEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
     fun setBgBroadcastEnabled(enabled: Boolean) = viewModelScope.launch { settings.setBgBroadcastEnabled(enabled) }
+
+    val glucoseSource: StateFlow<GlucoseSource> = settings.glucoseSource
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), GlucoseSource.CAMAPS_NOTIFICATION)
+    fun setGlucoseSource(source: GlucoseSource) = viewModelScope.launch { settings.setGlucoseSource(source) }
 
     suspend fun readingsForPeriod(hours: Int): List<GlucoseReading> {
         val since = System.currentTimeMillis() - hours * 3600_000L

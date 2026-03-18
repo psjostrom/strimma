@@ -17,12 +17,14 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.psjostrom.strimma.data.GlucoseSource
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
+    glucoseSource: GlucoseSource,
     nightscoutUrl: String,
     nightscoutSecret: String,
     graphWindowHours: Int,
@@ -42,6 +44,7 @@ fun SettingsScreen(
     alertUrgentLow: Float,
     alertUrgentHigh: Float,
     alertStaleEnabled: Boolean,
+    onGlucoseSourceChange: (GlucoseSource) -> Unit,
     onNightscoutUrlChange: (String) -> Unit,
     onNightscoutSecretChange: (String) -> Unit,
     onGraphWindowChange: (Int) -> Unit,
@@ -100,6 +103,26 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             Spacer(modifier = Modifier.height(4.dp))
+
+            SettingsSection("Data Source", outline, surfVar) {
+                GlucoseSource.entries.forEach { source ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = glucoseSource == source,
+                            onClick = { onGlucoseSourceChange(source) }
+                        )
+                        Column(modifier = Modifier.padding(start = 8.dp)) {
+                            Text(source.label, color = onBg, fontSize = 14.sp)
+                            Text(source.description, color = outline, fontSize = 12.sp)
+                        }
+                    }
+                }
+            }
 
             SettingsSection("Nightscout", outline, surfVar) {
                 var urlText by remember(nightscoutUrl) { mutableStateOf(nightscoutUrl) }
