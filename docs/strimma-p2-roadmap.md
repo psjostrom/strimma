@@ -24,8 +24,8 @@
 Strimma is an open-source Android CGM app inspired by xDrip+. Currently focused on Libre 3 via CamAPS FX notification parsing, with a roadmap toward broader sensor support and Nightscout integration.
 
 **Architecture:**
-- 32 Kotlin source files, ~3,500 lines production code
-- 6 test files, 66 tests (46 unit + 20 integration)
+- 33 Kotlin source files, ~3,800 lines production code
+- 7 test files, 77 tests (57 unit + 20 integration)
 - Modern stack: Compose + Material 3, Room, Hilt, Ktor, Coroutines
 - compileSdk/targetSdk/minSdk 36 (Android 16)
 - Java 21 (Zulu) — repo-specific via `gradle.properties`
@@ -33,7 +33,7 @@ Strimma is an open-source Android CGM app inspired by xDrip+. Currently focused 
 **Data Pipeline:**
 - `GlucoseNotificationListener` — NotificationListenerService that parses CamAPS FX's ongoing notification for glucose values
 - `GlucoseParser` — extracted top-level glucose text parser (testable, handles comma/dot decimals, Unicode cleanup)
-- `StrimmaService` — foreground service that processes readings, computes direction, updates notification, checks alerts, updates widget, pushes to Springa
+- `StrimmaService` — foreground service that processes readings, computes direction, updates notification, checks alerts, updates widget, pushes to Springa, broadcasts BG
 - `SpringaPusher` / `SpringaClient` — HTTP push with retry (12 attempts, linear backoff) and offline resilience (unpushed readings survive restart)
 - `DirectionComputer` — EASD/ISPAD 2020 thresholds, 3-point averaged SGV, 5-minute delta
 
@@ -71,11 +71,26 @@ Strimma is an open-source Android CGM app inspired by xDrip+. Currently focused 
 - Snooze persisted to SharedPreferences (survives process restart)
 - Alerts auto-clear when glucose returns to range
 
+**Unit Support (P2 — delivered):**
+- mmol/L ↔ mg/dL toggle in Settings > Display
+- `GlucoseUnit` enum handles all formatting, conversion, and threshold parsing
+- Internal storage stays mmol/L — conversion at display time only
+- Affects: hero BG, graph Y-axis labels, tooltips, notifications, alerts, stats, widget
+- Graph Y-axis adapts step size (1/2 mmol or 25/50 mg/dL) and left margin for 3-digit labels
+
+**BG Broadcast (P2 — delivered):**
+- xDrip-compatible `com.eveningoutpost.dexdrip.BgEstimate` intent emitted on each reading
+- Extras: BgEstimate (sgv as double), Raw, Time, BgSlope, SensorId, BgSlopeName
+- Toggle in Settings > Integration, off by default
+- Verified working with GlucoDataHandler (GDH)
+
 **Settings (P2 — expanded):**
 - Springa URL and API secret (EncryptedSharedPreferences) — saved on field blur
 - Graph window (1-8h slider), BG low/high thresholds
+- Unit toggle (mmol/L / mg/dL) — threshold fields adapt to selected unit
 - Theme picker (Dark / Light / System)
 - Full alert configuration: per-alarm enable/threshold/sound
+- BG broadcast toggle (Integration section)
 - Statistics access
 - Debug log access + share
 
@@ -93,7 +108,7 @@ Strimma is an open-source Android CGM app inspired by xDrip+. Currently focused 
 
 **Testing (P2 — delivered):**
 - Robolectric 4.16 on SDK 36 with Java 21 (repo-specific)
-- Unit tests (46): DirectionComputer (13), GlucoseParser (17), GraphColors (12), SecretHash (4)
+- Unit tests (57): DirectionComputer (13), GlucoseParser (17), GraphColors (12), SecretHash (4), GlucoseUnit (11)
 - Integration tests (20): ReadingDao with in-memory Room (9), full reading pipeline (11)
 - All tests run on JVM — no emulator needed
 
@@ -112,14 +127,15 @@ Strimma is an open-source Android CGM app inspired by xDrip+. Currently focused 
 | Theme-adaptive graph surfaces and canvas internals | Done |
 | Home screen widget (Glance, with graph and opacity config) | Done |
 | Statistics screen (TIR, GMI, CV%, coverage, CSV export) | Done |
-| Unit tests (46 tests, 4 test classes) | Done |
+| mg/dL unit toggle (mmol/L ↔ mg/dL, GlucoseUnit enum) | Done |
+| BG broadcast (xDrip-compatible intent, verified with GDH) | Done |
+| Unit tests (57 tests, 5 test classes) | Done |
 | Integration tests (20 tests, Robolectric + Room) | Done |
 | Java 21 repo-specific configuration | Done |
 
 ### Known Issues & Remaining Gaps
 
-1. **No mg/dL support.** mmol/L only.
-2. **No data broadcast.** Can't feed other apps (GDH, AAPS) from Strimma.
+None — P2 is complete.
 
 ---
 
@@ -153,13 +169,13 @@ Strimma is an open-source Android CGM app inspired by xDrip+. Currently focused 
 | **Lock screen display** | Via notification | No | Yes | Yes (AOD wallpaper) | Via notification |
 | **Interactive graph** | Yes (pinch zoom) | Yes (landscape, two-finger zoom) | Basic | Basic | Yes (zoom, pan, scrub, minimap) |
 | **24h overview** | Yes | Yes | No | No | Yes (minimap) |
-| **Data broadcast** | Yes (xDrip broadcast) | Yes (xDrip broadcast, Nightscout) | Yes (Share data) | Yes (broadcast) | **No** |
-| **mg/dL support** | Yes | Yes | Yes | Yes | **No** |
+| **Data broadcast** | Yes (xDrip broadcast) | Yes (xDrip broadcast, Nightscout) | Yes (Share data) | Yes (broadcast) | Yes (xDrip broadcast) |
+| **mg/dL support** | Yes | Yes | Yes | Yes | Yes (mmol/L ↔ mg/dL toggle) |
 | **CSV export** | Yes | Yes | No | No | Yes |
 | **Dark/Light theme** | Dark only | Partial | Dark only | Yes | Yes (Dark/Light/System) |
 | **Modern architecture** | Java, targetSdk 24, mature codebase | Mixed | Unknown | Kotlin | Yes (Kotlin, Compose, Room, Hilt) |
-| **Test coverage** | 67 files / 976 (6.9%) | Unknown | Unknown | Unknown | 66 tests, unit + integration |
-| **Code quality** | 976 Java files, 3,880-line Home.java | Single dev, public domain | Closed source | Clean Kotlin | 32 files, ~3,500 lines |
+| **Test coverage** | 67 files / 976 (6.9%) | Unknown | Unknown | Unknown | 77 tests, unit + integration |
+| **Code quality** | 976 Java files, 3,880-line Home.java | Single dev, public domain | Closed source | Clean Kotlin | 33 files, ~3,800 lines |
 
 ### xDrip+ Deep Comparison
 
@@ -220,7 +236,9 @@ Strimma is an open-source Android CGM app inspired by xDrip+. Currently focused 
 
 8. **Widget with graph.** Glance widget shows BG, arrow, delta, and a mini graph — not just a number.
 
-9. **Modern, tested codebase.** 32 files, ~3,500 lines, 66 automated tests. Any future feature builds on a solid foundation.
+9. **xDrip-compatible BG broadcast.** Emits `com.eveningoutpost.dexdrip.BgEstimate` on each reading, enabling AAPS, GDH, and watches to receive data. Verified working with GDH.
+
+10. **Modern, tested codebase.** 33 files, ~3,800 lines, 77 automated tests. Any future feature builds on a solid foundation.
 
 ---
 
@@ -230,8 +248,6 @@ Strimma is an open-source Android CGM app inspired by xDrip+. Currently focused 
 
 | Feature | Who Has It | Why It Matters |
 |---------|-----------|---------------|
-| **mg/dL toggle** | All competitors | International standard. Required for open-source release. |
-| **Data broadcast** | xDrip+, Juggluco, Diabox, GDH | `com.eveningoutpost.dexdrip.BgEstimate` intent enables ecosystem apps to receive data. |
 | **Lock screen wallpaper** | GDH | AOD glucose display without unlocking. |
 | **Voice readout** | Juggluco | Hands-free BG check (running, driving). |
 | **Android Auto** | GDH | BG display while driving. |
@@ -240,10 +256,7 @@ Strimma is an open-source Android CGM app inspired by xDrip+. Currently focused 
 
 ## 5. Remaining P2 Work
 
-```
-1. mg/dL toggle
-2. BG broadcast (xDrip-compatible intent)
-```
+All P2 work is complete. See delivery table in § 1.
 
 ---
 
@@ -310,9 +323,9 @@ These features make Strimma usable by most Libre and Dexcom companion-mode users
 
 | Priority | Feature | Scope |
 |----------|---------|-------|
-| **P0** | BG broadcast (xDrip format) | Emit `com.eveningoutpost.dexdrip.BgEstimate` on each reading — enables AAPS, GDH, watches |
+| ~~**P0**~~ | ~~BG broadcast (xDrip format)~~ | ~~Done (P2). Emits `com.eveningoutpost.dexdrip.BgEstimate`, verified with GDH.~~ |
 | **P0** | Nightscout upload | POST to any Nightscout server (not just Springa). Standard `/api/v1/entries` format. |
-| **P0** | mg/dL toggle | Display and input in both units. Store internally as mg/dL (Nightscout standard). |
+| ~~**P0**~~ | ~~mg/dL toggle~~ | ~~Done (P2). GlucoseUnit enum, display-time conversion, internal storage stays mmol/L.~~ |
 | **P1** | Nightscout download (follower mode) | Pull readings from a Nightscout server. Enables parents/partners to follow. |
 | **P2** | Tidepool upload | Optional cloud sync for users who use Tidepool for clinic reports. |
 
@@ -377,8 +390,8 @@ The critical path is Phase 3.1-3.2. Once the plugin interface exists and Nightsc
 |----------|--------|
 | **Architecture** | Plugin-based data sources. Adding a sensor is one class with its own tests. |
 | **Modern stack** | Compose + Material 3, Room, Hilt, Coroutines, targetSdk 36. Familiar to any Android developer who learned after 2022. |
-| **Testability** | 66 tests already. Every new data source plugin gets its own test suite. |
-| **Approachable codebase** | 32 files, 3,500 lines. A new contributor can understand the entire app in an afternoon. |
+| **Testability** | 77 tests already. Every new data source plugin gets its own test suite. |
+| **Approachable codebase** | 33 files, ~3,800 lines. A new contributor can understand the entire app in an afternoon. |
 | **UX** | Minimap navigation, scrub-to-inspect, prediction, Dark/Light/System theme, widget with graph. |
 | **Complementary to xDrip+** | Different architectural approach — not competing, offering choice. Users who prefer xDrip+ should keep using it. |
 

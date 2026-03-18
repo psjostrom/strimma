@@ -660,14 +660,13 @@ No new dependencies. Changes are:
 | **Persistent logging**  | File-based debug logs with 7-day rotation, shareable via FileProvider                                                                                                    |
 | **Settings debounce**   | URL and API secret save on field blur instead of every keystroke                                                                                                         |
 | **Graph consolidation** | Shared `graph/GraphColors.kt` module, compact top gradient for widget readability                                                                                        |
-| **Testing**             | 66 tests: 46 unit (DirectionComputer, GlucoseParser, GraphColors, SecretHash) + 20 integration (Room DAO, reading pipeline via Robolectric 4.16)                         |
+| **Testing**             | 77 tests: 57 unit (DirectionComputer, GlucoseParser, GraphColors, SecretHash, GlucoseUnit) + 20 integration (Room DAO, reading pipeline via Robolectric 4.16)           |
+| **Unit switching**      | mmol/L ↔ mg/dL toggle via `GlucoseUnit` enum. Internal storage stays mmol/L, conversion at display time. Affects all display surfaces.                                   |
+| **BG broadcast**        | xDrip-compatible `com.eveningoutpost.dexdrip.BgEstimate` intent emitted on each reading. Settings > Integration toggle, off by default. Verified with GDH.               |
 
 ### Remaining
 
-| Feature            | Description                                                            |
-| ------------------ | ---------------------------------------------------------------------- |
-| **Unit switching** | mmol/L ↔ mg/dL toggle                                                  |
-| **BG broadcast**   | `com.eveningoutpost.dexdrip.BgEstimate` intent for external app compat |
+Phase 2 is complete. See `docs/strimma-p2-roadmap.md` for Phase 3 (open-source) roadmap.
 
 ---
 
