@@ -85,6 +85,14 @@ class MainViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "System")
     fun setThemeMode(mode: String) = viewModelScope.launch { settings.setThemeMode(mode) }
 
+    val notifGraphMinutes: StateFlow<Int> = settings.notifGraphMinutes
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 60)
+    fun setNotifGraphMinutes(minutes: Int) = viewModelScope.launch { settings.setNotifGraphMinutes(minutes) }
+
+    val notifPredictionMinutes: StateFlow<Int> = settings.notifPredictionMinutes
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 10)
+    fun setNotifPredictionMinutes(minutes: Int) = viewModelScope.launch { settings.setNotifPredictionMinutes(minutes) }
+
     suspend fun readingsForPeriod(hours: Int): List<com.psjostrom.strimma.data.GlucoseReading> {
         val since = System.currentTimeMillis() - hours * 3600_000L
         return dao.since(since)

@@ -81,6 +81,8 @@ class MainActivity : ComponentActivity() {
                 val alertUrgentHighEnabled by viewModel.alertUrgentHighEnabled.collectAsState()
                 val alertUrgentHigh by viewModel.alertUrgentHigh.collectAsState()
                 val alertStaleEnabled by viewModel.alertStaleEnabled.collectAsState()
+                val notifGraphMinutes by viewModel.notifGraphMinutes.collectAsState()
+                val notifPredictionMinutes by viewModel.notifPredictionMinutes.collectAsState()
 
                 NavHost(navController, startDestination = "main") {
                     composable("main") {
@@ -110,6 +112,8 @@ class MainActivity : ComponentActivity() {
                             bgLow = bgLow,
                             bgHigh = bgHigh,
                             themeMode = themeModeStr,
+                            notifGraphMinutes = notifGraphMinutes,
+                            notifPredictionMinutes = notifPredictionMinutes,
                             alertLowEnabled = alertLowEnabled,
                             alertHighEnabled = alertHighEnabled,
                             alertUrgentLowEnabled = alertUrgentLowEnabled,
@@ -125,6 +129,8 @@ class MainActivity : ComponentActivity() {
                             onBgLowChange = viewModel::setBgLow,
                             onBgHighChange = viewModel::setBgHigh,
                             onThemeModeChange = viewModel::setThemeMode,
+                            onNotifGraphMinutesChange = viewModel::setNotifGraphMinutes,
+                            onNotifPredictionMinutesChange = viewModel::setNotifPredictionMinutes,
                             onAlertLowEnabledChange = viewModel::setAlertLowEnabled,
                             onAlertHighEnabledChange = viewModel::setAlertHighEnabled,
                             onAlertUrgentLowEnabledChange = viewModel::setAlertUrgentLowEnabled,

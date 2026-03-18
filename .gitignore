@@ -91,3 +91,6 @@ lint-results*.xml
 
 # Android Profiling
 *.hprof
+
+# Claude
+.claude.local.md

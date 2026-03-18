@@ -28,6 +28,8 @@ fun SettingsScreen(
     bgLow: Float,
     bgHigh: Float,
     themeMode: String,
+    notifGraphMinutes: Int,
+    notifPredictionMinutes: Int,
     alertLowEnabled: Boolean,
     alertHighEnabled: Boolean,
     alertUrgentLowEnabled: Boolean,
@@ -43,6 +45,8 @@ fun SettingsScreen(
     onBgLowChange: (Float) -> Unit,
     onBgHighChange: (Float) -> Unit,
     onThemeModeChange: (String) -> Unit,
+    onNotifGraphMinutesChange: (Int) -> Unit,
+    onNotifPredictionMinutesChange: (Int) -> Unit,
     onAlertLowEnabledChange: (Boolean) -> Unit,
     onAlertHighEnabledChange: (Boolean) -> Unit,
     onAlertUrgentLowEnabledChange: (Boolean) -> Unit,
@@ -165,6 +169,42 @@ fun SettingsScreen(
                             selected = themeMode == label,
                             onClick = { onThemeModeChange(label) },
                             shape = SegmentedButtonDefaults.itemShape(index, 3)
+                        ) {
+                            Text(label)
+                        }
+                    }
+                }
+            }
+
+            SettingsSection("Notification Graph", outline, surfVar) {
+                Text(
+                    "Time Range: ${if (notifGraphMinutes < 60) "${notifGraphMinutes}m" else "${notifGraphMinutes / 60}h"}",
+                    color = onBg,
+                    fontSize = 14.sp
+                )
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    listOf(30 to "30m", 60 to "1h", 120 to "2h", 180 to "3h").forEachIndexed { index, (minutes, label) ->
+                        SegmentedButton(
+                            selected = notifGraphMinutes == minutes,
+                            onClick = { onNotifGraphMinutesChange(minutes) },
+                            shape = SegmentedButtonDefaults.itemShape(index, 4)
+                        ) {
+                            Text(label)
+                        }
+                    }
+                }
+
+                Text(
+                    "Prediction: ${if (notifPredictionMinutes == 0) "Off" else "${notifPredictionMinutes}m"}",
+                    color = onBg,
+                    fontSize = 14.sp
+                )
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    listOf(0 to "Off", 10 to "10m", 20 to "20m", 30 to "30m").forEachIndexed { index, (minutes, label) ->
+                        SegmentedButton(
+                            selected = notifPredictionMinutes == minutes,
+                            onClick = { onNotifPredictionMinutesChange(minutes) },
+                            shape = SegmentedButtonDefaults.itemShape(index, 4)
                         ) {
                             Text(label)
                         }

@@ -44,7 +44,9 @@ class NotificationHelper @Inject constructor(
         reading: GlucoseReading?,
         recentReadings: List<GlucoseReading>,
         bgLow: Double,
-        bgHigh: Double
+        bgHigh: Double,
+        graphWindowMs: Long = GRAPH_WINDOW_MS,
+        predictionMinutes: Int = 10
     ): android.app.Notification {
         val contentIntent = PendingIntent.getActivity(
             context, 0,
@@ -76,7 +78,7 @@ class NotificationHelper @Inject constructor(
             collapsed.setTextViewText(R.id.tv_arrow, direction.arrow)
             collapsed.setTextViewText(R.id.tv_delta, deltaText)
             val miniGraph = GraphRenderer.render(
-                recentReadings, 900, 180, bgLow, bgHigh, GRAPH_WINDOW_MS, compact = true
+                recentReadings, 900, 180, bgLow, bgHigh, graphWindowMs, compact = true, predictionMinutes = predictionMinutes
             )
             collapsed.setImageViewBitmap(R.id.iv_graph, miniGraph)
             builder.setCustomContentView(collapsed)
@@ -87,7 +89,7 @@ class NotificationHelper @Inject constructor(
             expanded.setTextViewText(R.id.tv_arrow, direction.arrow)
             expanded.setTextViewText(R.id.tv_delta, deltaText)
             val bigGraph = GraphRenderer.render(
-                recentReadings, 800, 400, bgLow, bgHigh, GRAPH_WINDOW_MS
+                recentReadings, 800, 400, bgLow, bgHigh, graphWindowMs, predictionMinutes = predictionMinutes
             )
             expanded.setImageViewBitmap(R.id.iv_graph, bigGraph)
             builder.setCustomBigContentView(expanded)
@@ -104,9 +106,11 @@ class NotificationHelper @Inject constructor(
         reading: GlucoseReading?,
         recentReadings: List<GlucoseReading>,
         bgLow: Double,
-        bgHigh: Double
+        bgHigh: Double,
+        graphWindowMs: Long = GRAPH_WINDOW_MS,
+        predictionMinutes: Int = 10
     ) {
-        val notification = buildNotification(reading, recentReadings, bgLow, bgHigh)
+        val notification = buildNotification(reading, recentReadings, bgLow, bgHigh, graphWindowMs, predictionMinutes)
         notificationManager.notify(NOTIFICATION_ID, notification)
     }
 

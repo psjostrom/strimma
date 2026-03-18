@@ -49,6 +49,8 @@ class SettingsRepository @Inject constructor(
         private val KEY_ALERT_URGENT_HIGH = floatPreferencesKey("alert_urgent_high")
         private val KEY_ALERT_STALE_ENABLED = booleanPreferencesKey("alert_stale_enabled")
         private val KEY_THEME_MODE = stringPreferencesKey("theme_mode")
+        private val KEY_NOTIF_GRAPH_MINUTES = intPreferencesKey("notif_graph_minutes")
+        private val KEY_NOTIF_PREDICTION_MINUTES = intPreferencesKey("notif_prediction_minutes")
     }
 
     val springaUrl: Flow<String> = dataStore.data.map { it[KEY_SPRINGA_URL] ?: "" }
@@ -98,4 +100,10 @@ class SettingsRepository @Inject constructor(
 
     val themeMode: Flow<String> = dataStore.data.map { it[KEY_THEME_MODE] ?: "System" }
     suspend fun setThemeMode(mode: String) { dataStore.edit { it[KEY_THEME_MODE] = mode } }
+
+    val notifGraphMinutes: Flow<Int> = dataStore.data.map { it[KEY_NOTIF_GRAPH_MINUTES] ?: 60 }
+    suspend fun setNotifGraphMinutes(minutes: Int) { dataStore.edit { it[KEY_NOTIF_GRAPH_MINUTES] = minutes } }
+
+    val notifPredictionMinutes: Flow<Int> = dataStore.data.map { it[KEY_NOTIF_PREDICTION_MINUTES] ?: 10 }
+    suspend fun setNotifPredictionMinutes(minutes: Int) { dataStore.edit { it[KEY_NOTIF_PREDICTION_MINUTES] = minutes } }
 }

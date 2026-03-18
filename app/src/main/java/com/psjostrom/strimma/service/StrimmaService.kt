@@ -131,10 +131,12 @@ class StrimmaService : Service() {
 
     private suspend fun updateNotification() {
         val latest = dao.latest().first()
-        val oneHourAgo = System.currentTimeMillis() - 60 * 60 * 1000
-        val recent = dao.since(oneHourAgo)
+        val notifMinutes = settings.notifGraphMinutes.first()
+        val predMinutes = settings.notifPredictionMinutes.first()
+        val graphWindowMs = notifMinutes * 60_000L
+        val recent = dao.since(System.currentTimeMillis() - graphWindowMs)
         val bgLow = settings.bgLow.first().toDouble()
         val bgHigh = settings.bgHigh.first().toDouble()
-        notificationHelper.updateNotification(latest, recent, bgLow, bgHigh)
+        notificationHelper.updateNotification(latest, recent, bgLow, bgHigh, graphWindowMs, predMinutes)
     }
 }

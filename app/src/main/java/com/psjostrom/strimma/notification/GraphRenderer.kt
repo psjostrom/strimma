@@ -22,14 +22,15 @@ object GraphRenderer {
         bgLow: Double,
         bgHigh: Double,
         windowMs: Long,
-        compact: Boolean = false
+        compact: Boolean = false,
+        predictionMinutes: Int = 30
     ): Bitmap {
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         canvas.drawColor(BG_COLOR)
 
         val now = System.currentTimeMillis()
-        val predictionMs = 30 * 60_000L
+        val predictionMs = predictionMinutes * 60_000L
         val endTime = now + predictionMs
         val startTime = endTime - windowMs - predictionMs
 
@@ -82,7 +83,7 @@ object GraphRenderer {
             strokeWidth = LINE_WIDTH
             style = Paint.Style.STROKE
         }
-        val dotR = if (compact) 3f else DOT_RADIUS
+        val dotR = if (compact) 5f else DOT_RADIUS
 
         for (i in visible.indices) {
             val r = visible[i]
@@ -163,6 +164,18 @@ object GraphRenderer {
                 }
                 yLabel += yStep
             }
+        }
+
+        // Top gradient for widget text readability (compact only)
+        if (compact) {
+            val gradientPaint = Paint().apply {
+                shader = LinearGradient(
+                    0f, 0f, 0f, height * 0.45f,
+                    0xE0000000.toInt(), 0x00000000,
+                    Shader.TileMode.CLAMP
+                )
+            }
+            canvas.drawRect(0f, 0f, width.toFloat(), height * 0.45f, gradientPaint)
         }
 
         return bitmap

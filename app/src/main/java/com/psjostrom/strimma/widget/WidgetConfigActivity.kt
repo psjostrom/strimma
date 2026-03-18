@@ -49,21 +49,27 @@ class WidgetConfigActivity : ComponentActivity() {
             StrimmaTheme(themeMode = ThemeMode.Dark) {
                 WidgetConfigScreen(
                     initialOpacity = prefs.getFloat("opacity", 0.85f),
-                    onSave = { opacity ->
-                        prefs.edit().putFloat("opacity", opacity).apply()
+                    initialGraphMinutes = prefs.getInt("graph_minutes", 60),
+                    initialShowPrediction = prefs.getBoolean("show_prediction", false),
+                    onSave = { opacity, graphMinutes, showPrediction ->
+                        prefs.edit()
+                            .putFloat("opacity", opacity)
+                            .putInt("graph_minutes", graphMinutes)
+                            .putBoolean("show_prediction", showPrediction)
+                            .apply()
                         lifecycleScope.launch {
                             val manager = GlanceAppWidgetManager(this@WidgetConfigActivity)
                             manager.getGlanceIds(StrimmaWidget::class.java).forEach { id ->
                                 StrimmaWidget().update(this@WidgetConfigActivity, id)
                             }
+                            if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
+                                setResult(
+                                    RESULT_OK,
+                                    Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+                                )
+                            }
+                            finish()
                         }
-                        if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
-                            setResult(
-                                RESULT_OK,
-                                Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
-                            )
-                        }
-                        finish()
                     }
                 )
             }
@@ -71,12 +77,18 @@ class WidgetConfigActivity : ComponentActivity() {
     }
 }
 
+private val GRAPH_OPTIONS = listOf(30 to "30m", 60 to "1h", 120 to "2h", 180 to "3h")
+
 @Composable
 private fun WidgetConfigScreen(
     initialOpacity: Float,
-    onSave: (Float) -> Unit
+    initialGraphMinutes: Int,
+    initialShowPrediction: Boolean,
+    onSave: (Float, Int, Boolean) -> Unit
 ) {
     var opacity by remember { mutableFloatStateOf(initialOpacity) }
+    var graphMinutes by remember { mutableIntStateOf(initialGraphMinutes) }
+    var showPrediction by remember { mutableStateOf(initialShowPrediction) }
 
     Scaffold(containerColor = DarkBg) { padding ->
         Column(
@@ -102,28 +114,52 @@ private fun WidgetConfigScreen(
             ) {
                 Column(
                     modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    // Graph time range
+                    Text("Graph Range", color = DarkTextPrimary, fontSize = 14.sp)
+                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                        GRAPH_OPTIONS.forEachIndexed { index, (minutes, label) ->
+                            SegmentedButton(
+                                selected = graphMinutes == minutes,
+                                onClick = { graphMinutes = minutes },
+                                shape = SegmentedButtonDefaults.itemShape(index, GRAPH_OPTIONS.size)
+                            ) {
+                                Text(label)
+                            }
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Show Prediction", color = DarkTextPrimary, fontSize = 14.sp)
+                        Switch(checked = showPrediction, onCheckedChange = { showPrediction = it })
+                    }
+
+                    HorizontalDivider(color = DarkTextTertiary.copy(alpha = 0.3f))
+
+                    // Background opacity
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("Opacity", color = DarkTextPrimary, fontSize = 14.sp)
+                        Text("Background", color = DarkTextPrimary, fontSize = 14.sp)
                         Text(
                             "${(opacity * 100).toInt()}%",
                             color = DarkTextSecondary,
                             fontSize = 14.sp
                         )
                     }
-
                     Slider(
                         value = opacity,
                         onValueChange = { opacity = it },
-                        valueRange = 0.3f..1.0f
+                        valueRange = 0.0f..1.0f
                     )
-
                     Text(
-                        "Lower values let your wallpaper show through",
+                        "Controls background only — graph and values stay fully visible",
                         color = DarkTextTertiary,
                         fontSize = 12.sp
                     )
@@ -133,7 +169,7 @@ private fun WidgetConfigScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             Button(
-                onClick = { onSave(opacity) },
+                onClick = { onSave(opacity, graphMinutes, showPrediction) },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = InRange)
             ) {

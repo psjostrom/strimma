@@ -26,15 +26,19 @@ import com.psjostrom.strimma.notification.GraphRenderer
 import com.psjostrom.strimma.ui.MainActivity
 import kotlinx.coroutines.flow.first
 
-private const val GRAPH_WINDOW_MS = 2 * 60 * 60 * 1000L
-
 class StrimmaWidget : GlanceAppWidget() {
 
     companion object {
-        fun getOpacity(context: Context): Float {
-            return context.getSharedPreferences("widget_prefs", Context.MODE_PRIVATE)
-                .getFloat("opacity", 0.85f)
-        }
+        private const val PREFS = "widget_prefs"
+
+        fun getPrefs(context: Context) =
+            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+
+        fun getOpacity(context: Context) = getPrefs(context).getFloat("opacity", 0.85f)
+
+        fun getGraphMinutes(context: Context) = getPrefs(context).getInt("graph_minutes", 60)
+
+        fun getShowPrediction(context: Context) = getPrefs(context).getBoolean("show_prediction", false)
     }
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
@@ -45,8 +49,12 @@ class StrimmaWidget : GlanceAppWidget() {
         val bgLow = settings.bgLow.first()
         val bgHigh = settings.bgHigh.first()
         val opacity = getOpacity(context)
+        val graphMinutes = getGraphMinutes(context)
+        val showPrediction = getShowPrediction(context)
+        val graphWindowMs = graphMinutes * 60_000L
+        val predictionMinutes = if (showPrediction) 10 else 0
 
-        val since = System.currentTimeMillis() - GRAPH_WINDOW_MS
+        val since = System.currentTimeMillis() - graphWindowMs
         val readings = dao.since(since)
         val graphBitmap = GraphRenderer.render(
             readings = readings,
@@ -54,8 +62,9 @@ class StrimmaWidget : GlanceAppWidget() {
             height = 300,
             bgLow = bgLow.toDouble(),
             bgHigh = bgHigh.toDouble(),
-            windowMs = GRAPH_WINDOW_MS,
-            compact = true
+            windowMs = graphWindowMs,
+            compact = true,
+            predictionMinutes = predictionMinutes
         )
 
         provideContent {
@@ -121,16 +130,13 @@ private fun WidgetContent(
             contentScale = ContentScale.FillBounds
         )
 
-        // Text overlay
+        // Text pinned to top-left, graph visible underneath
         Column(
             modifier = GlanceModifier
                 .fillMaxSize()
-                .padding(horizontal = 10.dp, vertical = 4.dp)
+                .padding(start = 8.dp, top = 4.dp)
         ) {
-            Row(
-                modifier = GlanceModifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = bgValue,
                     style = TextStyle(
@@ -143,15 +149,14 @@ private fun WidgetContent(
                     text = " ${direction.arrow}",
                     style = TextStyle(color = textColor, fontSize = 16.sp)
                 )
-                Spacer(modifier = GlanceModifier.defaultWeight())
-                Text(
-                    text = subtitle,
-                    style = TextStyle(
-                        color = if (isStale) staleColor else mutedColor,
-                        fontSize = 11.sp
-                    )
-                )
             }
+            Text(
+                text = subtitle,
+                style = TextStyle(
+                    color = if (isStale) staleColor else ColorProvider(Color.White),
+                    fontSize = 13.sp
+                )
+            )
         }
     }
 }
