@@ -6,6 +6,7 @@ import android.os.Build
 import android.os.IBinder
 import com.psjostrom.strimma.data.*
 import com.psjostrom.strimma.network.SpringaPusher
+import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.notification.NotificationHelper
 import com.psjostrom.strimma.receiver.DebugLog
 import com.psjostrom.strimma.receiver.GlucoseNotificationListener
@@ -21,6 +22,7 @@ class StrimmaService : Service() {
     @Inject lateinit var directionComputer: DirectionComputer
     @Inject lateinit var pusher: SpringaPusher
     @Inject lateinit var notificationHelper: NotificationHelper
+    @Inject lateinit var alertManager: AlertManager
     @Inject lateinit var settings: SettingsRepository
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -29,6 +31,7 @@ class StrimmaService : Service() {
     override fun onCreate() {
         super.onCreate()
         notificationHelper.createChannel()
+        alertManager.createChannel()
 
         if (Build.VERSION.SDK_INT >= 29) {
             startForeground(
@@ -43,7 +46,7 @@ class StrimmaService : Service() {
             )
         }
 
-        DebugLog.log(message = "Service started")
+        DebugLog.log("Service started")
 
         pusher.pushPending()
         scope.launch { updateNotification() }
@@ -51,7 +54,7 @@ class StrimmaService : Service() {
         // Periodic retry for failed pushes + daily prune
         scope.launch {
             while (isActive) {
-                delay(5 * 60 * 1000L) // every 5 minutes
+                delay(5 * 60 * 1000L)
                 pusher.pushPending()
             }
         }
@@ -60,6 +63,15 @@ class StrimmaService : Service() {
                 val thirtyDaysAgo = System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000
                 dao.pruneBefore(thirtyDaysAgo)
                 delay(24 * 60 * 60 * 1000L)
+            }
+        }
+
+        // Stale data check every 60 seconds
+        scope.launch {
+            while (isActive) {
+                delay(60_000L)
+                val latest = dao.latest().first()
+                alertManager.checkStale(latest?.ts)
             }
         }
     }
@@ -87,12 +99,9 @@ class StrimmaService : Service() {
         val sgv = (mmol * 18.0182).toInt()
         val roundedMmol = Math.round(mmol * 10.0) / 10.0
 
-        // Deduplicate: CamAPS fires onNotificationPosted multiple times per
-        // reading (~5-18ms apart). Libre 3 reads every ~60s, so 3s window is safe.
         val existing = dao.lastN(1)
         if (existing.isNotEmpty() && (timestamp - existing[0].ts) < 3_000) return
 
-        // Direction computation
         val recentReadings = dao.since(timestamp - 15 * 60 * 1000)
         val tempReading = GlucoseReading(
             ts = timestamp, sgv = sgv, mmol = roundedMmol,
@@ -106,9 +115,10 @@ class StrimmaService : Service() {
         )
 
         dao.insert(reading)
-        DebugLog.log(message = "Stored: ${reading.mmol} ${direction.arrow}")
+        DebugLog.log("Stored: ${reading.mmol} ${direction.arrow}")
         pusher.pushReading(reading)
         updateNotification()
+        alertManager.checkReading(reading)
     }
 
     private suspend fun updateNotification() {

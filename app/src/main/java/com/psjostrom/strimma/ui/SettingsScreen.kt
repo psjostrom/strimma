@@ -26,11 +26,25 @@ fun SettingsScreen(
     graphWindowHours: Int,
     bgLow: Float,
     bgHigh: Float,
+    alertLowEnabled: Boolean,
+    alertHighEnabled: Boolean,
+    alertUrgentLowEnabled: Boolean,
+    alertLow: Float,
+    alertHigh: Float,
+    alertUrgentLow: Float,
+    alertStaleEnabled: Boolean,
     onSpringaUrlChange: (String) -> Unit,
     onApiSecretChange: (String) -> Unit,
     onGraphWindowChange: (Int) -> Unit,
     onBgLowChange: (Float) -> Unit,
     onBgHighChange: (Float) -> Unit,
+    onAlertLowEnabledChange: (Boolean) -> Unit,
+    onAlertHighEnabledChange: (Boolean) -> Unit,
+    onAlertUrgentLowEnabledChange: (Boolean) -> Unit,
+    onAlertLowChange: (Float) -> Unit,
+    onAlertHighChange: (Float) -> Unit,
+    onAlertUrgentLowChange: (Float) -> Unit,
+    onAlertStaleEnabledChange: (Boolean) -> Unit,
     onBack: () -> Unit,
     onDebugLog: () -> Unit = {}
 ) {
@@ -128,6 +142,58 @@ fun SettingsScreen(
                 )
             }
 
+            SettingsSection("Alerts") {
+                AlertToggleRow("Urgent Low", alertUrgentLowEnabled, onAlertUrgentLowEnabledChange)
+                if (alertUrgentLowEnabled) {
+                    var urgentLowText by remember(alertUrgentLow) { mutableStateOf("%.1f".format(alertUrgentLow)) }
+                    OutlinedTextField(
+                        value = urgentLowText,
+                        onValueChange = { text ->
+                            urgentLowText = text
+                            text.toFloatOrNull()?.let { onAlertUrgentLowChange(it) }
+                        },
+                        label = { Text("Urgent Low (mmol/L)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                    )
+                }
+
+                AlertToggleRow("Low", alertLowEnabled, onAlertLowEnabledChange)
+                if (alertLowEnabled) {
+                    var alertLowText by remember(alertLow) { mutableStateOf("%.1f".format(alertLow)) }
+                    OutlinedTextField(
+                        value = alertLowText,
+                        onValueChange = { text ->
+                            alertLowText = text
+                            text.toFloatOrNull()?.let { onAlertLowChange(it) }
+                        },
+                        label = { Text("Low Alert (mmol/L)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                    )
+                }
+
+                AlertToggleRow("High", alertHighEnabled, onAlertHighEnabledChange)
+                if (alertHighEnabled) {
+                    var alertHighText by remember(alertHigh) { mutableStateOf("%.1f".format(alertHigh)) }
+                    OutlinedTextField(
+                        value = alertHighText,
+                        onValueChange = { text ->
+                            alertHighText = text
+                            text.toFloatOrNull()?.let { onAlertHighChange(it) }
+                        },
+                        label = { Text("High Alert (mmol/L)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                    )
+                }
+
+                AlertToggleRow("Stale Data (10+ min)", alertStaleEnabled, onAlertStaleEnabledChange)
+            }
+
             SettingsSection("Developer") {
                 OutlinedButton(
                     onClick = onDebugLog,
@@ -139,6 +205,18 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
         }
+    }
+}
+
+@Composable
+private fun AlertToggleRow(label: String, enabled: Boolean, onToggle: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+    ) {
+        Text(label, color = TextPrimary, fontSize = 14.sp)
+        Switch(checked = enabled, onCheckedChange = onToggle)
     }
 }
 

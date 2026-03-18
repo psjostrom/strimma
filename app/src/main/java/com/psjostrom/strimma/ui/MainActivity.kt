@@ -68,6 +68,13 @@ class MainActivity : ComponentActivity() {
                 val bgHigh by viewModel.bgHigh.collectAsState()
                 val graphWindowHours by viewModel.graphWindowHours.collectAsState()
                 val springaUrl by viewModel.springaUrl.collectAsState()
+                val alertLowEnabled by viewModel.alertLowEnabled.collectAsState()
+                val alertHighEnabled by viewModel.alertHighEnabled.collectAsState()
+                val alertUrgentLowEnabled by viewModel.alertUrgentLowEnabled.collectAsState()
+                val alertLow by viewModel.alertLow.collectAsState()
+                val alertHigh by viewModel.alertHigh.collectAsState()
+                val alertUrgentLow by viewModel.alertUrgentLow.collectAsState()
+                val alertStaleEnabled by viewModel.alertStaleEnabled.collectAsState()
 
                 NavHost(navController, startDestination = "main") {
                     composable("main") {
@@ -91,11 +98,25 @@ class MainActivity : ComponentActivity() {
                             graphWindowHours = graphWindowHours,
                             bgLow = bgLow,
                             bgHigh = bgHigh,
+                            alertLowEnabled = alertLowEnabled,
+                            alertHighEnabled = alertHighEnabled,
+                            alertUrgentLowEnabled = alertUrgentLowEnabled,
+                            alertLow = alertLow,
+                            alertHigh = alertHigh,
+                            alertUrgentLow = alertUrgentLow,
+                            alertStaleEnabled = alertStaleEnabled,
                             onSpringaUrlChange = viewModel::setSpringaUrl,
                             onApiSecretChange = viewModel::setApiSecret,
                             onGraphWindowChange = viewModel::setGraphWindowHours,
                             onBgLowChange = viewModel::setBgLow,
                             onBgHighChange = viewModel::setBgHigh,
+                            onAlertLowEnabledChange = viewModel::setAlertLowEnabled,
+                            onAlertHighEnabledChange = viewModel::setAlertHighEnabled,
+                            onAlertUrgentLowEnabledChange = viewModel::setAlertUrgentLowEnabled,
+                            onAlertLowChange = viewModel::setAlertLow,
+                            onAlertHighChange = viewModel::setAlertHigh,
+                            onAlertUrgentLowChange = viewModel::setAlertUrgentLow,
+                            onAlertStaleEnabledChange = viewModel::setAlertStaleEnabled,
                             onBack = { navController.popBackStack() },
                             onDebugLog = {
                                 navController.navigate("debug") {

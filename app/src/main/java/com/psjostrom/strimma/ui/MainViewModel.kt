@@ -41,9 +41,34 @@ class MainViewModel @Inject constructor(
             dao.since(since)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    // Alert settings
+    val alertLowEnabled: StateFlow<Boolean> = settings.alertLowEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    val alertHighEnabled: StateFlow<Boolean> = settings.alertHighEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    val alertUrgentLowEnabled: StateFlow<Boolean> = settings.alertUrgentLowEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    val alertLow: StateFlow<Float> = settings.alertLow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 4.0f)
+    val alertHigh: StateFlow<Float> = settings.alertHigh
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 13.0f)
+    val alertUrgentLow: StateFlow<Float> = settings.alertUrgentLow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 3.0f)
+    val alertStaleEnabled: StateFlow<Boolean> = settings.alertStaleEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
     fun setSpringaUrl(url: String) = viewModelScope.launch { settings.setSpringaUrl(url) }
     fun setApiSecret(secret: String) = settings.setApiSecret(secret)
     fun setGraphWindowHours(hours: Int) = viewModelScope.launch { settings.setGraphWindowHours(hours) }
     fun setBgLow(value: Float) = viewModelScope.launch { settings.setBgLow(value) }
     fun setBgHigh(value: Float) = viewModelScope.launch { settings.setBgHigh(value) }
+
+    // Alert setters
+    fun setAlertLowEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertLowEnabled(enabled) }
+    fun setAlertHighEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertHighEnabled(enabled) }
+    fun setAlertUrgentLowEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertUrgentLowEnabled(enabled) }
+    fun setAlertLow(value: Float) = viewModelScope.launch { settings.setAlertLow(value) }
+    fun setAlertHigh(value: Float) = viewModelScope.launch { settings.setAlertHigh(value) }
+    fun setAlertUrgentLow(value: Float) = viewModelScope.launch { settings.setAlertUrgentLow(value) }
+    fun setAlertStaleEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertStaleEnabled(enabled) }
 }

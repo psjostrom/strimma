@@ -37,12 +37,30 @@ class SettingsRepository @Inject constructor(
         private val KEY_BG_LOW = floatPreferencesKey("bg_low")
         private val KEY_BG_HIGH = floatPreferencesKey("bg_high")
         private const val KEY_API_SECRET = "api_secret"
+
+        // Alert settings
+        private val KEY_ALERT_LOW_ENABLED = booleanPreferencesKey("alert_low_enabled")
+        private val KEY_ALERT_HIGH_ENABLED = booleanPreferencesKey("alert_high_enabled")
+        private val KEY_ALERT_URGENT_LOW_ENABLED = booleanPreferencesKey("alert_urgent_low_enabled")
+        private val KEY_ALERT_LOW = floatPreferencesKey("alert_low")
+        private val KEY_ALERT_HIGH = floatPreferencesKey("alert_high")
+        private val KEY_ALERT_URGENT_LOW = floatPreferencesKey("alert_urgent_low")
+        private val KEY_ALERT_STALE_ENABLED = booleanPreferencesKey("alert_stale_enabled")
     }
 
     val springaUrl: Flow<String> = dataStore.data.map { it[KEY_SPRINGA_URL] ?: "" }
     val graphWindowHours: Flow<Int> = dataStore.data.map { it[KEY_GRAPH_WINDOW_HOURS] ?: 4 }
     val bgLow: Flow<Float> = dataStore.data.map { it[KEY_BG_LOW] ?: 4.0f }
     val bgHigh: Flow<Float> = dataStore.data.map { it[KEY_BG_HIGH] ?: 10.0f }
+
+    // Alert settings
+    val alertLowEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_LOW_ENABLED] ?: true }
+    val alertHighEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_HIGH_ENABLED] ?: true }
+    val alertUrgentLowEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_URGENT_LOW_ENABLED] ?: true }
+    val alertLow: Flow<Float> = dataStore.data.map { it[KEY_ALERT_LOW] ?: 4.0f }
+    val alertHigh: Flow<Float> = dataStore.data.map { it[KEY_ALERT_HIGH] ?: 13.0f }
+    val alertUrgentLow: Flow<Float> = dataStore.data.map { it[KEY_ALERT_URGENT_LOW] ?: 3.0f }
+    val alertStaleEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_STALE_ENABLED] ?: true }
 
     suspend fun setSpringaUrl(url: String) {
         dataStore.edit { it[KEY_SPRINGA_URL] = url }
@@ -61,4 +79,13 @@ class SettingsRepository @Inject constructor(
     fun setApiSecret(secret: String) {
         encryptedPrefs.edit().putString(KEY_API_SECRET, secret).apply()
     }
+
+    // Alert setters
+    suspend fun setAlertLowEnabled(enabled: Boolean) { dataStore.edit { it[KEY_ALERT_LOW_ENABLED] = enabled } }
+    suspend fun setAlertHighEnabled(enabled: Boolean) { dataStore.edit { it[KEY_ALERT_HIGH_ENABLED] = enabled } }
+    suspend fun setAlertUrgentLowEnabled(enabled: Boolean) { dataStore.edit { it[KEY_ALERT_URGENT_LOW_ENABLED] = enabled } }
+    suspend fun setAlertLow(value: Float) { dataStore.edit { it[KEY_ALERT_LOW] = value } }
+    suspend fun setAlertHigh(value: Float) { dataStore.edit { it[KEY_ALERT_HIGH] = value } }
+    suspend fun setAlertUrgentLow(value: Float) { dataStore.edit { it[KEY_ALERT_URGENT_LOW] = value } }
+    suspend fun setAlertStaleEnabled(enabled: Boolean) { dataStore.edit { it[KEY_ALERT_STALE_ENABLED] = enabled } }
 }
