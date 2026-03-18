@@ -346,14 +346,14 @@ fun GlucoseGraph(
             drawCircle(color = color, radius = if (isSelected) 9f else 5f, center = Offset(x, y))
         }
 
-        // Prediction dots (linear extrapolation from last 2 readings)
-        if (sorted.size >= 2) {
+        // Prediction dots — uses same rate as direction computation (deltaMmol / 5 min)
+        if (sorted.isNotEmpty()) {
             val last = sorted.last()
-            val prev = sorted[sorted.size - 2]
-            val dtMin = (last.ts - prev.ts) / 60_000.0
-            if (dtMin > 0) {
-                val ratePerMin = (last.mmol - prev.mmol) / dtMin
-                val predDash = PathEffect.dashPathEffect(floatArrayOf(4f, 4f))
+            val delta = last.deltaMmol
+            if (delta != null) {
+                val ratePerMin = delta / 5.0
+                val predColor = Color.White.copy(alpha = 0.5f)
+                val predDash = PathEffect.dashPathEffect(floatArrayOf(6f, 6f))
                 var prevPx = xFor(last.ts)
                 var prevPy = yFor(last.mmol)
                 for (m in 1..30) {
@@ -362,19 +362,14 @@ fun GlucoseGraph(
                     val px = xFor(predTs)
                     val py = yFor(predMmol)
                     if (px > size.width - marginRight) break
-                    val color = dotColor(predMmol, bgLow, bgHigh)
                     drawLine(
-                        color = color.copy(alpha = 0.3f),
+                        color = predColor,
                         start = Offset(prevPx, prevPy),
                         end = Offset(px, py),
-                        strokeWidth = 2f,
+                        strokeWidth = 1.5f,
                         pathEffect = predDash
                     )
-                    drawCircle(
-                        color = color.copy(alpha = 0.3f),
-                        radius = 3.5f,
-                        center = Offset(px, py)
-                    )
+                    drawCircle(color = predColor, radius = 2.5f, center = Offset(px, py))
                     prevPx = px
                     prevPy = py
                 }

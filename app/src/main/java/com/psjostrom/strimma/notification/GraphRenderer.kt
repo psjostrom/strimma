@@ -100,22 +100,23 @@ object GraphRenderer {
             canvas.drawCircle(x, y, dotR, dotPaint)
         }
 
-        // Prediction dots
-        if (visible.size >= 2) {
+        // Prediction — uses same rate as direction (deltaMmol / 5 min), white color
+        if (visible.isNotEmpty()) {
             val last = visible.last()
-            val prev = visible[visible.size - 2]
-            val dtMin = (last.ts - prev.ts) / 60_000.0
-            if (dtMin > 0) {
-                val ratePerMin = (last.mmol - prev.mmol) / dtMin
+            val delta = last.deltaMmol
+            if (delta != null) {
+                val ratePerMin = delta / 5.0
                 val predPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                     style = Paint.Style.FILL
-                    alpha = 77 // ~0.3
+                    color = Color.WHITE
+                    alpha = 128
                 }
                 val predLinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                     strokeWidth = LINE_WIDTH
                     style = Paint.Style.STROKE
-                    pathEffect = DashPathEffect(floatArrayOf(4f, 4f), 0f)
-                    alpha = 77
+                    pathEffect = DashPathEffect(floatArrayOf(6f, 6f), 0f)
+                    color = Color.WHITE
+                    alpha = 128
                 }
                 var prevPx = xFor(last.ts)
                 var prevPy = yFor(last.mmol)
@@ -125,13 +126,8 @@ object GraphRenderer {
                     val px = xFor(predTs)
                     val py = yFor(predMmol)
                     if (px > width - marginRight) break
-                    val color = canvasColorFor(predMmol, bgLow, bgHigh)
-                    predLinePaint.color = color
-                    predLinePaint.alpha = 77
                     canvas.drawLine(prevPx, prevPy, px, py, predLinePaint)
-                    predPaint.color = color
-                    predPaint.alpha = 77
-                    canvas.drawCircle(px, py, dotR * 0.7f, predPaint)
+                    canvas.drawCircle(px, py, dotR * 0.6f, predPaint)
                     prevPx = px
                     prevPy = py
                 }
