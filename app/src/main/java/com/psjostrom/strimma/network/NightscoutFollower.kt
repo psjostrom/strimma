@@ -142,7 +142,7 @@ class NightscoutFollower @Inject constructor(
             }
 
             if (entries.size < FETCH_COUNT) break
-            since = valid.last().date!!
+            since = entries.maxOf { it.date ?: 0L }
         }
 
         if (lastReading != null) {
