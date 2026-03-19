@@ -8,6 +8,10 @@ const val CANVAS_IN_RANGE = 0xFF56CCF2.toInt()
 const val CANVAS_HIGH = 0xFFFFB800.toInt()
 const val CANVAS_LOW = 0xFFFF4D6A.toInt()
 
+// Treatment marker colors — keep in sync with Color.kt (BolusBlue, CarbGreen)
+const val CANVAS_BOLUS = 0xFF5B8DEF.toInt()
+const val CANVAS_CARB = 0xFF4CAF50.toInt()
+
 fun canvasColorFor(mmol: Double, bgLow: Double, bgHigh: Double): Int = when {
     mmol <= CRITICAL_LOW -> CANVAS_LOW
     mmol < bgLow -> CANVAS_LOW

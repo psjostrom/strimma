@@ -8,6 +8,7 @@ import com.psjostrom.strimma.data.*
 import com.psjostrom.strimma.network.NightscoutFollower
 import com.psjostrom.strimma.network.NightscoutPuller
 import com.psjostrom.strimma.network.NightscoutPusher
+import com.psjostrom.strimma.network.TreatmentSyncer
 import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.notification.NotificationHelper
 import com.psjostrom.strimma.receiver.DebugLog
@@ -33,11 +34,14 @@ class StrimmaService : Service() {
     @Inject lateinit var settings: SettingsRepository
     @Inject lateinit var nightscoutFollower: NightscoutFollower
     @Inject lateinit var nightscoutPuller: NightscoutPuller
+    @Inject lateinit var treatmentSyncer: TreatmentSyncer
+    @Inject lateinit var treatmentDao: TreatmentDao
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var pruneJob: Job? = null
     private var xdripReceiver: XdripBroadcastReceiver? = null
     private var followerJob: Job? = null
+    private var treatmentSyncJob: Job? = null
 
     private lateinit var predMinutes: StateFlow<Int>
     private lateinit var notifGraphMinutes: StateFlow<Int>
@@ -45,6 +49,9 @@ class StrimmaService : Service() {
     private lateinit var bgLow: StateFlow<Float>
     private lateinit var bgHigh: StateFlow<Float>
     private lateinit var bgBroadcastEnabled: StateFlow<Boolean>
+    private lateinit var treatmentsSyncEnabled: StateFlow<Boolean>
+    private lateinit var insulinType: StateFlow<InsulinType>
+    private lateinit var customDIA: StateFlow<Float>
 
     override fun onCreate() {
         super.onCreate()
@@ -57,6 +64,9 @@ class StrimmaService : Service() {
         bgLow = settings.bgLow.stateIn(scope, SharingStarted.Eagerly, 4.0f)
         bgHigh = settings.bgHigh.stateIn(scope, SharingStarted.Eagerly, 10.0f)
         bgBroadcastEnabled = settings.bgBroadcastEnabled.stateIn(scope, SharingStarted.Eagerly, false)
+        treatmentsSyncEnabled = settings.treatmentsSyncEnabled.stateIn(scope, SharingStarted.Eagerly, false)
+        insulinType = settings.insulinType.stateIn(scope, SharingStarted.Eagerly, InsulinType.FIASP)
+        customDIA = settings.customDIA.stateIn(scope, SharingStarted.Eagerly, 5.0f)
 
         startForeground(
             NotificationHelper.NOTIFICATION_ID,
@@ -74,6 +84,20 @@ class StrimmaService : Service() {
                     GlucoseSource.COMPANION -> { }
                     GlucoseSource.XDRIP_BROADCAST -> registerXdripReceiver()
                     GlucoseSource.NIGHTSCOUT_FOLLOWER -> startFollower()
+                }
+            }
+        }
+
+        // Treatment sync lifecycle
+        scope.launch {
+            settings.treatmentsSyncEnabled.collect { enabled ->
+                treatmentSyncJob?.cancel()
+                treatmentSyncJob = null
+                if (enabled) {
+                    treatmentSyncJob = treatmentSyncer.start(scope)
+                    DebugLog.log("Treatment sync started")
+                } else {
+                    DebugLog.log("Treatment sync stopped")
                 }
             }
         }
@@ -123,6 +147,7 @@ class StrimmaService : Service() {
     override fun onDestroy() {
         unregisterXdripReceiver()
         stopFollower()
+        treatmentSyncJob?.cancel()
         pruneJob?.cancel()
         scope.cancel()
         super.onDestroy()
@@ -214,9 +239,17 @@ class StrimmaService : Service() {
         val latest = dao.latestOnce()
         val graphWindowMs = notifGraphMinutes.value.toLong() * 60_000L
         val recent = dao.since(System.currentTimeMillis() - graphWindowMs)
+
+        val iob = if (treatmentsSyncEnabled.value) {
+            val tau = IOBComputer.tauForInsulinType(insulinType.value, customDIA.value)
+            val lookbackMs = (5.0 * tau * 60_000).toLong()
+            val treatments = treatmentDao.insulinSince(System.currentTimeMillis() - lookbackMs)
+            IOBComputer.computeIOB(treatments, System.currentTimeMillis(), tau)
+        } else 0.0
+
         notificationHelper.updateNotification(
             latest, recent, bgLow.value.toDouble(), bgHigh.value.toDouble(),
-            graphWindowMs, predMinutes.value, glucoseUnit.value
+            graphWindowMs, predMinutes.value, glucoseUnit.value, iob
         )
     }
 
