@@ -47,6 +47,12 @@ fun SettingsScreen(
     onGlucoseSourceChange: (GlucoseSource) -> Unit,
     onNightscoutUrlChange: (String) -> Unit,
     onNightscoutSecretChange: (String) -> Unit,
+    followerUrl: String = "",
+    followerSecret: String = "",
+    followerPollSeconds: Int = 60,
+    onFollowerUrlChange: (String) -> Unit = {},
+    onFollowerSecretChange: (String) -> Unit = {},
+    onFollowerPollSecondsChange: (Int) -> Unit = {},
     onGraphWindowChange: (Int) -> Unit,
     onBgLowChange: (Float) -> Unit,
     onBgHighChange: (Float) -> Unit,
@@ -124,31 +130,77 @@ fun SettingsScreen(
                 }
             }
 
-            SettingsSection("Nightscout", outline, surfVar) {
-                var urlText by remember(nightscoutUrl) { mutableStateOf(nightscoutUrl) }
-                OutlinedTextField(
-                    value = urlText,
-                    onValueChange = { urlText = it },
-                    label = { Text("Nightscout URL") },
-                    placeholder = { Text("https://your-nightscout.example.com") },
-                    supportingText = { Text("Base URL only — no /api path") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .onFocusChanged { if (!it.isFocused) onNightscoutUrlChange(urlText) },
-                    singleLine = true
-                )
+            if (glucoseSource != GlucoseSource.NIGHTSCOUT_FOLLOWER) {
+                SettingsSection("Nightscout", outline, surfVar) {
+                    var urlText by remember(nightscoutUrl) { mutableStateOf(nightscoutUrl) }
+                    OutlinedTextField(
+                        value = urlText,
+                        onValueChange = { urlText = it },
+                        label = { Text("Nightscout URL") },
+                        placeholder = { Text("https://your-nightscout.example.com") },
+                        supportingText = { Text("Base URL only — no /api path") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onFocusChanged { if (!it.isFocused) onNightscoutUrlChange(urlText) },
+                        singleLine = true
+                    )
 
-                var secretText by remember(nightscoutSecret) { mutableStateOf(nightscoutSecret) }
-                OutlinedTextField(
-                    value = secretText,
-                    onValueChange = { secretText = it },
-                    label = { Text("API Secret") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .onFocusChanged { if (!it.isFocused) onNightscoutSecretChange(secretText) },
-                    singleLine = true,
-                    visualTransformation = PasswordVisualTransformation()
-                )
+                    var secretText by remember(nightscoutSecret) { mutableStateOf(nightscoutSecret) }
+                    OutlinedTextField(
+                        value = secretText,
+                        onValueChange = { secretText = it },
+                        label = { Text("API Secret") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onFocusChanged { if (!it.isFocused) onNightscoutSecretChange(secretText) },
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation()
+                    )
+                }
+            } else {
+                SettingsSection("Following", outline, surfVar) {
+                    var urlText by remember(followerUrl) { mutableStateOf(followerUrl) }
+                    OutlinedTextField(
+                        value = urlText,
+                        onValueChange = { urlText = it },
+                        label = { Text("Nightscout URL") },
+                        placeholder = { Text("https://nightscout.example.com") },
+                        supportingText = { Text("The Nightscout server to follow") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onFocusChanged { if (!it.isFocused) onFollowerUrlChange(urlText) },
+                        singleLine = true
+                    )
+
+                    var secretText by remember(followerSecret) { mutableStateOf(followerSecret) }
+                    OutlinedTextField(
+                        value = secretText,
+                        onValueChange = { secretText = it },
+                        label = { Text("API Secret") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onFocusChanged { if (!it.isFocused) onFollowerSecretChange(secretText) },
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation()
+                    )
+
+                    Text(
+                        "Poll Interval: ${followerPollSeconds}s",
+                        color = onBg,
+                        fontSize = 14.sp
+                    )
+                    Text(
+                        "How often to check for new readings. Lower values catch updates faster but use more battery. CGM readings typically arrive every 5 minutes.",
+                        color = outline,
+                        fontSize = 12.sp
+                    )
+                    Slider(
+                        value = followerPollSeconds.toFloat(),
+                        onValueChange = { onFollowerPollSecondsChange(it.toInt()) },
+                        valueRange = 30f..300f,
+                        steps = 8
+                    )
+                }
             }
 
             SettingsSection("Display", outline, surfVar) {

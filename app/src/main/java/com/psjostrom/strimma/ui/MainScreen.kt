@@ -34,6 +34,7 @@ import com.psjostrom.strimma.graph.PredictionComputer
 import com.psjostrom.strimma.graph.ThresholdCrossing
 import com.psjostrom.strimma.graph.CrossingType
 import com.psjostrom.strimma.graph.computeYRange
+import com.psjostrom.strimma.network.FollowerStatus
 import com.psjostrom.strimma.ui.theme.*
 import kotlinx.coroutines.delay
 
@@ -48,6 +49,7 @@ fun MainScreen(
     bgHigh: Float,
     graphWindowHours: Int,
     glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
+    followerStatus: FollowerStatus = FollowerStatus.Idle,
     onSettingsClick: () -> Unit,
     onStatsClick: () -> Unit = {}
 ) {
@@ -101,7 +103,7 @@ fun MainScreen(
             val crossing = remember(readings, bgLow, bgHigh) {
                 PredictionComputer.compute(readings, 15, bgLow.toDouble(), bgHigh.toDouble())?.crossing
             }
-            BgHeader(latestReading, bgLow, bgHigh, glucoseUnit, crossing)
+            BgHeader(latestReading, bgLow, bgHigh, glucoseUnit, crossing, followerStatus)
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -153,7 +155,7 @@ fun MainScreen(
 }
 
 @Composable
-private fun BgHeader(reading: GlucoseReading?, bgLow: Float, bgHigh: Float, glucoseUnit: GlucoseUnit, crossing: ThresholdCrossing? = null) {
+private fun BgHeader(reading: GlucoseReading?, bgLow: Float, bgHigh: Float, glucoseUnit: GlucoseUnit, crossing: ThresholdCrossing? = null, followerStatus: FollowerStatus) {
     var minutesAgo by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(reading?.ts) {
@@ -244,6 +246,30 @@ private fun BgHeader(reading: GlucoseReading?, bgLow: Float, bgHigh: Float, gluc
                 color = if (isStale) BelowLow else MaterialTheme.colorScheme.outline,
                 fontSize = 13.sp
             )
+
+            if (followerStatus !is FollowerStatus.Idle) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = when (followerStatus) {
+                        is FollowerStatus.Connecting -> "Following \u00b7 connecting\u2026"
+                        is FollowerStatus.Connected -> {
+                            val secsAgo = ((System.currentTimeMillis() - followerStatus.lastPollTs) / 1000).toInt()
+                            if (secsAgo < 60) "Following \u00b7 ${secsAgo}s ago"
+                            else "Following \u00b7 ${secsAgo / 60}m ago"
+                        }
+                        is FollowerStatus.Disconnected -> {
+                            val minsAgo = ((System.currentTimeMillis() - followerStatus.since) / 60_000).toInt()
+                            "Following \u00b7 connection lost${if (minsAgo > 0) " ${minsAgo}m" else ""}"
+                        }
+                        else -> ""
+                    },
+                    color = when (followerStatus) {
+                        is FollowerStatus.Disconnected -> BelowLow
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    fontSize = 12.sp
+                )
+            }
         }
     }
 }
