@@ -260,6 +260,17 @@ class MainActivity : ComponentActivity() {
                             },
                             onImportSettings = {
                                 importSettingsLauncher.launch("*/*")
+                            },
+                            onPullFromNightscout = { days ->
+                                lifecycleScope.launch {
+                                    Toast.makeText(this@MainActivity, "Pulling $days days from Nightscout…", Toast.LENGTH_SHORT).show()
+                                    val result = viewModel.pullFromNightscout(days)
+                                    result.onSuccess { count ->
+                                        Toast.makeText(this@MainActivity, "Pulled $count readings", Toast.LENGTH_SHORT).show()
+                                    }.onFailure { e ->
+                                        Toast.makeText(this@MainActivity, "Pull failed: ${e.message}", Toast.LENGTH_LONG).show()
+                                    }
+                                }
                             }
                         )
                     }

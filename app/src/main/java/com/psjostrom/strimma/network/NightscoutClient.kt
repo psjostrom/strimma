@@ -33,7 +33,8 @@ data class NightscoutEntry(
 data class NightscoutEntryResponse(
     val sgv: Int? = null,
     val date: Long? = null,
-    val type: String? = null
+    val type: String? = null,
+    val direction: String? = null
 )
 
 @Serializable

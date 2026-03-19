@@ -23,6 +23,41 @@ sealed class FollowerStatus {
     data class Disconnected(val since: Long) : FollowerStatus()
 }
 
+suspend fun processNightscoutEntry(
+    entry: NightscoutEntryResponse,
+    dao: ReadingDao,
+    directionComputer: DirectionComputer
+): GlucoseReading? {
+    val sgv = entry.sgv ?: return null
+    val ts = entry.date ?: return null
+    val mmol = NightscoutFollower.sgvToMmol(sgv)
+
+    val recentReadings = dao.since(ts - 15 * 60 * 1000)
+    val existing = recentReadings.find { kotlin.math.abs(it.ts - ts) < 3_000 }
+    if (existing != null) return null
+
+    val tempReading = GlucoseReading(
+        ts = ts, sgv = sgv, mmol = mmol,
+        direction = "NONE", deltaMmol = null, pushed = 1
+    )
+    val (computedDirection, deltaMmol) = directionComputer.compute(recentReadings, tempReading)
+
+    // Use server-provided direction if available and valid, otherwise use locally computed
+    val directionName = if (entry.direction != null && entry.direction != "NONE" && entry.direction != "NOT COMPUTABLE") {
+        entry.direction
+    } else {
+        computedDirection.name
+    }
+
+    val reading = tempReading.copy(
+        direction = directionName,
+        deltaMmol = deltaMmol?.let { Math.round(it * 10.0) / 10.0 }
+    )
+
+    dao.insert(reading)
+    return reading
+}
+
 @Singleton
 class NightscoutFollower @Inject constructor(
     private val client: NightscoutClient,
@@ -91,7 +126,7 @@ class NightscoutFollower @Inject constructor(
                 }
 
                 for (entry in valid) {
-                    val reading = processEntry(entry)
+                    val reading = processNightscoutEntry(entry, dao, directionComputer)
                     if (reading != null) {
                         onNewReading(reading)
                     }
@@ -134,7 +169,7 @@ class NightscoutFollower @Inject constructor(
             if (valid.isEmpty()) break
 
             for (entry in valid) {
-                val reading = processEntry(entry)
+                val reading = processNightscoutEntry(entry, dao, directionComputer)
                 if (reading != null) {
                     lastReading = reading
                     totalInserted++
@@ -142,7 +177,7 @@ class NightscoutFollower @Inject constructor(
             }
 
             if (entries.size < FETCH_COUNT) break
-            since = entries.maxOf { it.date ?: 0L }
+            since = entries.maxOf { it.date ?: 0L } + 1
         }
 
         if (lastReading != null) {
@@ -153,27 +188,4 @@ class NightscoutFollower @Inject constructor(
         DebugLog.log(message = "Follower: backfill complete, $totalInserted readings")
     }
 
-    private suspend fun processEntry(entry: NightscoutEntryResponse): GlucoseReading? {
-        val sgv = entry.sgv ?: return null
-        val ts = entry.date ?: return null
-        val mmol = sgvToMmol(sgv)
-
-        val existing = dao.lastN(1)
-        if (existing.isNotEmpty() && kotlin.math.abs(ts - existing[0].ts) < 3_000) return null
-
-        val recentReadings = dao.since(ts - 15 * 60 * 1000)
-        val tempReading = GlucoseReading(
-            ts = ts, sgv = sgv, mmol = mmol,
-            direction = "NONE", deltaMmol = null, pushed = 1
-        )
-        val (direction, deltaMmol) = directionComputer.compute(recentReadings, tempReading)
-
-        val reading = tempReading.copy(
-            direction = direction.name,
-            deltaMmol = deltaMmol?.let { Math.round(it * 10.0) / 10.0 }
-        )
-
-        dao.insert(reading)
-        return reading
-    }
 }
