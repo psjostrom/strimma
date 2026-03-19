@@ -6,6 +6,7 @@ import android.content.IntentFilter
 import android.os.IBinder
 import com.psjostrom.strimma.data.*
 import com.psjostrom.strimma.network.NightscoutFollower
+import com.psjostrom.strimma.network.NightscoutPuller
 import com.psjostrom.strimma.network.NightscoutPusher
 import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.notification.NotificationHelper
@@ -31,6 +32,7 @@ class StrimmaService : Service() {
     @Inject lateinit var alertManager: AlertManager
     @Inject lateinit var settings: SettingsRepository
     @Inject lateinit var nightscoutFollower: NightscoutFollower
+    @Inject lateinit var nightscoutPuller: NightscoutPuller
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var pruneJob: Job? = null
@@ -77,6 +79,7 @@ class StrimmaService : Service() {
         }
 
         pusher.pushPending()
+        scope.launch { nightscoutPuller.pullIfEmpty() }
         scope.launch { updateNotification() }
 
         // Periodic retry for failed pushes + daily prune

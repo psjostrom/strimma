@@ -80,7 +80,8 @@ fun SettingsScreen(
     onWidgetSettings: () -> Unit = {},
     onDebugLog: () -> Unit = {},
     onExportSettings: () -> Unit = {},
-    onImportSettings: () -> Unit = {}
+    onImportSettings: () -> Unit = {},
+    onPullFromNightscout: (Int) -> Unit = {}
 ) {
     val bg = MaterialTheme.colorScheme.background
     val onBg = MaterialTheme.colorScheme.onBackground
@@ -461,6 +462,26 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Widget Settings")
+                }
+                HorizontalDivider(color = outlineVar)
+                Text("Pull from Nightscout", color = onBg, fontSize = 14.sp)
+                Text(
+                    "Download glucose history from your Nightscout server",
+                    color = outline,
+                    fontSize = 12.sp
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf(7 to "7 days", 14 to "14 days", 30 to "30 days").forEach { (days, label) ->
+                        OutlinedButton(
+                            onClick = { onPullFromNightscout(days) },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(label, fontSize = 13.sp)
+                        }
+                    }
                 }
                 HorizontalDivider(color = outlineVar)
                 OutlinedButton(

@@ -9,6 +9,7 @@ import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.network.FollowerStatus
 import com.psjostrom.strimma.network.NightscoutFollower
+import com.psjostrom.strimma.network.NightscoutPuller
 import com.psjostrom.strimma.notification.AlertManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -22,7 +23,8 @@ class MainViewModel @Inject constructor(
     private val dao: ReadingDao,
     val settings: SettingsRepository,
     private val alertManager: AlertManager,
-    private val nightscoutFollower: NightscoutFollower
+    private val nightscoutFollower: NightscoutFollower,
+    private val nightscoutPuller: NightscoutPuller
 ) : ViewModel() {
 
     val latestReading: StateFlow<GlucoseReading?> = dao.latest()
@@ -128,6 +130,8 @@ class MainViewModel @Inject constructor(
     val followerPollSeconds: StateFlow<Int> = settings.followerPollSeconds
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 60)
     fun setFollowerPollSeconds(seconds: Int) = viewModelScope.launch { settings.setFollowerPollSeconds(seconds) }
+
+    suspend fun pullFromNightscout(days: Int): Result<Int> = nightscoutPuller.pullHistory(days)
 
     suspend fun exportSettings(): String = settings.exportToJson()
 
