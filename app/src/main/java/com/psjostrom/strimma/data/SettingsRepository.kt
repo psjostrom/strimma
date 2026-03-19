@@ -202,7 +202,6 @@ class SettingsRepository @Inject constructor(
         val settings = root.getJSONObject("settings")
 
         dataStore.edit { prefs ->
-            prefs.clear()
             if (settings.has("nightscout_url")) prefs[KEY_NIGHTSCOUT_URL] = settings.getString("nightscout_url")
             if (settings.has("graph_window_hours")) prefs[KEY_GRAPH_WINDOW_HOURS] = settings.getInt("graph_window_hours")
             if (settings.has("bg_low")) prefs[KEY_BG_LOW] = settings.getDouble("bg_low").toFloat()
@@ -226,12 +225,12 @@ class SettingsRepository @Inject constructor(
             if (settings.has("glucose_source")) prefs[KEY_GLUCOSE_SOURCE] = settings.getString("glucose_source")
             if (settings.has("follower_url")) prefs[KEY_FOLLOWER_URL] = settings.getString("follower_url")
             if (settings.has("follower_poll_seconds")) prefs[KEY_FOLLOWER_POLL_SECONDS] = settings.getInt("follower_poll_seconds")
-        }
 
-        // Sync glucose source to SharedPreferences
-        val sourceName = settings.optString("glucose_source", "COMPANION")
-        context.getSharedPreferences(SYNC_PREFS, Context.MODE_PRIVATE)
-            .edit().putString(KEY_GLUCOSE_SOURCE_SYNC, sourceName).apply()
+            // Sync glucose source to SharedPreferences atomically with DataStore edit
+            val sourceName = settings.optString("glucose_source", "COMPANION")
+            context.getSharedPreferences(SYNC_PREFS, Context.MODE_PRIVATE)
+                .edit().putString(KEY_GLUCOSE_SOURCE_SYNC, sourceName).commit()
+        }
 
         if (root.has("secrets")) {
             val secrets = root.getJSONObject("secrets")
@@ -241,9 +240,13 @@ class SettingsRepository @Inject constructor(
 
         if (root.has("widget")) {
             val widget = root.getJSONObject("widget")
+            val validGraphMinutes = setOf(30, 60, 120, 180)
             context.getSharedPreferences("widget_prefs", Context.MODE_PRIVATE).edit().apply {
-                if (widget.has("opacity")) putFloat("opacity", widget.getDouble("opacity").toFloat())
-                if (widget.has("graph_minutes")) putInt("graph_minutes", widget.getInt("graph_minutes"))
+                if (widget.has("opacity")) putFloat("opacity", widget.getDouble("opacity").toFloat().coerceIn(0f, 1f))
+                if (widget.has("graph_minutes")) {
+                    val mins = widget.getInt("graph_minutes")
+                    if (mins in validGraphMinutes) putInt("graph_minutes", mins)
+                }
                 if (widget.has("show_prediction")) putBoolean("show_prediction", widget.getBoolean("show_prediction"))
                 apply()
             }

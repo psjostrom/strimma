@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
+import android.app.AlertDialog
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -209,32 +210,40 @@ class MainActivity : ComponentActivity() {
                                 }
                             },
                             onExportSettings = {
-                                lifecycleScope.launch {
-                                    try {
-                                        val json = viewModel.exportSettings()
-                                        val file = File(cacheDir, "strimma-settings.json")
-                                        file.writeText(json)
-                                        val uri = FileProvider.getUriForFile(
-                                            this@MainActivity,
-                                            "${packageName}.fileprovider",
-                                            file
-                                        )
-                                        startActivity(Intent.createChooser(
-                                            Intent(Intent.ACTION_SEND).apply {
-                                                type = "application/json"
-                                                putExtra(Intent.EXTRA_STREAM, uri)
-                                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                            },
-                                            "Export Settings"
-                                        ))
-                                    } catch (e: Exception) {
-                                        Toast.makeText(
-                                            this@MainActivity,
-                                            "Export failed: ${e.message}",
-                                            Toast.LENGTH_LONG
-                                        ).show()
+                                AlertDialog.Builder(this@MainActivity)
+                                    .setTitle("Export Settings")
+                                    .setMessage("The export file contains your Nightscout secrets in plain text. Only share it with apps you trust.")
+                                    .setPositiveButton("Export") { _, _ ->
+                                        lifecycleScope.launch {
+                                            try {
+                                                val json = viewModel.exportSettings()
+                                                val file = File(cacheDir, "strimma-settings.json")
+                                                file.delete()
+                                                file.writeText(json)
+                                                val uri = FileProvider.getUriForFile(
+                                                    this@MainActivity,
+                                                    "${packageName}.fileprovider",
+                                                    file
+                                                )
+                                                startActivity(Intent.createChooser(
+                                                    Intent(Intent.ACTION_SEND).apply {
+                                                        type = "application/json"
+                                                        putExtra(Intent.EXTRA_STREAM, uri)
+                                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                                    },
+                                                    "Export Settings"
+                                                ))
+                                            } catch (e: Exception) {
+                                                Toast.makeText(
+                                                    this@MainActivity,
+                                                    "Export failed: ${e.message}",
+                                                    Toast.LENGTH_LONG
+                                                ).show()
+                                            }
+                                        }
                                     }
-                                }
+                                    .setNegativeButton("Cancel", null)
+                                    .show()
                             },
                             onImportSettings = {
                                 importSettingsLauncher.launch("application/json")
