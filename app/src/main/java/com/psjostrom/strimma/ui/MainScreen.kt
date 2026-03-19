@@ -100,7 +100,7 @@ fun MainScreen(
                 .padding(padding)
                 .padding(horizontal = 16.dp)
         ) {
-            val crossing = remember(readings, bgLow, bgHigh) {
+            val crossing = remember(readings, bgLow, bgHigh, predictionMinutes) {
                 PredictionComputer.compute(readings, predictionMinutes, bgLow.toDouble(), bgHigh.toDouble())?.crossing
             }
             BgHeader(latestReading, bgLow, bgHigh, glucoseUnit, crossing, followerStatus)
