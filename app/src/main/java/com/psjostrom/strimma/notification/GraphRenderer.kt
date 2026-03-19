@@ -31,7 +31,7 @@ object GraphRenderer {
         bgHigh: Double,
         windowMs: Long,
         compact: Boolean = false,
-        predictionMinutes: Int = 30,
+        predictionMinutes: Int = 10,
         glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL
     ): Bitmap {
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)

@@ -10,7 +10,7 @@ Android CGM companion app. Receives glucose from CamAPS FX via NotificationListe
 adb connect 192.168.1.10:<port> # wireless debug (port changes on reconnect)
 ```
 
-77 tests (57 unit + 20 integration). Run with `./gradlew testDebugUnitTest`.
+Run tests with `./gradlew testDebugUnitTest`.
 
 ## Architecture
 
@@ -26,13 +26,13 @@ Single-module app. Hilt DI. All async via Coroutines/Flow.
 
 ## Project Structure
 
-- `data/` — Room entities (GlucoseReading), DAO, SettingsRepository, DirectionComputer, GlucoseUnit
-- `graph/` — Shared graph logic (GraphColors.kt: Canvas colors, `canvasColorFor()`, `computeYRange()`, critical thresholds; PredictionComputer.kt: weighted least-squares curve fitting with endpoint anchoring for glucose prediction + threshold crossing detection)
-- `network/` — NightscoutClient + NightscoutPusher (Ktor, Nightscout JSON, /api/v1/entries)
-- `notification/` — NotificationHelper (collapsed/expanded with graph bitmap), GraphRenderer (Canvas bitmap), AlertManager
-- `receiver/` — GlucoseNotificationListener (parses CamAPS FX notifications), DebugLog
-- `service/` — StrimmaService (foreground service), BootReceiver
-- `ui/` — Compose screens (Main, Settings, Debug), MainViewModel, theme
+- `data/` — Room entities, DAO, settings, direction computation, unit conversion, data source selection, statistics
+- `graph/` — Shared graph logic (colors, Y-range computation, critical thresholds) + weighted least-squares prediction with endpoint anchoring
+- `network/` — Nightscout HTTP client and push logic (Ktor, `/api/v1/entries`)
+- `notification/` — Foreground notification (collapsed/expanded with graph bitmap), alert manager
+- `receiver/` — Data source receivers (CamAPS notification parser, xDrip broadcast receiver), debug logging
+- `service/` — Foreground service, boot receiver
+- `ui/` — Compose screens (Main, Settings, Stats, Debug), ViewModel, theme
 - `ui/theme/` — Dark + light palettes, status colors, Material 3 theme with `ThemeMode` (Dark/Light/System)
 
 ## Conventions

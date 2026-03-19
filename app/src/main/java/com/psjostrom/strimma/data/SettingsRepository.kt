@@ -55,6 +55,10 @@ class SettingsRepository @Inject constructor(
         private val KEY_GLUCOSE_SOURCE = stringPreferencesKey("glucose_source")
         private const val SYNC_PREFS = "strimma_sync"
         private const val KEY_GLUCOSE_SOURCE_SYNC = "glucose_source"
+
+        private val KEY_FOLLOWER_URL = stringPreferencesKey("follower_url")
+        private val KEY_FOLLOWER_POLL_SECONDS = intPreferencesKey("follower_poll_seconds")
+        private const val KEY_FOLLOWER_SECRET = "follower_secret"
     }
 
     val nightscoutUrl: Flow<String> = dataStore.data.map { it[KEY_NIGHTSCOUT_URL] ?: "" }
@@ -122,5 +126,16 @@ class SettingsRepository @Inject constructor(
         val name = context.getSharedPreferences(SYNC_PREFS, Context.MODE_PRIVATE)
             .getString(KEY_GLUCOSE_SOURCE_SYNC, null) ?: return GlucoseSource.COMPANION
         return try { GlucoseSource.valueOf(name) } catch (_: Exception) { GlucoseSource.COMPANION }
+    }
+
+    val followerUrl: Flow<String> = dataStore.data.map { it[KEY_FOLLOWER_URL] ?: "" }
+    suspend fun setFollowerUrl(url: String) { dataStore.edit { it[KEY_FOLLOWER_URL] = url } }
+
+    val followerPollSeconds: Flow<Int> = dataStore.data.map { it[KEY_FOLLOWER_POLL_SECONDS] ?: 60 }
+    suspend fun setFollowerPollSeconds(seconds: Int) { dataStore.edit { it[KEY_FOLLOWER_POLL_SECONDS] = seconds } }
+
+    fun getFollowerSecret(): String = encryptedPrefs.getString(KEY_FOLLOWER_SECRET, "") ?: ""
+    fun setFollowerSecret(secret: String) {
+        encryptedPrefs.edit().putString(KEY_FOLLOWER_SECRET, secret).apply()
     }
 }
