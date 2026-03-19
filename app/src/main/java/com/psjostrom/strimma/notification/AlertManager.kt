@@ -9,6 +9,7 @@ import android.media.AudioAttributes
 import android.media.RingtoneManager
 import android.provider.Settings
 import androidx.core.app.NotificationCompat
+import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.SettingsRepository
@@ -240,7 +241,7 @@ class AlertManager @Inject constructor(
         )
 
         val notification = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(android.R.drawable.ic_dialog_alert)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(text)
             .setPriority(NotificationCompat.PRIORITY_HIGH)

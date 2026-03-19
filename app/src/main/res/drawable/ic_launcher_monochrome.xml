@@ -1,0 +1,14 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- CGM trace — mostly flat with a gentle bump, like real stable BG -->
+    <path
+        android:strokeColor="#000000"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M24,58 C34,58 38,58 44,58 C50,58 52,44 54,44 C56,44 58,48 62,54 C66,58 70,58 84,58"/>
+</vector>
