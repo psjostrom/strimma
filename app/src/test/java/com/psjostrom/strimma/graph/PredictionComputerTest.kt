@@ -49,6 +49,23 @@ class PredictionComputerTest {
         assertEquals(6.0, prediction.anchorMmol, 0.001)
     }
 
+    @Test
+    fun `prediction connects seamlessly to last reading`() {
+        // Non-linear data where regression won't pass exactly through the last point
+        val readings = listOf(
+            reading(5, 7.0), reading(4, 6.5), reading(3, 6.2),
+            reading(2, 6.1), reading(1, 6.0), reading(0, 6.3)
+        )
+        val prediction = PredictionComputer.compute(readings, 15, 4.0, 10.0)!!
+        // First prediction point at +1 min should be close to anchor (6.3), not jump away
+        val firstPoint = prediction.points.first()
+        assertEquals(1, firstPoint.minuteOffset)
+        assertTrue(
+            "First prediction ${firstPoint.mmol} too far from anchor ${prediction.anchorMmol}",
+            kotlin.math.abs(firstPoint.mmol - prediction.anchorMmol) < 0.3
+        )
+    }
+
     // --- Linear trend ---
 
     @Test
@@ -123,22 +140,21 @@ class PredictionComputerTest {
 
     @Test
     fun `with 2 points uses linear model`() {
+        // Two points define a unique line regardless of weighting
         val points = listOf(0.0 to 6.0, 5.0 to 7.0)
         val model = PredictionComputer.fitBestModel(points)!!
-        // Linear: should predict 8.0 at t=10
         assertEquals(8.0, model(10.0), 0.01)
     }
 
     @Test
     fun `quadratic fit captures deceleration`() {
-        // Glucose rising but decelerating: 6.0, 6.8, 7.4, 7.8, 8.0
-        // (rate slowing down: 0.8, 0.6, 0.4, 0.2 per interval)
+        // Glucose rising but decelerating (uses negative t like real data)
         val points = listOf(
-            0.0 to 6.0, 3.0 to 6.8, 6.0 to 7.4, 9.0 to 7.8, 12.0 to 8.0
+            -12.0 to 6.0, -9.0 to 6.8, -6.0 to 7.4, -3.0 to 7.8, 0.0 to 8.0
         )
         val model = PredictionComputer.fitBestModel(points)!!
-        // With deceleration, prediction at t=15 should be less than linear (8.0 + 0.2*3 = 8.6)
-        val predicted = model(15.0)
+        // With deceleration, prediction at t=3 should be less than linear extrapolation
+        val predicted = model(3.0)
         assertTrue("Quadratic should predict lower than linear: $predicted", predicted < 8.5)
     }
 
@@ -191,5 +207,25 @@ class PredictionComputerTest {
         assertNotNull(prediction.crossing)
         assertEquals(CrossingType.LOW, prediction.crossing!!.type)
         assertTrue(prediction.crossing!!.minutesUntil in 1..4)
+    }
+
+    @Test
+    fun `weighting makes prediction follow recent trend change`() {
+        // 8 min of descent (7.2 → 5.5) then 4 min of uptick (5.5 → 5.9)
+        // Matches a real scenario: peak → valley → recovery
+        val descending = (12 downTo 5).map { reading(it, 7.2 - (12 - it) * 0.243) }
+        val ascending = listOf(
+            reading(3, 5.6), reading(2, 5.7), reading(1, 5.8), reading(0, 5.9)
+        )
+
+        val prediction = PredictionComputer.compute(descending + ascending, 15, 4.0, 10.0)!!
+
+        // With weighting, the recent uptick prevents a steep drop that
+        // unweighted regression (dominated by 8 min of descent) would produce.
+        val last = prediction.points.last()
+        assertTrue(
+            "Prediction at 15 min (${last.mmol}) should stay above 5.0 with weighting",
+            last.mmol > 5.0
+        )
     }
 }
