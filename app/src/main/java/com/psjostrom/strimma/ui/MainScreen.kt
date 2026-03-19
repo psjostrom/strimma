@@ -17,6 +17,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
@@ -498,7 +499,7 @@ fun GlucoseGraph(
                 }
                 drawPath(path, bolusColor)
                 val label = "${"%.0f".format(dose)}U"
-                markerLabelPaint.color = bolusColor.hashCode() or 0xFF000000.toInt()
+                markerLabelPaint.color = bolusColor.toArgb()
                 drawContext.canvas.nativeCanvas.drawText(
                     label, tx, baseY + 14f, markerLabelPaint
                 )
@@ -517,7 +518,7 @@ fun GlucoseGraph(
                 }
                 drawPath(path, carbColor)
                 val label = "${"%.0f".format(grams)}g"
-                markerLabelPaint.color = carbColor.hashCode() or 0xFF000000.toInt()
+                markerLabelPaint.color = carbColor.toArgb()
                 drawContext.canvas.nativeCanvas.drawText(
                     label, tx, baseY - 4f, markerLabelPaint
                 )
