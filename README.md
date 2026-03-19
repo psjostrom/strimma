@@ -135,6 +135,16 @@ Single-module app. 35 Kotlin source files, ~3,800 lines.
 
 **Tests:** 77 tests (57 unit + 20 integration) running on JVM via Robolectric. No emulator needed.
 
+## Contributing
+
+All changes to `main` go through pull requests — direct pushes are blocked. PRs require:
+
+- **Signed commits** (GPG or SSH)
+- **Linear history** (squash or rebase merge only)
+- **All review conversations resolved**
+
+Fork the repo, create a branch, and open a PR when ready.
+
 ## Acknowledgments
 
 Strimma exists because of [xDrip+](https://github.com/NightscoutFoundation/xDrip). Its feature set, UI patterns, and data pipeline are directly inspired by xDrip+'s decade of pioneering work. The CGM package list in Companion Mode is based on xDrip+'s `UiBasedCollector.coOptedPackages`.
