@@ -5,8 +5,12 @@ import androidx.lifecycle.viewModelScope
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseSource
 import com.psjostrom.strimma.data.GlucoseUnit
+import com.psjostrom.strimma.data.IOBComputer
+import com.psjostrom.strimma.data.InsulinType
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
+import com.psjostrom.strimma.data.Treatment
+import com.psjostrom.strimma.data.TreatmentDao
 import com.psjostrom.strimma.network.FollowerStatus
 import com.psjostrom.strimma.network.NightscoutFollower
 import com.psjostrom.strimma.notification.AlertManager
@@ -20,6 +24,7 @@ import javax.inject.Inject
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val dao: ReadingDao,
+    private val treatmentDao: TreatmentDao,
     val settings: SettingsRepository,
     private val alertManager: AlertManager,
     private val nightscoutFollower: NightscoutFollower
@@ -128,6 +133,41 @@ class MainViewModel @Inject constructor(
     val followerPollSeconds: StateFlow<Int> = settings.followerPollSeconds
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 60)
     fun setFollowerPollSeconds(seconds: Int) = viewModelScope.launch { settings.setFollowerPollSeconds(seconds) }
+
+    // Treatments
+    val treatmentsSyncEnabled: StateFlow<Boolean> = settings.treatmentsSyncEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    fun setTreatmentsSyncEnabled(enabled: Boolean) = viewModelScope.launch { settings.setTreatmentsSyncEnabled(enabled) }
+
+    val insulinType: StateFlow<InsulinType> = settings.insulinType
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), InsulinType.FIASP)
+    fun setInsulinType(type: InsulinType) = viewModelScope.launch { settings.setInsulinType(type) }
+
+    val customDIA: StateFlow<Float> = settings.customDIA
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 5.0f)
+    fun setCustomDIA(hours: Float) = viewModelScope.launch { settings.setCustomDIA(hours) }
+
+    val treatments: StateFlow<List<Treatment>> = settings.treatmentsSyncEnabled
+        .flatMapLatest { enabled ->
+            if (enabled) {
+                val since = System.currentTimeMillis() - 24 * 3600_000L
+                treatmentDao.since(since)
+            } else {
+                kotlinx.coroutines.flow.flowOf(emptyList())
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val iob: StateFlow<Double> = combine(
+        treatments,
+        settings.insulinType,
+        settings.customDIA,
+        settings.treatmentsSyncEnabled
+    ) { treatments, insulinType, customDIA, enabled ->
+        if (!enabled || treatments.isEmpty()) return@combine 0.0
+        val tau = IOBComputer.tauForInsulinType(insulinType, customDIA)
+        IOBComputer.computeIOB(treatments, System.currentTimeMillis(), tau)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
     suspend fun exportSettings(): String = settings.exportToJson()
 

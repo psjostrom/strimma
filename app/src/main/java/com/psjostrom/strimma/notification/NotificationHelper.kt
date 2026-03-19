@@ -51,7 +51,8 @@ class NotificationHelper @Inject constructor(
         bgHigh: Double,
         graphWindowMs: Long = GRAPH_WINDOW_MS,
         predictionMinutes: Int = 10,
-        glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL
+        glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
+        iob: Double = 0.0
     ): android.app.Notification {
         val contentIntent = PendingIntent.getActivity(
             context, 0,
@@ -81,11 +82,12 @@ class NotificationHelper @Inject constructor(
                     CrossingType.HIGH -> "High ${crossing.minutesUntil}m"
                 }
             }
-            val deltaText = if (crossingText != null && baseDelta.isNotEmpty()) {
-                "$baseDelta · $crossingText"
-            } else {
-                crossingText ?: baseDelta
-            }
+            val iobText = if (iob > 0.0) "IOB ${"%.1f".format(iob)}U" else null
+            val deltaText = listOfNotNull(
+                baseDelta.ifEmpty { null },
+                crossingText,
+                iobText
+            ).joinToString(" · ")
 
             builder.setSmallIcon(createBgIcon(bgText))
 
@@ -126,9 +128,10 @@ class NotificationHelper @Inject constructor(
         bgHigh: Double,
         graphWindowMs: Long = GRAPH_WINDOW_MS,
         predictionMinutes: Int = 10,
-        glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL
+        glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
+        iob: Double = 0.0
     ) {
-        val notification = buildNotification(reading, recentReadings, bgLow, bgHigh, graphWindowMs, predictionMinutes, glucoseUnit)
+        val notification = buildNotification(reading, recentReadings, bgLow, bgHigh, graphWindowMs, predictionMinutes, glucoseUnit, iob)
         notificationManager.notify(NOTIFICATION_ID, notification)
     }
 

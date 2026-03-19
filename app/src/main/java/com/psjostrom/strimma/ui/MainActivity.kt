@@ -116,6 +116,11 @@ class MainActivity : ComponentActivity() {
                 val followerStatus by viewModel.followerStatus.collectAsState()
                 val followerUrl by viewModel.followerUrl.collectAsState()
                 val followerPollSeconds by viewModel.followerPollSeconds.collectAsState()
+                val treatmentsSyncEnabled by viewModel.treatmentsSyncEnabled.collectAsState()
+                val insulinType by viewModel.insulinType.collectAsState()
+                val customDIA by viewModel.customDIA.collectAsState()
+                val treatments by viewModel.treatments.collectAsState()
+                val iob by viewModel.iob.collectAsState()
 
                 NavHost(navController, startDestination = "main") {
                     composable("main") {
@@ -128,6 +133,8 @@ class MainActivity : ComponentActivity() {
                             predictionMinutes = predictionMinutes,
                             glucoseUnit = glucoseUnit,
                             followerStatus = followerStatus,
+                            treatments = treatments,
+                            iob = iob,
                             onSettingsClick = {
                                 navController.navigate("settings") {
                                     launchSingleTop = true
@@ -145,6 +152,12 @@ class MainActivity : ComponentActivity() {
                             glucoseSource = glucoseSource,
                             nightscoutUrl = nightscoutUrl,
                             nightscoutSecret = viewModel.nightscoutSecret,
+                            treatmentsSyncEnabled = treatmentsSyncEnabled,
+                            insulinType = insulinType,
+                            customDIA = customDIA,
+                            onTreatmentsSyncEnabledChange = viewModel::setTreatmentsSyncEnabled,
+                            onInsulinTypeChange = viewModel::setInsulinType,
+                            onCustomDIAChange = viewModel::setCustomDIA,
                             graphWindowHours = graphWindowHours,
                             bgLow = bgLow,
                             bgHigh = bgHigh,

@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.psjostrom.strimma.data.GlucoseSource
 import com.psjostrom.strimma.data.GlucoseUnit
+import com.psjostrom.strimma.data.InsulinType
 import com.psjostrom.strimma.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -46,6 +47,12 @@ fun SettingsScreen(
     alertStaleEnabled: Boolean,
     alertLowSoonEnabled: Boolean,
     alertHighSoonEnabled: Boolean,
+    treatmentsSyncEnabled: Boolean = false,
+    insulinType: InsulinType = InsulinType.FIASP,
+    customDIA: Float = 5.0f,
+    onTreatmentsSyncEnabledChange: (Boolean) -> Unit = {},
+    onInsulinTypeChange: (InsulinType) -> Unit = {},
+    onCustomDIAChange: (Float) -> Unit = {},
     onGlucoseSourceChange: (GlucoseSource) -> Unit,
     onNightscoutUrlChange: (String) -> Unit,
     onNightscoutSecretChange: (String) -> Unit,
@@ -162,6 +169,7 @@ fun SettingsScreen(
                         singleLine = true,
                         visualTransformation = PasswordVisualTransformation()
                     )
+
                 }
             } else {
                 SettingsSection("Following", outline, surfVar) {
@@ -206,6 +214,71 @@ fun SettingsScreen(
                         valueRange = 30f..300f,
                         steps = 8
                     )
+                }
+            }
+
+            SettingsSection("Treatments", outline, surfVar) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                        Text("Treatments sync", color = onBg, fontSize = 14.sp)
+                        Text(
+                            "Fetch bolus, carb, and basal data for IOB display",
+                            color = outline,
+                            fontSize = 12.sp
+                        )
+                    }
+                    Switch(checked = treatmentsSyncEnabled, onCheckedChange = onTreatmentsSyncEnabledChange)
+                }
+
+                if (treatmentsSyncEnabled) {
+                    Text("Insulin type", color = onBg, fontSize = 14.sp)
+                    var expanded by remember { mutableStateOf(false) }
+                    ExposedDropdownMenuBox(
+                        expanded = expanded,
+                        onExpandedChange = { expanded = it }
+                    ) {
+                        OutlinedTextField(
+                            value = insulinType.label,
+                            onValueChange = {},
+                            readOnly = true,
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+                            modifier = Modifier.fillMaxWidth().menuAnchor()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            InsulinType.entries.forEach { type ->
+                                DropdownMenuItem(
+                                    text = { Text(type.label) },
+                                    onClick = {
+                                        onInsulinTypeChange(type)
+                                        expanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    if (insulinType == InsulinType.CUSTOM) {
+                        var diaText by remember(customDIA) { mutableStateOf("%.1f".format(customDIA)) }
+                        OutlinedTextField(
+                            value = diaText,
+                            onValueChange = { text ->
+                                diaText = text
+                                text.toFloatOrNull()?.let { if (it in 2f..10f) onCustomDIAChange(it) }
+                            },
+                            label = { Text("Custom DIA (hours)") },
+                            supportingText = { Text("Duration of Insulin Action, 2-10 hours") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                        )
+                    }
                 }
             }
 
