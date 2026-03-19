@@ -8,6 +8,7 @@ import android.content.Intent
 import android.graphics.*
 import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.IconCompat
 import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.Direction
@@ -62,6 +63,7 @@ class NotificationHelper @Inject constructor(
             .setStyle(NotificationCompat.DecoratedCustomViewStyle())
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setSilent(true)
+            .setColor(ContextCompat.getColor(context, R.color.brand_accent))
 
         if (reading != null) {
             val direction = try { Direction.valueOf(reading.direction) } catch (_: Exception) { Direction.NONE }
