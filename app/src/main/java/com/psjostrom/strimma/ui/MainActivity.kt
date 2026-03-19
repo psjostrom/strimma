@@ -246,7 +246,7 @@ class MainActivity : ComponentActivity() {
                                     .show()
                             },
                             onImportSettings = {
-                                importSettingsLauncher.launch("application/json")
+                                importSettingsLauncher.launch("*/*")
                             }
                         )
                     }
