@@ -629,12 +629,12 @@ When Strimma is validated, flip the default. When Strimma is the sole data sourc
 | Widget        | Jetpack Glance                                 | Compose-based widget API with AppWidgetManager updates               |
 | Notifications | NotificationCompat + RemoteViews               | Custom layouts with bitmap graphs                                    |
 | Alerts        | 5 notification channels                        | Per-alarm sound/vibration/DND via Android channel settings           |
-| Testing       | JUnit 4 + Robolectric 4.16 + Room in-memory    | 66 tests on JVM, SDK 36, no emulator                                 |
+| Testing       | JUnit 4 + Robolectric 4.16 + Room in-memory    | Unit + integration on JVM, SDK 36, no emulator                       |
 | Java          | 21 (Zulu)                                      | Repo-specific via `gradle.properties`, needed for Robolectric SDK 36 |
 | Build         | Gradle 8.x + AGP 8.x                           | Current                                                              |
 | compileSdk    | 36                                             | Android 16                                                           |
 | targetSdk     | 36                                             | Android 16                                                           |
-| minSdk        | 36                                             | Android 16 (to be lowered for broader device support — see roadmap)  |
+| minSdk        | 33                                             | Android 13 — oldest version still receiving security updates         |
 
 ### Backend (Historical)
 
