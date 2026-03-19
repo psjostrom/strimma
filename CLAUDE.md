@@ -27,7 +27,7 @@ Single-module app. Hilt DI. All async via Coroutines/Flow.
 ## Project Structure
 
 - `data/` — Room entities (GlucoseReading), DAO, SettingsRepository, DirectionComputer, GlucoseUnit
-- `graph/` — Shared graph logic (GraphColors.kt: Canvas colors, `canvasColorFor()`, `computeYRange()`, critical thresholds; PredictionComputer.kt: least-squares curve fitting for glucose prediction + threshold crossing detection)
+- `graph/` — Shared graph logic (GraphColors.kt: Canvas colors, `canvasColorFor()`, `computeYRange()`, critical thresholds; PredictionComputer.kt: weighted least-squares curve fitting with endpoint anchoring for glucose prediction + threshold crossing detection)
 - `network/` — NightscoutClient + NightscoutPusher (Ktor, Nightscout JSON, /api/v1/entries)
 - `notification/` — NotificationHelper (collapsed/expanded with graph bitmap), GraphRenderer (Canvas bitmap), AlertManager
 - `receiver/` — GlucoseNotificationListener (parses CamAPS FX notifications), DebugLog
