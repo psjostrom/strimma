@@ -35,12 +35,6 @@ class MainActivity : ComponentActivity() {
     private var permissionsChecked = false
     private var viewModelRef: MainViewModel? = null
 
-    private val exportShareLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) {
-        File(cacheDir, "strimma-settings.json").delete()
-    }
-
     private val importSettingsLauncher = registerForActivityResult(
         ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -231,7 +225,7 @@ class MainActivity : ComponentActivity() {
                                                     "${packageName}.fileprovider",
                                                     file
                                                 )
-                                                exportShareLauncher.launch(Intent.createChooser(
+                                                startActivity(Intent.createChooser(
                                                     Intent(Intent.ACTION_SEND).apply {
                                                         type = "application/json"
                                                         putExtra(Intent.EXTRA_STREAM, uri)
