@@ -1,6 +1,7 @@
 package com.psjostrom.strimma.graph
 
 import com.psjostrom.strimma.data.GlucoseReading
+import kotlin.math.abs
 import kotlin.math.exp
 
 enum class CrossingType { LOW, HIGH }
@@ -31,6 +32,8 @@ object PredictionComputer {
     // Velocity dampening: predictions flatten over time (glucose trends mean-revert).
     // 0.05 ≈ velocity halves at ~14 min — a 15-min prediction retains ~70% of linear.
     private const val DAMP = 0.05
+    // Max physiological rate of change (~0.3 mmol/min extreme). 0.5 gives headroom.
+    private const val MAX_VELOCITY = 0.5
 
     fun compute(
         readings: List<GlucoseReading>,
@@ -47,6 +50,7 @@ object PredictionComputer {
         val points = recent.map { (it.ts - anchor.ts).toDouble() / 60_000.0 to it.mmol }
 
         val velocity = fitWeightedVelocity(points) ?: return null
+        if (abs(velocity) > MAX_VELOCITY) return null  // sensor artifact
 
         // Dampened prediction: glucose doesn't maintain constant velocity.
         // v(t) = v0 * e^(-DAMP*t), integrated → x(t) = x0 + (v0/DAMP) * (1 - e^(-DAMP*t))
