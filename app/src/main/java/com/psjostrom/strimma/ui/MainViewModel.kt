@@ -129,6 +129,10 @@ class MainViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 60)
     fun setFollowerPollSeconds(seconds: Int) = viewModelScope.launch { settings.setFollowerPollSeconds(seconds) }
 
+    suspend fun exportSettings(): String = settings.exportToJson()
+
+    suspend fun importSettings(json: String) = settings.importFromJson(json)
+
     suspend fun readingsForPeriod(hours: Int): List<GlucoseReading> {
         val since = System.currentTimeMillis() - hours * 3600_000L
         return dao.since(since)

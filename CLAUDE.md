@@ -1,6 +1,6 @@
 # Strimma
 
-Android CGM companion app. Receives glucose from CamAPS FX via NotificationListenerService, displays with graph + notification, pushes to Nightscout.
+Android CGM companion app. Receives glucose from 60+ CGM apps (CamAPS FX, Dexcom G6/G7, LibreLink, Libre 3, Juggluco, xDrip+, etc.) via NotificationListenerService, displays with graph + notification, pushes to / follows Nightscout.
 
 ## Build
 
@@ -15,7 +15,12 @@ Run tests with `./gradlew testDebugUnitTest`.
 ## Architecture
 
 ```
-Libre 3 → CamAPS FX (BLE) → notification → GlucoseNotificationListener
+CGM Sensor → CGM App → notification → GlucoseNotificationListener (COMPANION)
+                                    ↓
+xDrip+/Juggluco/AAPS → broadcast → XdripBroadcastReceiver (XDRIP_BROADCAST)
+                                    ↓
+Remote Nightscout → polling → NightscoutFollower (NIGHTSCOUT_FOLLOWER)
+                                    ↓
   → StrimmaService → Room DB → NightscoutPusher → Nightscout /api/v1/entries
                    → NotificationHelper (graph bitmap)
                    → AlertManager (urgent low/low/high/urgent high/stale)
@@ -28,9 +33,9 @@ Single-module app. Hilt DI. All async via Coroutines/Flow.
 
 - `data/` — Room entities, DAO, settings, direction computation, unit conversion, data source selection, statistics
 - `graph/` — Shared graph logic (colors, Y-range computation, critical thresholds) + weighted least-squares prediction with endpoint anchoring
-- `network/` — Nightscout HTTP client and push logic (Ktor, `/api/v1/entries`)
+- `network/` — Nightscout HTTP client, push logic (Ktor, `/api/v1/entries`), and follower mode (polling)
 - `notification/` — Foreground notification (collapsed/expanded with graph bitmap), alert manager
-- `receiver/` — Data source receivers (CamAPS notification parser, xDrip broadcast receiver), debug logging
+- `receiver/` — Data source receivers (notification parser for 60+ CGM apps, xDrip broadcast receiver), debug logging
 - `service/` — Foreground service, boot receiver
 - `ui/` — Compose screens (Main, Settings, Stats, Debug), ViewModel, theme
 - `ui/theme/` — Dark + light palettes, status colors, Material 3 theme with `ThemeMode` (Dark/Light/System)
@@ -56,4 +61,4 @@ Single-module app. Hilt DI. All async via Coroutines/Flow.
 
 ## Spec
 
-Full spec in `docs/strimma-spec.md`. Phase 2 roadmap in `docs/strimma-p2-roadmap.md`.
+Full spec in `docs/strimma-spec.md`. Roadmap in `docs/strimma-p2-roadmap.md` (Phase 3 substantially complete).

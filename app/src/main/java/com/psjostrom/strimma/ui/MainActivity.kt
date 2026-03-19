@@ -7,12 +7,15 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.*
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -22,11 +25,30 @@ import com.psjostrom.strimma.service.StrimmaService
 import com.psjostrom.strimma.ui.theme.StrimmaTheme
 import com.psjostrom.strimma.ui.theme.ThemeMode
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
+import java.io.File
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     private var permissionsChecked = false
+    private var viewModelRef: MainViewModel? = null
+
+    private val importSettingsLauncher = registerForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri ?: return@registerForActivityResult
+        lifecycleScope.launch {
+            try {
+                val json = contentResolver.openInputStream(uri)?.bufferedReader()?.readText()
+                    ?: throw IllegalStateException("Could not read file")
+                viewModelRef?.importSettings(json)
+                Toast.makeText(this@MainActivity, "Settings imported", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Toast.makeText(this@MainActivity, "Import failed: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -61,6 +83,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val viewModel: MainViewModel = hiltViewModel()
+            viewModelRef = viewModel
             val themeModeStr by viewModel.themeMode.collectAsState()
             val themeMode = try { ThemeMode.valueOf(themeModeStr) } catch (_: Exception) { ThemeMode.System }
 
@@ -184,6 +207,37 @@ class MainActivity : ComponentActivity() {
                                 navController.navigate("debug") {
                                     launchSingleTop = true
                                 }
+                            },
+                            onExportSettings = {
+                                lifecycleScope.launch {
+                                    try {
+                                        val json = viewModel.exportSettings()
+                                        val file = File(cacheDir, "strimma-settings.json")
+                                        file.writeText(json)
+                                        val uri = FileProvider.getUriForFile(
+                                            this@MainActivity,
+                                            "${packageName}.fileprovider",
+                                            file
+                                        )
+                                        startActivity(Intent.createChooser(
+                                            Intent(Intent.ACTION_SEND).apply {
+                                                type = "application/json"
+                                                putExtra(Intent.EXTRA_STREAM, uri)
+                                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                            },
+                                            "Export Settings"
+                                        ))
+                                    } catch (e: Exception) {
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            "Export failed: ${e.message}",
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                    }
+                                }
+                            },
+                            onImportSettings = {
+                                importSettingsLauncher.launch("application/json")
                             }
                         )
                     }

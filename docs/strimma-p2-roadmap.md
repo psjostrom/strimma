@@ -1,7 +1,7 @@
-# Strimma — P2 Roadmap & Competitive Analysis
+# Strimma — Roadmap & Competitive Analysis
 
-**Date:** 2026-03-18
-**Status:** P2 Complete
+**Date:** 2026-03-19
+**Status:** Phase 3 substantially complete
 
 ---
 
@@ -41,7 +41,7 @@ Strimma is an open-source Android CGM app inspired by xDrip+. Currently focused 
 - Status bar icon: BG number rendered as bitmap
 - Main app: centered BG header (value, arrow, delta, staleness) + interactive Compose Canvas graph (pinch zoom, pan) + 24h minimap + stats shortcut in toolbar
 - Graph: color-coded dots (blue in-range, orange above high, red below low), threshold lines, in-range zone band, scrub-to-inspect tooltip
-- 30-minute prediction: white dots with dashed lines extrapolated from direction computation rate, visible in both main graph and notification graphs
+- 30-minute prediction: weighted least-squares curve fitting (linear + quadratic) with exponential time decay and endpoint anchoring, visible in both main graph and notification graphs. Threshold crossing detection ("Low in X min" / "High in X min") shown in notification text and main screen pills.
 - Theme: Dark / Light / System picker in Settings. Graph surfaces adapt to theme. Status colors fixed across both themes.
 
 **Home Screen Widget (P2 — delivered):**
@@ -119,7 +119,7 @@ Strimma is an open-source Android CGM app inspired by xDrip+. Currently focused 
 | Per-alarm notification channels + sound selection | Done |
 | Persistent snooze (SharedPreferences) | Done |
 | Persistent file-based debug logging | Done |
-| Prediction / trend extrapolation (30 min, white dots, direction-matched) | Done |
+| Prediction (30 min, weighted least-squares, threshold crossing alerts) | Done |
 | Settings debounce (save on blur) | Done |
 | Graph rendering consolidation (shared GraphColors) | Done |
 | Light mode + theme picker (Dark / Light / System) | Done |
@@ -150,7 +150,7 @@ None — P2 is complete.
 | **GlucoDataHandler** | CGM hub + watch bridge | Any (receives from other apps) | Yes | Google Play |
 | **Nightscout** | Cloud CGM dashboard | Any (receives via uploaders) | Yes | Self-hosted web |
 | **CamAPS FX** | Closed-loop pump control | Libre 3 (direct BLE) | No | Prescription |
-| **Strimma** | CGM display + Nightscout push | Libre 3 (via CamAPS notification) | Private | Sideload APK |
+| **Strimma** | CGM display + Nightscout push/follow | 60+ CGM apps (via notification parsing) | Yes (GPL v3) | GitHub releases |
 
 ### Feature Matrix
 
@@ -163,7 +163,7 @@ None — P2 is complete.
 | **Nightscout upload** | Yes | Yes | No | No | Yes (Nightscout) |
 | **LibreView upload** | No | Yes (unique) | No | No | No |
 | **Calibration** | Yes | Yes (-40 to +20 mg/dL) | Yes (key feature) | No | No |
-| **Prediction** | Yes (multiple algorithms) | No | No | No | Yes (30-min linear) |
+| **Prediction** | Yes (multiple algorithms) | No | No | No | Yes (30-min weighted least-squares with threshold crossing) |
 | **Statistics (TIR, GMI)** | Yes | Yes | Limited | No | Yes (TIR, GMI, CV%, coverage) |
 | **Lock screen display** | Via notification | No | Yes | Yes (AOD wallpaper) | Via notification |
 | **Interactive graph** | Yes (pinch zoom) | Yes (landscape, two-finger zoom) | Basic | Basic | Yes (zoom, pan, scrub, minimap) |
@@ -299,9 +299,9 @@ enum class GlucoseSource(val label: String, val description: String) {
 
 Adding a new sensor means adding an enum value and a corresponding receiver class with its own tests.
 
-### Phase 3: Community-Ready (xDrip parity for ~60% of users)
+### Phase 3: Community-Ready (xDrip parity for ~60% of users) — substantially complete
 
-These features make Strimma usable by most Libre and Dexcom companion-mode users.
+Strimma is usable by most Libre and Dexcom companion-mode users. The notification parsing architecture covers 60+ CGM apps, Nightscout follower mode is implemented, and GitHub releases provide distribution.
 
 #### 3.1 Data Source Abstraction
 
@@ -310,8 +310,8 @@ These features make Strimma usable by most Libre and Dexcom companion-mode users
 | ~~**P0**~~ | ~~Plugin interface + source picker in Settings~~ | ~~Done. `GlucoseSource` enum with `COMPANION` and `XDRIP_BROADCAST`, Settings UI radio picker, wired through service + notification listener.~~ |
 | ~~**P0**~~ | ~~Notification listener source (current, any app)~~ | ~~Done. `GlucoseNotificationListener` parses CamAPS FX notifications in COMPANION mode.~~ |
 | ~~**P0**~~ | ~~xDrip broadcast receiver source~~ | ~~Done. `XdripBroadcastReceiver` receives `com.eveningoutpost.dexdrip.BgEstimate` in XDRIP_BROADCAST mode.~~ |
-| **P1** | Dexcom companion mode source | Read from official Dexcom G6/G7 app via broadcast or notification |
-| **P1** | Libre companion mode source | Read from LibreLink / Libre 3 app via broadcast or notification |
+| ~~**P1**~~ | ~~Dexcom companion mode source~~ | ~~Done. Already covered by `GlucoseNotificationListener` — 14 Dexcom package variants (G6/G7/ONE/D1+/Stelo, all regions) in the allowlist. No separate API exists; the official Dexcom app exposes data only via notifications.~~ |
+| ~~**P1**~~ | ~~Libre companion mode source~~ | ~~Done. Already covered by `GlucoseNotificationListener` — LibreLink and Libre 3 regional variants plus Juggluco (`tk.glucodata`) in the allowlist. No broadcast API exists in official Libre apps.~~ |
 | **P2** | Direct BLE: Dexcom G7/ONE+ | Direct connection without official app. Complex but well-documented protocol. |
 | **P2** | Direct BLE: Libre 2/2+ (via OOP2) | Requires out-of-process algorithm. Existing open-source implementations available. |
 | **P3** | Direct BLE: Libre 3 | Most complex — sensor bonds exclusively to one app. May require patched firmware. |
@@ -323,7 +323,7 @@ These features make Strimma usable by most Libre and Dexcom companion-mode users
 | ~~**P0**~~ | ~~BG broadcast (xDrip format)~~ | ~~Done (P2). Emits `com.eveningoutpost.dexdrip.BgEstimate`, verified with GDH.~~ |
 | ~~**P0**~~ | ~~Nightscout upload~~ | ~~Done. POST to any Nightscout server via standard `/api/v1/entries` format.~~ |
 | ~~**P0**~~ | ~~mg/dL toggle~~ | ~~Done (P2). GlucoseUnit enum, display-time conversion, internal storage stays mmol/L.~~ |
-| **P1** | Nightscout download (follower mode) | Pull readings from a Nightscout server. Enables parents/partners to follow. |
+| ~~**P1**~~ | ~~Nightscout download (follower mode)~~ | ~~Done. `NightscoutFollower` polls a remote Nightscout server. `GlucoseSource.NIGHTSCOUT_FOLLOWER` wired through service.~~ |
 | **P2** | Tidepool upload | Optional cloud sync for users who use Tidepool for clinic reports. |
 
 #### 3.3 Device Compatibility
@@ -342,8 +342,8 @@ These features make Strimma usable by most Libre and Dexcom companion-mode users
 | ~~**P0**~~ | ~~Open source license (GPL v3)~~ | ~~Done. GPL v3 license added.~~ |
 | ~~**P0**~~ | ~~README + setup guide~~ | ~~Done. README with setup guide added.~~ |
 | ~~**P0**~~ | ~~GitHub releases with signed APKs~~ | ~~Done. GitHub Actions release workflow added.~~ |
-| **P1** | Localization (English, Swedish baseline) | Extract all strings, set up `values-xx/strings.xml` structure. Community can contribute translations. |
-| **P1** | F-Droid listing | The de facto Android open-source app store. Builds from source. |
+| Deferred | Localization (English, Swedish baseline) | Extract all strings, set up `values-xx/strings.xml` structure. Low priority — English covers the user base. |
+| Deferred | F-Droid listing | GitHub releases with signed APKs already covers distribution. Revisit if community demand emerges. |
 | **P2** | Contribution guide | Architecture overview, how to add a data source plugin, how to run tests. |
 
 ### Phase 4: Full xDrip Parity
@@ -354,7 +354,7 @@ These close the remaining gaps for power users.
 |---------|-------|
 | **Calibration** | Manual calibration for sensors that need it (Libre 1/2 without factory calibration). Not needed for G7 or Libre 3. |
 | **Treatment logging** | Insulin doses, carbs, notes. xDrip has this but it's rarely used — most users track treatments in AAPS, mylife, or pen apps. |
-| **Prediction models** | AR2 model like Nightscout, or IOB-aware prediction for AAPS users. Current linear prediction is a good start. |
+| **Prediction models** | Current weighted least-squares with quadratic fitting is comparable to AR2. IOB-aware prediction requires insulin data (AAPS integration or treatment logging). Diminishing returns without new data sources. |
 | **Multiple watch platforms** | Garmin, Fitbit, Pebble. Wear OS first, others via companion data apps. |
 | **Android Auto** | BG display while driving. GDH has this. |
 | **Home screen floating widget** | Always-visible BG overlay. Juggluco has this. |
@@ -370,16 +370,20 @@ These xDrip+ features are not planned. Users who need them should continue using
 - **Tasker integration** — possible later via broadcast intents if there's demand
 - **InfoContentProvider** — broadcast intents provide the same data with better security
 
+### Phase 3 Status
+
+Phase 3 is substantially complete. All data source and data output work is done. The notification parsing architecture already covers Dexcom, Libre, Juggluco, and 60+ other CGM apps without app-specific code — there are no hidden APIs to integrate.
+
+**Remaining Phase 3 items** are either hardware-dependent (Wear OS, multi-device testing) or deferred (localization, F-Droid). These will be addressed when there's community demand or hardware availability.
+
 ### Effort Estimate
 
 | Phase | Scope | Effort |
 |-------|-------|--------|
-| Phase 3.1-3.2 (data abstraction + Nightscout + broadcast) | Core platform | Large — 2-4 weeks focused work |
-| Phase 3.3 (device compat + Wear OS) | Device breadth | Medium — 1-2 weeks |
-| Phase 3.4 (community infra) | Non-code | Small — 1 week |
+| ~~Phase 3.1-3.2 (data sources + Nightscout + broadcast)~~ | ~~Core platform~~ | ~~Done~~ |
+| Phase 3.3 (device compat + Wear OS) | Device breadth | Medium — requires hardware |
+| Phase 3.4 (community infra) | Non-code | Deferred — revisit on demand |
 | Phase 4 (full parity) | Long tail | Ongoing — community-driven |
-
-The critical path is now Phase 3.2 (follower mode, Tidepool) and 3.3 (Wear OS). The plugin interface, Nightscout upload, and community infra P0s are done.
 
 ### What Strimma brings to the table
 
@@ -398,16 +402,17 @@ The critical path is now Phase 3.2 (follower mode, Tidepool) and 3.3 (Wear OS). 
 
 These were out of scope for phase 1. The open-source roadmap adds them as goals:
 
-| Feature | Phase 1 | Open Source |
+| Feature | Phase 1 | Current Status |
 |---------|-------------|-------------|
-| BLE CGM collection | CamAPS notification only | Phase 3 (Dexcom G7, Libre 2/2+) |
+| BLE CGM collection | CamAPS notification only | Phase 4 (direct BLE — complex, requires reverse engineering) |
+| Companion mode (Dexcom, Libre) | CamAPS notification only | Done — 60+ CGM app packages in notification parser allowlist |
 | Calibration | Not needed for Libre 3 | Phase 4 (sensors that need it) |
 | Treatment tracking | Out of scope | Phase 4 (low priority) |
-| Watch sync | Via Nightscout | Phase 3 (Wear OS complications) |
-| Follower mode | Out of scope | Phase 3 (Nightscout download) |
-| Cloud sync | Nightscout (done) | Phase 3 (Nightscout download / follower mode) |
-| Multi-device | Android 16 only | Phase 3 (minSdk 33, multi-OEM) |
-| Distribution | Manual APK | Phase 3 (GitHub releases, F-Droid) |
-| AAPS integration | Out of scope | Phase 3 (BG broadcast) |
+| Watch sync | Via Nightscout | Deferred (requires Wear OS hardware) |
+| Follower mode | Out of scope | Done — `NightscoutFollower` polls remote server |
+| Cloud sync | Nightscout upload | Done — upload + follower mode |
+| Multi-device | Android 16 only | minSdk 33, multi-OEM testing deferred |
+| Distribution | Manual APK | Done — GitHub releases with signed APKs |
+| AAPS integration | Out of scope | Done — xDrip-compatible BG broadcast |
 | LibreView upload | Out of scope | Out of scope (Abbott's walled garden) |
 | Android Auto | Out of scope | Phase 4 |
