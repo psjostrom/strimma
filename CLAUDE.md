@@ -27,7 +27,7 @@ Single-module app. Hilt DI. All async via Coroutines/Flow.
 ## Project Structure
 
 - `data/` — Room entities, DAO, settings, direction computation, unit conversion, data source selection, statistics
-- `graph/` — Shared graph logic (colors, Y-range computation, critical thresholds) used by both Compose and notification renderers
+- `graph/` — Shared graph logic (colors, Y-range computation, critical thresholds) + weighted least-squares prediction with endpoint anchoring
 - `network/` — Nightscout HTTP client and push logic (Ktor, `/api/v1/entries`)
 - `notification/` — Foreground notification (collapsed/expanded with graph bitmap), alert manager
 - `receiver/` — Data source receivers (CamAPS notification parser, xDrip broadcast receiver), debug logging
