@@ -14,6 +14,8 @@ import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.Direction
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseUnit
+import com.psjostrom.strimma.graph.CrossingType
+import com.psjostrom.strimma.graph.PredictionComputer
 import com.psjostrom.strimma.ui.MainActivity
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -68,9 +70,22 @@ class NotificationHelper @Inject constructor(
         if (reading != null) {
             val direction = try { Direction.valueOf(reading.direction) } catch (_: Exception) { Direction.NONE }
             val bgText = glucoseUnit.format(reading.mmol)
-            val deltaText = reading.deltaMmol?.let {
+            val baseDelta = reading.deltaMmol?.let {
                 glucoseUnit.formatDelta(it)
             } ?: ""
+
+            val prediction = PredictionComputer.compute(recentReadings, predictionMinutes, bgLow, bgHigh)
+            val crossingText = prediction?.crossing?.let { crossing ->
+                when (crossing.type) {
+                    CrossingType.LOW -> "Low ${crossing.minutesUntil}m"
+                    CrossingType.HIGH -> "High ${crossing.minutesUntil}m"
+                }
+            }
+            val deltaText = if (crossingText != null && baseDelta.isNotEmpty()) {
+                "$baseDelta · $crossingText"
+            } else {
+                crossingText ?: baseDelta
+            }
 
             builder.setSmallIcon(createBgIcon(bgText))
 
