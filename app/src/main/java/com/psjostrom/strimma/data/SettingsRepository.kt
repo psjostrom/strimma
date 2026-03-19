@@ -8,7 +8,9 @@ import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import org.json.JSONObject
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -159,4 +161,110 @@ class SettingsRepository @Inject constructor(
 
     val customDIA: Flow<Float> = dataStore.data.map { it[KEY_CUSTOM_DIA] ?: 5.0f }
     suspend fun setCustomDIA(hours: Float) { dataStore.edit { it[KEY_CUSTOM_DIA] = hours } }
+
+    suspend fun exportToJson(): String {
+        val prefs = dataStore.data.first()
+        val widgetPrefs = context.getSharedPreferences("widget_prefs", Context.MODE_PRIVATE)
+
+        val settings = JSONObject().apply {
+            put("nightscout_url", prefs[KEY_NIGHTSCOUT_URL] ?: "")
+            put("graph_window_hours", prefs[KEY_GRAPH_WINDOW_HOURS] ?: 4)
+            put("bg_low", prefs[KEY_BG_LOW]?.toDouble() ?: 4.0)
+            put("bg_high", prefs[KEY_BG_HIGH]?.toDouble() ?: 10.0)
+            put("alert_low_enabled", prefs[KEY_ALERT_LOW_ENABLED] ?: true)
+            put("alert_high_enabled", prefs[KEY_ALERT_HIGH_ENABLED] ?: true)
+            put("alert_urgent_low_enabled", prefs[KEY_ALERT_URGENT_LOW_ENABLED] ?: true)
+            put("alert_urgent_high_enabled", prefs[KEY_ALERT_URGENT_HIGH_ENABLED] ?: true)
+            put("alert_low", prefs[KEY_ALERT_LOW]?.toDouble() ?: 4.0)
+            put("alert_high", prefs[KEY_ALERT_HIGH]?.toDouble() ?: 10.0)
+            put("alert_urgent_low", prefs[KEY_ALERT_URGENT_LOW]?.toDouble() ?: 3.0)
+            put("alert_urgent_high", prefs[KEY_ALERT_URGENT_HIGH]?.toDouble() ?: 13.0)
+            put("alert_stale_enabled", prefs[KEY_ALERT_STALE_ENABLED] ?: true)
+            put("alert_low_soon_enabled", prefs[KEY_ALERT_LOW_SOON_ENABLED] ?: true)
+            put("alert_high_soon_enabled", prefs[KEY_ALERT_HIGH_SOON_ENABLED] ?: true)
+            put("theme_mode", prefs[KEY_THEME_MODE] ?: "System")
+            put("notif_graph_minutes", prefs[KEY_NOTIF_GRAPH_MINUTES] ?: 60)
+            put("notif_prediction_minutes", prefs[KEY_NOTIF_PREDICTION_MINUTES] ?: 15)
+            put("glucose_unit", prefs[KEY_GLUCOSE_UNIT] ?: "MMOL")
+            put("bg_broadcast_enabled", prefs[KEY_BG_BROADCAST_ENABLED] ?: false)
+            put("glucose_source", prefs[KEY_GLUCOSE_SOURCE] ?: "COMPANION")
+            put("follower_url", prefs[KEY_FOLLOWER_URL] ?: "")
+            put("follower_poll_seconds", prefs[KEY_FOLLOWER_POLL_SECONDS] ?: 60)
+        }
+
+        val secrets = JSONObject().apply {
+            put("nightscout_secret", getNightscoutSecret())
+            put("follower_secret", getFollowerSecret())
+        }
+
+        val widget = JSONObject().apply {
+            put("opacity", widgetPrefs.getFloat("opacity", 0.85f).toDouble())
+            put("graph_minutes", widgetPrefs.getInt("graph_minutes", 60))
+            put("show_prediction", widgetPrefs.getBoolean("show_prediction", false))
+        }
+
+        return JSONObject().apply {
+            put("version", 1)
+            put("exported_at", java.time.Instant.now().toString())
+            put("settings", settings)
+            put("secrets", secrets)
+            put("widget", widget)
+        }.toString(2)
+    }
+
+    suspend fun importFromJson(json: String) {
+        val root = JSONObject(json)
+        val settings = root.getJSONObject("settings")
+
+        dataStore.edit { prefs ->
+            if (settings.has("nightscout_url")) prefs[KEY_NIGHTSCOUT_URL] = settings.getString("nightscout_url")
+            if (settings.has("graph_window_hours")) prefs[KEY_GRAPH_WINDOW_HOURS] = settings.getInt("graph_window_hours")
+            if (settings.has("bg_low")) prefs[KEY_BG_LOW] = settings.getDouble("bg_low").toFloat()
+            if (settings.has("bg_high")) prefs[KEY_BG_HIGH] = settings.getDouble("bg_high").toFloat()
+            if (settings.has("alert_low_enabled")) prefs[KEY_ALERT_LOW_ENABLED] = settings.getBoolean("alert_low_enabled")
+            if (settings.has("alert_high_enabled")) prefs[KEY_ALERT_HIGH_ENABLED] = settings.getBoolean("alert_high_enabled")
+            if (settings.has("alert_urgent_low_enabled")) prefs[KEY_ALERT_URGENT_LOW_ENABLED] = settings.getBoolean("alert_urgent_low_enabled")
+            if (settings.has("alert_urgent_high_enabled")) prefs[KEY_ALERT_URGENT_HIGH_ENABLED] = settings.getBoolean("alert_urgent_high_enabled")
+            if (settings.has("alert_low")) prefs[KEY_ALERT_LOW] = settings.getDouble("alert_low").toFloat()
+            if (settings.has("alert_high")) prefs[KEY_ALERT_HIGH] = settings.getDouble("alert_high").toFloat()
+            if (settings.has("alert_urgent_low")) prefs[KEY_ALERT_URGENT_LOW] = settings.getDouble("alert_urgent_low").toFloat()
+            if (settings.has("alert_urgent_high")) prefs[KEY_ALERT_URGENT_HIGH] = settings.getDouble("alert_urgent_high").toFloat()
+            if (settings.has("alert_stale_enabled")) prefs[KEY_ALERT_STALE_ENABLED] = settings.getBoolean("alert_stale_enabled")
+            if (settings.has("alert_low_soon_enabled")) prefs[KEY_ALERT_LOW_SOON_ENABLED] = settings.getBoolean("alert_low_soon_enabled")
+            if (settings.has("alert_high_soon_enabled")) prefs[KEY_ALERT_HIGH_SOON_ENABLED] = settings.getBoolean("alert_high_soon_enabled")
+            if (settings.has("theme_mode")) prefs[KEY_THEME_MODE] = settings.getString("theme_mode")
+            if (settings.has("notif_graph_minutes")) prefs[KEY_NOTIF_GRAPH_MINUTES] = settings.getInt("notif_graph_minutes")
+            if (settings.has("notif_prediction_minutes")) prefs[KEY_NOTIF_PREDICTION_MINUTES] = settings.getInt("notif_prediction_minutes")
+            if (settings.has("glucose_unit")) prefs[KEY_GLUCOSE_UNIT] = settings.getString("glucose_unit")
+            if (settings.has("bg_broadcast_enabled")) prefs[KEY_BG_BROADCAST_ENABLED] = settings.getBoolean("bg_broadcast_enabled")
+            if (settings.has("glucose_source")) prefs[KEY_GLUCOSE_SOURCE] = settings.getString("glucose_source")
+            if (settings.has("follower_url")) prefs[KEY_FOLLOWER_URL] = settings.getString("follower_url")
+            if (settings.has("follower_poll_seconds")) prefs[KEY_FOLLOWER_POLL_SECONDS] = settings.getInt("follower_poll_seconds")
+
+            // Sync glucose source to SharedPreferences atomically with DataStore edit
+            val sourceName = settings.optString("glucose_source", "COMPANION")
+            context.getSharedPreferences(SYNC_PREFS, Context.MODE_PRIVATE)
+                .edit().putString(KEY_GLUCOSE_SOURCE_SYNC, sourceName).commit()
+        }
+
+        if (root.has("secrets")) {
+            val secrets = root.getJSONObject("secrets")
+            if (secrets.has("nightscout_secret")) setNightscoutSecret(secrets.getString("nightscout_secret"))
+            if (secrets.has("follower_secret")) setFollowerSecret(secrets.getString("follower_secret"))
+        }
+
+        if (root.has("widget")) {
+            val widget = root.getJSONObject("widget")
+            val validGraphMinutes = setOf(30, 60, 120, 180)
+            context.getSharedPreferences("widget_prefs", Context.MODE_PRIVATE).edit().apply {
+                if (widget.has("opacity")) putFloat("opacity", widget.getDouble("opacity").toFloat().coerceIn(0f, 1f))
+                if (widget.has("graph_minutes")) {
+                    val mins = widget.getInt("graph_minutes")
+                    if (mins in validGraphMinutes) putInt("graph_minutes", mins)
+                }
+                if (widget.has("show_prediction")) putBoolean("show_prediction", widget.getBoolean("show_prediction"))
+                apply()
+            }
+        }
+    }
 }

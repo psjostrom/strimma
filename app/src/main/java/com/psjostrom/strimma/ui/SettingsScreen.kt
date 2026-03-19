@@ -85,7 +85,9 @@ fun SettingsScreen(
     onBack: () -> Unit,
     onStats: () -> Unit = {},
     onWidgetSettings: () -> Unit = {},
-    onDebugLog: () -> Unit = {}
+    onDebugLog: () -> Unit = {},
+    onExportSettings: () -> Unit = {},
+    onImportSettings: () -> Unit = {}
 ) {
     val bg = MaterialTheme.colorScheme.background
     val onBg = MaterialTheme.colorScheme.onBackground
@@ -531,6 +533,19 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Widget Settings")
+                }
+                HorizontalDivider(color = outlineVar)
+                OutlinedButton(
+                    onClick = onExportSettings,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Export Settings")
+                }
+                OutlinedButton(
+                    onClick = onImportSettings,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Import Settings")
                 }
             }
 

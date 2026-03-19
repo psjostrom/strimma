@@ -174,6 +174,10 @@ class MainViewModel @Inject constructor(
         IOBComputer.computeIOB(treatments, System.currentTimeMillis(), tau)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
+    suspend fun exportSettings(): String = settings.exportToJson()
+
+    suspend fun importSettings(json: String) = settings.importFromJson(json)
+
     suspend fun readingsForPeriod(hours: Int): List<GlucoseReading> {
         val since = System.currentTimeMillis() - hours * 3600_000L
         return dao.since(since)
