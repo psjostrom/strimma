@@ -95,5 +95,9 @@ lint-results*.xml
 # Release keystore (decoded from CI secrets)
 app/release.keystore
 
+# Environment files
+.env
+.env.*
+
 # Claude
 .claude.local.md
