@@ -47,6 +47,8 @@ class SettingsRepository @Inject constructor(
         private val KEY_ALERT_URGENT_HIGH_ENABLED = booleanPreferencesKey("alert_urgent_high_enabled")
         private val KEY_ALERT_URGENT_HIGH = floatPreferencesKey("alert_urgent_high")
         private val KEY_ALERT_STALE_ENABLED = booleanPreferencesKey("alert_stale_enabled")
+        private val KEY_ALERT_LOW_SOON_ENABLED = booleanPreferencesKey("alert_low_soon_enabled")
+        private val KEY_ALERT_HIGH_SOON_ENABLED = booleanPreferencesKey("alert_high_soon_enabled")
         private val KEY_THEME_MODE = stringPreferencesKey("theme_mode")
         private val KEY_NOTIF_GRAPH_MINUTES = intPreferencesKey("notif_graph_minutes")
         private val KEY_NOTIF_PREDICTION_MINUTES = intPreferencesKey("notif_prediction_minutes")
@@ -75,6 +77,8 @@ class SettingsRepository @Inject constructor(
     val alertUrgentHighEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_URGENT_HIGH_ENABLED] ?: true }
     val alertUrgentHigh: Flow<Float> = dataStore.data.map { it[KEY_ALERT_URGENT_HIGH] ?: 13.0f }
     val alertStaleEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_STALE_ENABLED] ?: true }
+    val alertLowSoonEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_LOW_SOON_ENABLED] ?: true }
+    val alertHighSoonEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_HIGH_SOON_ENABLED] ?: true }
 
     suspend fun setNightscoutUrl(url: String) { dataStore.edit { it[KEY_NIGHTSCOUT_URL] = url } }
     suspend fun setGraphWindowHours(hours: Int) { dataStore.edit { it[KEY_GRAPH_WINDOW_HOURS] = hours } }
@@ -95,6 +99,8 @@ class SettingsRepository @Inject constructor(
     suspend fun setAlertUrgentHighEnabled(enabled: Boolean) { dataStore.edit { it[KEY_ALERT_URGENT_HIGH_ENABLED] = enabled } }
     suspend fun setAlertUrgentHigh(value: Float) { dataStore.edit { it[KEY_ALERT_URGENT_HIGH] = value } }
     suspend fun setAlertStaleEnabled(enabled: Boolean) { dataStore.edit { it[KEY_ALERT_STALE_ENABLED] = enabled } }
+    suspend fun setAlertLowSoonEnabled(enabled: Boolean) { dataStore.edit { it[KEY_ALERT_LOW_SOON_ENABLED] = enabled } }
+    suspend fun setAlertHighSoonEnabled(enabled: Boolean) { dataStore.edit { it[KEY_ALERT_HIGH_SOON_ENABLED] = enabled } }
 
     val themeMode: Flow<String> = dataStore.data.map { it[KEY_THEME_MODE] ?: "System" }
     suspend fun setThemeMode(mode: String) { dataStore.edit { it[KEY_THEME_MODE] = mode } }
@@ -102,8 +108,8 @@ class SettingsRepository @Inject constructor(
     val notifGraphMinutes: Flow<Int> = dataStore.data.map { it[KEY_NOTIF_GRAPH_MINUTES] ?: 60 }
     suspend fun setNotifGraphMinutes(minutes: Int) { dataStore.edit { it[KEY_NOTIF_GRAPH_MINUTES] = minutes } }
 
-    val notifPredictionMinutes: Flow<Int> = dataStore.data.map { it[KEY_NOTIF_PREDICTION_MINUTES] ?: 10 }
-    suspend fun setNotifPredictionMinutes(minutes: Int) { dataStore.edit { it[KEY_NOTIF_PREDICTION_MINUTES] = minutes } }
+    val predictionMinutes: Flow<Int> = dataStore.data.map { it[KEY_NOTIF_PREDICTION_MINUTES] ?: 15 }
+    suspend fun setPredictionMinutes(minutes: Int) { dataStore.edit { it[KEY_NOTIF_PREDICTION_MINUTES] = minutes } }
 
     val glucoseUnit: Flow<GlucoseUnit> = dataStore.data.map {
         try { GlucoseUnit.valueOf(it[KEY_GLUCOSE_UNIT] ?: "MMOL") } catch (_: Exception) { GlucoseUnit.MMOL }

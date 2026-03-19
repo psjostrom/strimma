@@ -16,7 +16,9 @@ import androidx.glance.appwidget.GlanceAppWidgetManager
 import com.psjostrom.strimma.widget.StrimmaWidget
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -35,10 +37,24 @@ class StrimmaService : Service() {
     private var xdripReceiver: XdripBroadcastReceiver? = null
     private var followerJob: Job? = null
 
+    private lateinit var predMinutes: StateFlow<Int>
+    private lateinit var notifGraphMinutes: StateFlow<Int>
+    private lateinit var glucoseUnit: StateFlow<GlucoseUnit>
+    private lateinit var bgLow: StateFlow<Float>
+    private lateinit var bgHigh: StateFlow<Float>
+    private lateinit var bgBroadcastEnabled: StateFlow<Boolean>
+
     override fun onCreate() {
         super.onCreate()
         notificationHelper.createChannel()
         alertManager.createChannels()
+
+        predMinutes = settings.predictionMinutes.stateIn(scope, SharingStarted.Eagerly, 15)
+        notifGraphMinutes = settings.notifGraphMinutes.stateIn(scope, SharingStarted.Eagerly, 60)
+        glucoseUnit = settings.glucoseUnit.stateIn(scope, SharingStarted.Eagerly, GlucoseUnit.MMOL)
+        bgLow = settings.bgLow.stateIn(scope, SharingStarted.Eagerly, 4.0f)
+        bgHigh = settings.bgHigh.stateIn(scope, SharingStarted.Eagerly, 10.0f)
+        bgBroadcastEnabled = settings.bgBroadcastEnabled.stateIn(scope, SharingStarted.Eagerly, false)
 
         startForeground(
             NotificationHelper.NOTIFICATION_ID,
@@ -82,7 +98,7 @@ class StrimmaService : Service() {
         scope.launch {
             while (isActive) {
                 delay(60_000L)
-                val latest = dao.latest().first()
+                val latest = dao.latestOnce()
                 alertManager.checkStale(latest?.ts)
             }
         }
@@ -136,7 +152,8 @@ class StrimmaService : Service() {
         if (followerJob != null) return
         followerJob = nightscoutFollower.start(scope) { reading ->
             updateNotification()
-            alertManager.checkReading(reading)
+            val alertReadings = dao.since(reading.ts - 15 * 60_000L)
+            alertManager.checkReading(reading, alertReadings, predMinutes.value)
             broadcastBgIfEnabled(reading)
             try {
                 val mgr = GlanceAppWidgetManager(this@StrimmaService)
@@ -178,7 +195,9 @@ class StrimmaService : Service() {
         DebugLog.log("Stored: ${reading.mmol} ${direction.arrow}")
         pusher.pushReading(reading)
         updateNotification()
-        alertManager.checkReading(reading)
+        // PredictionComputer uses 12-min lookback internally; 15 min ensures sufficient history
+        val alertReadings = dao.since(timestamp - 15 * 60_000L)
+        alertManager.checkReading(reading, alertReadings, predMinutes.value)
         broadcastBgIfEnabled(reading)
         try {
             val mgr = GlanceAppWidgetManager(this@StrimmaService)
@@ -189,19 +208,17 @@ class StrimmaService : Service() {
     }
 
     private suspend fun updateNotification() {
-        val latest = dao.latest().first()
-        val notifMinutes = settings.notifGraphMinutes.first()
-        val predMinutes = settings.notifPredictionMinutes.first()
-        val glucoseUnit = settings.glucoseUnit.first()
-        val graphWindowMs = notifMinutes * 60_000L
+        val latest = dao.latestOnce()
+        val graphWindowMs = notifGraphMinutes.value.toLong() * 60_000L
         val recent = dao.since(System.currentTimeMillis() - graphWindowMs)
-        val bgLow = settings.bgLow.first().toDouble()
-        val bgHigh = settings.bgHigh.first().toDouble()
-        notificationHelper.updateNotification(latest, recent, bgLow, bgHigh, graphWindowMs, predMinutes, glucoseUnit)
+        notificationHelper.updateNotification(
+            latest, recent, bgLow.value.toDouble(), bgHigh.value.toDouble(),
+            graphWindowMs, predMinutes.value, glucoseUnit.value
+        )
     }
 
-    private suspend fun broadcastBgIfEnabled(reading: com.psjostrom.strimma.data.GlucoseReading) {
-        if (!settings.bgBroadcastEnabled.first()) return
+    private fun broadcastBgIfEnabled(reading: com.psjostrom.strimma.data.GlucoseReading) {
+        if (!bgBroadcastEnabled.value) return
         val intent = Intent("com.eveningoutpost.dexdrip.BgEstimate").apply {
             putExtra("com.eveningoutpost.dexdrip.Extras.BgEstimate", reading.sgv.toDouble())
             putExtra("com.eveningoutpost.dexdrip.Extras.Raw", reading.sgv.toDouble())

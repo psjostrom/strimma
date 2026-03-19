@@ -82,8 +82,10 @@ class MainActivity : ComponentActivity() {
                 val alertUrgentHighEnabled by viewModel.alertUrgentHighEnabled.collectAsState()
                 val alertUrgentHigh by viewModel.alertUrgentHigh.collectAsState()
                 val alertStaleEnabled by viewModel.alertStaleEnabled.collectAsState()
+                val alertLowSoonEnabled by viewModel.alertLowSoonEnabled.collectAsState()
+                val alertHighSoonEnabled by viewModel.alertHighSoonEnabled.collectAsState()
                 val notifGraphMinutes by viewModel.notifGraphMinutes.collectAsState()
-                val notifPredictionMinutes by viewModel.notifPredictionMinutes.collectAsState()
+                val predictionMinutes by viewModel.predictionMinutes.collectAsState()
                 val glucoseUnit by viewModel.glucoseUnit.collectAsState()
                 val bgBroadcastEnabled by viewModel.bgBroadcastEnabled.collectAsState()
                 val glucoseSource by viewModel.glucoseSource.collectAsState()
@@ -99,6 +101,7 @@ class MainActivity : ComponentActivity() {
                             bgLow = bgLow,
                             bgHigh = bgHigh,
                             graphWindowHours = graphWindowHours,
+                            predictionMinutes = predictionMinutes,
                             glucoseUnit = glucoseUnit,
                             followerStatus = followerStatus,
                             onSettingsClick = {
@@ -123,7 +126,7 @@ class MainActivity : ComponentActivity() {
                             bgHigh = bgHigh,
                             themeMode = themeModeStr,
                             notifGraphMinutes = notifGraphMinutes,
-                            notifPredictionMinutes = notifPredictionMinutes,
+                            predictionMinutes = predictionMinutes,
                             glucoseUnit = glucoseUnit,
                             bgBroadcastEnabled = bgBroadcastEnabled,
                             alertLowEnabled = alertLowEnabled,
@@ -135,6 +138,8 @@ class MainActivity : ComponentActivity() {
                             alertUrgentLow = alertUrgentLow,
                             alertUrgentHigh = alertUrgentHigh,
                             alertStaleEnabled = alertStaleEnabled,
+                            alertLowSoonEnabled = alertLowSoonEnabled,
+                            alertHighSoonEnabled = alertHighSoonEnabled,
                             onGlucoseSourceChange = viewModel::setGlucoseSource,
                             onNightscoutUrlChange = viewModel::setNightscoutUrl,
                             onNightscoutSecretChange = viewModel::setNightscoutSecret,
@@ -149,7 +154,7 @@ class MainActivity : ComponentActivity() {
                             onBgHighChange = viewModel::setBgHigh,
                             onThemeModeChange = viewModel::setThemeMode,
                             onNotifGraphMinutesChange = viewModel::setNotifGraphMinutes,
-                            onNotifPredictionMinutesChange = viewModel::setNotifPredictionMinutes,
+                            onPredictionMinutesChange = viewModel::setPredictionMinutes,
                             onGlucoseUnitChange = viewModel::setGlucoseUnit,
                             onBgBroadcastEnabledChange = viewModel::setBgBroadcastEnabled,
                             onAlertLowEnabledChange = viewModel::setAlertLowEnabled,
@@ -161,6 +166,8 @@ class MainActivity : ComponentActivity() {
                             onAlertUrgentLowChange = viewModel::setAlertUrgentLow,
                             onAlertUrgentHighChange = viewModel::setAlertUrgentHigh,
                             onAlertStaleEnabledChange = viewModel::setAlertStaleEnabled,
+                            onAlertLowSoonEnabledChange = viewModel::setAlertLowSoonEnabled,
+                            onAlertHighSoonEnabledChange = viewModel::setAlertHighSoonEnabled,
                             onOpenAlertSound = viewModel::openAlertChannelSettings,
                             onBack = { navController.popBackStack() },
                             onStats = {

@@ -47,6 +47,7 @@ fun MainScreen(
     bgLow: Float,
     bgHigh: Float,
     graphWindowHours: Int,
+    predictionMinutes: Int = 15,
     glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
     followerStatus: FollowerStatus = FollowerStatus.Idle,
     onSettingsClick: () -> Unit,
@@ -54,11 +55,11 @@ fun MainScreen(
 ) {
     val mainWindowMs = graphWindowHours * 3600_000L
 
-    var viewportEnd by remember { mutableLongStateOf(System.currentTimeMillis() + 15 * 60_000L) }
+    val predictionMs = predictionMinutes * 60_000L
+    var viewportEnd by remember { mutableLongStateOf(System.currentTimeMillis() + predictionMs) }
     var zoomScale by remember { mutableFloatStateOf(1f) }
 
-    // Auto-track "now" + 15 min of prediction space when viewport is near current time
-    val predictionMs = 15 * 60_000L
+    // Auto-track "now" + prediction space when viewport is near current time
     LaunchedEffect(readings) {
         val now = System.currentTimeMillis()
         if (now + predictionMs - viewportEnd < 2 * 60 * 1000) {
@@ -100,7 +101,7 @@ fun MainScreen(
                 .padding(horizontal = 16.dp)
         ) {
             val crossing = remember(readings, bgLow, bgHigh) {
-                PredictionComputer.compute(readings, 15, bgLow.toDouble(), bgHigh.toDouble())?.crossing
+                PredictionComputer.compute(readings, predictionMinutes, bgLow.toDouble(), bgHigh.toDouble())?.crossing
             }
             BgHeader(latestReading, bgLow, bgHigh, glucoseUnit, crossing, followerStatus)
 
@@ -124,6 +125,7 @@ fun MainScreen(
                     windowMs = mainWindowMs,
                     viewportEnd = viewportEnd,
                     zoomScale = zoomScale,
+                    predictionMinutes = predictionMinutes,
                     glucoseUnit = glucoseUnit,
                     onViewportChange = { viewportEnd = it },
                     onZoomChange = { zoomScale = it },
@@ -284,11 +286,13 @@ fun GlucoseGraph(
     windowMs: Long,
     viewportEnd: Long,
     zoomScale: Float,
+    predictionMinutes: Int = 15,
     glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
     onViewportChange: (Long) -> Unit,
     onZoomChange: (Float) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val predictionMs = predictionMinutes * 60_000L
     var selectedReading by remember { mutableStateOf<GlucoseReading?>(null) }
     // Capture theme colors for use inside Canvas
     val axisColor = MaterialTheme.colorScheme.onSurfaceVariant
@@ -318,7 +322,7 @@ fun GlucoseGraph(
                     val msPerPx = currentVisibleMs / plotWidth
                     val timeShift = (-pan.x * msPerPx).toLong()
                     val now = System.currentTimeMillis()
-                    val maxEnd = now + 15 * 60_000L // prediction space
+                    val maxEnd = now + predictionMs // prediction space
                     val newEnd = (viewportEnd + timeShift).coerceIn(
                         readings.minOfOrNull { it.ts }?.plus(currentVisibleMs.toLong()) ?: maxEnd,
                         maxEnd
@@ -416,7 +420,7 @@ fun GlucoseGraph(
         }
 
         // Prediction curve (least-squares fit to last 12 min of readings)
-        val prediction = PredictionComputer.compute(readings, 15, bgLow, bgHigh)
+        val prediction = PredictionComputer.compute(readings, predictionMinutes, bgLow, bgHigh)
         if (prediction != null) {
             val predColor = predictionColor
             val predDash = PathEffect.dashPathEffect(floatArrayOf(6f, 6f))
