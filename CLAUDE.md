@@ -37,7 +37,7 @@ Single-module app. Hilt DI. All async via Coroutines/Flow.
 
 ## Conventions
 
-- **Colors:** InRange=cyan (#56CCF2), AboveHigh=amber (#FFBE76), BelowLow=coral (#FF6B6B). Defined in `ui/theme/Color.kt` (Compose, prefixed `Dark`/`Light`) and `graph/GraphColors.kt` (Canvas int constants, prefixed `CANVAS_`). Keep in sync.
+- **Colors:** InRange=cyan (#56CCF2), AboveHigh=amber (#FFB800), BelowLow=coral (#FF4D6A). Defined in `ui/theme/Color.kt` (Compose, prefixed `Dark`/`Light`) and `graph/GraphColors.kt` (Canvas int constants, prefixed `CANVAS_`). Keep in sync.
 - **Theme:** Dark/Light/System via `ThemeMode` enum. Graphs always render on dark surfaces regardless of theme mode.
 - **Direction:** Computed locally via 3-point averaged SGV + EASD/ISPAD thresholds. Never trust CamAPS broadcast direction.
 - **Units:** Configurable mmol/L or mg/dL via `GlucoseUnit` enum. Store internally as mmol/L, convert at display time. SGV stored as mg/dL (Nightscout protocol). Conversion factor: `18.0182`.
