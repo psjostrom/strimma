@@ -16,6 +16,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.psjostrom.strimma.network.FollowerStatus
 import com.psjostrom.strimma.receiver.GlucoseNotificationListener
 import com.psjostrom.strimma.service.StrimmaService
 import com.psjostrom.strimma.ui.theme.StrimmaTheme
@@ -86,6 +87,9 @@ class MainActivity : ComponentActivity() {
                 val glucoseUnit by viewModel.glucoseUnit.collectAsState()
                 val bgBroadcastEnabled by viewModel.bgBroadcastEnabled.collectAsState()
                 val glucoseSource by viewModel.glucoseSource.collectAsState()
+                val followerStatus by viewModel.followerStatus.collectAsState()
+                val followerUrl by viewModel.followerUrl.collectAsState()
+                val followerPollSeconds by viewModel.followerPollSeconds.collectAsState()
 
                 NavHost(navController, startDestination = "main") {
                     composable("main") {
@@ -96,6 +100,7 @@ class MainActivity : ComponentActivity() {
                             bgHigh = bgHigh,
                             graphWindowHours = graphWindowHours,
                             glucoseUnit = glucoseUnit,
+                            followerStatus = followerStatus,
                             onSettingsClick = {
                                 navController.navigate("settings") {
                                     launchSingleTop = true
@@ -133,6 +138,12 @@ class MainActivity : ComponentActivity() {
                             onGlucoseSourceChange = viewModel::setGlucoseSource,
                             onNightscoutUrlChange = viewModel::setNightscoutUrl,
                             onNightscoutSecretChange = viewModel::setNightscoutSecret,
+                            followerUrl = followerUrl,
+                            followerSecret = viewModel.followerSecret,
+                            followerPollSeconds = followerPollSeconds,
+                            onFollowerUrlChange = viewModel::setFollowerUrl,
+                            onFollowerSecretChange = viewModel::setFollowerSecret,
+                            onFollowerPollSecondsChange = viewModel::setFollowerPollSeconds,
                             onGraphWindowChange = viewModel::setGraphWindowHours,
                             onBgLowChange = viewModel::setBgLow,
                             onBgHighChange = viewModel::setBgHigh,

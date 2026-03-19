@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.IBinder
 import com.psjostrom.strimma.data.*
+import com.psjostrom.strimma.network.NightscoutFollower
 import com.psjostrom.strimma.network.NightscoutPusher
 import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.notification.NotificationHelper
@@ -27,10 +28,12 @@ class StrimmaService : Service() {
     @Inject lateinit var notificationHelper: NotificationHelper
     @Inject lateinit var alertManager: AlertManager
     @Inject lateinit var settings: SettingsRepository
+    @Inject lateinit var nightscoutFollower: NightscoutFollower
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var pruneJob: Job? = null
     private var xdripReceiver: XdripBroadcastReceiver? = null
+    private var followerJob: Job? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -45,13 +48,14 @@ class StrimmaService : Service() {
 
         DebugLog.log("Service started")
 
-        registerXdripReceiverIfNeeded()
         scope.launch {
             settings.glucoseSource.collect { source ->
-                if (source == GlucoseSource.XDRIP_BROADCAST) {
-                    registerXdripReceiver()
-                } else {
-                    unregisterXdripReceiver()
+                unregisterXdripReceiver()
+                stopFollower()
+                when (source) {
+                    GlucoseSource.COMPANION -> { }
+                    GlucoseSource.XDRIP_BROADCAST -> registerXdripReceiver()
+                    GlucoseSource.NIGHTSCOUT_FOLLOWER -> startFollower()
                 }
             }
         }
@@ -99,6 +103,7 @@ class StrimmaService : Service() {
 
     override fun onDestroy() {
         unregisterXdripReceiver()
+        stopFollower()
         pruneJob?.cancel()
         scope.cancel()
         super.onDestroy()
@@ -125,6 +130,29 @@ class StrimmaService : Service() {
             xdripReceiver = null
             DebugLog.log("xDrip broadcast receiver unregistered")
         }
+    }
+
+    private fun startFollower() {
+        if (followerJob != null) return
+        followerJob = nightscoutFollower.start(scope) { reading ->
+            updateNotification()
+            alertManager.checkReading(reading)
+            broadcastBgIfEnabled(reading)
+            try {
+                val mgr = GlanceAppWidgetManager(this@StrimmaService)
+                mgr.getGlanceIds(StrimmaWidget::class.java).forEach { id ->
+                    StrimmaWidget().update(this@StrimmaService, id)
+                }
+            } catch (_: Exception) {}
+        }
+        DebugLog.log("Nightscout follower started")
+    }
+
+    private fun stopFollower() {
+        followerJob?.cancel()
+        followerJob = null
+        nightscoutFollower.stop()
+        DebugLog.log("Nightscout follower stopped")
     }
 
     private suspend fun processReading(mmol: Double, timestamp: Long) {
