@@ -1,7 +1,7 @@
 package com.psjostrom.strimma.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
@@ -16,7 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -105,14 +104,18 @@ fun MainScreen(
             }
             BgHeader(latestReading, bgLow, bgHigh, glucoseUnit, crossing, followerStatus)
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            val cardShape = RoundedCornerShape(16.dp)
+            val cardBorder = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
 
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant
+                shape = cardShape,
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                border = cardBorder
             ) {
                 GlucoseGraph(
                     readings = readings,
@@ -135,7 +138,8 @@ fun MainScreen(
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                border = cardBorder
             ) {
                 Minimap(
                     readings = readings,
@@ -149,7 +153,7 @@ fun MainScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
@@ -179,97 +183,93 @@ private fun BgHeader(reading: GlucoseReading?, bgLow: Float, bgHigh: Float, gluc
         else -> InRange
     }
 
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(
-                Brush.radialGradient(
-                    colors = listOf(bgColor.copy(alpha = 0.10f), Color.Transparent),
-                    radius = 400f
-                )
-            )
             .padding(vertical = 8.dp),
-        contentAlignment = Alignment.Center
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+        // Hero value + direction
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = reading?.let { glucoseUnit.format(it.mmol) } ?: "--",
+                color = bgColor,
+                fontSize = 64.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = " ${direction.arrow}",
+                color = bgColor,
+                fontSize = 40.sp
+            )
+        }
+
+        // Delta + timestamp on one line
+        val timeText = when {
+            minutesAgo < 0 -> "No data"
+            minutesAgo == 0 -> "Just now"
+            else -> "$minutesAgo min ago"
+        }
+        val subtitleParts = buildList {
+            reading?.deltaMmol?.let { add(glucoseUnit.formatDelta(it)) }
+            add(timeText)
+        }
+        Text(
+            text = subtitleParts.joinToString(" · "),
+            color = if (isStale) BelowLow else MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 14.sp
+        )
+
+        // Prediction warning as pill
+        if (crossing != null) {
+            val crossingColor = when (crossing.type) {
+                CrossingType.LOW -> BelowLow
+                CrossingType.HIGH -> AboveHigh
+            }
+            val crossingText = when (crossing.type) {
+                CrossingType.LOW -> "Low in ${crossing.minutesUntil} min"
+                CrossingType.HIGH -> "High in ${crossing.minutesUntil} min"
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = crossingColor.copy(alpha = 0.12f)
             ) {
-                Text(
-                    text = reading?.let { glucoseUnit.format(it.mmol) } ?: "--",
-                    color = bgColor,
-                    fontSize = 64.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = " ${direction.arrow}",
-                    color = bgColor,
-                    fontSize = 40.sp
-                )
-            }
-
-            if (reading?.deltaMmol != null) {
-                Text(
-                    text = glucoseUnit.formatDelta(reading.deltaMmol),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 15.sp
-                )
-            }
-
-            if (crossing != null) {
-                val crossingColor = when (crossing.type) {
-                    CrossingType.LOW -> BelowLow
-                    CrossingType.HIGH -> AboveHigh
-                }
-                val crossingText = when (crossing.type) {
-                    CrossingType.LOW -> "Low in ${crossing.minutesUntil} min"
-                    CrossingType.HIGH -> "High in ${crossing.minutesUntil} min"
-                }
-                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = crossingText,
                     color = crossingColor,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Medium
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                 )
             }
+        }
 
-            Spacer(modifier = Modifier.height(2.dp))
-
+        if (followerStatus !is FollowerStatus.Idle) {
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = when {
-                    minutesAgo < 0 -> "No data"
-                    minutesAgo == 0 -> "Just now"
-                    else -> "$minutesAgo min ago"
+                text = when (followerStatus) {
+                    is FollowerStatus.Connecting -> "Following \u00b7 connecting\u2026"
+                    is FollowerStatus.Connected -> {
+                        val secsAgo = ((System.currentTimeMillis() - followerStatus.lastPollTs) / 1000).toInt()
+                        if (secsAgo < 60) "Following \u00b7 ${secsAgo}s ago"
+                        else "Following \u00b7 ${secsAgo / 60}m ago"
+                    }
+                    is FollowerStatus.Disconnected -> {
+                        val minsAgo = ((System.currentTimeMillis() - followerStatus.since) / 60_000).toInt()
+                        "Following \u00b7 connection lost${if (minsAgo > 0) " ${minsAgo}m" else ""}"
+                    }
+                    else -> ""
                 },
-                color = if (isStale) BelowLow else MaterialTheme.colorScheme.outline,
-                fontSize = 13.sp
+                color = when (followerStatus) {
+                    is FollowerStatus.Disconnected -> BelowLow
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                fontSize = 12.sp
             )
-
-            if (followerStatus !is FollowerStatus.Idle) {
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = when (followerStatus) {
-                        is FollowerStatus.Connecting -> "Following \u00b7 connecting\u2026"
-                        is FollowerStatus.Connected -> {
-                            val secsAgo = ((System.currentTimeMillis() - followerStatus.lastPollTs) / 1000).toInt()
-                            if (secsAgo < 60) "Following \u00b7 ${secsAgo}s ago"
-                            else "Following \u00b7 ${secsAgo / 60}m ago"
-                        }
-                        is FollowerStatus.Disconnected -> {
-                            val minsAgo = ((System.currentTimeMillis() - followerStatus.since) / 60_000).toInt()
-                            "Following \u00b7 connection lost${if (minsAgo > 0) " ${minsAgo}m" else ""}"
-                        }
-                        else -> ""
-                    },
-                    color = when (followerStatus) {
-                        is FollowerStatus.Disconnected -> BelowLow
-                        else -> MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-                    fontSize = 12.sp
-                )
-            }
         }
     }
 }
