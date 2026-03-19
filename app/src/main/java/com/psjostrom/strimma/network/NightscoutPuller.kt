@@ -1,7 +1,7 @@
 package com.psjostrom.strimma.network
 
 import com.psjostrom.strimma.data.DirectionComputer
-import com.psjostrom.strimma.data.GlucoseReading
+import com.psjostrom.strimma.data.GlucoseSource
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.receiver.DebugLog
@@ -17,7 +17,6 @@ class NightscoutPuller @Inject constructor(
     private val settings: SettingsRepository
 ) {
     companion object {
-        private const val MGDL_CONVERSION = 18.0182
         private const val PAGE_SIZE = 2016
     }
 
@@ -35,6 +34,8 @@ class NightscoutPuller @Inject constructor(
     suspend fun pullIfEmpty() {
         val latest = dao.latestOnce()
         if (latest != null) return
+
+        if (settings.glucoseSource.first() == GlucoseSource.NIGHTSCOUT_FOLLOWER) return
 
         val url = settings.nightscoutUrl.first()
         val secret = settings.getNightscoutSecret()
@@ -63,12 +64,13 @@ class NightscoutPuller @Inject constructor(
                 if (valid.isEmpty()) break
 
                 for (entry in valid) {
-                    val inserted = processEntry(entry)
-                    if (inserted) totalInserted++
+                    if (processNightscoutEntry(entry, dao, directionComputer) != null) {
+                        totalInserted++
+                    }
                 }
 
                 if (entries.size < PAGE_SIZE) break
-                cursor = entries.maxOf { it.date ?: 0L }
+                cursor = entries.maxOf { it.date ?: 0L } + 1
             }
 
             DebugLog.log(message = "Pull: $totalInserted readings from Nightscout")
@@ -79,27 +81,4 @@ class NightscoutPuller @Inject constructor(
         }
     }
 
-    private suspend fun processEntry(entry: NightscoutEntryResponse): Boolean {
-        val sgv = entry.sgv ?: return false
-        val ts = entry.date ?: return false
-        val mmol = NightscoutFollower.sgvToMmol(sgv)
-
-        val recentReadings = dao.since(ts - 15 * 60 * 1000)
-        val tempReading = GlucoseReading(
-            ts = ts, sgv = sgv, mmol = mmol,
-            direction = "NONE", deltaMmol = null, pushed = 1
-        )
-
-        val existing = recentReadings.find { kotlin.math.abs(it.ts - ts) < 3_000 }
-        if (existing != null) return false
-
-        val (direction, deltaMmol) = directionComputer.compute(recentReadings, tempReading)
-        val reading = tempReading.copy(
-            direction = direction.name,
-            deltaMmol = deltaMmol?.let { Math.round(it * 10.0) / 10.0 }
-        )
-
-        dao.insert(reading)
-        return true
-    }
 }
