@@ -7,6 +7,8 @@ import com.psjostrom.strimma.data.GlucoseSource
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
+import com.psjostrom.strimma.network.FollowerStatus
+import com.psjostrom.strimma.network.NightscoutFollower
 import com.psjostrom.strimma.notification.AlertManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -19,7 +21,8 @@ import javax.inject.Inject
 class MainViewModel @Inject constructor(
     private val dao: ReadingDao,
     val settings: SettingsRepository,
-    private val alertManager: AlertManager
+    private val alertManager: AlertManager,
+    private val nightscoutFollower: NightscoutFollower
 ) : ViewModel() {
 
     val latestReading: StateFlow<GlucoseReading?> = dao.latest()
@@ -106,6 +109,19 @@ class MainViewModel @Inject constructor(
     val glucoseSource: StateFlow<GlucoseSource> = settings.glucoseSource
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), GlucoseSource.COMPANION)
     fun setGlucoseSource(source: GlucoseSource) = viewModelScope.launch { settings.setGlucoseSource(source) }
+
+    val followerStatus: StateFlow<FollowerStatus> = nightscoutFollower.status
+
+    val followerUrl: StateFlow<String> = settings.followerUrl
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
+    fun setFollowerUrl(url: String) = viewModelScope.launch { settings.setFollowerUrl(url) }
+
+    val followerSecret: String get() = settings.getFollowerSecret()
+    fun setFollowerSecret(secret: String) = settings.setFollowerSecret(secret)
+
+    val followerPollSeconds: StateFlow<Int> = settings.followerPollSeconds
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 60)
+    fun setFollowerPollSeconds(seconds: Int) = viewModelScope.launch { settings.setFollowerPollSeconds(seconds) }
 
     suspend fun readingsForPeriod(hours: Int): List<GlucoseReading> {
         val since = System.currentTimeMillis() - hours * 3600_000L
