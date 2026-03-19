@@ -132,7 +132,7 @@ fun StatsScreen(
             } else {
                 // TIR card
                 Surface(
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(12.dp),
                     color = surfVar
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
@@ -209,7 +209,7 @@ fun StatsScreen(
 
                 // Metrics card
                 Surface(
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(12.dp),
                     color = surfVar
                 ) {
                     Column(

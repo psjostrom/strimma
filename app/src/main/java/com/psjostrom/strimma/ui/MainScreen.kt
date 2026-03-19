@@ -107,7 +107,7 @@ fun MainScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            val cardShape = RoundedCornerShape(16.dp)
+            val cardShape = RoundedCornerShape(12.dp)
             val cardBorder = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
 
             Surface(
@@ -139,7 +139,7 @@ fun MainScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(8.dp),
                 color = MaterialTheme.colorScheme.surfaceVariant,
                 border = cardBorder
             ) {
@@ -236,16 +236,20 @@ private fun BgHeader(reading: GlucoseReading?, bgLow: Float, bgHigh: Float, gluc
                 CrossingType.HIGH -> "High in ${crossing.minutesUntil} min"
             }
             Spacer(modifier = Modifier.height(8.dp))
+            val pillBg = when (crossing.type) {
+                CrossingType.LOW -> TintDanger
+                CrossingType.HIGH -> TintWarning
+            }
             Surface(
-                shape = RoundedCornerShape(8.dp),
-                color = crossingColor.copy(alpha = 0.12f)
+                shape = RoundedCornerShape(100),
+                color = pillBg
             ) {
                 Text(
                     text = crossingText,
                     color = crossingColor,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
                 )
             }
         }
@@ -383,8 +387,8 @@ fun GlucoseGraph(
         val dashEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 6f))
         val thresholds = listOf(
             CRITICAL_LOW to BelowLow.copy(alpha = 0.5f),
-            bgLow to Color(0xAAFFBE76),
-            bgHigh to Color(0xAAFFBE76),
+            bgLow to AboveHigh.copy(alpha = 0.4f),
+            bgHigh to AboveHigh.copy(alpha = 0.4f),
             CRITICAL_HIGH to BelowLow.copy(alpha = 0.5f),
         )
         for ((level, color) in thresholds) {
@@ -615,8 +619,8 @@ fun Minimap(
 
         // Threshold lines (subtle)
         val dashEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 4f))
-        drawLine(color = Color(0x40FFBE76), start = Offset(0f, yFor(bgLow)), end = Offset(w, yFor(bgLow)), pathEffect = dashEffect, strokeWidth = 1f)
-        drawLine(color = Color(0x40FFBE76), start = Offset(0f, yFor(bgHigh)), end = Offset(w, yFor(bgHigh)), pathEffect = dashEffect, strokeWidth = 1f)
+        drawLine(color = Color(0x40FFB800), start = Offset(0f, yFor(bgLow)), end = Offset(w, yFor(bgLow)), pathEffect = dashEffect, strokeWidth = 1f)
+        drawLine(color = Color(0x40FFB800), start = Offset(0f, yFor(bgHigh)), end = Offset(w, yFor(bgHigh)), pathEffect = dashEffect, strokeWidth = 1f)
 
         // Data points
         for (r in sorted) {

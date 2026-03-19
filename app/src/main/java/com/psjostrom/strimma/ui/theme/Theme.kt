@@ -47,7 +47,7 @@ private val LightColorScheme = lightColorScheme(
 private val StrimmaShapes = Shapes(
     small = RoundedCornerShape(8.dp),
     medium = RoundedCornerShape(12.dp),
-    large = RoundedCornerShape(16.dp)
+    large = RoundedCornerShape(12.dp)
 )
 
 @Composable

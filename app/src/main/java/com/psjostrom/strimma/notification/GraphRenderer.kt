@@ -18,10 +18,10 @@ object GraphRenderer {
     private const val LINE_WIDTH = 2f
     private const val BG_COLOR = Color.TRANSPARENT
 
-    private const val ZONE_LOW = 0x20FF6B6B.toInt()
-    private const val ZONE_HIGH = 0x20FFBE76.toInt()
+    private const val ZONE_LOW = 0x20FF4D6A.toInt()
+    private const val ZONE_HIGH = 0x20FFB800.toInt()
     private const val ZONE_IN_RANGE = 0x1256CCF2.toInt()
-    private const val COLOR_AXIS_TEXT = 0xFF8892A0.toInt()
+    private const val COLOR_AXIS_TEXT = 0xFFA898C0.toInt()
 
     fun render(
         readings: List<GlucoseReading>,

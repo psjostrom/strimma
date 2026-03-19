@@ -95,12 +95,12 @@ private fun WidgetContent(
     opacity: Float,
     glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL
 ) {
-    val staleColor = ColorProvider(Color(0xFF636E7B))
+    val staleColor = ColorProvider(Color(0xFF6A5F80))
 
     val statusColor = when {
         reading == null -> staleColor
-        reading.mmol < bgLow -> ColorProvider(Color(0xFFFF6B6B))
-        reading.mmol > bgHigh -> ColorProvider(Color(0xFFFFBE76))
+        reading.mmol < bgLow -> ColorProvider(Color(0xFFFF4D6A))
+        reading.mmol > bgHigh -> ColorProvider(Color(0xFFFFB800))
         else -> ColorProvider(Color(0xFF56CCF2))
     }
 
@@ -129,7 +129,7 @@ private fun WidgetContent(
     }
     val subtitle = if (deltaText.isNotEmpty()) "$deltaText · $timeText" else timeText
 
-    val bgColor = Color(0xFF0C1017).copy(alpha = opacity)
+    val bgColor = Color(0xFF111018).copy(alpha = opacity)
 
     // Graph always shown as background, text overlaid — works at any size including 2×1
     Box(

@@ -527,13 +527,13 @@ private fun SettingsSection(
         Text(
             text = title.uppercase(),
             color = titleColor,
-            fontSize = 12.sp,
+            fontSize = 11.sp,
             fontWeight = FontWeight.SemiBold,
-            letterSpacing = 1.sp,
+            letterSpacing = 1.5.sp,
             modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
         )
         Surface(
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(12.dp),
             color = cardColor
         ) {
             Column(
