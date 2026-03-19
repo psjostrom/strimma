@@ -5,9 +5,10 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [GlucoseReading::class], version = 1)
+@Database(entities = [GlucoseReading::class, Treatment::class], version = 2)
 abstract class StrimmaDatabase : RoomDatabase() {
     abstract fun readingDao(): ReadingDao
+    abstract fun treatmentDao(): TreatmentDao
 
     companion object {
         const val DB_NAME = "strimma.db"
@@ -21,7 +22,7 @@ abstract class StrimmaDatabase : RoomDatabase() {
                     context.applicationContext,
                     StrimmaDatabase::class.java,
                     DB_NAME
-                ).build().also { INSTANCE = it }
+                ).fallbackToDestructiveMigration().build().also { INSTANCE = it }
             }
         }
     }

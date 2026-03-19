@@ -32,6 +32,10 @@ val TintInRange = Color(0xFF152535)
 val TintWarning = Color(0xFF35280E)
 val TintDanger = Color(0xFF351525)
 
+// --- Treatment marker colors ---
+val BolusBlue = Color(0xFF5B8DEF)
+val CarbGreen = Color(0xFF4CAF50)
+
 // Graph tooltip/canvas colors for dark graph surfaces (graphs always render dark)
 val GraphTooltipBg = Color(0xE6181520)
 val GraphAxisText = Color(0xFFA898C0)

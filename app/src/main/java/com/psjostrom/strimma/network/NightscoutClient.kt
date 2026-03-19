@@ -1,6 +1,7 @@
 package com.psjostrom.strimma.network
 
 import com.psjostrom.strimma.data.GlucoseReading
+import com.psjostrom.strimma.data.Treatment
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -32,6 +33,18 @@ data class NightscoutEntryResponse(
     val sgv: Int? = null,
     val date: Long? = null,
     val type: String? = null
+)
+
+@Serializable
+data class NightscoutTreatment(
+    val _id: String? = null,
+    val eventType: String? = null,
+    val created_at: String? = null,
+    val insulin: Double? = null,
+    val carbs: Double? = null,
+    val absolute: Double? = null,
+    val duration: Int? = null,
+    val enteredBy: String? = null
 )
 
 @Singleton
@@ -120,6 +133,79 @@ class NightscoutClient @Inject constructor() {
             )
             null
         }
+    }
+
+    suspend fun fetchTreatments(
+        baseUrl: String,
+        secret: String,
+        since: Long
+    ): List<Treatment> {
+        if (baseUrl.isBlank() || secret.isBlank()) return emptyList()
+
+        val hashedSecret = hashSecret(secret)
+        val sinceIso = dateFormat.format(Date(since))
+        val fullUrl = "${baseUrl.trimEnd('/')}/api/v1/treatments.json?find[created_at][\$gte]=$sinceIso&count=100"
+
+        return try {
+            val response = client.get(fullUrl) {
+                header("api-secret", hashedSecret)
+            }
+            if (response.status.value == 404) {
+                com.psjostrom.strimma.receiver.DebugLog.log(
+                    message = "Treatments: 404 — server doesn't support treatments"
+                )
+                return emptyList()
+            }
+            if (!response.status.isSuccess()) {
+                com.psjostrom.strimma.receiver.DebugLog.log(
+                    message = "Treatments HTTP ${response.status.value}: $fullUrl"
+                )
+                return emptyList()
+            }
+            val nsTreatments = response.body<List<NightscoutTreatment>>()
+            val now = System.currentTimeMillis()
+            nsTreatments.mapNotNull { ns ->
+                val createdAtStr = ns.created_at ?: return@mapNotNull null
+                val eventType = ns.eventType ?: return@mapNotNull null
+                val createdAtMs = parseIsoTimestamp(createdAtStr) ?: return@mapNotNull null
+                val id = ns._id ?: generateTreatmentId(createdAtStr, eventType, ns.insulin, ns.carbs)
+                Treatment(
+                    id = id,
+                    createdAt = createdAtMs,
+                    eventType = eventType,
+                    insulin = ns.insulin,
+                    carbs = ns.carbs,
+                    basalRate = ns.absolute,
+                    duration = ns.duration,
+                    enteredBy = ns.enteredBy,
+                    fetchedAt = now
+                )
+            }
+        } catch (e: Exception) {
+            com.psjostrom.strimma.receiver.DebugLog.log(
+                message = "Treatments fetch error: ${e.message?.take(80)}"
+            )
+            emptyList()
+        }
+    }
+
+    private fun parseIsoTimestamp(iso: String): Long? {
+        return try {
+            java.time.OffsetDateTime.parse(iso).toInstant().toEpochMilli()
+        } catch (_: Exception) {
+            try {
+                dateFormat.parse(iso)?.time
+            } catch (_: Exception) {
+                null
+            }
+        }
+    }
+
+    private fun generateTreatmentId(createdAt: String, eventType: String, insulin: Double?, carbs: Double?): String {
+        val raw = "$createdAt|$eventType|$insulin|$carbs"
+        return MessageDigest.getInstance("SHA-1")
+            .digest(raw.toByteArray(Charsets.UTF_8))
+            .joinToString("") { "%02x".format(it) }
     }
 
     private fun hashSecret(secret: String): String {

@@ -61,6 +61,10 @@ class SettingsRepository @Inject constructor(
         private val KEY_FOLLOWER_URL = stringPreferencesKey("follower_url")
         private val KEY_FOLLOWER_POLL_SECONDS = intPreferencesKey("follower_poll_seconds")
         private const val KEY_FOLLOWER_SECRET = "follower_secret"
+
+        private val KEY_TREATMENTS_SYNC_ENABLED = booleanPreferencesKey("treatments_sync_enabled")
+        private val KEY_INSULIN_TYPE = stringPreferencesKey("insulin_type")
+        private val KEY_CUSTOM_DIA = floatPreferencesKey("custom_dia")
     }
 
     val nightscoutUrl: Flow<String> = dataStore.data.map { it[KEY_NIGHTSCOUT_URL] ?: "" }
@@ -144,4 +148,15 @@ class SettingsRepository @Inject constructor(
     fun setFollowerSecret(secret: String) {
         encryptedPrefs.edit().putString(KEY_FOLLOWER_SECRET, secret).apply()
     }
+
+    val treatmentsSyncEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_TREATMENTS_SYNC_ENABLED] ?: false }
+    suspend fun setTreatmentsSyncEnabled(enabled: Boolean) { dataStore.edit { it[KEY_TREATMENTS_SYNC_ENABLED] = enabled } }
+
+    val insulinType: Flow<InsulinType> = dataStore.data.map {
+        try { InsulinType.valueOf(it[KEY_INSULIN_TYPE] ?: "FIASP") } catch (_: Exception) { InsulinType.FIASP }
+    }
+    suspend fun setInsulinType(type: InsulinType) { dataStore.edit { it[KEY_INSULIN_TYPE] = type.name } }
+
+    val customDIA: Flow<Float> = dataStore.data.map { it[KEY_CUSTOM_DIA] ?: 5.0f }
+    suspend fun setCustomDIA(hours: Float) { dataStore.edit { it[KEY_CUSTOM_DIA] = hours } }
 }

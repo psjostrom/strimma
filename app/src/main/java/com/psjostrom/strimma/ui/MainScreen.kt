@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import com.psjostrom.strimma.data.Direction
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseUnit
+import com.psjostrom.strimma.data.Treatment
 import com.psjostrom.strimma.graph.CRITICAL_HIGH
 import com.psjostrom.strimma.graph.CRITICAL_LOW
 import com.psjostrom.strimma.graph.PredictionComputer
@@ -35,6 +36,7 @@ import com.psjostrom.strimma.graph.CrossingType
 import com.psjostrom.strimma.graph.computeYRange
 import com.psjostrom.strimma.network.FollowerStatus
 import com.psjostrom.strimma.ui.theme.*
+import androidx.compose.ui.graphics.Path
 import kotlinx.coroutines.delay
 
 private const val MINIMAP_WINDOW_MS = 24L * 3600_000L
@@ -50,6 +52,8 @@ fun MainScreen(
     predictionMinutes: Int = 15,
     glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
     followerStatus: FollowerStatus = FollowerStatus.Idle,
+    treatments: List<Treatment> = emptyList(),
+    iob: Double = 0.0,
     onSettingsClick: () -> Unit,
     onStatsClick: () -> Unit = {}
 ) {
@@ -103,7 +107,7 @@ fun MainScreen(
             val crossing = remember(readings, bgLow, bgHigh, predictionMinutes) {
                 PredictionComputer.compute(readings, predictionMinutes, bgLow.toDouble(), bgHigh.toDouble())?.crossing
             }
-            BgHeader(latestReading, bgLow, bgHigh, glucoseUnit, crossing, followerStatus)
+            BgHeader(latestReading, bgLow, bgHigh, glucoseUnit, crossing, followerStatus, iob)
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -127,6 +131,7 @@ fun MainScreen(
                     zoomScale = zoomScale,
                     predictionMinutes = predictionMinutes,
                     glucoseUnit = glucoseUnit,
+                    treatments = treatments,
                     onViewportChange = { viewportEnd = it },
                     onZoomChange = { zoomScale = it },
                     modifier = Modifier.fillMaxSize()
@@ -161,7 +166,7 @@ fun MainScreen(
 }
 
 @Composable
-private fun BgHeader(reading: GlucoseReading?, bgLow: Float, bgHigh: Float, glucoseUnit: GlucoseUnit, crossing: ThresholdCrossing? = null, followerStatus: FollowerStatus) {
+private fun BgHeader(reading: GlucoseReading?, bgLow: Float, bgHigh: Float, glucoseUnit: GlucoseUnit, crossing: ThresholdCrossing? = null, followerStatus: FollowerStatus, iob: Double = 0.0) {
     var minutesAgo by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(reading?.ts) {
@@ -254,6 +259,24 @@ private fun BgHeader(reading: GlucoseReading?, bgLow: Float, bgHigh: Float, gluc
             }
         }
 
+        // IOB pill
+        if (iob > 0.0) {
+            Spacer(modifier = Modifier.height(8.dp))
+            val iobColor = if (iob < 0.3) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
+            Surface(
+                shape = RoundedCornerShape(100),
+                color = TintInRange
+            ) {
+                Text(
+                    text = "IOB ${"%.1f".format(iob)}U",
+                    color = iobColor,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
+                )
+            }
+        }
+
         if (followerStatus !is FollowerStatus.Idle) {
             Spacer(modifier = Modifier.height(4.dp))
             Text(
@@ -292,6 +315,7 @@ fun GlucoseGraph(
     zoomScale: Float,
     predictionMinutes: Int = 15,
     glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
+    treatments: List<Treatment> = emptyList(),
     onViewportChange: (Long) -> Unit,
     onZoomChange: (Float) -> Unit,
     modifier: Modifier = Modifier
@@ -446,6 +470,58 @@ fun GlucoseGraph(
                 prevPy = py
             }
 
+        }
+
+        // Treatment markers (bolus + carb)
+        val bolusColor = BolusBlue
+        val carbColor = CarbGreen
+        val markerLabelPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            this.color = 0xFFFFFFFF.toInt()
+            textSize = 28f
+            textAlign = android.graphics.Paint.Align.CENTER
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
+        }
+        for (t in treatments) {
+            val tx = xFor(t.createdAt)
+            if (tx < marginLeft || tx > size.width - marginRight) continue
+
+            // Bolus: downward triangle at bottom of plot area
+            t.insulin?.let { dose ->
+                if (dose <= 0.0) return@let
+                val triSize = (8f + dose.toFloat() * 3f).coerceIn(10f, 30f)
+                val baseY = size.height - marginBottom - 4f
+                val path = Path().apply {
+                    moveTo(tx, baseY)
+                    lineTo(tx - triSize / 2, baseY - triSize)
+                    lineTo(tx + triSize / 2, baseY - triSize)
+                    close()
+                }
+                drawPath(path, bolusColor)
+                val label = "${"%.0f".format(dose)}U"
+                markerLabelPaint.color = bolusColor.hashCode() or 0xFF000000.toInt()
+                drawContext.canvas.nativeCanvas.drawText(
+                    label, tx, baseY + 14f, markerLabelPaint
+                )
+            }
+
+            // Carbs: upward triangle at top of plot area
+            t.carbs?.let { grams ->
+                if (grams <= 0.0) return@let
+                val triSize = (8f + grams.toFloat() * 0.3f).coerceIn(10f, 30f)
+                val baseY = marginTop + 4f
+                val path = Path().apply {
+                    moveTo(tx, baseY)
+                    lineTo(tx - triSize / 2, baseY + triSize)
+                    lineTo(tx + triSize / 2, baseY + triSize)
+                    close()
+                }
+                drawPath(path, carbColor)
+                val label = "${"%.0f".format(grams)}g"
+                markerLabelPaint.color = carbColor.hashCode() or 0xFF000000.toInt()
+                drawContext.canvas.nativeCanvas.drawText(
+                    label, tx, baseY - 4f, markerLabelPaint
+                )
+            }
         }
 
         // Scrub crosshair + tooltip

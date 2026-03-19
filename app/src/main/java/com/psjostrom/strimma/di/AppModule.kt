@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.StrimmaDatabase
+import com.psjostrom.strimma.data.TreatmentDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -23,4 +24,7 @@ object AppModule {
 
     @Provides
     fun provideReadingDao(db: StrimmaDatabase): ReadingDao = db.readingDao()
+
+    @Provides
+    fun provideTreatmentDao(db: StrimmaDatabase): TreatmentDao = db.treatmentDao()
 }
