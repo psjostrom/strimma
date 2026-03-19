@@ -67,6 +67,10 @@ class MainViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 13.0f)
     val alertStaleEnabled: StateFlow<Boolean> = settings.alertStaleEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    val alertLowSoonEnabled: StateFlow<Boolean> = settings.alertLowSoonEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    val alertHighSoonEnabled: StateFlow<Boolean> = settings.alertHighSoonEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
     fun setNightscoutUrl(url: String) = viewModelScope.launch { settings.setNightscoutUrl(url) }
     fun setNightscoutSecret(secret: String) = settings.setNightscoutSecret(secret)
@@ -84,6 +88,8 @@ class MainViewModel @Inject constructor(
     fun setAlertUrgentHighEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertUrgentHighEnabled(enabled) }
     fun setAlertUrgentHigh(value: Float) = viewModelScope.launch { settings.setAlertUrgentHigh(value) }
     fun setAlertStaleEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertStaleEnabled(enabled) }
+    fun setAlertLowSoonEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertLowSoonEnabled(enabled) }
+    fun setAlertHighSoonEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertHighSoonEnabled(enabled) }
     fun openAlertChannelSettings(channelId: String) = alertManager.openChannelSettings(channelId)
 
     val themeMode: StateFlow<String> = settings.themeMode
@@ -94,9 +100,9 @@ class MainViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 60)
     fun setNotifGraphMinutes(minutes: Int) = viewModelScope.launch { settings.setNotifGraphMinutes(minutes) }
 
-    val notifPredictionMinutes: StateFlow<Int> = settings.notifPredictionMinutes
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 10)
-    fun setNotifPredictionMinutes(minutes: Int) = viewModelScope.launch { settings.setNotifPredictionMinutes(minutes) }
+    val predictionMinutes: StateFlow<Int> = settings.predictionMinutes
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 15)
+    fun setPredictionMinutes(minutes: Int) = viewModelScope.launch { settings.setPredictionMinutes(minutes) }
 
     val glucoseUnit: StateFlow<GlucoseUnit> = settings.glucoseUnit
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), GlucoseUnit.MMOL)

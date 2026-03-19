@@ -136,7 +136,9 @@ class StrimmaService : Service() {
         if (followerJob != null) return
         followerJob = nightscoutFollower.start(scope) { reading ->
             updateNotification()
-            alertManager.checkReading(reading)
+            val predMinutes = settings.predictionMinutes.first()
+            val alertReadings = dao.since(reading.ts - 15 * 60_000L)
+            alertManager.checkReading(reading, alertReadings, predMinutes)
             broadcastBgIfEnabled(reading)
             try {
                 val mgr = GlanceAppWidgetManager(this@StrimmaService)
@@ -178,7 +180,10 @@ class StrimmaService : Service() {
         DebugLog.log("Stored: ${reading.mmol} ${direction.arrow}")
         pusher.pushReading(reading)
         updateNotification()
-        alertManager.checkReading(reading)
+        val predMinutes = settings.predictionMinutes.first()
+        // PredictionComputer uses 12-min lookback internally; 15 min ensures sufficient history
+        val alertReadings = dao.since(timestamp - 15 * 60_000L)
+        alertManager.checkReading(reading, alertReadings, predMinutes)
         broadcastBgIfEnabled(reading)
         try {
             val mgr = GlanceAppWidgetManager(this@StrimmaService)
@@ -191,7 +196,7 @@ class StrimmaService : Service() {
     private suspend fun updateNotification() {
         val latest = dao.latest().first()
         val notifMinutes = settings.notifGraphMinutes.first()
-        val predMinutes = settings.notifPredictionMinutes.first()
+        val predMinutes = settings.predictionMinutes.first()
         val glucoseUnit = settings.glucoseUnit.first()
         val graphWindowMs = notifMinutes * 60_000L
         val recent = dao.since(System.currentTimeMillis() - graphWindowMs)

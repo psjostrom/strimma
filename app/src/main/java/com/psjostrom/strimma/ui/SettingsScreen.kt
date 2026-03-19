@@ -32,7 +32,7 @@ fun SettingsScreen(
     bgHigh: Float,
     themeMode: String,
     notifGraphMinutes: Int,
-    notifPredictionMinutes: Int,
+    predictionMinutes: Int,
     glucoseUnit: GlucoseUnit,
     bgBroadcastEnabled: Boolean,
     alertLowEnabled: Boolean,
@@ -44,6 +44,8 @@ fun SettingsScreen(
     alertUrgentLow: Float,
     alertUrgentHigh: Float,
     alertStaleEnabled: Boolean,
+    alertLowSoonEnabled: Boolean,
+    alertHighSoonEnabled: Boolean,
     onGlucoseSourceChange: (GlucoseSource) -> Unit,
     onNightscoutUrlChange: (String) -> Unit,
     onNightscoutSecretChange: (String) -> Unit,
@@ -58,7 +60,7 @@ fun SettingsScreen(
     onBgHighChange: (Float) -> Unit,
     onThemeModeChange: (String) -> Unit,
     onNotifGraphMinutesChange: (Int) -> Unit,
-    onNotifPredictionMinutesChange: (Int) -> Unit,
+    onPredictionMinutesChange: (Int) -> Unit,
     onGlucoseUnitChange: (GlucoseUnit) -> Unit,
     onBgBroadcastEnabledChange: (Boolean) -> Unit,
     onAlertLowEnabledChange: (Boolean) -> Unit,
@@ -70,6 +72,8 @@ fun SettingsScreen(
     onAlertUrgentLowChange: (Float) -> Unit,
     onAlertUrgentHighChange: (Float) -> Unit,
     onAlertStaleEnabledChange: (Boolean) -> Unit,
+    onAlertLowSoonEnabledChange: (Boolean) -> Unit,
+    onAlertHighSoonEnabledChange: (Boolean) -> Unit,
     onOpenAlertSound: (String) -> Unit,
     onBack: () -> Unit,
     onStats: () -> Unit = {},
@@ -288,16 +292,16 @@ fun SettingsScreen(
                 }
 
                 Text(
-                    "Prediction: ${if (notifPredictionMinutes == 0) "Off" else "${notifPredictionMinutes}m"}",
+                    "Prediction: ${if (predictionMinutes == 0) "Off" else "${predictionMinutes}m"}",
                     color = onBg,
                     fontSize = 14.sp
                 )
                 SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                    listOf(0 to "Off", 10 to "10m", 20 to "20m", 30 to "30m").forEachIndexed { index, (minutes, label) ->
+                    listOf(0 to "Off", 10 to "10m", 15 to "15m", 20 to "20m", 30 to "30m").forEachIndexed { index, (minutes, label) ->
                         SegmentedButton(
-                            selected = notifPredictionMinutes == minutes,
-                            onClick = { onNotifPredictionMinutesChange(minutes) },
-                            shape = SegmentedButtonDefaults.itemShape(index, 4)
+                            selected = predictionMinutes == minutes,
+                            onClick = { onPredictionMinutesChange(minutes) },
+                            shape = SegmentedButtonDefaults.itemShape(index, 5)
                         ) {
                             Text(label)
                         }
@@ -369,6 +373,44 @@ fun SettingsScreen(
                     onOpenSound = onOpenAlertSound,
                     textColor = onBg
                 )
+
+                HorizontalDivider(color = outlineVar)
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                        Text("Low Soon", color = onBg, fontSize = 14.sp)
+                        Text("Predicted low within prediction window", color = outline, fontSize = 12.sp)
+                    }
+                    Switch(checked = alertLowSoonEnabled, onCheckedChange = onAlertLowSoonEnabledChange)
+                }
+                if (alertLowSoonEnabled) {
+                    TextButton(onClick = { onOpenAlertSound(com.psjostrom.strimma.notification.AlertManager.CHANNEL_LOW_SOON) }) {
+                        Text("Sound", color = InRange, fontSize = 13.sp)
+                    }
+                }
+
+                HorizontalDivider(color = outlineVar)
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                        Text("High Soon", color = onBg, fontSize = 14.sp)
+                        Text("Predicted high within prediction window", color = outline, fontSize = 12.sp)
+                    }
+                    Switch(checked = alertHighSoonEnabled, onCheckedChange = onAlertHighSoonEnabledChange)
+                }
+                if (alertHighSoonEnabled) {
+                    TextButton(onClick = { onOpenAlertSound(com.psjostrom.strimma.notification.AlertManager.CHANNEL_HIGH_SOON) }) {
+                        Text("Sound", color = InRange, fontSize = 13.sp)
+                    }
+                }
 
                 HorizontalDivider(color = outlineVar)
 

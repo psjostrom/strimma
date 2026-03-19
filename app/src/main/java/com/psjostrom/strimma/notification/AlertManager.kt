@@ -13,6 +13,8 @@ import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.SettingsRepository
+import com.psjostrom.strimma.graph.CrossingType
+import com.psjostrom.strimma.graph.PredictionComputer
 import com.psjostrom.strimma.receiver.DebugLog
 import com.psjostrom.strimma.ui.MainActivity
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -32,6 +34,8 @@ class AlertManager @Inject constructor(
         const val CHANNEL_HIGH = "strimma_alert_high"
         const val CHANNEL_URGENT_HIGH = "strimma_alert_urgent_high"
         const val CHANNEL_STALE = "strimma_alert_stale"
+        const val CHANNEL_LOW_SOON = "strimma_alert_low_soon"
+        const val CHANNEL_HIGH_SOON = "strimma_alert_high_soon"
 
         // Legacy channel — delete if it exists from previous version
         private const val LEGACY_CHANNEL = "strimma_alerts"
@@ -41,11 +45,16 @@ class AlertManager @Inject constructor(
         const val ALERT_HIGH_ID = 102
         const val ALERT_URGENT_HIGH_ID = 104
         const val ALERT_STALE_ID = 103
+        const val ALERT_LOW_SOON_ID = 105
+        const val ALERT_HIGH_SOON_ID = 106
 
         private const val SNOOZE_DURATION_MS = 30 * 60 * 1000L
 
+        private const val MIN_CROSSING_MINUTES = 4
+
         val ALL_CHANNELS = listOf(
-            CHANNEL_URGENT_LOW, CHANNEL_LOW, CHANNEL_HIGH, CHANNEL_URGENT_HIGH, CHANNEL_STALE
+            CHANNEL_URGENT_LOW, CHANNEL_LOW, CHANNEL_HIGH, CHANNEL_URGENT_HIGH,
+            CHANNEL_STALE, CHANNEL_LOW_SOON, CHANNEL_HIGH_SOON
         )
     }
 
@@ -106,6 +115,22 @@ class AlertManager @Inject constructor(
             notifAudioAttrs, bypassDnd = false,
             vibration = longArrayOf(0, 200, 200, 200)
         )
+        createChannel(
+            CHANNEL_LOW_SOON, "Low Soon Alert",
+            "Glucose predicted to go low",
+            NotificationManager.IMPORTANCE_DEFAULT,
+            RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
+            notifAudioAttrs, bypassDnd = false,
+            vibration = longArrayOf(0, 200, 200, 200)
+        )
+        createChannel(
+            CHANNEL_HIGH_SOON, "High Soon Alert",
+            "Glucose predicted to go high",
+            NotificationManager.IMPORTANCE_DEFAULT,
+            RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
+            notifAudioAttrs, bypassDnd = false,
+            vibration = longArrayOf(0, 200, 200, 200)
+        )
     }
 
     private fun createChannel(
@@ -135,7 +160,7 @@ class AlertManager @Inject constructor(
         context.startActivity(intent)
     }
 
-    suspend fun checkReading(reading: GlucoseReading) {
+    suspend fun checkReading(reading: GlucoseReading, recentReadings: List<GlucoseReading>, predictionMinutes: Int) {
         val now = System.currentTimeMillis()
         val mmol = reading.mmol
         val unit = settings.glucoseUnit.first()
@@ -149,13 +174,18 @@ class AlertManager @Inject constructor(
         val urgentHighEnabled = settings.alertUrgentHighEnabled.first()
         val urgentHighThreshold = settings.alertUrgentHigh.first()
 
+        var alreadyLow = false
+        var alreadyHigh = false
+
         // --- Lows (urgent takes priority) ---
         if (urgentLowEnabled && mmol <= urgentLowThreshold) {
+            alreadyLow = true
             if (!isSnoozed(ALERT_URGENT_LOW_ID, now)) {
                 fireAlert(ALERT_URGENT_LOW_ID, CHANNEL_URGENT_LOW, "Urgent Low", unit.formatWithUnit(mmol))
                 notificationManager.cancel(ALERT_LOW_ID)
             }
         } else if (lowEnabled && mmol < lowThreshold) {
+            alreadyLow = true
             if (!isSnoozed(ALERT_LOW_ID, now)) {
                 fireAlert(ALERT_LOW_ID, CHANNEL_LOW, "Low Glucose", unit.formatWithUnit(mmol))
             }
@@ -170,11 +200,13 @@ class AlertManager @Inject constructor(
 
         // --- Highs (urgent takes priority) ---
         if (urgentHighEnabled && mmol >= urgentHighThreshold) {
+            alreadyHigh = true
             if (!isSnoozed(ALERT_URGENT_HIGH_ID, now)) {
                 fireAlert(ALERT_URGENT_HIGH_ID, CHANNEL_URGENT_HIGH, "Urgent High", unit.formatWithUnit(mmol))
                 notificationManager.cancel(ALERT_HIGH_ID)
             }
         } else if (highEnabled && mmol > highThreshold) {
+            alreadyHigh = true
             if (!isSnoozed(ALERT_HIGH_ID, now)) {
                 fireAlert(ALERT_HIGH_ID, CHANNEL_HIGH, "High Glucose", unit.formatWithUnit(mmol))
             }
@@ -185,6 +217,59 @@ class AlertManager @Inject constructor(
             notificationManager.cancel(ALERT_URGENT_HIGH_ID)
             clearSnooze(ALERT_HIGH_ID)
             clearSnooze(ALERT_URGENT_HIGH_ID)
+        }
+
+        // --- Predictive alerts (only when currently in range) ---
+        checkPredictive(recentReadings, predictionMinutes, lowThreshold.toDouble(),
+            highThreshold.toDouble(), alreadyLow, alreadyHigh, unit, now)
+    }
+
+    private suspend fun checkPredictive(
+        recentReadings: List<GlucoseReading>,
+        predictionMinutes: Int,
+        bgLow: Double,
+        bgHigh: Double,
+        alreadyLow: Boolean,
+        alreadyHigh: Boolean,
+        unit: GlucoseUnit,
+        now: Long
+    ) {
+        val lowSoonEnabled = settings.alertLowSoonEnabled.first()
+        val highSoonEnabled = settings.alertHighSoonEnabled.first()
+
+        if (predictionMinutes == 0 || (!lowSoonEnabled && !highSoonEnabled)) {
+            notificationManager.cancel(ALERT_LOW_SOON_ID)
+            notificationManager.cancel(ALERT_HIGH_SOON_ID)
+            return
+        }
+
+        val prediction = PredictionComputer.compute(recentReadings, predictionMinutes, bgLow, bgHigh)
+        val crossing = prediction?.crossing
+
+        // Low soon
+        if (lowSoonEnabled && !alreadyLow && crossing?.type == CrossingType.LOW
+            && crossing.minutesUntil >= MIN_CROSSING_MINUTES) {
+            if (!isSnoozed(ALERT_LOW_SOON_ID, now)) {
+                fireAlert(ALERT_LOW_SOON_ID, CHANNEL_LOW_SOON,
+                    "Low in ${crossing.minutesUntil} min",
+                    "Predicted ${unit.formatWithUnit(crossing.mmolAtCrossing)}")
+            }
+        } else {
+            notificationManager.cancel(ALERT_LOW_SOON_ID)
+            if (alreadyLow) clearSnooze(ALERT_LOW_SOON_ID)
+        }
+
+        // High soon
+        if (highSoonEnabled && !alreadyHigh && crossing?.type == CrossingType.HIGH
+            && crossing.minutesUntil >= MIN_CROSSING_MINUTES) {
+            if (!isSnoozed(ALERT_HIGH_SOON_ID, now)) {
+                fireAlert(ALERT_HIGH_SOON_ID, CHANNEL_HIGH_SOON,
+                    "High in ${crossing.minutesUntil} min",
+                    "Predicted ${unit.formatWithUnit(crossing.mmolAtCrossing)}")
+            }
+        } else {
+            notificationManager.cancel(ALERT_HIGH_SOON_ID)
+            if (alreadyHigh) clearSnooze(ALERT_HIGH_SOON_ID)
         }
     }
 
