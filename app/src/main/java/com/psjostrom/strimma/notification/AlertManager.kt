@@ -280,7 +280,6 @@ class AlertManager @Inject constructor(
             }
         } else {
             notificationManager.cancel(ALERT_STALE_ID)
-            clearSnooze(ALERT_STALE_ID)
         }
     }
 
