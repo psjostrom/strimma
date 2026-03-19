@@ -266,7 +266,7 @@ private fun BgHeader(reading: GlucoseReading?, bgLow: Float, bgHigh: Float, gluc
             val iobColor = if (iob < 0.3) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
             Surface(
                 shape = RoundedCornerShape(100),
-                color = TintInRange
+                color = InRange.copy(alpha = 0.12f)
             ) {
                 Text(
                     text = "IOB ${"%.1f".format(iob)}U",
@@ -335,6 +335,13 @@ fun GlucoseGraph(
     val visibleStart = viewportEnd - visibleMs
     val sorted = remember(readings, visibleStart, viewportEnd) {
         readings.filter { it.ts in visibleStart..viewportEnd }.sortedBy { it.ts }
+    }
+    val treatmentLabelPaint = remember {
+        android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            textSize = 28f
+            textAlign = android.graphics.Paint.Align.CENTER
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
+        }
     }
 
     Canvas(
@@ -476,12 +483,6 @@ fun GlucoseGraph(
         // Treatment markers (bolus + carb)
         val bolusColor = BolusBlue
         val carbColor = CarbGreen
-        val markerLabelPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-            this.color = 0xFFFFFFFF.toInt()
-            textSize = 28f
-            textAlign = android.graphics.Paint.Align.CENTER
-            typeface = android.graphics.Typeface.DEFAULT_BOLD
-        }
         for (t in treatments) {
             val tx = xFor(t.createdAt)
             if (tx < marginLeft || tx > size.width - marginRight) continue
@@ -499,9 +500,9 @@ fun GlucoseGraph(
                 }
                 drawPath(path, bolusColor)
                 val label = "${"%.0f".format(dose)}U"
-                markerLabelPaint.color = bolusColor.toArgb()
+                treatmentLabelPaint.color = bolusColor.toArgb()
                 drawContext.canvas.nativeCanvas.drawText(
-                    label, tx, baseY + 14f, markerLabelPaint
+                    label, tx, baseY - triSize - 4f, treatmentLabelPaint
                 )
             }
 
@@ -518,9 +519,9 @@ fun GlucoseGraph(
                 }
                 drawPath(path, carbColor)
                 val label = "${"%.0f".format(grams)}g"
-                markerLabelPaint.color = carbColor.toArgb()
+                treatmentLabelPaint.color = carbColor.toArgb()
                 drawContext.canvas.nativeCanvas.drawText(
-                    label, tx, baseY - 4f, markerLabelPaint
+                    label, tx, baseY + triSize + treatmentLabelPaint.fontSpacing, treatmentLabelPaint
                 )
             }
         }

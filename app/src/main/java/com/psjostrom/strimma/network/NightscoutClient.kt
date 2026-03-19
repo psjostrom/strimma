@@ -13,8 +13,9 @@ import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.security.MessageDigest
-import java.text.SimpleDateFormat
-import java.util.*
+import java.time.Instant
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -62,9 +63,9 @@ class NightscoutClient @Inject constructor() {
         }
     }
 
-    private val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
-        timeZone = TimeZone.getTimeZone("UTC")
-    }
+    private val isoFormatter: DateTimeFormatter = DateTimeFormatter
+        .ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+        .withZone(ZoneOffset.UTC)
 
     suspend fun pushReadings(
         baseUrl: String,
@@ -78,7 +79,7 @@ class NightscoutClient @Inject constructor() {
             NightscoutEntry(
                 sgv = reading.sgv,
                 date = reading.ts,
-                dateString = dateFormat.format(Date(reading.ts)),
+                dateString = isoFormatter.format(Instant.ofEpochMilli(reading.ts)),
                 direction = reading.direction
             )
         }
@@ -143,7 +144,9 @@ class NightscoutClient @Inject constructor() {
         if (baseUrl.isBlank() || secret.isBlank()) return emptyList()
 
         val hashedSecret = hashSecret(secret)
-        val sinceIso = dateFormat.format(Date(since))
+        val sinceIso = isoFormatter.format(Instant.ofEpochMilli(since))
+        // count=100 is sufficient for bolus/carb events in 6h. Aggressive looping systems
+        // may generate more temp basals, but those aren't rendered on the graph.
         val fullUrl = "${baseUrl.trimEnd('/')}/api/v1/treatments.json?find[created_at][\$gte]=$sinceIso&count=100"
 
         return try {
@@ -194,7 +197,7 @@ class NightscoutClient @Inject constructor() {
             java.time.OffsetDateTime.parse(iso).toInstant().toEpochMilli()
         } catch (_: Exception) {
             try {
-                dateFormat.parse(iso)?.time
+                Instant.from(isoFormatter.parse(iso)).toEpochMilli()
             } catch (_: Exception) {
                 null
             }

@@ -1,5 +1,6 @@
 package com.psjostrom.strimma.network
 
+import com.psjostrom.strimma.data.GlucoseSource
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.TreatmentDao
 import com.psjostrom.strimma.receiver.DebugLog
@@ -24,33 +25,28 @@ class TreatmentSyncer @Inject constructor(
         private const val PRUNE_MS = 48 * 60 * 60 * 1000L
     }
 
-    private var disabled = false
-
     fun start(scope: CoroutineScope): Job {
-        disabled = false
         return scope.launch {
             while (isActive) {
-                if (!disabled) {
-                    sync()
-                }
+                sync()
                 delay(POLL_INTERVAL_MS)
             }
         }
     }
 
     private suspend fun sync() {
-        val url = settings.nightscoutUrl.first()
-        val secret = settings.getNightscoutSecret()
+        val source = settings.glucoseSource.first()
+        val (url, secret) = if (source == GlucoseSource.NIGHTSCOUT_FOLLOWER) {
+            settings.followerUrl.first() to settings.getFollowerSecret()
+        } else {
+            settings.nightscoutUrl.first() to settings.getNightscoutSecret()
+        }
         if (url.isBlank() || secret.isBlank()) return
 
         val since = System.currentTimeMillis() - LOOKBACK_MS
         val treatments = client.fetchTreatments(url, secret, since)
 
-        if (treatments.isEmpty()) {
-            // Could be 404 or just no data — check if we got nothing repeatedly
-            // The client logs 404 specifically; don't disable on empty results alone
-            return
-        }
+        if (treatments.isEmpty()) return
 
         dao.upsert(treatments)
         DebugLog.log(message = "Treatments synced: ${treatments.size}")

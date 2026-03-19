@@ -190,6 +190,9 @@ class SettingsRepository @Inject constructor(
             put("glucose_source", prefs[KEY_GLUCOSE_SOURCE] ?: "COMPANION")
             put("follower_url", prefs[KEY_FOLLOWER_URL] ?: "")
             put("follower_poll_seconds", prefs[KEY_FOLLOWER_POLL_SECONDS] ?: 60)
+            put("treatments_sync_enabled", prefs[KEY_TREATMENTS_SYNC_ENABLED] ?: false)
+            put("insulin_type", prefs[KEY_INSULIN_TYPE] ?: "FIASP")
+            put("custom_dia", prefs[KEY_CUSTOM_DIA]?.toDouble() ?: 5.0)
         }
 
         val secrets = JSONObject().apply {
@@ -240,6 +243,9 @@ class SettingsRepository @Inject constructor(
             if (settings.has("glucose_source")) prefs[KEY_GLUCOSE_SOURCE] = settings.getString("glucose_source")
             if (settings.has("follower_url")) prefs[KEY_FOLLOWER_URL] = settings.getString("follower_url")
             if (settings.has("follower_poll_seconds")) prefs[KEY_FOLLOWER_POLL_SECONDS] = settings.getInt("follower_poll_seconds")
+            if (settings.has("treatments_sync_enabled")) prefs[KEY_TREATMENTS_SYNC_ENABLED] = settings.getBoolean("treatments_sync_enabled")
+            if (settings.has("insulin_type")) prefs[KEY_INSULIN_TYPE] = settings.getString("insulin_type")
+            if (settings.has("custom_dia")) prefs[KEY_CUSTOM_DIA] = settings.getDouble("custom_dia").toFloat()
 
             // Sync glucose source to SharedPreferences atomically with DataStore edit
             val sourceName = settings.optString("glucose_source", "COMPANION")

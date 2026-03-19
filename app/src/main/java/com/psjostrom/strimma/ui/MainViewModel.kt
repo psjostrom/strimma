@@ -165,12 +165,7 @@ class MainViewModel @Inject constructor(
         settings.treatmentsSyncEnabled
     ) { treatments, insulinType, customDIA, enabled ->
         if (!enabled || treatments.isEmpty()) return@combine 0.0
-        val tau = if (insulinType == InsulinType.CUSTOM) {
-            // Convert DIA hours to tau: DIA ~= 5 * tau, so tau = DIA_hours * 60 / 5
-            customDIA.toDouble() * 60.0 / 5.0
-        } else {
-            insulinType.tauMinutes
-        }
+        val tau = IOBComputer.tauForInsulinType(insulinType, customDIA)
         IOBComputer.computeIOB(treatments, System.currentTimeMillis(), tau)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 

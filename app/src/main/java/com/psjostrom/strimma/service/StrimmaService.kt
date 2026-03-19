@@ -238,12 +238,7 @@ class StrimmaService : Service() {
         val recent = dao.since(System.currentTimeMillis() - graphWindowMs)
 
         val iob = if (treatmentsSyncEnabled.value) {
-            val type = insulinType.value
-            val tau = if (type == InsulinType.CUSTOM) {
-                customDIA.value.toDouble() * 60.0 / 5.0
-            } else {
-                type.tauMinutes
-            }
+            val tau = IOBComputer.tauForInsulinType(insulinType.value, customDIA.value)
             val lookbackMs = (5.0 * tau * 60_000).toLong()
             val treatments = treatmentDao.insulinSince(System.currentTimeMillis() - lookbackMs)
             IOBComputer.computeIOB(treatments, System.currentTimeMillis(), tau)

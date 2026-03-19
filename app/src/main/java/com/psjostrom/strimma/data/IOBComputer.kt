@@ -5,6 +5,19 @@ import kotlin.math.exp
 object IOBComputer {
 
     /**
+     * Resolve tau (time constant in minutes) from insulin type and custom DIA.
+     * Single owner for this conversion — called by both ViewModel and Service.
+     */
+    fun tauForInsulinType(insulinType: InsulinType, customDIAHours: Float): Double {
+        return if (insulinType == InsulinType.CUSTOM) {
+            // DIA ~= 5 * tau, so tau = DIA_hours * 60 / 5
+            customDIAHours.toDouble() * 60.0 / 5.0
+        } else {
+            insulinType.tauMinutes
+        }
+    }
+
+    /**
      * Compute Insulin on Board using exponential decay model:
      * IOB(t) = dose * (1 + t/tau) * exp(-t/tau)
      *
