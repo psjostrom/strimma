@@ -194,8 +194,6 @@ class AlertManager @Inject constructor(
         } else {
             notificationManager.cancel(ALERT_LOW_ID)
             notificationManager.cancel(ALERT_URGENT_LOW_ID)
-            clearSnooze(ALERT_LOW_ID)
-            clearSnooze(ALERT_URGENT_LOW_ID)
         }
 
         // --- Highs (urgent takes priority) ---
@@ -215,8 +213,6 @@ class AlertManager @Inject constructor(
         } else {
             notificationManager.cancel(ALERT_HIGH_ID)
             notificationManager.cancel(ALERT_URGENT_HIGH_ID)
-            clearSnooze(ALERT_HIGH_ID)
-            clearSnooze(ALERT_URGENT_HIGH_ID)
         }
 
         // --- Predictive alerts (only when currently in range) ---
