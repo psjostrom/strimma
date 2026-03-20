@@ -1,6 +1,7 @@
 package com.psjostrom.strimma.widget
 
 import android.content.Context
+import androidx.core.content.edit
 import dagger.hilt.android.qualifiers.ApplicationContext
 import org.json.JSONObject
 import javax.inject.Inject
@@ -17,11 +18,11 @@ class WidgetSettingsRepository @Inject constructor(
     fun getShowPrediction(): Boolean = prefs.getBoolean(KEY_SHOW_PREDICTION, DEFAULT_SHOW_PREDICTION)
 
     fun save(opacity: Float, graphMinutes: Int, showPrediction: Boolean) {
-        prefs.edit()
-            .putFloat(KEY_OPACITY, opacity)
-            .putInt(KEY_GRAPH_MINUTES, graphMinutes)
-            .putBoolean(KEY_SHOW_PREDICTION, showPrediction)
-            .commit()
+        prefs.edit {
+            putFloat(KEY_OPACITY, opacity)
+            putInt(KEY_GRAPH_MINUTES, graphMinutes)
+            putBoolean(KEY_SHOW_PREDICTION, showPrediction)
+        }
     }
 
     fun exportToJson(): JSONObject = JSONObject().apply {

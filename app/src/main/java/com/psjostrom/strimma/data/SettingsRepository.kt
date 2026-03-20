@@ -1,6 +1,7 @@
 package com.psjostrom.strimma.data
 
 import android.content.Context
+import androidx.core.content.edit
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
@@ -279,7 +280,7 @@ class SettingsRepository @Inject constructor(
             // Sync glucose source to SharedPreferences atomically with DataStore edit
             val sourceName = settings.optString("glucose_source", "COMPANION")
             context.getSharedPreferences(SYNC_PREFS, Context.MODE_PRIVATE)
-                .edit().putString(KEY_GLUCOSE_SOURCE_SYNC, sourceName).commit()
+                .edit { putString(KEY_GLUCOSE_SOURCE_SYNC, sourceName) }
         }
 
         if (root.has("secrets")) {

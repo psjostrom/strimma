@@ -37,6 +37,8 @@ class LocalWebServer @Inject constructor(
 ) {
     companion object {
         const val PORT = 17580
+        private const val STOP_GRACE_MS = 1000L
+        private const val STOP_TIMEOUT_MS = 2000L
     }
 
     private var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
