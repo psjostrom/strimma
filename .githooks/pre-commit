@@ -1,0 +1,12 @@
+#!/bin/sh
+# Pre-commit hook: run detekt for fast local feedback.
+# Full test + lint suite runs in CI.
+
+echo "Running detekt..."
+./gradlew detekt --daemon 2>/dev/null
+
+if [ $? -ne 0 ]; then
+    echo ""
+    echo "❌ Detekt found issues. Fix them before committing."
+    exit 1
+fi
