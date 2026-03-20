@@ -249,9 +249,14 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable("settings/data") {
+                        val webServerEnabled by viewModel.webServerEnabled.collectAsState()
                         DataSettings(
                             bgBroadcastEnabled = bgBroadcastEnabled,
                             onBgBroadcastEnabledChange = viewModel::setBgBroadcastEnabled,
+                            webServerEnabled = webServerEnabled,
+                            webServerSecret = viewModel.webServerSecret,
+                            onWebServerEnabledChange = viewModel::setWebServerEnabled,
+                            onWebServerSecretChange = viewModel::setWebServerSecret,
                             onStats = {
                                 navController.navigate("stats") {
                                     launchSingleTop = true
