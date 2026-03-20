@@ -67,6 +67,9 @@ class SettingsRepository @Inject constructor(
         private val KEY_TREATMENTS_SYNC_ENABLED = booleanPreferencesKey("treatments_sync_enabled")
         private val KEY_INSULIN_TYPE = stringPreferencesKey("insulin_type")
         private val KEY_CUSTOM_DIA = floatPreferencesKey("custom_dia")
+
+        private val KEY_WEB_SERVER_ENABLED = booleanPreferencesKey("web_server_enabled")
+        private const val KEY_WEB_SERVER_SECRET = "web_server_secret"
     }
 
     val nightscoutUrl: Flow<String> = dataStore.data.map { it[KEY_NIGHTSCOUT_URL] ?: "" }
@@ -162,6 +165,14 @@ class SettingsRepository @Inject constructor(
     val customDIA: Flow<Float> = dataStore.data.map { it[KEY_CUSTOM_DIA] ?: 5.0f }
     suspend fun setCustomDIA(hours: Float) { dataStore.edit { it[KEY_CUSTOM_DIA] = hours } }
 
+    val webServerEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_WEB_SERVER_ENABLED] ?: false }
+    suspend fun setWebServerEnabled(enabled: Boolean) { dataStore.edit { it[KEY_WEB_SERVER_ENABLED] = enabled } }
+
+    fun getWebServerSecret(): String = encryptedPrefs.getString(KEY_WEB_SERVER_SECRET, "") ?: ""
+    fun setWebServerSecret(secret: String) {
+        encryptedPrefs.edit().putString(KEY_WEB_SERVER_SECRET, secret).apply()
+    }
+
     suspend fun exportToJson(): String {
         val prefs = dataStore.data.first()
         val widgetPrefs = context.getSharedPreferences("widget_prefs", Context.MODE_PRIVATE)
@@ -193,11 +204,13 @@ class SettingsRepository @Inject constructor(
             put("treatments_sync_enabled", prefs[KEY_TREATMENTS_SYNC_ENABLED] ?: false)
             put("insulin_type", prefs[KEY_INSULIN_TYPE] ?: "FIASP")
             put("custom_dia", prefs[KEY_CUSTOM_DIA]?.toDouble() ?: 5.0)
+            put("web_server_enabled", prefs[KEY_WEB_SERVER_ENABLED] ?: false)
         }
 
         val secrets = JSONObject().apply {
             put("nightscout_secret", getNightscoutSecret())
             put("follower_secret", getFollowerSecret())
+            put("web_server_secret", getWebServerSecret())
         }
 
         val widget = JSONObject().apply {
@@ -246,6 +259,7 @@ class SettingsRepository @Inject constructor(
             if (settings.has("treatments_sync_enabled")) prefs[KEY_TREATMENTS_SYNC_ENABLED] = settings.getBoolean("treatments_sync_enabled")
             if (settings.has("insulin_type")) prefs[KEY_INSULIN_TYPE] = settings.getString("insulin_type")
             if (settings.has("custom_dia")) prefs[KEY_CUSTOM_DIA] = settings.getDouble("custom_dia").toFloat()
+            if (settings.has("web_server_enabled")) prefs[KEY_WEB_SERVER_ENABLED] = settings.getBoolean("web_server_enabled")
 
             // Sync glucose source to SharedPreferences atomically with DataStore edit
             val sourceName = settings.optString("glucose_source", "COMPANION")
@@ -257,6 +271,7 @@ class SettingsRepository @Inject constructor(
             val secrets = root.getJSONObject("secrets")
             if (secrets.has("nightscout_secret")) setNightscoutSecret(secrets.getString("nightscout_secret"))
             if (secrets.has("follower_secret")) setFollowerSecret(secrets.getString("follower_secret"))
+            if (secrets.has("web_server_secret")) setWebServerSecret(secrets.getString("web_server_secret"))
         }
 
         if (root.has("widget")) {
