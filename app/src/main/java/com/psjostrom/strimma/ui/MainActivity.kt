@@ -13,6 +13,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.*
+import com.psjostrom.strimma.data.IOBComputer
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -144,6 +145,7 @@ class MainActivity : ComponentActivity() {
                             followerStatus = followerStatus,
                             treatments = treatments,
                             iob = iob,
+                            iobTauMinutes = IOBComputer.tauForInsulinType(insulinType, customDIA),
                             onSettingsClick = {
                                 navController.navigate("settings") {
                                     launchSingleTop = true

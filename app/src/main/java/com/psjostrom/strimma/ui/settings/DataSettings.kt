@@ -28,6 +28,7 @@ fun DataSettings(
 ) {
     val onBg = MaterialTheme.colorScheme.onBackground
     val outline = MaterialTheme.colorScheme.outline
+    val outlineVar = MaterialTheme.colorScheme.outlineVariant
 
 
     SettingsScaffold(title = "Data", onBack = onBack) {

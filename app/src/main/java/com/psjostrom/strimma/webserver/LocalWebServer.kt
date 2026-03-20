@@ -83,8 +83,7 @@ private fun Routing.sgvRoutes(dao: ReadingDao, treatmentDao: TreatmentDao, setti
             val insulinType = settings.insulinType.first()
             val customDIA = settings.customDIA.first()
             val tau = IOBComputer.tauForInsulinType(insulinType, customDIA)
-            val lookbackMs = (5.0 * tau * 60_000).toLong()
-            val treatments = treatmentDao.insulinSince(System.currentTimeMillis() - lookbackMs)
+            val treatments = treatmentDao.insulinSince(System.currentTimeMillis() - IOBComputer.lookbackMs(tau))
             IOBComputer.computeIOB(treatments, System.currentTimeMillis(), tau)
         } else null
 

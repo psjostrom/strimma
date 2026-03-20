@@ -22,6 +22,14 @@ object IOBComputer {
         }
     }
 
+    fun lookbackMs(tauMinutes: Double): Long =
+        (TAU_MULTIPLIER * tauMinutes * MS_PER_MINUTE).toLong()
+
+    fun iobForTreatment(dose: Double, minutesSince: Double, tauMinutes: Double): Double {
+        val t = minutesSince / tauMinutes
+        return dose * (1.0 + t) * exp(-t)
+    }
+
     /**
      * Compute Insulin on Board using exponential decay model:
      * IOB(t) = dose * (1 + t/tau) * exp(-t/tau)
@@ -31,7 +39,7 @@ object IOBComputer {
      */
     @Suppress("LoopWithTooManyJumpStatements") // Filter-and-accumulate pattern
     fun computeIOB(treatments: List<Treatment>, now: Long, tauMinutes: Double): Double {
-        val lookbackMs = (TAU_MULTIPLIER * tauMinutes * MS_PER_MINUTE).toLong()
+        val lookbackMs = lookbackMs(tauMinutes)
         val cutoff = now - lookbackMs
 
         var total = 0.0
@@ -41,9 +49,7 @@ object IOBComputer {
             if (treatment.createdAt > now) continue
 
             val minutesSince = (now - treatment.createdAt) / MS_PER_MINUTE
-            val t = minutesSince / tauMinutes
-            val iob = dose * (1.0 + t) * exp(-t)
-            total += iob
+            total += iobForTreatment(dose, minutesSince, tauMinutes)
         }
 
         return Math.round(total * ROUNDING_FACTOR) / ROUNDING_FACTOR

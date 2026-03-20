@@ -56,7 +56,7 @@ class StrimmaService : Service() {
         private const val HOURS_PER_DAY = 24
         private const val MGDL_CONVERSION = 18.0182
         private const val MMOL_ROUNDING_FACTOR = 10.0
-        private const val IOB_TAU_MULTIPLIER = 5.0
+
         private const val DELTA_DIVISOR = 5.0
     }
 
@@ -283,8 +283,7 @@ class StrimmaService : Service() {
 
         val iob = if (treatmentsSyncEnabled.value) {
             val tau = IOBComputer.tauForInsulinType(insulinType.value, customDIA.value)
-            val lookbackMs = (IOB_TAU_MULTIPLIER * tau * MINUTES_TO_MS).toLong()
-            val treatments = treatmentDao.insulinSince(System.currentTimeMillis() - lookbackMs)
+            val treatments = treatmentDao.insulinSince(System.currentTimeMillis() - IOBComputer.lookbackMs(tau))
             IOBComputer.computeIOB(treatments, System.currentTimeMillis(), tau)
         } else 0.0
 
