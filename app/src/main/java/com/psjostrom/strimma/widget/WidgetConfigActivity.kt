@@ -25,9 +25,14 @@ import com.psjostrom.strimma.ui.theme.DarkTextTertiary
 import com.psjostrom.strimma.ui.theme.InRange
 import com.psjostrom.strimma.ui.theme.StrimmaTheme
 import com.psjostrom.strimma.ui.theme.ThemeMode
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class WidgetConfigActivity : ComponentActivity() {
+
+    @Inject lateinit var widgetSettings: WidgetSettingsRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,23 +49,15 @@ class WidgetConfigActivity : ComponentActivity() {
             )
         }
 
-        val prefs = getSharedPreferences("widget_prefs", MODE_PRIVATE)
-
         setContent {
             StrimmaTheme(themeMode = ThemeMode.Dark) {
                 WidgetConfigScreen(
-                    initialOpacity = prefs.getFloat("opacity", 0.85f),
-                    initialGraphMinutes = prefs.getInt("graph_minutes", 60),
-                    initialShowPrediction = prefs.getBoolean("show_prediction", false),
+                    initialOpacity = widgetSettings.getOpacity(),
+                    initialGraphMinutes = widgetSettings.getGraphMinutes(),
+                    initialShowPrediction = widgetSettings.getShowPrediction(),
                     onSave = { opacity, graphMinutes, showPrediction ->
-                        // SharedPreferences for config UI initial values on next open
-                        prefs.edit()
-                            .putFloat("opacity", opacity)
-                            .putInt("graph_minutes", graphMinutes)
-                            .putBoolean("show_prediction", showPrediction)
-                            .commit()
+                        widgetSettings.save(opacity, graphMinutes, showPrediction)
 
-                        // Write settings to Glance state then update widget
                         val appContext = applicationContext
                         lifecycleScope.launch {
                             val manager = GlanceAppWidgetManager(appContext)

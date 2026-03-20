@@ -37,10 +37,6 @@ class StrimmaWidget : GlanceAppWidget() {
         val KEY_OPACITY = floatPreferencesKey("opacity")
         val KEY_GRAPH_MINUTES = intPreferencesKey("graph_minutes")
         val KEY_SHOW_PREDICTION = booleanPreferencesKey("show_prediction")
-
-        const val DEFAULT_OPACITY = 0.85f
-        const val DEFAULT_GRAPH_MINUTES = 60
-        const val DEFAULT_SHOW_PREDICTION = false
     }
 
     override val stateDefinition = PreferencesGlanceStateDefinition
@@ -48,7 +44,7 @@ class StrimmaWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val db = StrimmaDatabase.getInstance(context)
         val dao = db.readingDao()
-        val settings = SettingsRepository(context)
+        val settings = SettingsRepository(context, WidgetSettingsRepository(context))
         val bgLow = settings.bgLow.first()
         val bgHigh = settings.bgHigh.first()
         val glucoseUnit = settings.glucoseUnit.first()
@@ -60,9 +56,9 @@ class StrimmaWidget : GlanceAppWidget() {
         provideContent {
             // Read widget settings from Glance state — reactive to updateAppWidgetState
             val state = currentState<Preferences>()
-            val opacity = state[KEY_OPACITY] ?: DEFAULT_OPACITY
-            val graphMinutes = state[KEY_GRAPH_MINUTES] ?: DEFAULT_GRAPH_MINUTES
-            val showPrediction = state[KEY_SHOW_PREDICTION] ?: DEFAULT_SHOW_PREDICTION
+            val opacity = state[KEY_OPACITY] ?: WidgetSettingsRepository.DEFAULT_OPACITY
+            val graphMinutes = state[KEY_GRAPH_MINUTES] ?: WidgetSettingsRepository.DEFAULT_GRAPH_MINUTES
+            val showPrediction = state[KEY_SHOW_PREDICTION] ?: WidgetSettingsRepository.DEFAULT_SHOW_PREDICTION
             val graphWindowMs = graphMinutes * 60_000L
             val predictionMinutes = if (showPrediction) 5 else 0
 

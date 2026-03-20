@@ -13,7 +13,6 @@ fun DataSettings(
     bgBroadcastEnabled: Boolean,
     onBgBroadcastEnabledChange: (Boolean) -> Unit,
     onStats: () -> Unit,
-    onWidgetSettings: () -> Unit,
     onExportSettings: () -> Unit,
     onImportSettings: () -> Unit,
     onPullFromNightscout: (Int) -> Unit,
@@ -30,12 +29,6 @@ fun DataSettings(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Statistics")
-            }
-            OutlinedButton(
-                onClick = onWidgetSettings,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Widget Settings")
             }
         }
 

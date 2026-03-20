@@ -122,7 +122,6 @@ class MainActivity : ComponentActivity() {
                 val customDIA by viewModel.customDIA.collectAsState()
                 val treatments by viewModel.treatments.collectAsState()
                 val iob by viewModel.iob.collectAsState()
-
                 NavHost(navController, startDestination = "main") {
                     composable("main") {
                         MainScreen(
@@ -247,11 +246,6 @@ class MainActivity : ComponentActivity() {
                                 navController.navigate("stats") {
                                     launchSingleTop = true
                                 }
-                            },
-                            onWidgetSettings = {
-                                startActivity(Intent(this@MainActivity, com.psjostrom.strimma.widget.WidgetConfigActivity::class.java).apply {
-                                    putExtra(android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_ID, 0)
-                                })
                             },
                             onExportSettings = {
                                 AlertDialog.Builder(this@MainActivity)
