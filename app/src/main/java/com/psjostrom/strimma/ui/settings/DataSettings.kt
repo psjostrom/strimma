@@ -21,7 +21,6 @@ fun DataSettings(
     onWebServerEnabledChange: (Boolean) -> Unit,
     onWebServerSecretChange: (String) -> Unit,
     onStats: () -> Unit,
-    onWidgetSettings: () -> Unit,
     onExportSettings: () -> Unit,
     onImportSettings: () -> Unit,
     onPullFromNightscout: (Int) -> Unit,
@@ -38,12 +37,6 @@ fun DataSettings(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Statistics")
-            }
-            OutlinedButton(
-                onClick = onWidgetSettings,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Widget Settings")
             }
         }
 

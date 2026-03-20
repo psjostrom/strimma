@@ -10,6 +10,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import com.psjostrom.strimma.widget.WidgetSettingsRepository
 import org.json.JSONObject
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -19,7 +20,8 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 @Suppress("TooManyFunctions") // One getter+setter per setting
 @Singleton
 class SettingsRepository @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val widgetSettingsRepository: WidgetSettingsRepository
 ) {
     private val dataStore = context.dataStore
 
@@ -196,7 +198,6 @@ class SettingsRepository @Inject constructor(
     @Suppress("CyclomaticComplexMethod") // Flat serialization of all settings
     suspend fun exportToJson(): String {
         val prefs = dataStore.data.first()
-        val widgetPrefs = context.getSharedPreferences("widget_prefs", Context.MODE_PRIVATE)
 
         val settings = JSONObject().apply {
             put("nightscout_url", prefs[KEY_NIGHTSCOUT_URL] ?: "")
@@ -234,18 +235,12 @@ class SettingsRepository @Inject constructor(
             put("web_server_secret", getWebServerSecret())
         }
 
-        val widget = JSONObject().apply {
-            put("opacity", widgetPrefs.getFloat("opacity", DEFAULT_WIDGET_OPACITY).toDouble())
-            put("graph_minutes", widgetPrefs.getInt("graph_minutes", DEFAULT_NOTIF_GRAPH_MINUTES))
-            put("show_prediction", widgetPrefs.getBoolean("show_prediction", false))
-        }
-
         return JSONObject().apply {
             put("version", 1)
             put("exported_at", java.time.Instant.now().toString())
             put("settings", settings)
             put("secrets", secrets)
-            put("widget", widget)
+            put("widget", widgetSettingsRepository.exportToJson())
         }.toString(2)
     }
 
@@ -299,20 +294,7 @@ class SettingsRepository @Inject constructor(
         }
 
         if (root.has("widget")) {
-            val widget = root.getJSONObject("widget")
-            val validGraphMinutes = setOf(
-                DEFAULT_NOTIF_GRAPH_MINUTES_MAX, DEFAULT_NOTIF_GRAPH_MINUTES,
-                DEFAULT_WIDGET_GRAPH_MINUTES, DEFAULT_WIDGET_GRAPH_MINUTES_MAX
-            )
-            context.getSharedPreferences("widget_prefs", Context.MODE_PRIVATE).edit().apply {
-                if (widget.has("opacity")) putFloat("opacity", widget.getDouble("opacity").toFloat().coerceIn(0f, 1f))
-                if (widget.has("graph_minutes")) {
-                    val mins = widget.getInt("graph_minutes")
-                    if (mins in validGraphMinutes) putInt("graph_minutes", mins)
-                }
-                if (widget.has("show_prediction")) putBoolean("show_prediction", widget.getBoolean("show_prediction"))
-                apply()
-            }
+            widgetSettingsRepository.importFromJson(root.getJSONObject("widget"))
         }
     }
 }
