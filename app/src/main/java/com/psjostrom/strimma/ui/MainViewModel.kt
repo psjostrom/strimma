@@ -48,10 +48,10 @@ class MainViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 4)
 
     val bgLow: StateFlow<Float> = settings.bgLow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 4.0f)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 72f)
 
     val bgHigh: StateFlow<Float> = settings.bgHigh
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 10.0f)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 180f)
 
     val nightscoutSecret: String get() = settings.getNightscoutSecret()
 
@@ -69,15 +69,15 @@ class MainViewModel @Inject constructor(
     val alertUrgentLowEnabled: StateFlow<Boolean> = settings.alertUrgentLowEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
     val alertLow: StateFlow<Float> = settings.alertLow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 4.0f)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 72f)
     val alertHigh: StateFlow<Float> = settings.alertHigh
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 10.0f)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 180f)
     val alertUrgentLow: StateFlow<Float> = settings.alertUrgentLow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 3.0f)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 54f)
     val alertUrgentHighEnabled: StateFlow<Boolean> = settings.alertUrgentHighEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
     val alertUrgentHigh: StateFlow<Float> = settings.alertUrgentHigh
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 13.0f)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 234f)
     val alertStaleEnabled: StateFlow<Boolean> = settings.alertStaleEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
     val alertLowSoonEnabled: StateFlow<Boolean> = settings.alertLowSoonEnabled
@@ -198,10 +198,10 @@ class MainViewModel @Inject constructor(
     suspend fun exportCsv(hours: Int): String {
         val readings = readingsForPeriod(hours)
         return buildString {
-            appendLine("timestamp,datetime,mmol,sgv,direction,delta_mmol")
+            appendLine("timestamp,datetime,sgv,direction,delta")
             val sdf = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault())
             for (r in readings) {
-                appendLine("${r.ts},${sdf.format(java.util.Date(r.ts))},${r.mmol},${r.sgv},${r.direction},${r.deltaMmol ?: ""}")
+                appendLine("${r.ts},${sdf.format(java.util.Date(r.ts))},${r.sgv},${r.direction},${r.delta ?: ""}")
             }
         }
     }

@@ -7,8 +7,7 @@ import androidx.room.PrimaryKey
 data class GlucoseReading(
     @PrimaryKey val ts: Long,
     val sgv: Int,
-    val mmol: Double,
     val direction: String,
-    val deltaMmol: Double?,
+    val delta: Double?,
     val pushed: Int = 0
 )

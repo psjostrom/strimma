@@ -98,8 +98,8 @@ private fun WidgetContent(
 
     val statusColor = when {
         reading == null -> staleColor
-        reading.mmol < bgLow -> ColorProvider(Color(0xFFFF4D6A))
-        reading.mmol > bgHigh -> ColorProvider(Color(0xFFFFB800))
+        reading.sgv < bgLow -> ColorProvider(Color(0xFFFF4D6A))
+        reading.sgv > bgHigh -> ColorProvider(Color(0xFFFFB800))
         else -> ColorProvider(Color(0xFF56CCF2))
     }
 
@@ -113,14 +113,8 @@ private fun WidgetContent(
         try { Direction.valueOf(it.direction) } catch (_: Exception) { Direction.NONE }
     } ?: Direction.NONE
 
-    val bgValue = reading?.let { glucoseUnit.format(it.mmol) } ?: "--"
-    val deltaText = reading?.deltaMmol?.let {
-        val sign = if (it >= 0) "+" else ""
-        when (glucoseUnit) {
-            GlucoseUnit.MMOL -> "$sign%.1f".format(it)
-            GlucoseUnit.MGDL -> "$sign%.0f".format(it * GlucoseUnit.MGDL_FACTOR)
-        }
-    } ?: ""
+    val bgValue = reading?.let { glucoseUnit.format(it.sgv) } ?: "--"
+    val deltaText = reading?.delta?.let { glucoseUnit.formatDeltaCompact(it) } ?: ""
     val timeText = when {
         minutesAgo < 0 -> "No data"
         minutesAgo == 0 -> "now"

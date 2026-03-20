@@ -42,7 +42,7 @@ class NightscoutFollowerTest {
     }
 
     @Test
-    fun `filterValidEntries skips out-of-range mmol values`() {
+    fun `filterValidEntries skips out-of-range sgv values`() {
         val entries = listOf(
             NightscoutEntryResponse(sgv = 10, date = 1000L, type = "sgv"),
             NightscoutEntryResponse(sgv = 120, date = 2000L, type = "sgv"),
@@ -71,17 +71,5 @@ class NightscoutFollowerTest {
     fun `filterValidEntries handles empty list`() {
         val valid = NightscoutFollower.filterValidEntries(emptyList())
         assertTrue(valid.isEmpty())
-    }
-
-    @Test
-    fun `sgvToMmol converts correctly`() {
-        assertEquals(5.5, NightscoutFollower.sgvToMmol(100), 0.01)
-        assertEquals(11.1, NightscoutFollower.sgvToMmol(200), 0.01)
-    }
-
-    @Test
-    fun `sgvToMmol rounds to 1 decimal place`() {
-        val mmol = NightscoutFollower.sgvToMmol(123)
-        assertEquals(6.8, mmol, 0.01)
     }
 }

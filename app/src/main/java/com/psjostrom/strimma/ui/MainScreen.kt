@@ -206,8 +206,8 @@ private fun BgHeader(
 
     val bgColor = when {
         reading == null || isStale -> Stale
-        reading.mmol < bgLow -> BelowLow
-        reading.mmol > bgHigh -> AboveHigh
+        reading.sgv < bgLow -> BelowLow
+        reading.sgv > bgHigh -> AboveHigh
         else -> InRange
     }
 
@@ -223,7 +223,7 @@ private fun BgHeader(
             horizontalArrangement = Arrangement.Center
         ) {
             Text(
-                text = reading?.let { glucoseUnit.format(it.mmol) } ?: "--",
+                text = reading?.let { glucoseUnit.format(it.sgv) } ?: "--",
                 color = bgColor,
                 fontSize = 64.sp,
                 fontWeight = FontWeight.Bold
@@ -242,7 +242,7 @@ private fun BgHeader(
             else -> "$minutesAgo min ago"
         }
         val subtitleParts = buildList {
-            reading?.deltaMmol?.let { add(glucoseUnit.formatDelta(it)) }
+            reading?.delta?.let { add(glucoseUnit.formatDelta(it)) }
             add(timeText)
         }
         Text(
@@ -524,7 +524,7 @@ fun GlucoseGraph(
         val plotWidth = size.width - marginLeft - marginRight
         val plotHeight = size.height - marginTop - marginBottom
 
-        val yr = computeYRange(sorted.map { it.mmol }, bgLow, bgHigh)
+        val yr = computeYRange(sorted.map { it.sgv.toDouble() }, bgLow, bgHigh)
 
         fun xFor(ts: Long): Float =
             marginLeft + ((ts - visibleStart).toFloat() / visibleMs) * plotWidth
@@ -561,15 +561,15 @@ fun GlucoseGraph(
         for (i in sorted.indices) {
             val r = sorted[i]
             val x = xFor(r.ts)
-            val y = yFor(r.mmol)
-            val color = dotColor(r.mmol, bgLow, bgHigh)
+            val y = yFor(r.sgv.toDouble())
+            val color = dotColor(r.sgv.toDouble(), bgLow, bgHigh)
 
             if (i < sorted.lastIndex) {
                 val next = sorted[i + 1]
                 drawLine(
                     color = color,
                     start = Offset(x, y),
-                    end = Offset(xFor(next.ts), yFor(next.mmol)),
+                    end = Offset(xFor(next.ts), yFor(next.sgv.toDouble())),
                     strokeWidth = 2f
                 )
             }
@@ -584,10 +584,10 @@ fun GlucoseGraph(
             val predColor = predictionColor
             val predDash = PathEffect.dashPathEffect(floatArrayOf(6f, 6f))
             var prevPx = xFor(prediction.anchorTs)
-            var prevPy = yFor(prediction.anchorMmol)
+            var prevPy = yFor(prediction.anchorMgdl)
             for (pt in prediction.points) {
                 val px = xFor(prediction.anchorTs + pt.minuteOffset * 60_000L)
-                val py = yFor(pt.mmol)
+                val py = yFor(pt.mgdl)
                 if (px > size.width - marginRight) break
                 drawLine(
                     color = predColor,
@@ -652,7 +652,7 @@ fun GlucoseGraph(
         // Scrub crosshair + tooltip
         selectedReading?.let { sel ->
             val pointX = xFor(sel.ts)
-            val pointY = yFor(sel.mmol)
+            val pointY = yFor(sel.sgv.toDouble())
 
             drawLine(
                 color = crosshairColor,
@@ -663,9 +663,9 @@ fun GlucoseGraph(
 
             val sdf = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
             val timeStr = sdf.format(java.util.Date(sel.ts))
-            val valueStr = glucoseUnit.format(sel.mmol)
+            val valueStr = glucoseUnit.format(sel.sgv)
             val direction = try { Direction.valueOf(sel.direction) } catch (_: Exception) { Direction.NONE }
-            val deltaStr = sel.deltaMmol?.let { glucoseUnit.format(kotlin.math.abs(it)) }
+            val deltaStr = sel.delta?.let { glucoseUnit.format(kotlin.math.abs(it)) }
 
             val line1 = "$valueStr ${direction.arrow}"
             val line2 = if (deltaStr != null) "$timeStr  $deltaStr" else timeStr
@@ -739,19 +739,19 @@ fun GlucoseGraph(
         }
 
         textPaint.textAlign = android.graphics.Paint.Align.RIGHT
-        val yStepMmol = if (yr.range > 10) 2.0 else 1.0
         val yStep = if (glucoseUnit == GlucoseUnit.MGDL) {
-            val mgStep = if (yr.range * GlucoseUnit.MGDL_FACTOR > 180) 50.0 else 25.0
-            mgStep / GlucoseUnit.MGDL_FACTOR
-        } else yStepMmol
+            if (yr.range > 180.0) 50.0 else 25.0
+        } else {
+            if (yr.range > 180.0) 2.0 * GlucoseUnit.MGDL_FACTOR else GlucoseUnit.MGDL_FACTOR
+        }
         var yLabel = Math.ceil(yr.yMin / yStep) * yStep
         while (yLabel <= yr.yMax) {
             val y = yFor(yLabel)
             if (y > marginTop + 10 && y < size.height - marginBottom - 10) {
                 val labelText = if (glucoseUnit == GlucoseUnit.MGDL) {
-                    "%.0f".format(yLabel * GlucoseUnit.MGDL_FACTOR)
-                } else {
                     "%.0f".format(yLabel)
+                } else {
+                    "%.0f".format(yLabel / GlucoseUnit.MGDL_FACTOR)
                 }
                 drawContext.canvas.nativeCanvas.drawText(
                     labelText, marginLeft - 6f, y + 8f, textPaint
@@ -813,7 +813,7 @@ fun Minimap(
         val w = size.width
         val h = size.height
 
-        val yr = computeYRange(sorted.map { it.mmol }, bgLow, bgHigh)
+        val yr = computeYRange(sorted.map { it.sgv.toDouble() }, bgLow, bgHigh)
 
         fun xFor(ts: Long): Float = ((ts - minimapStart).toFloat() / MINIMAP_WINDOW_MS) * w
         fun yFor(mmol: Double): Float = ((yr.yMax - mmol) / yr.range).toFloat() * h
@@ -832,8 +832,8 @@ fun Minimap(
         // Data points
         for (r in sorted) {
             val x = xFor(r.ts)
-            val y = yFor(r.mmol)
-            drawCircle(color = dotColor(r.mmol, bgLow, bgHigh), radius = 2.5f, center = Offset(x, y))
+            val y = yFor(r.sgv.toDouble())
+            drawCircle(color = dotColor(r.sgv.toDouble(), bgLow, bgHigh), radius = 2.5f, center = Offset(x, y))
         }
 
         // Viewport rectangle
@@ -897,7 +897,7 @@ internal fun findNearestDot(
     viewport: GraphViewport
 ): GlucoseReading? {
     if (sorted.isEmpty()) return null
-    val yr = computeYRange(sorted.map { it.mmol }, viewport.bgLow, viewport.bgHigh)
+    val yr = computeYRange(sorted.map { it.sgv.toDouble() }, viewport.bgLow, viewport.bgHigh)
 
     fun xFor(ts: Long): Float =
         viewport.marginLeft + ((ts - viewport.visibleStart).toFloat() / viewport.visibleMs) * viewport.plotWidth
@@ -908,7 +908,7 @@ internal fun findNearestDot(
     var closestDist = DOT_HIT_RADIUS
     for (r in sorted) {
         val dx = xFor(r.ts) - finger.x
-        val dy = yFor(r.mmol) - finger.y
+        val dy = yFor(r.sgv.toDouble()) - finger.y
         val dist = kotlin.math.sqrt(dx * dx + dy * dy)
         if (dist < closestDist) {
             closestDist = dist

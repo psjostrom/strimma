@@ -10,12 +10,12 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class SgvRouteTest {
 
-    private fun reading(ts: Long, sgv: Int, mmol: Double, direction: String, deltaMmol: Double?) =
-        GlucoseReading(ts = ts, sgv = sgv, mmol = mmol, direction = direction, deltaMmol = deltaMmol, pushed = 1)
+    private fun reading(ts: Long, sgv: Int, direction: String, delta: Double?) =
+        GlucoseReading(ts = ts, sgv = sgv, direction = direction, delta = delta, pushed = 1)
 
     @Test
     fun `builds JSON array with required fields`() {
-        val readings = listOf(reading(1000L, 168, 9.3, "FortyFiveUp", 0.1))
+        val readings = listOf(reading(1000L, 168, "FortyFiveUp", 2.0))
         val json = buildSgvJson(readings, briefMode = false, unitsHint = "mmol", iob = null, stepsResult = null, heartResult = null)
         val arr = JSONArray(json)
         assertEquals(1, arr.length())
@@ -30,7 +30,7 @@ class SgvRouteTest {
 
     @Test
     fun `brief mode omits verbose fields`() {
-        val readings = listOf(reading(1000L, 168, 9.3, "Flat", 0.0))
+        val readings = listOf(reading(1000L, 168, "Flat", 0.0))
         val json = buildSgvJson(readings, briefMode = true, unitsHint = "mmol", iob = null, stepsResult = null, heartResult = null)
         val obj = JSONArray(json).getJSONObject(0)
         assertFalse(obj.has("_id"))
@@ -45,7 +45,7 @@ class SgvRouteTest {
 
     @Test
     fun `first entry has units_hint`() {
-        val readings = listOf(reading(2000L, 100, 5.5, "Flat", 0.0), reading(1000L, 90, 5.0, "Flat", -0.1))
+        val readings = listOf(reading(2000L, 100, "Flat", 0.0), reading(1000L, 90, "Flat", -2.0))
         val json = buildSgvJson(readings, briefMode = true, unitsHint = "mgdl", iob = null, stepsResult = null, heartResult = null)
         val arr = JSONArray(json)
         assertEquals("mgdl", arr.getJSONObject(0).getString("units_hint"))
@@ -54,14 +54,14 @@ class SgvRouteTest {
 
     @Test
     fun `first entry includes iob when provided`() {
-        val readings = listOf(reading(1000L, 168, 9.3, "Flat", 0.0))
+        val readings = listOf(reading(1000L, 168, "Flat", 0.0))
         val json = buildSgvJson(readings, briefMode = true, unitsHint = "mmol", iob = 2.5, stepsResult = null, heartResult = null)
         assertEquals(2.5, JSONArray(json).getJSONObject(0).getDouble("iob"), 0.01)
     }
 
     @Test
     fun `first entry includes steps and heart results when provided`() {
-        val readings = listOf(reading(1000L, 168, 9.3, "Flat", 0.0))
+        val readings = listOf(reading(1000L, 168, "Flat", 0.0))
         val json = buildSgvJson(readings, briefMode = true, unitsHint = "mmol", iob = null, stepsResult = 200, heartResult = 200)
         val obj = JSONArray(json).getJSONObject(0)
         assertEquals(200, obj.getInt("steps_result"))
@@ -69,15 +69,15 @@ class SgvRouteTest {
     }
 
     @Test
-    fun `delta converted to mgdl`() {
-        val readings = listOf(reading(1000L, 168, 9.3, "FortyFiveUp", 0.5))
+    fun `delta passed through as mgdl`() {
+        val readings = listOf(reading(1000L, 168, "FortyFiveUp", 9.0))
         val json = buildSgvJson(readings, briefMode = true, unitsHint = "mmol", iob = null, stepsResult = null, heartResult = null)
-        assertEquals(9.0, JSONArray(json).getJSONObject(0).getDouble("delta"), 0.2)
+        assertEquals(9.0, JSONArray(json).getJSONObject(0).getDouble("delta"), 0.01)
     }
 
     @Test
     fun `null delta produces zero`() {
-        val readings = listOf(reading(1000L, 168, 9.3, "NONE", null))
+        val readings = listOf(reading(1000L, 168, "NONE", null))
         val json = buildSgvJson(readings, briefMode = true, unitsHint = "mmol", iob = null, stepsResult = null, heartResult = null)
         assertEquals(0.0, JSONArray(json).getJSONObject(0).getDouble("delta"), 0.001)
     }

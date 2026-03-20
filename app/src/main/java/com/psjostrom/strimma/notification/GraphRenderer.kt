@@ -50,11 +50,11 @@ object GraphRenderer {
     private const val LABEL_MARGIN_TOP = 8f
     private const val LABEL_MARGIN_BOTTOM = 8f
 
-    // Y-axis step thresholds
+    // Y-axis step thresholds (all in mg/dL now — yRange is in mg/dL)
     private const val MGDL_Y_RANGE_THRESHOLD = 180.0
     private const val MGDL_Y_STEP_LARGE = 50.0
     private const val MGDL_Y_STEP_SMALL = 25.0
-    private const val MMOL_Y_RANGE_THRESHOLD = 10.0
+    private const val MMOL_Y_RANGE_THRESHOLD = 180.0
 
     // Alpha values
     private const val PREDICTION_ALPHA = 128
@@ -91,11 +91,11 @@ object GraphRenderer {
         val plotHeight = height - marginTop - marginBottom
 
         val visible = readings.filter { it.ts >= startTime }.sortedBy { it.ts }
-        val yr = computeYRange(visible.map { it.mmol }, bgLow, bgHigh)
+        val yr = computeYRange(visible.map { it.sgv.toDouble() }, bgLow, bgHigh)
 
         val totalMs = endTime - startTime
         fun xFor(ts: Long): Float = marginLeft + ((ts - startTime).toFloat() / totalMs) * plotWidth
-        fun yFor(mmol: Double): Float = marginTop + ((yr.yMax - mmol) / yr.range).toFloat() * plotHeight
+        fun yFor(mgdl: Double): Float = marginTop + ((yr.yMax - mgdl) / yr.range).toFloat() * plotHeight
 
         // Zone backgrounds
         val zonePaint = Paint().apply { style = Paint.Style.FILL }
@@ -137,13 +137,13 @@ object GraphRenderer {
         for (i in visible.indices) {
             val r = visible[i]
             val x = xFor(r.ts)
-            val y = yFor(r.mmol)
-            val color = canvasColorFor(r.mmol, bgLow, bgHigh)
+            val y = yFor(r.sgv.toDouble())
+            val color = canvasColorFor(r.sgv.toDouble(), bgLow, bgHigh)
 
             if (i < visible.lastIndex) {
                 val next = visible[i + 1]
                 linePaint.color = color
-                canvas.drawLine(x, y, xFor(next.ts), yFor(next.mmol), linePaint)
+                canvas.drawLine(x, y, xFor(next.ts), yFor(next.sgv.toDouble()), linePaint)
             }
 
             dotPaint.color = color
@@ -166,10 +166,10 @@ object GraphRenderer {
                 alpha = PREDICTION_ALPHA
             }
             var prevPx = xFor(prediction.anchorTs)
-            var prevPy = yFor(prediction.anchorMmol)
+            var prevPy = yFor(prediction.anchorMgdl)
             for (pt in prediction.points) {
                 val px = xFor(prediction.anchorTs + pt.minuteOffset * MINUTE_IN_MS)
-                val py = yFor(pt.mmol)
+                val py = yFor(pt.mgdl)
                 if (px > width - marginRight) break
                 canvas.drawLine(prevPx, prevPy, px, py, predLinePaint)
                 canvas.drawCircle(px, py, dotR * COMPACT_DOT_SCALE, predPaint)
@@ -200,19 +200,18 @@ object GraphRenderer {
 
             textPaint.textAlign = Paint.Align.RIGHT
             val yStep = if (glucoseUnit == GlucoseUnit.MGDL) {
-                val mgStep = if (yr.range * GlucoseUnit.MGDL_FACTOR > MGDL_Y_RANGE_THRESHOLD) MGDL_Y_STEP_LARGE else MGDL_Y_STEP_SMALL
-                mgStep / GlucoseUnit.MGDL_FACTOR
+                if (yr.range > MGDL_Y_RANGE_THRESHOLD) MGDL_Y_STEP_LARGE else MGDL_Y_STEP_SMALL
             } else {
-                if (yr.range > MMOL_Y_RANGE_THRESHOLD) 2.0 else 1.0
+                if (yr.range > MMOL_Y_RANGE_THRESHOLD) 2.0 * GlucoseUnit.MGDL_FACTOR else GlucoseUnit.MGDL_FACTOR
             }
             var yLabel = Math.ceil(yr.yMin / yStep) * yStep
             while (yLabel <= yr.yMax) {
                 val y = yFor(yLabel)
                 if (y > marginTop + LABEL_MARGIN_TOP && y < height - marginBottom - LABEL_MARGIN_BOTTOM) {
                     val labelText = if (glucoseUnit == GlucoseUnit.MGDL) {
-                        "%.0f".format(yLabel * GlucoseUnit.MGDL_FACTOR)
-                    } else {
                         "%.0f".format(yLabel)
+                    } else {
+                        "%.0f".format(yLabel / GlucoseUnit.MGDL_FACTOR)
                     }
                     canvas.drawText(labelText, marginLeft - LABEL_Y_OFFSET, y + LABEL_X_OFFSET, textPaint)
                 }

@@ -38,8 +38,8 @@ import javax.inject.Inject
 class StrimmaService : Service() {
 
     companion object {
-        private const val DEFAULT_BG_LOW = 4.0
-        private const val DEFAULT_BG_HIGH = 10.0
+        private const val DEFAULT_BG_LOW = 72.0
+        private const val DEFAULT_BG_HIGH = 180.0
         private const val DEFAULT_PREDICTION_MINUTES = 15
         private const val DEFAULT_NOTIF_GRAPH_MINUTES = 60
         private const val DEFAULT_CUSTOM_DIA = 5.0f
@@ -54,10 +54,12 @@ class StrimmaService : Service() {
         private const val STALE_CHECK_INTERVAL_SECONDS = 60
         private const val SECONDS_TO_MS = 1000L
         private const val HOURS_PER_DAY = 24
-        private const val MGDL_CONVERSION = 18.0182
-        private const val MMOL_ROUNDING_FACTOR = 10.0
+        private const val DELTA_ROUNDING_FACTOR = 10.0
 
         private const val DELTA_DIVISOR = 5.0
+        private const val MGDL_FACTOR = 18.0182
+        private const val MIN_VALID_MGDL = 18.0
+        private const val MAX_VALID_MGDL = 900.0
     }
 
     @Inject lateinit var dao: ReadingDao
@@ -179,10 +181,10 @@ class StrimmaService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == GlucoseNotificationListener.ACTION_GLUCOSE_RECEIVED) {
-            val mmol = intent.getDoubleExtra(GlucoseNotificationListener.EXTRA_MMOL, 0.0)
+            val mgdl = intent.getDoubleExtra(GlucoseNotificationListener.EXTRA_MGDL, 0.0)
             val timestamp = intent.getLongExtra(GlucoseNotificationListener.EXTRA_TIMESTAMP, 0L)
-            if (mmol > 0.0 && timestamp > 0L) {
-                scope.launch { processReading(mmol, timestamp) }
+            if (mgdl > 0.0 && timestamp > 0L) {
+                scope.launch { processReading(mgdl, timestamp) }
             }
         }
         return START_STICKY
@@ -241,27 +243,30 @@ class StrimmaService : Service() {
         DebugLog.log("Nightscout follower stopped")
     }
 
-    private suspend fun processReading(mmol: Double, timestamp: Long) {
-        val sgv = (mmol * MGDL_CONVERSION).toInt()
-        val roundedMmol = Math.round(mmol * MMOL_ROUNDING_FACTOR) / MMOL_ROUNDING_FACTOR
+    private suspend fun processReading(mgdl: Double, timestamp: Long) {
+        if (mgdl < MIN_VALID_MGDL || mgdl > MAX_VALID_MGDL) {
+            DebugLog.log("Rejected invalid mg/dL value: $mgdl")
+            return
+        }
+        val sgv = Math.round(mgdl).toInt()
 
         val existing = dao.lastN(1)
         if (existing.isNotEmpty() && (timestamp - existing[0].ts) < DUPLICATE_THRESHOLD_MS) return
 
         val recentReadings = dao.since(timestamp - LOOKBACK_MINUTES * MINUTES_TO_MS)
         val tempReading = GlucoseReading(
-            ts = timestamp, sgv = sgv, mmol = roundedMmol,
-            direction = "NONE", deltaMmol = null, pushed = 0
+            ts = timestamp, sgv = sgv,
+            direction = "NONE", delta = null, pushed = 0
         )
-        val (direction, deltaMmol) = directionComputer.compute(recentReadings, tempReading)
+        val (direction, deltaMgdl) = directionComputer.compute(recentReadings, tempReading)
 
         val reading = tempReading.copy(
             direction = direction.name,
-            deltaMmol = deltaMmol?.let { Math.round(it * MMOL_ROUNDING_FACTOR) / MMOL_ROUNDING_FACTOR }
+            delta = deltaMgdl?.let { Math.round(it * DELTA_ROUNDING_FACTOR) / DELTA_ROUNDING_FACTOR }
         )
 
         dao.insert(reading)
-        DebugLog.log("Stored: ${reading.mmol} ${direction.arrow}")
+        DebugLog.log("Stored: ${reading.sgv} mg/dL ${direction.arrow}")
         pusher.pushReading(reading)
         updateNotification()
         // PredictionComputer uses 12-min lookback internally; 15 min ensures sufficient history
@@ -299,7 +304,7 @@ class StrimmaService : Service() {
             putExtra("com.eveningoutpost.dexdrip.Extras.BgEstimate", reading.sgv.toDouble())
             putExtra("com.eveningoutpost.dexdrip.Extras.Raw", reading.sgv.toDouble())
             putExtra("com.eveningoutpost.dexdrip.Extras.Time", reading.ts)
-            putExtra("com.eveningoutpost.dexdrip.Extras.BgSlope", (reading.deltaMmol ?: 0.0) / DELTA_DIVISOR)
+            putExtra("com.eveningoutpost.dexdrip.Extras.BgSlope", ((reading.delta ?: 0.0) / MGDL_FACTOR) / DELTA_DIVISOR)
             putExtra("com.eveningoutpost.dexdrip.Extras.SensorId", "Strimma")
             val direction = try {
                 com.psjostrom.strimma.data.Direction.valueOf(reading.direction)

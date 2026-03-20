@@ -13,45 +13,47 @@ enum class GlucoseUnit {
         MGDL -> "mg/dl"
     }
 
-    fun format(mmol: Double): String = when (this) {
-        MMOL -> "%.1f".format(mmol)
-        MGDL -> "%.0f".format(mmol * MGDL_FACTOR)
+    fun format(mgdl: Double): String = when (this) {
+        MMOL -> "%.1f".format(mgdl / MGDL_FACTOR)
+        MGDL -> "%.0f".format(mgdl)
     }
 
-    fun formatWithUnit(mmol: Double): String = "${format(mmol)} $label"
+    fun format(sgv: Int): String = format(sgv.toDouble())
 
-    fun formatDelta(deltaMmol: Double): String {
-        val sign = if (deltaMmol >= 0) "+" else ""
+    fun formatWithUnit(mgdl: Double): String = "${format(mgdl)} $label"
+
+    fun formatDelta(deltaMgdl: Double): String {
+        val sign = if (deltaMgdl >= 0) "+" else ""
         return when (this) {
-            MMOL -> "$sign%.1f $shortLabel".format(deltaMmol)
-            MGDL -> "$sign%.0f $shortLabel".format(deltaMmol * MGDL_FACTOR)
+            MMOL -> "$sign%.1f $shortLabel".format(deltaMgdl / MGDL_FACTOR)
+            MGDL -> "$sign%.0f $shortLabel".format(deltaMgdl)
         }
     }
 
-    fun formatDeltaCompact(deltaMmol: Double): String {
-        val sign = if (deltaMmol >= 0) "+" else ""
+    fun formatDeltaCompact(deltaMgdl: Double): String {
+        val sign = if (deltaMgdl >= 0) "+" else ""
         return when (this) {
-            MMOL -> "$sign%.1f".format(deltaMmol)
-            MGDL -> "$sign%.0f".format(deltaMmol * MGDL_FACTOR)
+            MMOL -> "$sign%.1f".format(deltaMgdl / MGDL_FACTOR)
+            MGDL -> "$sign%.0f".format(deltaMgdl)
         }
     }
 
-    fun formatThreshold(mmol: Float): String = when (this) {
-        MMOL -> "%.1f".format(mmol)
-        MGDL -> "%.0f".format(mmol * MGDL_FACTOR)
+    fun formatThreshold(mgdl: Float): String = when (this) {
+        MMOL -> "%.1f".format(mgdl / MGDL_FACTOR)
+        MGDL -> "%.0f".format(mgdl)
     }
 
     fun parseThreshold(text: String): Float? {
         val value = text.replace(",", ".").toFloatOrNull() ?: return null
         return when (this) {
-            MMOL -> value
-            MGDL -> (value / MGDL_FACTOR).toFloat()
+            MMOL -> (value * MGDL_FACTOR).toFloat()
+            MGDL -> value
         }
     }
 
-    fun displayValue(mmol: Double): Double = when (this) {
-        MMOL -> mmol
-        MGDL -> mmol * MGDL_FACTOR
+    fun displayValue(mgdl: Double): Double = when (this) {
+        MMOL -> mgdl / MGDL_FACTOR
+        MGDL -> mgdl
     }
 
     companion object {

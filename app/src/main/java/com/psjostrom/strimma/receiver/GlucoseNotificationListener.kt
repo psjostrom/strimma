@@ -92,11 +92,11 @@ class GlucoseNotificationListener : NotificationListenerService() {
         )
 
         const val ACTION_GLUCOSE_RECEIVED = "com.psjostrom.strimma.GLUCOSE_RECEIVED"
-        const val EXTRA_MMOL = "mmol"
+        const val EXTRA_MGDL = "mgdl"
         const val EXTRA_TIMESTAMP = "timestamp"
 
-        private const val MIN_VALID_MMOL = 0.0
-        private const val MAX_VALID_MMOL = 50.0
+        private const val MIN_VALID_MGDL = 18.0
+        private const val MAX_VALID_MGDL = 900.0
 
         fun isEnabled(context: Context): Boolean {
             val flat = Settings.Secure.getString(
@@ -130,13 +130,13 @@ class GlucoseNotificationListener : NotificationListenerService() {
         DebugLog.log(message = "Notification from: ${sbn.packageName}")
 
         val notification = sbn.notification ?: return
-        val mmol = extractGlucose(notification)
+        val mgdl = extractGlucose(notification)
 
-        if (mmol != null && mmol > MIN_VALID_MMOL && mmol < MAX_VALID_MMOL) {
-            DebugLog.log(message = "Parsed: $mmol mmol/L")
+        if (mgdl != null && mgdl > MIN_VALID_MGDL && mgdl < MAX_VALID_MGDL) {
+            DebugLog.log(message = "Parsed: ${mgdl.toInt()} mg/dL")
             val intent = Intent(this, com.psjostrom.strimma.service.StrimmaService::class.java).apply {
                 action = ACTION_GLUCOSE_RECEIVED
-                putExtra(EXTRA_MMOL, mmol)
+                putExtra(EXTRA_MGDL, mgdl)
                 putExtra(EXTRA_TIMESTAMP, System.currentTimeMillis())
             }
             startForegroundService(intent)

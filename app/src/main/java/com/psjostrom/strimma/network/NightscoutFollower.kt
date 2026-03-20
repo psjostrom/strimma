@@ -27,7 +27,7 @@ private const val LOOKBACK_MINUTES = 15
 private const val DUPLICATE_THRESHOLD_MS = 3_000L
 private const val MINUTES_TO_MS = 60 * 1000L
 private const val SECONDS_TO_MS = 1000L
-private const val ROUNDING_FACTOR = 10.0
+private const val DELTA_ROUNDING_FACTOR = 10.0
 
 suspend fun processNightscoutEntry(
     entry: NightscoutEntryResponse,
@@ -36,17 +36,16 @@ suspend fun processNightscoutEntry(
 ): GlucoseReading? {
     val sgv = entry.sgv ?: return null
     val ts = entry.date ?: return null
-    val mmol = NightscoutFollower.sgvToMmol(sgv)
 
     val recentReadings = dao.since(ts - LOOKBACK_MINUTES * MINUTES_TO_MS)
     val existing = recentReadings.find { kotlin.math.abs(it.ts - ts) < DUPLICATE_THRESHOLD_MS }
     if (existing != null) return null
 
     val tempReading = GlucoseReading(
-        ts = ts, sgv = sgv, mmol = mmol,
-        direction = "NONE", deltaMmol = null, pushed = 1
+        ts = ts, sgv = sgv,
+        direction = "NONE", delta = null, pushed = 1
     )
-    val (computedDirection, deltaMmol) = directionComputer.compute(recentReadings, tempReading)
+    val (computedDirection, deltaMgdl) = directionComputer.compute(recentReadings, tempReading)
 
     // Use server-provided direction if available and valid, otherwise use locally computed
     val directionName = if (entry.direction != null && entry.direction != "NONE" && entry.direction != "NOT COMPUTABLE") {
@@ -57,7 +56,7 @@ suspend fun processNightscoutEntry(
 
     val reading = tempReading.copy(
         direction = directionName,
-        deltaMmol = deltaMmol?.let { Math.round(it * ROUNDING_FACTOR) / ROUNDING_FACTOR }
+        delta = deltaMgdl?.let { Math.round(it * DELTA_ROUNDING_FACTOR) / DELTA_ROUNDING_FACTOR }
     )
 
     dao.insert(reading)
@@ -75,26 +74,16 @@ class NightscoutFollower @Inject constructor(
     val status: StateFlow<FollowerStatus> = _status
 
     companion object {
-        private const val MGDL_CONVERSION = 18.0182
         private const val SEVEN_DAYS_MS = 7L * 24 * 60 * 60 * 1000
         private const val FETCH_COUNT = 2016
-        private const val MIN_VALID_MMOL = 1.0
-        private const val MAX_VALID_MMOL = 50.0
-        private const val MMOL_ROUNDING_FACTOR = 10.0
+        private const val MIN_VALID_SGV = 18
+        private const val MAX_VALID_SGV = 900
 
         fun filterValidEntries(entries: List<NightscoutEntryResponse>): List<NightscoutEntryResponse> {
             return entries
                 .filter { it.type == "sgv" && it.sgv != null && it.date != null }
-                .filter {
-                    val mmol = it.sgv!! / MGDL_CONVERSION
-                    mmol >= MIN_VALID_MMOL && mmol <= MAX_VALID_MMOL
-                }
+                .filter { it.sgv!! in MIN_VALID_SGV..MAX_VALID_SGV }
                 .sortedBy { it.date }
-        }
-
-        fun sgvToMmol(sgv: Int): Double {
-            val raw = sgv / MGDL_CONVERSION
-            return Math.round(raw * MMOL_ROUNDING_FACTOR) / MMOL_ROUNDING_FACTOR
         }
     }
 

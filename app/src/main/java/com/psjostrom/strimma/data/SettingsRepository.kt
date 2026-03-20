@@ -12,11 +12,43 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import com.psjostrom.strimma.widget.WidgetSettingsRepository
+import androidx.datastore.core.DataMigration
 import org.json.JSONObject
 import javax.inject.Inject
 import javax.inject.Singleton
 
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
+private object MgdlSettingsMigration : DataMigration<Preferences> {
+    private val THRESHOLD_KEYS = listOf(
+        floatPreferencesKey("bg_low"),
+        floatPreferencesKey("bg_high"),
+        floatPreferencesKey("alert_low"),
+        floatPreferencesKey("alert_high"),
+        floatPreferencesKey("alert_urgent_low"),
+        floatPreferencesKey("alert_urgent_high")
+    )
+    private val KEY_VERSION = intPreferencesKey("settings_version")
+    private const val MGDL_FACTOR = 18.0182f
+
+    override suspend fun shouldMigrate(currentData: Preferences): Boolean {
+        return (currentData[KEY_VERSION] ?: 0) < 2
+    }
+
+    override suspend fun migrate(currentData: Preferences): Preferences {
+        val mutable = currentData.toMutablePreferences()
+        for (key in THRESHOLD_KEYS) {
+            currentData[key]?.let { mutable[key] = Math.round(it * MGDL_FACTOR).toFloat() }
+        }
+        mutable[KEY_VERSION] = 2
+        return mutable.toPreferences()
+    }
+
+    override suspend fun cleanUp() { /* Nothing to clean up — one-shot migration */ }
+}
+
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
+    name = "settings",
+    produceMigrations = { listOf(MgdlSettingsMigration) }
+)
 
 @Suppress("TooManyFunctions") // One getter+setter per setting
 @Singleton
@@ -76,14 +108,14 @@ class SettingsRepository @Inject constructor(
         private val KEY_WEB_SERVER_ENABLED = booleanPreferencesKey("web_server_enabled")
         private const val KEY_WEB_SERVER_SECRET = "web_server_secret"
 
-        // Settings defaults
+        // Settings defaults (mg/dL)
         private const val DEFAULT_GRAPH_WINDOW_HOURS = 4
-        private const val DEFAULT_BG_LOW = 4.0f
-        private const val DEFAULT_BG_HIGH = 10.0f
-        private const val DEFAULT_ALERT_LOW = 4.0f
-        private const val DEFAULT_ALERT_HIGH = 10.0f
-        private const val DEFAULT_ALERT_URGENT_LOW = 3.0f
-        private const val DEFAULT_ALERT_URGENT_HIGH = 13.0f
+        private const val DEFAULT_BG_LOW = 72f
+        private const val DEFAULT_BG_HIGH = 180f
+        private const val DEFAULT_ALERT_LOW = 72f
+        private const val DEFAULT_ALERT_HIGH = 180f
+        private const val DEFAULT_ALERT_URGENT_LOW = 54f
+        private const val DEFAULT_ALERT_URGENT_HIGH = 234f
         private const val DEFAULT_NOTIF_GRAPH_MINUTES = 60
         private const val DEFAULT_PREDICTION_MINUTES = 15
         private const val DEFAULT_FOLLOWER_POLL_SECONDS = 60
@@ -233,7 +265,7 @@ class SettingsRepository @Inject constructor(
         }
 
         return JSONObject().apply {
-            put("version", 1)
+            put("version", 2)
             put("exported_at", java.time.Instant.now().toString())
             put("settings", settings)
             put("secrets", secrets)
@@ -245,22 +277,28 @@ class SettingsRepository @Inject constructor(
     suspend fun importFromJson(json: String) {
         val root = JSONObject(json)
         val settings = root.getJSONObject("settings")
+        // v1 exports stored thresholds in mmol/L — convert to mg/dL on import
+        val isV1 = root.optInt("version", 1) < 2
+        fun importThreshold(key: String): Float {
+            val value = settings.getDouble(key).toFloat()
+            return if (isV1) Math.round(value * GlucoseUnit.MGDL_FACTOR.toFloat()).toFloat() else value
+        }
 
         dataStore.edit { prefs ->
             if (settings.has("nightscout_url")) prefs[KEY_NIGHTSCOUT_URL] = settings.getString("nightscout_url")
             if (settings.has("graph_window_hours")) prefs[KEY_GRAPH_WINDOW_HOURS] = settings.getInt("graph_window_hours")
-            if (settings.has("bg_low")) prefs[KEY_BG_LOW] = settings.getDouble("bg_low").toFloat()
-            if (settings.has("bg_high")) prefs[KEY_BG_HIGH] = settings.getDouble("bg_high").toFloat()
+            if (settings.has("bg_low")) prefs[KEY_BG_LOW] = importThreshold("bg_low")
+            if (settings.has("bg_high")) prefs[KEY_BG_HIGH] = importThreshold("bg_high")
             if (settings.has("alert_low_enabled")) prefs[KEY_ALERT_LOW_ENABLED] = settings.getBoolean("alert_low_enabled")
             if (settings.has("alert_high_enabled")) prefs[KEY_ALERT_HIGH_ENABLED] = settings.getBoolean("alert_high_enabled")
             if (settings.has("alert_urgent_low_enabled"))
                 prefs[KEY_ALERT_URGENT_LOW_ENABLED] = settings.getBoolean("alert_urgent_low_enabled")
             if (settings.has("alert_urgent_high_enabled"))
                 prefs[KEY_ALERT_URGENT_HIGH_ENABLED] = settings.getBoolean("alert_urgent_high_enabled")
-            if (settings.has("alert_low")) prefs[KEY_ALERT_LOW] = settings.getDouble("alert_low").toFloat()
-            if (settings.has("alert_high")) prefs[KEY_ALERT_HIGH] = settings.getDouble("alert_high").toFloat()
-            if (settings.has("alert_urgent_low")) prefs[KEY_ALERT_URGENT_LOW] = settings.getDouble("alert_urgent_low").toFloat()
-            if (settings.has("alert_urgent_high")) prefs[KEY_ALERT_URGENT_HIGH] = settings.getDouble("alert_urgent_high").toFloat()
+            if (settings.has("alert_low")) prefs[KEY_ALERT_LOW] = importThreshold("alert_low")
+            if (settings.has("alert_high")) prefs[KEY_ALERT_HIGH] = importThreshold("alert_high")
+            if (settings.has("alert_urgent_low")) prefs[KEY_ALERT_URGENT_LOW] = importThreshold("alert_urgent_low")
+            if (settings.has("alert_urgent_high")) prefs[KEY_ALERT_URGENT_HIGH] = importThreshold("alert_urgent_high")
             if (settings.has("alert_stale_enabled")) prefs[KEY_ALERT_STALE_ENABLED] = settings.getBoolean("alert_stale_enabled")
             if (settings.has("alert_low_soon_enabled")) prefs[KEY_ALERT_LOW_SOON_ENABLED] = settings.getBoolean("alert_low_soon_enabled")
             if (settings.has("alert_high_soon_enabled")) prefs[KEY_ALERT_HIGH_SOON_ENABLED] = settings.getBoolean("alert_high_soon_enabled")

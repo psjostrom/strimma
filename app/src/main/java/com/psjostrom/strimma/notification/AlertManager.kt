@@ -176,7 +176,7 @@ class AlertManager @Inject constructor(
 
     suspend fun checkReading(reading: GlucoseReading, recentReadings: List<GlucoseReading>, predictionMinutes: Int) {
         val now = System.currentTimeMillis()
-        val mmol = reading.mmol
+        val mgdl = reading.sgv.toDouble()
         val unit = settings.glucoseUnit.first()
 
         val urgentLowEnabled = settings.alertUrgentLowEnabled.first()
@@ -192,16 +192,16 @@ class AlertManager @Inject constructor(
         var alreadyHigh = false
 
         // --- Lows (urgent takes priority) ---
-        if (urgentLowEnabled && mmol <= urgentLowThreshold) {
+        if (urgentLowEnabled && mgdl <= urgentLowThreshold) {
             alreadyLow = true
             if (!isSnoozed(ALERT_URGENT_LOW_ID, now)) {
-                fireAlert(ALERT_URGENT_LOW_ID, CHANNEL_URGENT_LOW, "Urgent Low", unit.formatWithUnit(mmol))
+                fireAlert(ALERT_URGENT_LOW_ID, CHANNEL_URGENT_LOW, "Urgent Low", unit.formatWithUnit(mgdl))
                 notificationManager.cancel(ALERT_LOW_ID)
             }
-        } else if (lowEnabled && mmol < lowThreshold) {
+        } else if (lowEnabled && mgdl < lowThreshold) {
             alreadyLow = true
             if (!isSnoozed(ALERT_LOW_ID, now)) {
-                fireAlert(ALERT_LOW_ID, CHANNEL_LOW, "Low Glucose", unit.formatWithUnit(mmol))
+                fireAlert(ALERT_LOW_ID, CHANNEL_LOW, "Low Glucose", unit.formatWithUnit(mgdl))
             }
             notificationManager.cancel(ALERT_URGENT_LOW_ID)
             clearSnooze(ALERT_URGENT_LOW_ID)
@@ -211,16 +211,16 @@ class AlertManager @Inject constructor(
         }
 
         // --- Highs (urgent takes priority) ---
-        if (urgentHighEnabled && mmol >= urgentHighThreshold) {
+        if (urgentHighEnabled && mgdl >= urgentHighThreshold) {
             alreadyHigh = true
             if (!isSnoozed(ALERT_URGENT_HIGH_ID, now)) {
-                fireAlert(ALERT_URGENT_HIGH_ID, CHANNEL_URGENT_HIGH, "Urgent High", unit.formatWithUnit(mmol))
+                fireAlert(ALERT_URGENT_HIGH_ID, CHANNEL_URGENT_HIGH, "Urgent High", unit.formatWithUnit(mgdl))
                 notificationManager.cancel(ALERT_HIGH_ID)
             }
-        } else if (highEnabled && mmol > highThreshold) {
+        } else if (highEnabled && mgdl > highThreshold) {
             alreadyHigh = true
             if (!isSnoozed(ALERT_HIGH_ID, now)) {
-                fireAlert(ALERT_HIGH_ID, CHANNEL_HIGH, "High Glucose", unit.formatWithUnit(mmol))
+                fireAlert(ALERT_HIGH_ID, CHANNEL_HIGH, "High Glucose", unit.formatWithUnit(mgdl))
             }
             notificationManager.cancel(ALERT_URGENT_HIGH_ID)
             clearSnooze(ALERT_URGENT_HIGH_ID)
@@ -263,7 +263,7 @@ class AlertManager @Inject constructor(
             if (!isSnoozed(ALERT_LOW_SOON_ID, now)) {
                 fireAlert(ALERT_LOW_SOON_ID, CHANNEL_LOW_SOON,
                     "Low in ${crossing.minutesUntil} min",
-                    "Predicted ${unit.formatWithUnit(crossing.mmolAtCrossing)}")
+                    "Predicted ${unit.formatWithUnit(crossing.mgdlAtCrossing)}")
             }
         } else {
             notificationManager.cancel(ALERT_LOW_SOON_ID)
@@ -276,7 +276,7 @@ class AlertManager @Inject constructor(
             if (!isSnoozed(ALERT_HIGH_SOON_ID, now)) {
                 fireAlert(ALERT_HIGH_SOON_ID, CHANNEL_HIGH_SOON,
                     "High in ${crossing.minutesUntil} min",
-                    "Predicted ${unit.formatWithUnit(crossing.mmolAtCrossing)}")
+                    "Predicted ${unit.formatWithUnit(crossing.mgdlAtCrossing)}")
             }
         } else {
             notificationManager.cancel(ALERT_HIGH_SOON_ID)

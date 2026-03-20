@@ -19,7 +19,7 @@ fun buildSgvJson(
         val obj = JSONObject()
         obj.put("date", reading.ts)
         obj.put("sgv", reading.sgv)
-        obj.put("delta", (reading.deltaMmol ?: 0.0) * GlucoseUnit.MGDL_FACTOR)
+        obj.put("delta", reading.delta ?: 0.0)
         obj.put("direction", reading.direction)
 
         if (!briefMode) {
