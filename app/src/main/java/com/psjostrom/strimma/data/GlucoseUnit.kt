@@ -28,6 +28,14 @@ enum class GlucoseUnit {
         }
     }
 
+    fun formatDeltaCompact(deltaMmol: Double): String {
+        val sign = if (deltaMmol >= 0) "+" else ""
+        return when (this) {
+            MMOL -> "$sign%.1f".format(deltaMmol)
+            MGDL -> "$sign%.0f".format(deltaMmol * MGDL_FACTOR)
+        }
+    }
+
     fun formatThreshold(mmol: Float): String = when (this) {
         MMOL -> "%.1f".format(mmol)
         MGDL -> "%.0f".format(mmol * MGDL_FACTOR)
