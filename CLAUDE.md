@@ -40,6 +40,16 @@ Single-module app. Hilt DI. All async via Coroutines/Flow.
 - `ui/` — Compose screens (Main, Settings, Stats, Debug), ViewModel, theme
 - `ui/theme/` — Dark + light palettes, status colors, Material 3 theme with `ThemeMode` (Dark/Light/System)
 
+## Nightscout Compliance
+
+Strimma is a Nightscout-compatible client. All HTTP endpoints, URL formats, query parameters, and data shapes MUST follow the Nightscout API spec. This is non-negotiable — Strimma must work with any real Nightscout server, not just Springa.
+
+- **Endpoints use `.json` suffix:** `/api/v1/entries.json`, `/api/v1/treatments.json` — this is the Nightscout convention.
+- **Query params use Nightscout's MongoDB-style syntax:** `find[date][$gt]=`, `find[created_at][$gte]=`, `count=`.
+- **Auth via `api-secret` header** with SHA-1 hashed secret.
+- **Data shapes match Nightscout spec:** `sgv`, `date`, `dateString`, `direction`, `type` for entries; `_id`, `eventType`, `created_at`, `insulin`, `carbs`, `absolute`, `duration`, `enteredBy` for treatments.
+- **If Springa (or any server) can't handle standard Nightscout URLs, fix the server.** Never weaken Strimma's NS compliance to work around a server bug.
+
 ## Conventions
 
 - **Colors:** InRange=cyan (#56CCF2), AboveHigh=amber (#FFB800), BelowLow=coral (#FF4D6A). Defined in `ui/theme/Color.kt` (Compose, prefixed `Dark`/`Light`) and `graph/GraphColors.kt` (Canvas int constants, prefixed `CANVAS_`). Keep in sync.
