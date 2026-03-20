@@ -39,11 +39,13 @@ class LocalWebServer @Inject constructor(
                     val secret = settings.getWebServerSecret()
                     if (secret.isBlank()) {
                         call.respondText("Authentication required", status = HttpStatusCode.Forbidden)
+                        finish()
                         return@intercept
                     }
                     val apiSecret = call.request.header("api-secret")
                     if (apiSecret == null || !checkApiSecret(apiSecret, secret)) {
                         call.respondText("Authentication failed", status = HttpStatusCode.Forbidden)
+                        finish()
                         return@intercept
                     }
                 }
