@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
     alias(libs.plugins.detekt)
+    jacoco
 }
 
 android {
@@ -97,6 +98,24 @@ detekt {
     baseline = file("$rootDir/config/detekt/baseline.xml")
 }
 
+tasks.register<JacocoReport>("jacocoTestReport") {
+    dependsOn("testDebugUnitTest")
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
+    val mainSrc = "$projectDir/src/main/java"
+    val debugTree = fileTree("$buildDir/tmp/kotlin-classes/debug") {
+        exclude("**/R.class", "**/R\$*.class", "**/BuildConfig.*",
+            "**/Manifest*.*", "**/*_Hilt*.*", "**/Hilt_*.*",
+            "**/*_Factory.*", "**/*_MembersInjector.*",
+            "**/*Database_Impl*.*", "**/*Dao_Impl*.*")
+    }
+    sourceDirectories.setFrom(files(mainSrc))
+    classDirectories.setFrom(debugTree)
+    executionData.setFrom(fileTree(buildDir) { include("jacoco/testDebugUnitTest.exec") })
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -145,4 +164,6 @@ dependencies {
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.room.testing)
     testImplementation(libs.ktor.server.test.host)
+    testImplementation(libs.compose.ui.test.junit4)
+    debugImplementation(libs.compose.ui.test.manifest)
 }

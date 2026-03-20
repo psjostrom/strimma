@@ -1,3 +1,5 @@
+@file:Suppress("WildcardImport") // Ktor relies on extension functions across subpackages
+
 package com.psjostrom.strimma.webserver
 
 import com.psjostrom.strimma.data.GlucoseUnit
@@ -6,7 +8,8 @@ import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.TreatmentDao
 import com.psjostrom.strimma.receiver.DebugLog
-import io.ktor.http.*
+import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.*
 import io.ktor.server.cio.*
 import io.ktor.server.engine.*
@@ -16,6 +19,15 @@ import io.ktor.server.routing.*
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
+
+private const val DEFAULT_COUNT = 24
+private const val MAX_SGV_COUNT = 1000
+private const val MAX_TREATMENT_COUNT = 100
+private const val HTTP_OK = 200
+private const val TREATMENT_LOOKBACK_HOURS = 48
+private const val MS_PER_HOUR = 3600_000L
+private const val STOP_GRACE_MS = 1000L
+private const val STOP_TIMEOUT_MS = 2000L
 
 @Singleton
 class LocalWebServer @Inject constructor(
@@ -61,7 +73,7 @@ class LocalWebServer @Inject constructor(
     }
 
     fun stop() {
-        server?.stop(1000, 2000)
+        server?.stop(STOP_GRACE_MS, STOP_TIMEOUT_MS)
         server = null
         DebugLog.log("Web server stopped")
     }
@@ -69,7 +81,7 @@ class LocalWebServer @Inject constructor(
 
 private fun Routing.sgvRoutes(dao: ReadingDao, treatmentDao: TreatmentDao, settings: SettingsRepository) {
     suspend fun handleSgv(call: ApplicationCall) {
-        val count = (call.request.queryParameters["count"]?.toIntOrNull() ?: 24).coerceIn(1, 1000)
+        val count = (call.request.queryParameters["count"]?.toIntOrNull() ?: DEFAULT_COUNT).coerceIn(1, MAX_SGV_COUNT)
         val briefMode = call.request.queryParameters["brief_mode"]?.uppercase() == "Y"
             || call.request.queryParameters["brief_mode"] == "true"
         val stepsParam = call.request.queryParameters["steps"]?.toIntOrNull()
@@ -92,8 +104,8 @@ private fun Routing.sgvRoutes(dao: ReadingDao, treatmentDao: TreatmentDao, setti
             briefMode = briefMode,
             unitsHint = unitsHint,
             iob = iob,
-            stepsResult = stepsParam?.let { 200 },
-            heartResult = heartParam?.let { 200 }
+            stepsResult = stepsParam?.let { HTTP_OK },
+            heartResult = heartParam?.let { HTTP_OK }
         )
         call.respondText(json, ContentType.Application.Json)
     }
@@ -117,8 +129,8 @@ private fun Routing.statusRoutes(settings: SettingsRepository) {
 
 private fun Routing.treatmentRoutes(treatmentDao: TreatmentDao) {
     suspend fun handleTreatments(call: ApplicationCall) {
-        val count = (call.request.queryParameters["count"]?.toIntOrNull() ?: 24).coerceIn(1, 100)
-        val since = System.currentTimeMillis() - 48 * 3600_000L
+        val count = (call.request.queryParameters["count"]?.toIntOrNull() ?: DEFAULT_COUNT).coerceIn(1, MAX_TREATMENT_COUNT)
+        val since = System.currentTimeMillis() - TREATMENT_LOOKBACK_HOURS * MS_PER_HOUR
         val treatments = treatmentDao.allSince(since).take(count)
         val json = buildTreatmentsJson(treatments)
         call.respondText(json, ContentType.Application.Json)

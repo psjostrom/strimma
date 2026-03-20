@@ -31,6 +31,16 @@ jobs:
       - name: Detekt
         run: ./gradlew detekt
 
+      - name: Coverage report
+        run: ./gradlew jacocoTestReport
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: app/build/reports/jacoco/jacocoTestReport/html/
+          retention-days: 14
+
       - name: Build debug APK
         run: ./gradlew assembleDebug
 

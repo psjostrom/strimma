@@ -60,6 +60,10 @@ Strimma is a Nightscout-compatible client. All HTTP endpoints, URL formats, quer
 - **Notification graph:** 1-hour window. Main graph: configurable (1-8h, default 4h).
 - **Nightscout push:** Immediate on new reading via `/api/v1/entries`. Retry with linear backoff. Unpushed readings marked `pushed=0` in Room.
 
+## Engineering Mindset
+
+NEVER treat Strimma as a "single-user app" or use that as justification to cut corners. This is a crucial, life-saving medical app designed for millions of users. Every decision — testing, architecture, reliability, CI — must reflect that.
+
 ## Key Domain Details
 
 - minSdk 33 (Android 13) — oldest version still receiving security updates
