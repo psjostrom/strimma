@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.psjostrom.strimma.data.Direction
 import com.psjostrom.strimma.data.GlucoseReading
+import com.psjostrom.strimma.data.IOBComputer
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.Treatment
 import com.psjostrom.strimma.graph.CRITICAL_HIGH
@@ -63,6 +64,7 @@ fun MainScreen(
     followerStatus: FollowerStatus = FollowerStatus.Idle,
     treatments: List<Treatment> = emptyList(),
     iob: Double = 0.0,
+    iobTauMinutes: Double = 55.0,
     onSettingsClick: () -> Unit,
     onStatsClick: () -> Unit = {}
 ) {
@@ -116,7 +118,7 @@ fun MainScreen(
             val crossing = remember(readings, bgLow, bgHigh, predictionMinutes) {
                 PredictionComputer.compute(readings, predictionMinutes, bgLow.toDouble(), bgHigh.toDouble())?.crossing
             }
-            BgHeader(latestReading, bgLow, bgHigh, glucoseUnit, crossing, followerStatus, iob)
+            BgHeader(latestReading, bgLow, bgHigh, glucoseUnit, crossing, followerStatus, iob, treatments, iobTauMinutes)
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -178,7 +180,9 @@ fun MainScreen(
 private fun BgHeader(
     reading: GlucoseReading?, bgLow: Float, bgHigh: Float,
     glucoseUnit: GlucoseUnit, crossing: ThresholdCrossing? = null,
-    followerStatus: FollowerStatus, iob: Double = 0.0
+    followerStatus: FollowerStatus, iob: Double = 0.0,
+    treatments: List<Treatment> = emptyList(),
+    iobTauMinutes: Double = 55.0
 ) {
     var minutesAgo by remember { mutableIntStateOf(0) }
 
@@ -275,8 +279,10 @@ private fun BgHeader(
         // IOB pill
         if (iob > 0.0) {
             Spacer(modifier = Modifier.height(8.dp))
+            var showIobDetail by remember { mutableStateOf(false) }
             val iobColor = if (iob < 0.3) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
             Surface(
+                onClick = { showIobDetail = true },
                 shape = RoundedCornerShape(100),
                 color = InRange.copy(alpha = 0.12f)
             ) {
@@ -287,6 +293,9 @@ private fun BgHeader(
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
                 )
+            }
+            if (showIobDetail) {
+                IobDetailDialog(treatments, iobTauMinutes, onDismiss = { showIobDetail = false })
             }
         }
 
@@ -314,6 +323,62 @@ private fun BgHeader(
             )
         }
     }
+}
+
+@Composable
+private fun IobDetailDialog(treatments: List<Treatment>, tauMinutes: Double, onDismiss: () -> Unit) {
+    val now = System.currentTimeMillis()
+    val cutoff = now - IOBComputer.lookbackMs(tauMinutes)
+    val timeFmt = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+    // Show treatments with insulin still contributing to IOB
+    val insulinTreatments = treatments
+        .filter { (it.insulin ?: 0.0) > 0.0 && it.createdAt in cutoff..now }
+        .sortedByDescending { it.createdAt }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("OK") }
+        },
+        title = { Text("IOB Breakdown") },
+        text = {
+            if (insulinTreatments.isEmpty()) {
+                Text("No active insulin treatments")
+            } else {
+                Column {
+                    insulinTreatments.forEach { t ->
+                        val dose = t.insulin ?: return@forEach
+                        val minutesSince = (now - t.createdAt) / 60_000.0
+                        val remainingIob = IOBComputer.iobForTreatment(dose, minutesSince, tauMinutes)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = timeFmt.format(java.util.Date(t.createdAt)),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 14.sp
+                            )
+                            val parts = mutableListOf("%.1f".format(dose) + "U")
+                            t.carbs?.let { if (it > 0.0) parts.add("%.0f".format(it) + "g") }
+                            Text(
+                                text = parts.joinToString("  "),
+                                fontSize = 14.sp
+                            )
+                            Text(
+                                text = "%.1f".format(remainingIob) + "U",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = InRange
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    )
 }
 
 // --- Main graph ---
@@ -511,7 +576,7 @@ fun GlucoseGraph(
                     close()
                 }
                 drawPath(path, bolusColor)
-                val label = "${"%.0f".format(dose)}U"
+                val label = "${"%.1f".format(dose)}U"
                 treatmentLabelPaint.color = bolusColor.toArgb()
                 drawContext.canvas.nativeCanvas.drawText(
                     label, tx, baseY - triSize - 4f, treatmentLabelPaint
