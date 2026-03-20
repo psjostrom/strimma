@@ -10,8 +10,8 @@ import org.robolectric.RobolectricTestRunner
 class StatusRouteTest {
 
     @Test
-    fun `builds status JSON with mmol thresholds converted to mgdl`() {
-        val json = buildStatusJson(unitsHint = "mmol", bgLowMmol = 4.0f, bgHighMmol = 10.0f)
+    fun `builds status JSON with mgdl thresholds`() {
+        val json = buildStatusJson(unitsHint = "mmol", bgLow = 72f, bgHigh = 180f)
         val root = JSONObject(json)
         val settings = root.getJSONObject("settings")
         assertEquals("mmol", settings.getString("units"))
@@ -21,8 +21,8 @@ class StatusRouteTest {
     }
 
     @Test
-    fun `builds status JSON with mgdl units`() {
-        val json = buildStatusJson(unitsHint = "mgdl", bgLowMmol = 3.9f, bgHighMmol = 10.0f)
+    fun `builds status JSON with mgdl units hint`() {
+        val json = buildStatusJson(unitsHint = "mgdl", bgLow = 70f, bgHigh = 180f)
         val root = JSONObject(json)
         assertEquals("mgdl", root.getJSONObject("settings").getString("units"))
     }

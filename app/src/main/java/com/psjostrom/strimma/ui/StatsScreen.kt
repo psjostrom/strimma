@@ -228,13 +228,13 @@ fun StatsScreen(
                         modifier = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        StatRow("Average", glucoseUnit.formatWithUnit(s.averageMmol), onBg, onSurfaceVar)
+                        StatRow("Average", glucoseUnit.formatWithUnit(s.averageMgdl), onBg, onSurfaceVar)
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                         StatRow("GMI (eHbA1c)", "%.1f%%".format(s.gmi), onBg, onSurfaceVar)
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                         StatRow("CV", "%.1f%%".format(s.cv), onBg, onSurfaceVar)
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                        StatRow("Std Dev", glucoseUnit.formatWithUnit(s.stdDevMmol), onBg, onSurfaceVar)
+                        StatRow("Std Dev", glucoseUnit.formatWithUnit(s.stdDevMgdl), onBg, onSurfaceVar)
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                         StatRow("Readings", "%,d".format(s.count), onBg, onSurfaceVar)
                     }

@@ -12,8 +12,8 @@ class DirectionComputerTest {
         val sgv = (mmol * 18.0182).toInt()
         return GlucoseReading(
             ts = baseTs - minutesAgo * 60_000L,
-            sgv = sgv, mmol = mmol,
-            direction = "NONE", deltaMmol = null, pushed = 1
+            sgv = sgv,
+            direction = "NONE", delta = null, pushed = 1
         )
     }
 
@@ -33,7 +33,7 @@ class DirectionComputerTest {
 
     @Test
     fun `fortyFiveUp when rising moderately`() {
-        // ~+1.5 mg/dL/min over 5 min = +7.5 mg/dL total ≈ +0.42 mmol
+        // ~+1.5 mg/dL/min over 5 min = +7.5 mg/dL total
         val history = (10 downTo 1).map { reading(it, 6.0 + (10 - it) * 0.08) }
         val current = reading(0, 6.8)
         val (direction, _) = compute(history, current)
@@ -94,8 +94,6 @@ class DirectionComputerTest {
 
     @Test
     fun `computes from nearest reading when no exact 5-min match`() {
-        // Readings at 1 and 2 min ago — closest to 5 min target is 2 min ago.
-        // Still within 10-min window, so direction is computed (not NONE).
         val history = listOf(reading(1, 6.0), reading(2, 6.0))
         val current = reading(0, 6.0)
         val (direction, _) = compute(history, current)
@@ -120,30 +118,25 @@ class DirectionComputerTest {
     }
 
     @Test
-    fun `delta is in mmol not mg`() {
+    fun `delta is in mgdl`() {
         val history = (10 downTo 1).map { reading(it, 6.0) }
         val current = reading(0, 7.0)
         val (_, delta) = compute(history, current)
         assertNotNull(delta)
-        // Delta is computed from 3-point-averaged SGV values converted to mmol.
-        // SGV values are rounded (mmol*18.0182→int), so delta won't be exactly 1.0
-        // but it must be in mmol range (0.5-2.0), not mg/dL range (9-36).
-        assertTrue("delta should be in mmol range, was $delta", delta!! in 0.3..2.0)
+        // Delta is computed from 3-point-averaged SGV values (mg/dL).
+        // 7.0 mmol - 6.0 mmol = 1.0 mmol = ~18 mg/dL.
+        // SGV rounding means it won't be exactly 18, but must be in mg/dL range.
+        assertTrue("delta should be in mg/dL range, was $delta", delta!! in 5.0..36.0)
     }
 
     @Test
     fun `3-point averaging smooths spikes`() {
-        // Spike in the middle: 6.0, 6.0, 12.0, 6.0, 6.0 (at 5-min marks)
-        // Without averaging, last reading vs 5-min-ago would be Flat (6→6)
-        // With averaging, the spike affects neighbors
         val history = listOf(
             reading(10, 6.0), reading(8, 6.0), reading(6, 12.0),
             reading(4, 6.0), reading(2, 6.0)
         )
         val current = reading(0, 6.0)
         val (direction, _) = compute(history, current)
-        // The 3-point average at current index should smooth out
-        // This verifies averaging doesn't crash with varying data
         assertNotNull(direction)
     }
 }

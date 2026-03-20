@@ -39,7 +39,7 @@ class NightscoutPusher @Inject constructor(
                 success = client.pushReadings(url, secret, listOf(reading))
                 if (success) {
                     dao.markPushed(listOf(reading.ts))
-                    DebugLog.log(message = "Pushed: ${reading.mmol}")
+                    DebugLog.log(message = "Pushed: ${reading.sgv} mg/dL")
                 } else {
                     attempt++
                     val delayMs = (attempt * RETRY_BASE_DELAY_MS).coerceAtMost(MAX_RETRY_DELAY_MS)
@@ -48,7 +48,7 @@ class NightscoutPusher @Inject constructor(
                 }
             }
             if (!success) {
-                DebugLog.log(message = "Push gave up after $MAX_RETRY_ATTEMPTS attempts: ${reading.mmol}")
+                DebugLog.log(message = "Push gave up after $MAX_RETRY_ATTEMPTS attempts: ${reading.sgv} mg/dL")
             }
         }
     }

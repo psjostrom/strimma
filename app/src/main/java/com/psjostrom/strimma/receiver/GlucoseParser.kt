@@ -22,11 +22,12 @@ private fun cleanGlucoseText(raw: String): String = raw
 /**
  * Parses a glucose value from notification text.
  * Handles comma/dot decimals, unit suffixes, Unicode arrows/symbols, and non-breaking spaces.
- * Returns mmol/L as Double, or null if the text doesn't contain a valid glucose value.
+ * Returns mg/dL as Double, or null if the text doesn't contain a valid glucose value.
  *
  * Supports both mmol/L (e.g. "13.5", "7,8") and mg/dL (e.g. "180", "95").
- * Values with a decimal are treated as mmol/L. Integer values above 50 are treated
- * as mg/dL and converted. Integer values 20-50 are ambiguous and skipped.
+ * Values with a decimal are treated as mmol/L and converted to mg/dL.
+ * Integer values above 50 are treated as mg/dL directly.
+ * Integer values 20-50 are ambiguous and skipped.
  */
 @Suppress("ReturnCount") // Early returns in parser
 fun tryParseGlucose(raw: String): Double? {
@@ -38,14 +39,15 @@ fun tryParseGlucose(raw: String): Double? {
     if (mmolMatch != null) {
         val whole = mmolMatch.groupValues[1]
         val decimal = mmolMatch.groupValues[2]
-        return "$whole.$decimal".toDoubleOrNull()
+        val mmol = "$whole.$decimal".toDoubleOrNull() ?: return null
+        return mmol * MGDL_CONVERSION
     }
 
     // mg/dL: integer values > 50 (no overlap with mmol/L range)
     val mgdlMatch = Regex("^(\\d{2,3})$").find(cleaned)
     if (mgdlMatch != null) {
         val mgdl = mgdlMatch.groupValues[1].toIntOrNull() ?: return null
-        if (mgdl in MIN_MGDL_RANGE..MAX_MGDL_RANGE) return mgdl / MGDL_CONVERSION
+        if (mgdl in MIN_MGDL_RANGE..MAX_MGDL_RANGE) return mgdl.toDouble()
     }
 
     return null

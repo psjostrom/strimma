@@ -8,7 +8,6 @@ class DirectionComputer @Inject constructor() {
         private const val LOOKBACK_MINUTES = 5
         private const val MAX_TIME_GAP_MINUTES = 10
         private const val MINUTES_TO_MS = 60 * 1000L
-        private const val MGDL_CONVERSION = 18.0182
 
         // EASD/ISPAD direction thresholds (mg/dL per minute)
         private const val THRESHOLD_DOUBLE_DOWN = -3.0
@@ -61,10 +60,10 @@ class DirectionComputer @Inject constructor() {
             else -> Direction.DoubleUp
         }
 
-        // Convert delta to mmol/L
-        val deltaMmol = (avgNow - avgPast) / MGDL_CONVERSION
+        // Delta in mg/dL (total change over the lookback window)
+        val deltaMgdl = avgNow - avgPast
 
-        return Pair(direction, deltaMmol)
+        return Pair(direction, deltaMgdl)
     }
 
     private fun avgSgv(readings: List<GlucoseReading>, index: Int): Double {

@@ -9,7 +9,7 @@ import android.content.Intent
  *
  * Listens for `com.eveningoutpost.dexdrip.BgEstimate` intents sent by xDrip+,
  * Juggluco, AAPS, GlucoDataHandler, or any app using the xDrip broadcast format.
- * Extracts sgv (mg/dL), converts to mmol/L, and forwards to StrimmaService.
+ * Extracts sgv (mg/dL) and forwards to StrimmaService.
  *
  * Ignores broadcasts from Strimma itself (SensorId = "Strimma") to prevent loops
  * when BG broadcast (send) is also enabled.
@@ -20,9 +20,8 @@ class XdripBroadcastReceiver : BroadcastReceiver() {
 
     companion object {
         const val ACTION = "com.eveningoutpost.dexdrip.BgEstimate"
-        private const val MGDL_CONVERSION = 18.0182
-        private const val MIN_VALID_MMOL = 1.0
-        private const val MAX_VALID_MMOL = 50.0
+        private const val MIN_VALID_MGDL = 18.0
+        private const val MAX_VALID_MGDL = 900.0
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -35,15 +34,13 @@ class XdripBroadcastReceiver : BroadcastReceiver() {
         val timestamp = intent.getLongExtra("com.eveningoutpost.dexdrip.Extras.Time", 0L)
 
         if (sgv <= 0.0 || timestamp <= 0L) return
+        if (sgv < MIN_VALID_MGDL || sgv > MAX_VALID_MGDL) return
 
-        val mmol = sgv / MGDL_CONVERSION
-        if (mmol < MIN_VALID_MMOL || mmol > MAX_VALID_MMOL) return
-
-        DebugLog.log(message = "xDrip broadcast: ${sgv.toInt()} mg/dL → ${"%.1f".format(mmol)} mmol/L")
+        DebugLog.log(message = "xDrip broadcast: ${sgv.toInt()} mg/dL")
 
         val serviceIntent = Intent(context, com.psjostrom.strimma.service.StrimmaService::class.java).apply {
             action = GlucoseNotificationListener.ACTION_GLUCOSE_RECEIVED
-            putExtra(GlucoseNotificationListener.EXTRA_MMOL, mmol)
+            putExtra(GlucoseNotificationListener.EXTRA_MGDL, sgv)
             putExtra(GlucoseNotificationListener.EXTRA_TIMESTAMP, timestamp)
         }
         context.startForegroundService(serviceIntent)
