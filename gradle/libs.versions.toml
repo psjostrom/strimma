@@ -65,6 +65,8 @@ robolectric = { module = "org.robolectric:robolectric", version = "4.16" }
 androidx-test-core = { module = "androidx.test:core-ktx", version = "1.6.1" }
 room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
 ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor" }
+compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
+compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
