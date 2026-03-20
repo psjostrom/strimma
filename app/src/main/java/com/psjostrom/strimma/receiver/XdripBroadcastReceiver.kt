@@ -21,6 +21,8 @@ class XdripBroadcastReceiver : BroadcastReceiver() {
     companion object {
         const val ACTION = "com.eveningoutpost.dexdrip.BgEstimate"
         private const val MGDL_CONVERSION = 18.0182
+        private const val MIN_VALID_MMOL = 1.0
+        private const val MAX_VALID_MMOL = 50.0
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -35,7 +37,7 @@ class XdripBroadcastReceiver : BroadcastReceiver() {
         if (sgv <= 0.0 || timestamp <= 0L) return
 
         val mmol = sgv / MGDL_CONVERSION
-        if (mmol < 1.0 || mmol > 50.0) return
+        if (mmol < MIN_VALID_MMOL || mmol > MAX_VALID_MMOL) return
 
         DebugLog.log(message = "xDrip broadcast: ${sgv.toInt()} mg/dL → ${"%.1f".format(mmol)} mmol/L")
 

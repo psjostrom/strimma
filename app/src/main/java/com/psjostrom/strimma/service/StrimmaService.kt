@@ -4,7 +4,16 @@ import android.app.Service
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.IBinder
-import com.psjostrom.strimma.data.*
+import com.psjostrom.strimma.data.Direction
+import com.psjostrom.strimma.data.DirectionComputer
+import com.psjostrom.strimma.data.GlucoseReading
+import com.psjostrom.strimma.data.GlucoseSource
+import com.psjostrom.strimma.data.GlucoseUnit
+import com.psjostrom.strimma.data.IOBComputer
+import com.psjostrom.strimma.data.InsulinType
+import com.psjostrom.strimma.data.ReadingDao
+import com.psjostrom.strimma.data.SettingsRepository
+import com.psjostrom.strimma.data.TreatmentDao
 import com.psjostrom.strimma.network.NightscoutFollower
 import com.psjostrom.strimma.network.NightscoutPuller
 import com.psjostrom.strimma.network.NightscoutPusher
@@ -23,8 +32,32 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
+@Suppress("TooManyFunctions") // Service lifecycle + source management + core logic
 @AndroidEntryPoint
 class StrimmaService : Service() {
+
+    companion object {
+        private const val DEFAULT_BG_LOW = 4.0
+        private const val DEFAULT_BG_HIGH = 10.0
+        private const val DEFAULT_PREDICTION_MINUTES = 15
+        private const val DEFAULT_NOTIF_GRAPH_MINUTES = 60
+        private const val DEFAULT_CUSTOM_DIA = 5.0f
+
+        private const val DUPLICATE_THRESHOLD_MS = 3_000L
+        private const val LOOKBACK_MINUTES = 15
+        private const val MINUTES_TO_MS = 60 * 1000L
+
+        private const val RETRY_INTERVAL_MINUTES = 5
+        private const val PRUNE_INTERVAL_DAYS = 1
+        private const val PRUNE_RETENTION_DAYS = 30L
+        private const val STALE_CHECK_INTERVAL_SECONDS = 60
+        private const val SECONDS_TO_MS = 1000L
+        private const val HOURS_PER_DAY = 24
+        private const val MGDL_CONVERSION = 18.0182
+        private const val MMOL_ROUNDING_FACTOR = 10.0
+        private const val IOB_TAU_MULTIPLIER = 5.0
+        private const val DELTA_DIVISOR = 5.0
+    }
 
     @Inject lateinit var dao: ReadingDao
     @Inject lateinit var directionComputer: DirectionComputer
@@ -58,19 +91,19 @@ class StrimmaService : Service() {
         notificationHelper.createChannel()
         alertManager.createChannels()
 
-        predMinutes = settings.predictionMinutes.stateIn(scope, SharingStarted.Eagerly, 15)
-        notifGraphMinutes = settings.notifGraphMinutes.stateIn(scope, SharingStarted.Eagerly, 60)
+        predMinutes = settings.predictionMinutes.stateIn(scope, SharingStarted.Eagerly, DEFAULT_PREDICTION_MINUTES)
+        notifGraphMinutes = settings.notifGraphMinutes.stateIn(scope, SharingStarted.Eagerly, DEFAULT_NOTIF_GRAPH_MINUTES)
         glucoseUnit = settings.glucoseUnit.stateIn(scope, SharingStarted.Eagerly, GlucoseUnit.MMOL)
-        bgLow = settings.bgLow.stateIn(scope, SharingStarted.Eagerly, 4.0f)
-        bgHigh = settings.bgHigh.stateIn(scope, SharingStarted.Eagerly, 10.0f)
+        bgLow = settings.bgLow.stateIn(scope, SharingStarted.Eagerly, DEFAULT_BG_LOW.toFloat())
+        bgHigh = settings.bgHigh.stateIn(scope, SharingStarted.Eagerly, DEFAULT_BG_HIGH.toFloat())
         bgBroadcastEnabled = settings.bgBroadcastEnabled.stateIn(scope, SharingStarted.Eagerly, false)
         treatmentsSyncEnabled = settings.treatmentsSyncEnabled.stateIn(scope, SharingStarted.Eagerly, false)
         insulinType = settings.insulinType.stateIn(scope, SharingStarted.Eagerly, InsulinType.FIASP)
-        customDIA = settings.customDIA.stateIn(scope, SharingStarted.Eagerly, 5.0f)
+        customDIA = settings.customDIA.stateIn(scope, SharingStarted.Eagerly, DEFAULT_CUSTOM_DIA)
 
         startForeground(
             NotificationHelper.NOTIFICATION_ID,
-            notificationHelper.buildNotification(null, emptyList(), 4.0, 10.0),
+            notificationHelper.buildNotification(null, emptyList(), DEFAULT_BG_LOW, DEFAULT_BG_HIGH),
             android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
         )
 
@@ -105,26 +138,26 @@ class StrimmaService : Service() {
         pusher.pushPending()
         scope.launch { nightscoutPuller.pullIfEmpty() }
         scope.launch { updateNotification() }
+        startPeriodicJobs()
+    }
 
-        // Periodic retry for failed pushes + daily prune
+    private fun startPeriodicJobs() {
         scope.launch {
             while (isActive) {
-                delay(5 * 60 * 1000L)
+                delay(RETRY_INTERVAL_MINUTES * MINUTES_TO_MS)
                 pusher.pushPending()
             }
         }
         scope.launch {
             while (isActive) {
-                val thirtyDaysAgo = System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000
+                val thirtyDaysAgo = System.currentTimeMillis() - PRUNE_RETENTION_DAYS * HOURS_PER_DAY * MINUTES_TO_MS
                 dao.pruneBefore(thirtyDaysAgo)
-                delay(24 * 60 * 60 * 1000L)
+                delay(PRUNE_INTERVAL_DAYS * HOURS_PER_DAY * MINUTES_TO_MS)
             }
         }
-
-        // Stale data check every 60 seconds
         scope.launch {
             while (isActive) {
-                delay(60_000L)
+                delay(STALE_CHECK_INTERVAL_SECONDS * SECONDS_TO_MS)
                 val latest = dao.latestOnce()
                 alertManager.checkStale(latest?.ts)
             }
@@ -153,12 +186,6 @@ class StrimmaService : Service() {
         super.onDestroy()
     }
 
-    private fun registerXdripReceiverIfNeeded() {
-        if (settings.getGlucoseSourceSync() == GlucoseSource.XDRIP_BROADCAST) {
-            registerXdripReceiver()
-        }
-    }
-
     private fun registerXdripReceiver() {
         if (xdripReceiver != null) return
         val receiver = XdripBroadcastReceiver()
@@ -180,7 +207,7 @@ class StrimmaService : Service() {
         if (followerJob != null) return
         followerJob = nightscoutFollower.start(scope) { reading ->
             updateNotification()
-            val alertReadings = dao.since(reading.ts - 15 * 60_000L)
+            val alertReadings = dao.since(reading.ts - LOOKBACK_MINUTES * MINUTES_TO_MS)
             alertManager.checkReading(reading, alertReadings, predMinutes.value)
             broadcastBgIfEnabled(reading)
             try {
@@ -201,13 +228,13 @@ class StrimmaService : Service() {
     }
 
     private suspend fun processReading(mmol: Double, timestamp: Long) {
-        val sgv = (mmol * 18.0182).toInt()
-        val roundedMmol = Math.round(mmol * 10.0) / 10.0
+        val sgv = (mmol * MGDL_CONVERSION).toInt()
+        val roundedMmol = Math.round(mmol * MMOL_ROUNDING_FACTOR) / MMOL_ROUNDING_FACTOR
 
         val existing = dao.lastN(1)
-        if (existing.isNotEmpty() && (timestamp - existing[0].ts) < 3_000) return
+        if (existing.isNotEmpty() && (timestamp - existing[0].ts) < DUPLICATE_THRESHOLD_MS) return
 
-        val recentReadings = dao.since(timestamp - 15 * 60 * 1000)
+        val recentReadings = dao.since(timestamp - LOOKBACK_MINUTES * MINUTES_TO_MS)
         val tempReading = GlucoseReading(
             ts = timestamp, sgv = sgv, mmol = roundedMmol,
             direction = "NONE", deltaMmol = null, pushed = 0
@@ -216,7 +243,7 @@ class StrimmaService : Service() {
 
         val reading = tempReading.copy(
             direction = direction.name,
-            deltaMmol = deltaMmol?.let { Math.round(it * 10.0) / 10.0 }
+            deltaMmol = deltaMmol?.let { Math.round(it * MMOL_ROUNDING_FACTOR) / MMOL_ROUNDING_FACTOR }
         )
 
         dao.insert(reading)
@@ -224,7 +251,7 @@ class StrimmaService : Service() {
         pusher.pushReading(reading)
         updateNotification()
         // PredictionComputer uses 12-min lookback internally; 15 min ensures sufficient history
-        val alertReadings = dao.since(timestamp - 15 * 60_000L)
+        val alertReadings = dao.since(timestamp - LOOKBACK_MINUTES * MINUTES_TO_MS)
         alertManager.checkReading(reading, alertReadings, predMinutes.value)
         broadcastBgIfEnabled(reading)
         try {
@@ -237,12 +264,12 @@ class StrimmaService : Service() {
 
     private suspend fun updateNotification() {
         val latest = dao.latestOnce()
-        val graphWindowMs = notifGraphMinutes.value.toLong() * 60_000L
+        val graphWindowMs = notifGraphMinutes.value.toLong() * MINUTES_TO_MS
         val recent = dao.since(System.currentTimeMillis() - graphWindowMs)
 
         val iob = if (treatmentsSyncEnabled.value) {
             val tau = IOBComputer.tauForInsulinType(insulinType.value, customDIA.value)
-            val lookbackMs = (5.0 * tau * 60_000).toLong()
+            val lookbackMs = (IOB_TAU_MULTIPLIER * tau * MINUTES_TO_MS).toLong()
             val treatments = treatmentDao.insulinSince(System.currentTimeMillis() - lookbackMs)
             IOBComputer.computeIOB(treatments, System.currentTimeMillis(), tau)
         } else 0.0
@@ -259,7 +286,7 @@ class StrimmaService : Service() {
             putExtra("com.eveningoutpost.dexdrip.Extras.BgEstimate", reading.sgv.toDouble())
             putExtra("com.eveningoutpost.dexdrip.Extras.Raw", reading.sgv.toDouble())
             putExtra("com.eveningoutpost.dexdrip.Extras.Time", reading.ts)
-            putExtra("com.eveningoutpost.dexdrip.Extras.BgSlope", (reading.deltaMmol ?: 0.0) / 5.0)
+            putExtra("com.eveningoutpost.dexdrip.Extras.BgSlope", (reading.deltaMmol ?: 0.0) / DELTA_DIVISOR)
             putExtra("com.eveningoutpost.dexdrip.Extras.SensorId", "Strimma")
             val direction = try {
                 com.psjostrom.strimma.data.Direction.valueOf(reading.direction)

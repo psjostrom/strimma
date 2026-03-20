@@ -24,6 +24,7 @@ data class Prediction(
 object PredictionComputer {
 
     private const val LOOKBACK_MS = 12 * 60_000L
+    private const val MS_PER_MINUTE = 60_000.0
     private const val MMOL_FLOOR = 1.0
     private const val MMOL_CEILING = 30.0
     // Exponential decay rate: at t=-12 (oldest), weight ≈ 0.015 (vs 1.0 at t=0).
@@ -47,7 +48,7 @@ object PredictionComputer {
 
         val anchor = recent.last()
         // Normalize to minutes relative to anchor for numerical stability
-        val points = recent.map { (it.ts - anchor.ts).toDouble() / 60_000.0 to it.mmol }
+        val points = recent.map { (it.ts - anchor.ts).toDouble() / MS_PER_MINUTE to it.mmol }
 
         val velocity = fitWeightedVelocity(points) ?: return null
         if (abs(velocity) > MAX_VELOCITY) return null  // sensor artifact

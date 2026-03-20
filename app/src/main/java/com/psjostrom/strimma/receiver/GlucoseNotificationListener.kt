@@ -95,6 +95,9 @@ class GlucoseNotificationListener : NotificationListenerService() {
         const val EXTRA_MMOL = "mmol"
         const val EXTRA_TIMESTAMP = "timestamp"
 
+        private const val MIN_VALID_MMOL = 0.0
+        private const val MAX_VALID_MMOL = 50.0
+
         fun isEnabled(context: Context): Boolean {
             val flat = Settings.Secure.getString(
                 context.contentResolver, "enabled_notification_listeners"
@@ -129,7 +132,7 @@ class GlucoseNotificationListener : NotificationListenerService() {
         val notification = sbn.notification ?: return
         val mmol = extractGlucose(notification)
 
-        if (mmol != null && mmol > 0.0 && mmol < 50.0) {
+        if (mmol != null && mmol > MIN_VALID_MMOL && mmol < MAX_VALID_MMOL) {
             DebugLog.log(message = "Parsed: $mmol mmol/L")
             val intent = Intent(this, com.psjostrom.strimma.service.StrimmaService::class.java).apply {
                 action = ACTION_GLUCOSE_RECEIVED
@@ -188,5 +191,7 @@ class GlucoseNotificationListener : NotificationListenerService() {
         }
     }
 
-    override fun onNotificationRemoved(sbn: StatusBarNotification) {}
+    override fun onNotificationRemoved(sbn: StatusBarNotification) {
+        // no-op: only interested in posted notifications
+    }
 }

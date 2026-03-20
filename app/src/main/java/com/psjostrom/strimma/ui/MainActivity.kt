@@ -43,7 +43,7 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             try {
                 val json = contentResolver.openInputStream(uri)?.bufferedReader()?.readText()
-                    ?: throw IllegalStateException("Could not read file")
+                    ?: error("Could not read file")
                 viewModelRef?.importSettings(json)
                 Toast.makeText(this@MainActivity, "Settings imported", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
@@ -56,6 +56,7 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.RequestPermission()
     ) { /* Service starts regardless */ }
 
+    @Suppress("LongMethod") // Compose setContent wiring
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -249,14 +250,22 @@ class MainActivity : ComponentActivity() {
                                 }
                             },
                             onWidgetSettings = {
-                                startActivity(Intent(this@MainActivity, com.psjostrom.strimma.widget.WidgetConfigActivity::class.java).apply {
-                                    putExtra(android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_ID, 0)
-                                })
+                                startActivity(
+                                    Intent(
+                                        this@MainActivity,
+                                        com.psjostrom.strimma.widget.WidgetConfigActivity::class.java
+                                    ).apply {
+                                        putExtra(android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_ID, 0)
+                                    }
+                                )
                             },
                             onExportSettings = {
                                 AlertDialog.Builder(this@MainActivity)
                                     .setTitle("Export Settings")
-                                    .setMessage("The export file contains your Nightscout secrets in plain text. Only share it with apps you trust.")
+                                    .setMessage(
+                                        "The export file contains your Nightscout secrets" +
+                                            " in plain text. Only share it with apps you trust."
+                                    )
                                     .setPositiveButton("Export") { _, _ ->
                                         lifecycleScope.launch {
                                             try {

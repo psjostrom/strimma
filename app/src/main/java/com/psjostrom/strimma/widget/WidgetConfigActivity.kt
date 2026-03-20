@@ -27,6 +27,13 @@ import com.psjostrom.strimma.ui.theme.StrimmaTheme
 import com.psjostrom.strimma.ui.theme.ThemeMode
 import kotlinx.coroutines.launch
 
+private const val DEFAULT_OPACITY = 0.85f
+private const val DEFAULT_GRAPH_MINUTES = 60
+private const val GRAPH_MINUTES_30 = 30
+private const val GRAPH_MINUTES_60 = 60
+private const val GRAPH_MINUTES_120 = 120
+private const val GRAPH_MINUTES_180 = 180
+
 class WidgetConfigActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -49,8 +56,8 @@ class WidgetConfigActivity : ComponentActivity() {
         setContent {
             StrimmaTheme(themeMode = ThemeMode.Dark) {
                 WidgetConfigScreen(
-                    initialOpacity = prefs.getFloat("opacity", 0.85f),
-                    initialGraphMinutes = prefs.getInt("graph_minutes", 60),
+                    initialOpacity = prefs.getFloat("opacity", DEFAULT_OPACITY),
+                    initialGraphMinutes = prefs.getInt("graph_minutes", DEFAULT_GRAPH_MINUTES),
                     initialShowPrediction = prefs.getBoolean("show_prediction", false),
                     onSave = { opacity, graphMinutes, showPrediction ->
                         // SharedPreferences for config UI initial values on next open
@@ -88,7 +95,12 @@ class WidgetConfigActivity : ComponentActivity() {
     }
 }
 
-private val GRAPH_OPTIONS = listOf(30 to "30m", 60 to "1h", 120 to "2h", 180 to "3h")
+private val GRAPH_OPTIONS = listOf(
+    GRAPH_MINUTES_30 to "30m",
+    GRAPH_MINUTES_60 to "1h",
+    GRAPH_MINUTES_120 to "2h",
+    GRAPH_MINUTES_180 to "3h"
+)
 
 @Composable
 private fun WidgetConfigScreen(

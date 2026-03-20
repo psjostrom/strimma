@@ -29,6 +29,17 @@ class NotificationHelper @Inject constructor(
         const val CHANNEL_ID = "strimma_glucose"
         const val NOTIFICATION_ID = 1
         private const val GRAPH_WINDOW_MS = 60 * 60 * 1000L // 1 hour for notifications
+
+        // Graph dimensions
+        private const val COLLAPSED_GRAPH_WIDTH = 900
+        private const val COLLAPSED_GRAPH_HEIGHT = 180
+        private const val EXPANDED_GRAPH_WIDTH = 800
+        private const val EXPANDED_GRAPH_HEIGHT = 400
+
+        // Icon dimensions
+        private const val ICON_SIZE = 96
+        private const val ICON_TEXT_SIZE_INITIAL = 96f
+        private const val TEXT_SIZE_STEP = 2f
     }
 
     private val notificationManager = context.getSystemService(NotificationManager::class.java)
@@ -90,28 +101,11 @@ class NotificationHelper @Inject constructor(
             ).joinToString(" · ")
 
             builder.setSmallIcon(createBgIcon(bgText))
-
-            // Collapsed view with compact mini graph
-            val collapsed = RemoteViews(context.packageName, R.layout.notification_collapsed)
-            collapsed.setTextViewText(R.id.tv_bg, bgText)
-            collapsed.setTextViewText(R.id.tv_arrow, direction.arrow)
-            collapsed.setTextViewText(R.id.tv_delta, deltaText)
-            val miniGraph = GraphRenderer.render(
-                recentReadings, 900, 180, bgLow, bgHigh, graphWindowMs, compact = true, predictionMinutes = predictionMinutes
+            val notifText = arrayOf(bgText, direction.arrow, deltaText)
+            attachGraphViews(
+                builder, recentReadings, bgLow, bgHigh,
+                graphWindowMs, predictionMinutes, notifText
             )
-            collapsed.setImageViewBitmap(R.id.iv_graph, miniGraph)
-            builder.setCustomContentView(collapsed)
-
-            // Expanded view
-            val expanded = RemoteViews(context.packageName, R.layout.notification_expanded)
-            expanded.setTextViewText(R.id.tv_bg, bgText)
-            expanded.setTextViewText(R.id.tv_arrow, direction.arrow)
-            expanded.setTextViewText(R.id.tv_delta, deltaText)
-            val bigGraph = GraphRenderer.render(
-                recentReadings, 800, 400, bgLow, bgHigh, graphWindowMs, predictionMinutes = predictionMinutes
-            )
-            expanded.setImageViewBitmap(R.id.iv_graph, bigGraph)
-            builder.setCustomBigContentView(expanded)
         } else {
             builder.setSmallIcon(createBgIcon("--"))
             builder.setContentTitle("Strimma")
@@ -119,6 +113,42 @@ class NotificationHelper @Inject constructor(
         }
 
         return builder.build()
+    }
+
+    @Suppress("LongParameterList") // Graph rendering needs all dimensions
+    private fun attachGraphViews(
+        builder: NotificationCompat.Builder,
+        recentReadings: List<GlucoseReading>,
+        bgLow: Double,
+        bgHigh: Double,
+        graphWindowMs: Long,
+        predictionMinutes: Int,
+        text: Array<String>
+    ) {
+        val (bgText, arrow, deltaText) = text
+        val collapsed = RemoteViews(context.packageName, R.layout.notification_collapsed)
+        collapsed.setTextViewText(R.id.tv_bg, bgText)
+        collapsed.setTextViewText(R.id.tv_arrow, arrow)
+        collapsed.setTextViewText(R.id.tv_delta, deltaText)
+        val miniGraph = GraphRenderer.render(
+            recentReadings, COLLAPSED_GRAPH_WIDTH, COLLAPSED_GRAPH_HEIGHT,
+            bgLow, bgHigh, graphWindowMs, compact = true,
+            predictionMinutes = predictionMinutes
+        )
+        collapsed.setImageViewBitmap(R.id.iv_graph, miniGraph)
+        builder.setCustomContentView(collapsed)
+
+        val expanded = RemoteViews(context.packageName, R.layout.notification_expanded)
+        expanded.setTextViewText(R.id.tv_bg, bgText)
+        expanded.setTextViewText(R.id.tv_arrow, arrow)
+        expanded.setTextViewText(R.id.tv_delta, deltaText)
+        val bigGraph = GraphRenderer.render(
+            recentReadings, EXPANDED_GRAPH_WIDTH, EXPANDED_GRAPH_HEIGHT,
+            bgLow, bgHigh, graphWindowMs,
+            predictionMinutes = predictionMinutes
+        )
+        expanded.setImageViewBitmap(R.id.iv_graph, bigGraph)
+        builder.setCustomBigContentView(expanded)
     }
 
     fun updateNotification(
@@ -136,18 +166,18 @@ class NotificationHelper @Inject constructor(
     }
 
     private fun createBgIcon(text: String): IconCompat {
-        val size = 96
+        val size = ICON_SIZE
         val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.WHITE
             textAlign = Paint.Align.CENTER
             typeface = Typeface.DEFAULT_BOLD
-            textSize = 96f
+            textSize = ICON_TEXT_SIZE_INITIAL
         }
         // Auto-size: shrink until text fits the bitmap width
         while (paint.measureText(text) > size) {
-            paint.textSize -= 2f
+            paint.textSize -= TEXT_SIZE_STEP
         }
         val x = size / 2f
         val y = size / 2f - (paint.descent() + paint.ascent()) / 2f

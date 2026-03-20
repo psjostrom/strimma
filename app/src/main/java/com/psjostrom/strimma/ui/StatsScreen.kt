@@ -25,11 +25,23 @@ import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseStats
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.StatsCalculator
-import com.psjostrom.strimma.ui.theme.*
+import com.psjostrom.strimma.ui.theme.AboveHigh
+import com.psjostrom.strimma.ui.theme.BelowLow
+import com.psjostrom.strimma.ui.theme.InRange
 import kotlinx.coroutines.launch
 import java.io.File
 
-private val PERIODS = listOf(24 to "24h", 168 to "7d", 336 to "14d", 720 to "30d")
+private const val HOURS_24 = 24
+private const val HOURS_7_DAYS = 168
+private const val HOURS_14_DAYS = 336
+private const val HOURS_30_DAYS = 720
+
+private val PERIODS = listOf(
+    HOURS_24 to "24h",
+    HOURS_7_DAYS to "7d",
+    HOURS_14_DAYS to "14d",
+    HOURS_30_DAYS to "30d"
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

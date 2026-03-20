@@ -38,6 +38,7 @@ data class NightscoutEntryResponse(
 )
 
 @Serializable
+@Suppress("ConstructorParameterNaming")
 data class NightscoutTreatment(
     val _id: String? = null,
     val eventType: String? = null,
@@ -53,6 +54,9 @@ data class NightscoutTreatment(
 class NightscoutClient @Inject constructor() {
 
     companion object {
+        private const val HTTP_NOT_FOUND = 404
+        private const val MAX_ERROR_LENGTH = 80
+
         fun buildFetchUrl(baseUrl: String, since: Long, count: Int): String {
             return "${baseUrl.trimEnd('/')}/api/v1/entries.json?find[date][\$gt]=$since&count=$count"
         }
@@ -100,7 +104,7 @@ class NightscoutClient @Inject constructor() {
             response.status.isSuccess()
         } catch (e: Exception) {
             com.psjostrom.strimma.receiver.DebugLog.log(
-                message = "Push error: ${e.message?.take(80)}"
+                message = "Push error: ${e.message?.take(MAX_ERROR_LENGTH)}"
             )
             false
         }
@@ -131,7 +135,7 @@ class NightscoutClient @Inject constructor() {
             }
         } catch (e: Exception) {
             com.psjostrom.strimma.receiver.DebugLog.log(
-                message = "Fetch error: ${e.message?.take(80)}"
+                message = "Fetch error: ${e.message?.take(MAX_ERROR_LENGTH)}"
             )
             null
         }
@@ -154,7 +158,7 @@ class NightscoutClient @Inject constructor() {
             val response = client.get(fullUrl) {
                 header("api-secret", hashedSecret)
             }
-            if (response.status.value == 404) {
+            if (response.status.value == HTTP_NOT_FOUND) {
                 com.psjostrom.strimma.receiver.DebugLog.log(
                     message = "Treatments: 404 — server doesn't support treatments"
                 )
@@ -187,7 +191,7 @@ class NightscoutClient @Inject constructor() {
             }
         } catch (e: Exception) {
             com.psjostrom.strimma.receiver.DebugLog.log(
-                message = "Treatments fetch error: ${e.message?.take(80)}"
+                message = "Treatments fetch error: ${e.message?.take(MAX_ERROR_LENGTH)}"
             )
             emptyList()
         }
