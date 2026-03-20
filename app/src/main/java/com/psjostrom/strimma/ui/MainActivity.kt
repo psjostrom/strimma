@@ -23,6 +23,7 @@ import androidx.navigation.compose.rememberNavController
 import com.psjostrom.strimma.network.FollowerStatus
 import com.psjostrom.strimma.receiver.GlucoseNotificationListener
 import com.psjostrom.strimma.service.StrimmaService
+import com.psjostrom.strimma.ui.settings.*
 import com.psjostrom.strimma.ui.theme.StrimmaTheme
 import com.psjostrom.strimma.ui.theme.ThemeMode
 import dagger.hilt.android.AndroidEntryPoint
@@ -149,23 +150,69 @@ class MainActivity : ComponentActivity() {
                     }
                     composable("settings") {
                         SettingsScreen(
+                            onNavigate = { route ->
+                                navController.navigate(route) {
+                                    launchSingleTop = true
+                                }
+                            },
+                            onBack = { navController.popBackStack() }
+                        )
+                    }
+                    composable("settings/data-source") {
+                        DataSourceSettings(
                             glucoseSource = glucoseSource,
                             nightscoutUrl = nightscoutUrl,
                             nightscoutSecret = viewModel.nightscoutSecret,
+                            followerUrl = followerUrl,
+                            followerSecret = viewModel.followerSecret,
+                            followerPollSeconds = followerPollSeconds,
+                            onGlucoseSourceChange = viewModel::setGlucoseSource,
+                            onNightscoutUrlChange = viewModel::setNightscoutUrl,
+                            onNightscoutSecretChange = viewModel::setNightscoutSecret,
+                            onFollowerUrlChange = viewModel::setFollowerUrl,
+                            onFollowerSecretChange = viewModel::setFollowerSecret,
+                            onFollowerPollSecondsChange = viewModel::setFollowerPollSeconds,
+                            onBack = { navController.popBackStack() }
+                        )
+                    }
+                    composable("settings/treatments") {
+                        TreatmentsSettings(
                             treatmentsSyncEnabled = treatmentsSyncEnabled,
                             insulinType = insulinType,
                             customDIA = customDIA,
                             onTreatmentsSyncEnabledChange = viewModel::setTreatmentsSyncEnabled,
                             onInsulinTypeChange = viewModel::setInsulinType,
                             onCustomDIAChange = viewModel::setCustomDIA,
+                            onBack = { navController.popBackStack() }
+                        )
+                    }
+                    composable("settings/display") {
+                        DisplaySettings(
+                            glucoseUnit = glucoseUnit,
                             graphWindowHours = graphWindowHours,
                             bgLow = bgLow,
                             bgHigh = bgHigh,
                             themeMode = themeModeStr,
+                            onGlucoseUnitChange = viewModel::setGlucoseUnit,
+                            onGraphWindowChange = viewModel::setGraphWindowHours,
+                            onBgLowChange = viewModel::setBgLow,
+                            onBgHighChange = viewModel::setBgHigh,
+                            onThemeModeChange = viewModel::setThemeMode,
+                            onBack = { navController.popBackStack() }
+                        )
+                    }
+                    composable("settings/notifications") {
+                        NotificationSettings(
                             notifGraphMinutes = notifGraphMinutes,
                             predictionMinutes = predictionMinutes,
+                            onNotifGraphMinutesChange = viewModel::setNotifGraphMinutes,
+                            onPredictionMinutesChange = viewModel::setPredictionMinutes,
+                            onBack = { navController.popBackStack() }
+                        )
+                    }
+                    composable("settings/alerts") {
+                        AlertsSettings(
                             glucoseUnit = glucoseUnit,
-                            bgBroadcastEnabled = bgBroadcastEnabled,
                             alertLowEnabled = alertLowEnabled,
                             alertHighEnabled = alertHighEnabled,
                             alertUrgentLowEnabled = alertUrgentLowEnabled,
@@ -177,23 +224,6 @@ class MainActivity : ComponentActivity() {
                             alertStaleEnabled = alertStaleEnabled,
                             alertLowSoonEnabled = alertLowSoonEnabled,
                             alertHighSoonEnabled = alertHighSoonEnabled,
-                            onGlucoseSourceChange = viewModel::setGlucoseSource,
-                            onNightscoutUrlChange = viewModel::setNightscoutUrl,
-                            onNightscoutSecretChange = viewModel::setNightscoutSecret,
-                            followerUrl = followerUrl,
-                            followerSecret = viewModel.followerSecret,
-                            followerPollSeconds = followerPollSeconds,
-                            onFollowerUrlChange = viewModel::setFollowerUrl,
-                            onFollowerSecretChange = viewModel::setFollowerSecret,
-                            onFollowerPollSecondsChange = viewModel::setFollowerPollSeconds,
-                            onGraphWindowChange = viewModel::setGraphWindowHours,
-                            onBgLowChange = viewModel::setBgLow,
-                            onBgHighChange = viewModel::setBgHigh,
-                            onThemeModeChange = viewModel::setThemeMode,
-                            onNotifGraphMinutesChange = viewModel::setNotifGraphMinutes,
-                            onPredictionMinutesChange = viewModel::setPredictionMinutes,
-                            onGlucoseUnitChange = viewModel::setGlucoseUnit,
-                            onBgBroadcastEnabledChange = viewModel::setBgBroadcastEnabled,
                             onAlertLowEnabledChange = viewModel::setAlertLowEnabled,
                             onAlertHighEnabledChange = viewModel::setAlertHighEnabled,
                             onAlertUrgentLowEnabledChange = viewModel::setAlertUrgentLowEnabled,
@@ -206,7 +236,13 @@ class MainActivity : ComponentActivity() {
                             onAlertLowSoonEnabledChange = viewModel::setAlertLowSoonEnabled,
                             onAlertHighSoonEnabledChange = viewModel::setAlertHighSoonEnabled,
                             onOpenAlertSound = viewModel::openAlertChannelSettings,
-                            onBack = { navController.popBackStack() },
+                            onBack = { navController.popBackStack() }
+                        )
+                    }
+                    composable("settings/data") {
+                        DataSettings(
+                            bgBroadcastEnabled = bgBroadcastEnabled,
+                            onBgBroadcastEnabledChange = viewModel::setBgBroadcastEnabled,
                             onStats = {
                                 navController.navigate("stats") {
                                     launchSingleTop = true
@@ -216,11 +252,6 @@ class MainActivity : ComponentActivity() {
                                 startActivity(Intent(this@MainActivity, com.psjostrom.strimma.widget.WidgetConfigActivity::class.java).apply {
                                     putExtra(android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_ID, 0)
                                 })
-                            },
-                            onDebugLog = {
-                                navController.navigate("debug") {
-                                    launchSingleTop = true
-                                }
                             },
                             onExportSettings = {
                                 AlertDialog.Builder(this@MainActivity)
@@ -271,7 +302,8 @@ class MainActivity : ComponentActivity() {
                                         Toast.makeText(this@MainActivity, "Pull failed: ${e.message}", Toast.LENGTH_LONG).show()
                                     }
                                 }
-                            }
+                            },
+                            onBack = { navController.popBackStack() }
                         )
                     }
                     composable("stats") {
