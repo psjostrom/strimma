@@ -52,6 +52,19 @@ class AlertManager @Inject constructor(
 
         private const val MIN_CROSSING_MINUTES = 4
 
+        // Vibration patterns (ms: [delay, vibrate, pause, vibrate, ...])
+        private const val VIBRATE_LONG = 800L
+        private const val VIBRATE_MEDIUM = 500L
+        private const val VIBRATE_SHORT = 300L
+        private const val VIBRATE_BRIEF = 200L
+
+        // Notification IDs
+        private const val SNOOZE_INTENT_ID_OFFSET = 200
+
+        // Stale data threshold
+        private const val STALE_THRESHOLD_MINUTES = 10
+        private const val MINUTES_TO_MS = 60 * 1000L
+
         val ALL_CHANNELS = listOf(
             CHANNEL_URGENT_LOW, CHANNEL_LOW, CHANNEL_HIGH, CHANNEL_URGENT_HIGH,
             CHANNEL_STALE, CHANNEL_LOW_SOON, CHANNEL_HIGH_SOON
@@ -81,7 +94,7 @@ class AlertManager @Inject constructor(
             NotificationManager.IMPORTANCE_HIGH,
             RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM),
             alarmAudioAttrs, bypassDnd = true,
-            vibration = longArrayOf(0, 800, 200, 800, 200, 800)
+            vibration = longArrayOf(0, VIBRATE_LONG, VIBRATE_BRIEF, VIBRATE_LONG, VIBRATE_BRIEF, VIBRATE_LONG)
         )
         createChannel(
             CHANNEL_LOW, "Low Alert",
@@ -89,7 +102,7 @@ class AlertManager @Inject constructor(
             NotificationManager.IMPORTANCE_HIGH,
             RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
             notifAudioAttrs, bypassDnd = false,
-            vibration = longArrayOf(0, 500, 200, 500)
+            vibration = longArrayOf(0, VIBRATE_MEDIUM, VIBRATE_BRIEF, VIBRATE_MEDIUM)
         )
         createChannel(
             CHANNEL_HIGH, "High Alert",
@@ -97,7 +110,7 @@ class AlertManager @Inject constructor(
             NotificationManager.IMPORTANCE_HIGH,
             RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
             notifAudioAttrs, bypassDnd = false,
-            vibration = longArrayOf(0, 300, 200, 300)
+            vibration = longArrayOf(0, VIBRATE_SHORT, VIBRATE_BRIEF, VIBRATE_SHORT)
         )
         createChannel(
             CHANNEL_URGENT_HIGH, "Urgent High Alert",
@@ -105,7 +118,7 @@ class AlertManager @Inject constructor(
             NotificationManager.IMPORTANCE_HIGH,
             RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM),
             alarmAudioAttrs, bypassDnd = true,
-            vibration = longArrayOf(0, 800, 200, 800, 200, 800)
+            vibration = longArrayOf(0, VIBRATE_LONG, VIBRATE_BRIEF, VIBRATE_LONG, VIBRATE_BRIEF, VIBRATE_LONG)
         )
         createChannel(
             CHANNEL_STALE, "Stale Data Alert",
@@ -113,7 +126,7 @@ class AlertManager @Inject constructor(
             NotificationManager.IMPORTANCE_DEFAULT,
             RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
             notifAudioAttrs, bypassDnd = false,
-            vibration = longArrayOf(0, 200, 200, 200)
+            vibration = longArrayOf(0, VIBRATE_BRIEF, VIBRATE_BRIEF, VIBRATE_BRIEF)
         )
         createChannel(
             CHANNEL_LOW_SOON, "Low Soon Alert",
@@ -121,7 +134,7 @@ class AlertManager @Inject constructor(
             NotificationManager.IMPORTANCE_DEFAULT,
             RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
             notifAudioAttrs, bypassDnd = false,
-            vibration = longArrayOf(0, 200, 200, 200)
+            vibration = longArrayOf(0, VIBRATE_BRIEF, VIBRATE_BRIEF, VIBRATE_BRIEF)
         )
         createChannel(
             CHANNEL_HIGH_SOON, "High Soon Alert",
@@ -129,10 +142,11 @@ class AlertManager @Inject constructor(
             NotificationManager.IMPORTANCE_DEFAULT,
             RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
             notifAudioAttrs, bypassDnd = false,
-            vibration = longArrayOf(0, 200, 200, 200)
+            vibration = longArrayOf(0, VIBRATE_BRIEF, VIBRATE_BRIEF, VIBRATE_BRIEF)
         )
     }
 
+    @Suppress("LongParameterList") // Wraps NotificationChannel which needs all of these
     private fun createChannel(
         id: String, name: String, desc: String,
         importance: Int, sound: android.net.Uri,
@@ -220,6 +234,7 @@ class AlertManager @Inject constructor(
             highThreshold.toDouble(), alreadyLow, alreadyHigh, unit, now)
     }
 
+    @Suppress("CyclomaticComplexMethod", "LongParameterList") // Two symmetric low/high blocks
     private suspend fun checkPredictive(
         recentReadings: List<GlucoseReading>,
         predictionMinutes: Int,
@@ -274,7 +289,7 @@ class AlertManager @Inject constructor(
         if (!staleEnabled) return
 
         val now = System.currentTimeMillis()
-        if (lastReadingTs == null || (now - lastReadingTs) > 10 * 60 * 1000) {
+        if (lastReadingTs == null || (now - lastReadingTs) > STALE_THRESHOLD_MINUTES * MINUTES_TO_MS) {
             if (!isSnoozed(ALERT_STALE_ID, now)) {
                 fireAlert(ALERT_STALE_ID, CHANNEL_STALE, "No Data", "No glucose reading for 10+ minutes")
             }
@@ -313,7 +328,7 @@ class AlertManager @Inject constructor(
         )
 
         val snoozeIntent = PendingIntent.getBroadcast(
-            context, alertId + 200,
+            context, alertId + SNOOZE_INTENT_ID_OFFSET,
             Intent(context, AlertSnoozeReceiver::class.java).apply {
                 putExtra("alert_id", alertId)
             },

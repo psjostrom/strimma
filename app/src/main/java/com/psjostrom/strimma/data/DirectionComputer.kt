@@ -4,6 +4,21 @@ import javax.inject.Inject
 
 class DirectionComputer @Inject constructor() {
 
+    companion object {
+        private const val LOOKBACK_MINUTES = 5
+        private const val MAX_TIME_GAP_MINUTES = 10
+        private const val MINUTES_TO_MS = 60 * 1000L
+        private const val MGDL_CONVERSION = 18.0182
+
+        // EASD/ISPAD direction thresholds (mg/dL per minute)
+        private const val THRESHOLD_DOUBLE_DOWN = -3.0
+        private const val THRESHOLD_SINGLE_DOWN = -2.0
+        private const val THRESHOLD_FORTY_FIVE_DOWN = -1.1
+        private const val THRESHOLD_FORTY_FIVE_UP = 1.1
+        private const val THRESHOLD_SINGLE_UP = 2.0
+        private const val THRESHOLD_DOUBLE_UP = 3.0
+    }
+
     fun compute(readings: List<GlucoseReading>, currentReading: GlucoseReading): Pair<Direction, Double?> {
         // Build full list including current reading, sorted by timestamp ASC
         val allReadings = (readings + currentReading).sortedBy { it.ts }
@@ -12,13 +27,13 @@ class DirectionComputer @Inject constructor() {
         if (currentIndex == -1) return Pair(Direction.NONE, null)
 
         // Find reading closest to 5 minutes before current
-        val targetTs = currentReading.ts - (5 * 60 * 1000)
+        val targetTs = currentReading.ts - (LOOKBACK_MINUTES * MINUTES_TO_MS)
         val pastReading = allReadings.take(currentIndex).minByOrNull {
             kotlin.math.abs(it.ts - targetTs)
         }
 
         // If no reading within 10 minutes, return NONE
-        if (pastReading == null || kotlin.math.abs(pastReading.ts - targetTs) > 10 * 60 * 1000) {
+        if (pastReading == null || kotlin.math.abs(pastReading.ts - targetTs) > MAX_TIME_GAP_MINUTES * MINUTES_TO_MS) {
             return Pair(Direction.NONE, null)
         }
 
@@ -29,7 +44,7 @@ class DirectionComputer @Inject constructor() {
         val avgPast = avgSgv(allReadings, pastIndex)
 
         // Calculate time difference in minutes
-        val timeMinutes = (currentReading.ts - pastReading.ts) / (60.0 * 1000.0)
+        val timeMinutes = (currentReading.ts - pastReading.ts) / MINUTES_TO_MS.toDouble()
         if (timeMinutes == 0.0) return Pair(Direction.NONE, null)
 
         // Calculate delta in mg/dL per minute
@@ -37,17 +52,17 @@ class DirectionComputer @Inject constructor() {
 
         // Map to Direction using thresholds
         val direction = when {
-            deltaMgdlPerMin <= -3.0 -> Direction.DoubleDown
-            deltaMgdlPerMin <= -2.0 -> Direction.SingleDown
-            deltaMgdlPerMin <= -1.1 -> Direction.FortyFiveDown
-            deltaMgdlPerMin <= 1.1 -> Direction.Flat
-            deltaMgdlPerMin <= 2.0 -> Direction.FortyFiveUp
-            deltaMgdlPerMin <= 3.0 -> Direction.SingleUp
+            deltaMgdlPerMin <= THRESHOLD_DOUBLE_DOWN -> Direction.DoubleDown
+            deltaMgdlPerMin <= THRESHOLD_SINGLE_DOWN -> Direction.SingleDown
+            deltaMgdlPerMin <= THRESHOLD_FORTY_FIVE_DOWN -> Direction.FortyFiveDown
+            deltaMgdlPerMin <= THRESHOLD_FORTY_FIVE_UP -> Direction.Flat
+            deltaMgdlPerMin <= THRESHOLD_SINGLE_UP -> Direction.FortyFiveUp
+            deltaMgdlPerMin <= THRESHOLD_DOUBLE_UP -> Direction.SingleUp
             else -> Direction.DoubleUp
         }
 
         // Convert delta to mmol/L
-        val deltaMmol = (avgNow - avgPast) / 18.0182
+        val deltaMmol = (avgNow - avgPast) / MGDL_CONVERSION
 
         return Pair(direction, deltaMmol)
     }

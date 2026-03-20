@@ -1,3 +1,5 @@
+@file:Suppress("MatchingDeclarationName")
+
 package com.psjostrom.strimma.graph
 
 const val CRITICAL_LOW = 3.0
@@ -24,11 +26,14 @@ data class YRange(val yMin: Double, val yMax: Double) {
     val range: Double get() = yMax - yMin
 }
 
+private const val Y_PADDING_LARGE = 0.5
+private const val Y_PADDING_SMALL = 0.3
+
 fun computeYRange(mmolValues: List<Double>, bgLow: Double, bgHigh: Double): YRange {
     val dataMin = mmolValues.minOrNull() ?: bgLow
     val dataMax = mmolValues.maxOrNull() ?: bgHigh
     return YRange(
-        yMin = minOf(bgLow - 0.5, CRITICAL_LOW - 0.3, dataMin - 0.3),
-        yMax = maxOf(bgHigh + 0.5, CRITICAL_HIGH + 0.3, dataMax + 0.3)
+        yMin = minOf(bgLow - Y_PADDING_LARGE, CRITICAL_LOW - Y_PADDING_SMALL, dataMin - Y_PADDING_SMALL),
+        yMax = maxOf(bgHigh + Y_PADDING_LARGE, CRITICAL_HIGH + Y_PADDING_SMALL, dataMax + Y_PADDING_SMALL)
     )
 }

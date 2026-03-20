@@ -16,6 +16,11 @@ data class GlucoseStats(
 
 object StatsCalculator {
 
+    private const val MGDL_CONVERSION = 18.0182
+    private const val GMI_INTERCEPT = 3.31
+    private const val GMI_SLOPE = 0.02392
+    private const val PERCENT_MULTIPLIER = 100.0
+
     fun compute(
         readings: List<GlucoseReading>,
         bgLow: Double,
@@ -29,11 +34,11 @@ object StatsCalculator {
         val avg = mmolValues.average()
         val variance = mmolValues.map { d -> (d - avg) * (d - avg) }.average()
         val stdDev = sqrt(variance)
-        val cv = if (avg > 0) (stdDev / avg) * 100.0 else 0.0
+        val cv = if (avg > 0) (stdDev / avg) * PERCENT_MULTIPLIER else 0.0
 
         // GMI (eHbA1c): ATTD consensus formula
-        val avgMgdl = avg * 18.0182
-        val gmi = 3.31 + 0.02392 * avgMgdl
+        val avgMgdl = avg * MGDL_CONVERSION
+        val gmi = GMI_INTERCEPT + GMI_SLOPE * avgMgdl
 
         val inRange = mmolValues.count { it in bgLow..bgHigh }
         val below = mmolValues.count { it < bgLow }
@@ -45,9 +50,9 @@ object StatsCalculator {
             stdDevMmol = stdDev,
             cv = cv,
             gmi = gmi,
-            tirPercent = (inRange.toDouble() / count) * 100,
-            belowPercent = (below.toDouble() / count) * 100,
-            abovePercent = (above.toDouble() / count) * 100,
+            tirPercent = (inRange.toDouble() / count) * PERCENT_MULTIPLIER,
+            belowPercent = (below.toDouble() / count) * PERCENT_MULTIPLIER,
+            abovePercent = (above.toDouble() / count) * PERCENT_MULTIPLIER,
             periodLabel = periodLabel
         )
     }

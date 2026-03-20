@@ -1,3 +1,5 @@
+@file:Suppress("MatchingDeclarationName")
+
 package com.psjostrom.strimma.ui.theme
 
 import android.app.Activity

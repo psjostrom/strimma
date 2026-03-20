@@ -36,7 +36,15 @@ import com.psjostrom.strimma.graph.ThresholdCrossing
 import com.psjostrom.strimma.graph.CrossingType
 import com.psjostrom.strimma.graph.computeYRange
 import com.psjostrom.strimma.network.FollowerStatus
-import com.psjostrom.strimma.ui.theme.*
+import com.psjostrom.strimma.ui.theme.AboveHigh
+import com.psjostrom.strimma.ui.theme.BelowLow
+import com.psjostrom.strimma.ui.theme.BolusBlue
+import com.psjostrom.strimma.ui.theme.CarbGreen
+import com.psjostrom.strimma.ui.theme.InRange
+import com.psjostrom.strimma.ui.theme.InRangeZone
+import com.psjostrom.strimma.ui.theme.Stale
+import com.psjostrom.strimma.ui.theme.TintDanger
+import com.psjostrom.strimma.ui.theme.TintWarning
 import androidx.compose.ui.graphics.Path
 import kotlinx.coroutines.delay
 
@@ -167,7 +175,11 @@ fun MainScreen(
 }
 
 @Composable
-private fun BgHeader(reading: GlucoseReading?, bgLow: Float, bgHigh: Float, glucoseUnit: GlucoseUnit, crossing: ThresholdCrossing? = null, followerStatus: FollowerStatus, iob: Double = 0.0) {
+private fun BgHeader(
+    reading: GlucoseReading?, bgLow: Float, bgHigh: Float,
+    glucoseUnit: GlucoseUnit, crossing: ThresholdCrossing? = null,
+    followerStatus: FollowerStatus, iob: Double = 0.0
+) {
     var minutesAgo by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(reading?.ts) {
@@ -697,8 +709,14 @@ fun Minimap(
 
         // Threshold lines (subtle)
         val dashEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 4f))
-        drawLine(color = Color(0x40FFB800), start = Offset(0f, yFor(bgLow)), end = Offset(w, yFor(bgLow)), pathEffect = dashEffect, strokeWidth = 1f)
-        drawLine(color = Color(0x40FFB800), start = Offset(0f, yFor(bgHigh)), end = Offset(w, yFor(bgHigh)), pathEffect = dashEffect, strokeWidth = 1f)
+        drawLine(
+            color = Color(0x40FFB800), start = Offset(0f, yFor(bgLow)),
+            end = Offset(w, yFor(bgLow)), pathEffect = dashEffect, strokeWidth = 1f
+        )
+        drawLine(
+            color = Color(0x40FFB800), start = Offset(0f, yFor(bgHigh)),
+            end = Offset(w, yFor(bgHigh)), pathEffect = dashEffect, strokeWidth = 1f
+        )
 
         // Data points
         for (r in sorted) {
@@ -756,6 +774,8 @@ private fun dotColor(mmol: Double, bgLow: Double, bgHigh: Double): Color = when 
     else -> InRange
 }
 
+private const val GRAPH_MARGIN_RIGHT = 16f
+
 private fun findNearestByX(
     fingerX: Float,
     sorted: List<GlucoseReading>,
@@ -765,7 +785,7 @@ private fun findNearestByX(
     marginLeft: Float = 50f
 ): GlucoseReading? {
     if (sorted.isEmpty()) return null
-    val marginRight = 16f
+    val marginRight = GRAPH_MARGIN_RIGHT
     val plotWidth = canvasWidth - marginLeft - marginRight
 
     fun xFor(ts: Long): Float =

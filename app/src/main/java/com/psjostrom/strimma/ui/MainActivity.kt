@@ -23,7 +23,12 @@ import androidx.navigation.compose.rememberNavController
 import com.psjostrom.strimma.network.FollowerStatus
 import com.psjostrom.strimma.receiver.GlucoseNotificationListener
 import com.psjostrom.strimma.service.StrimmaService
-import com.psjostrom.strimma.ui.settings.*
+import com.psjostrom.strimma.ui.settings.AlertsSettings
+import com.psjostrom.strimma.ui.settings.DataSettings
+import com.psjostrom.strimma.ui.settings.DataSourceSettings
+import com.psjostrom.strimma.ui.settings.DisplaySettings
+import com.psjostrom.strimma.ui.settings.NotificationSettings
+import com.psjostrom.strimma.ui.settings.TreatmentsSettings
 import com.psjostrom.strimma.ui.theme.StrimmaTheme
 import com.psjostrom.strimma.ui.theme.ThemeMode
 import dagger.hilt.android.AndroidEntryPoint
@@ -43,10 +48,13 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             try {
                 val json = contentResolver.openInputStream(uri)?.bufferedReader()?.readText()
-                    ?: throw IllegalStateException("Could not read file")
+                    ?: error("Could not read file")
                 viewModelRef?.importSettings(json)
                 Toast.makeText(this@MainActivity, "Settings imported", Toast.LENGTH_SHORT).show()
-            } catch (e: Exception) {
+            } catch (
+                @Suppress("TooGenericExceptionCaught") // File I/O + JSON parsing — multiple exception types possible
+                e: Exception
+            ) {
                 Toast.makeText(this@MainActivity, "Import failed: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
@@ -56,6 +64,7 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.RequestPermission()
     ) { /* Service starts regardless */ }
 
+    @Suppress("LongMethod") // Compose setContent wiring
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -249,14 +258,22 @@ class MainActivity : ComponentActivity() {
                                 }
                             },
                             onWidgetSettings = {
-                                startActivity(Intent(this@MainActivity, com.psjostrom.strimma.widget.WidgetConfigActivity::class.java).apply {
-                                    putExtra(android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_ID, 0)
-                                })
+                                startActivity(
+                                    Intent(
+                                        this@MainActivity,
+                                        com.psjostrom.strimma.widget.WidgetConfigActivity::class.java
+                                    ).apply {
+                                        putExtra(android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_ID, 0)
+                                    }
+                                )
                             },
                             onExportSettings = {
                                 AlertDialog.Builder(this@MainActivity)
                                     .setTitle("Export Settings")
-                                    .setMessage("The export file contains your Nightscout secrets in plain text. Only share it with apps you trust.")
+                                    .setMessage(
+                                        "The export file contains your Nightscout secrets" +
+                                            " in plain text. Only share it with apps you trust."
+                                    )
                                     .setPositiveButton("Export") { _, _ ->
                                         lifecycleScope.launch {
                                             try {
@@ -277,7 +294,11 @@ class MainActivity : ComponentActivity() {
                                                     },
                                                     "Export Settings"
                                                 ))
-                                            } catch (e: Exception) {
+                                            } catch (
+                                                // File I/O + intent dispatch — multiple exception types
+                                                @Suppress("TooGenericExceptionCaught")
+                                                e: Exception
+                                            ) {
                                                 Toast.makeText(
                                                     this@MainActivity,
                                                     "Export failed: ${e.message}",

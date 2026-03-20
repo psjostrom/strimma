@@ -8,7 +8,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.Medication
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Sensors
+import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -56,7 +62,7 @@ fun SettingsScreen(
         ) {
             Spacer(modifier = Modifier.height(4.dp))
 
-            SettingsMenuGroup(outline, surfVar) {
+            SettingsMenuGroup(surfVar) {
                 SettingsMenuItem(
                     icon = Icons.Default.Sensors,
                     title = "Data Source",
@@ -93,7 +99,7 @@ fun SettingsScreen(
                 )
             }
 
-            SettingsMenuGroup(outline, surfVar) {
+            SettingsMenuGroup(surfVar) {
                 SettingsMenuItem(
                     icon = Icons.Default.Storage,
                     title = "Data",
@@ -115,7 +121,6 @@ fun SettingsScreen(
 
 @Composable
 private fun SettingsMenuGroup(
-    titleColor: androidx.compose.ui.graphics.Color,
     cardColor: androidx.compose.ui.graphics.Color,
     content: @Composable ColumnScope.() -> Unit
 ) {
