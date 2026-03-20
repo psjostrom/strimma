@@ -176,8 +176,6 @@ class IOBComputerTest {
     fun `iobForTreatment returns unrounded value`() {
         // Verify it does NOT round — unlike computeIOB which rounds to 1 decimal
         val result = IOBComputer.iobForTreatment(3.7, 20.0, tau)
-        val rounded = Math.round(result * 10.0) / 10.0
-        // Raw result should differ from rounded (unless it happens to land on a tenth)
         val t = 20.0 / tau
         val expected = 3.7 * (1.0 + t) * exp(-t)
         assertEquals(expected, result, 0.0001)

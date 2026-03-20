@@ -442,18 +442,17 @@ fun GlucoseGraph(
         modifier = modifier
             .pointerInput(Unit) {
                 val mRight = GRAPH_MARGIN_RIGHT
-                val mTop = GRAPH_MARGIN_TOP
-                val mBottom = GRAPH_MARGIN_BOTTOM
                 val touchSlop = viewConfiguration.touchSlop
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
                     val mLeft = if (currentGlucoseUnit == GlucoseUnit.MGDL) 70f else 50f
-                    // Check if finger landed on a dot
-                    val hit = findNearestDot(
-                        down.position, currentSorted, currentVisibleStart, currentVisibleMs,
-                        currentBgLow, currentBgHigh, size.width.toFloat(), size.height.toFloat(),
-                        mLeft, mRight, mTop, mBottom
+                    val viewport = GraphViewport(
+                        currentVisibleStart, currentVisibleMs,
+                        currentBgLow, currentBgHigh,
+                        size.width.toFloat(), size.height.toFloat(), mLeft
                     )
+                    // Check if finger landed on a dot
+                    val hit = findNearestDot(down.position, currentSorted, viewport)
                     var isScrubbing = hit != null
                     if (isScrubbing) {
                         selectedReading = hit
@@ -466,57 +465,54 @@ fun GlucoseGraph(
 
                     do {
                         val event = awaitPointerEvent()
-                        val pressed = event.changes.any { it.pressed }
-                        if (!pressed) {
+                        if (!event.changes.any { it.pressed }) {
                             selectedReading = null
                             break
                         }
 
-                        if (isScrubbing) {
-                            // Multi-touch cancels scrub
-                            if (event.changes.count { it.pressed } > 1) {
+                        if (isScrubbing && event.changes.count { it.pressed } == 1) {
+                            // Single-finger scrub: track nearest reading by time
+                            val pos = event.changes.firstOrNull()?.position
+                            if (pos != null) {
+                                selectedReading = findNearestByX(
+                                    pos.x, currentSorted, currentVisibleStart, currentVisibleMs,
+                                    size.width.toFloat(), mLeft
+                                )
+                            }
+                            event.changes.forEach { it.consume() }
+                        } else {
+                            // Multi-touch while scrubbing cancels scrub mode
+                            if (isScrubbing) {
                                 isScrubbing = false
                                 selectedReading = null
-                                // Fall through to transform handling below
+                            }
+
+                            // Transform handling (pan/zoom)
+                            val zoomChange = event.calculateZoom()
+                            val panChange = event.calculatePan()
+
+                            totalPan += panChange
+                            if (!pastSlop && totalPan.getDistance() < touchSlop && zoomChange == 1f) {
+                                // Below touch slop — wait for more movement
                             } else {
-                                val pos = event.changes.firstOrNull()?.position
-                                if (pos != null) {
-                                    selectedReading = findNearestByX(
-                                        pos.x, currentSorted, currentVisibleStart, currentVisibleMs,
-                                        size.width.toFloat(), mLeft
-                                    )
-                                }
-                                event.changes.forEach { it.consume() }
-                                continue
+                                pastSlop = true
+                                gestureZoom = (gestureZoom * zoomChange).coerceIn(1f, 5f)
+                                onZoomChange(gestureZoom)
+
+                                val plotWidth = size.width - mLeft - mRight
+                                val visMs = currentWindowMs / gestureZoom
+                                val msPerPx = visMs / plotWidth
+                                val timeShift = (-panChange.x * msPerPx).toLong()
+                                val now = System.currentTimeMillis()
+                                val maxEnd = now + currentPredictionMs
+                                val newEnd = (currentViewportEnd + timeShift).coerceIn(
+                                    currentReadings.minOfOrNull { it.ts }?.plus(visMs.toLong()) ?: maxEnd,
+                                    maxEnd
+                                )
+                                onViewportChange(newEnd)
+                                event.changes.forEach { if (it.positionChanged()) it.consume() }
                             }
                         }
-
-                        // Transform handling (pan/zoom)
-                        val zoomChange = event.calculateZoom()
-                        val panChange = event.calculatePan()
-
-                        if (!pastSlop) {
-                            totalPan += panChange
-                            val dist = totalPan.getDistance()
-                            if (dist < touchSlop && zoomChange == 1f) continue
-                            pastSlop = true
-                        }
-
-                        gestureZoom = (gestureZoom * zoomChange).coerceIn(1f, 5f)
-                        onZoomChange(gestureZoom)
-
-                        val plotWidth = size.width - mLeft - mRight
-                        val visMs = currentWindowMs / gestureZoom
-                        val msPerPx = visMs / plotWidth
-                        val timeShift = (-panChange.x * msPerPx).toLong()
-                        val now = System.currentTimeMillis()
-                        val maxEnd = now + currentPredictionMs
-                        val newEnd = (currentViewportEnd + timeShift).coerceIn(
-                            currentReadings.minOfOrNull { it.ts }?.plus(visMs.toLong()) ?: maxEnd,
-                            maxEnd
-                        )
-                        onViewportChange(newEnd)
-                        event.changes.forEach { if (it.positionChanged()) it.consume() }
                     } while (true)
                 }
             }
@@ -898,26 +894,15 @@ internal const val DOT_HIT_RADIUS = 40f
 internal fun findNearestDot(
     finger: Offset,
     sorted: List<GlucoseReading>,
-    visibleStart: Long,
-    visibleMs: Long,
-    bgLow: Double,
-    bgHigh: Double,
-    canvasWidth: Float,
-    canvasHeight: Float,
-    marginLeft: Float,
-    marginRight: Float,
-    marginTop: Float,
-    marginBottom: Float
+    viewport: GraphViewport
 ): GlucoseReading? {
     if (sorted.isEmpty()) return null
-    val plotWidth = canvasWidth - marginLeft - marginRight
-    val plotHeight = canvasHeight - marginTop - marginBottom
-    val yr = computeYRange(sorted.map { it.mmol }, bgLow, bgHigh)
+    val yr = computeYRange(sorted.map { it.mmol }, viewport.bgLow, viewport.bgHigh)
 
     fun xFor(ts: Long): Float =
-        marginLeft + ((ts - visibleStart).toFloat() / visibleMs) * plotWidth
+        viewport.marginLeft + ((ts - viewport.visibleStart).toFloat() / viewport.visibleMs) * viewport.plotWidth
     fun yFor(mmol: Double): Float =
-        marginTop + ((yr.yMax - mmol) / yr.range).toFloat() * plotHeight
+        GRAPH_MARGIN_TOP + ((yr.yMax - mmol) / yr.range).toFloat() * viewport.plotHeight
 
     var closest: GlucoseReading? = null
     var closestDist = DOT_HIT_RADIUS
@@ -932,6 +917,7 @@ internal fun findNearestDot(
     }
     return closest
 }
+
 
 private fun findNearestByX(
     fingerX: Float,

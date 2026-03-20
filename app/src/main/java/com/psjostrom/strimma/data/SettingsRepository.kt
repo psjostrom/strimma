@@ -88,10 +88,6 @@ class SettingsRepository @Inject constructor(
         private const val DEFAULT_PREDICTION_MINUTES = 15
         private const val DEFAULT_FOLLOWER_POLL_SECONDS = 60
         private const val DEFAULT_CUSTOM_DIA_FLOAT = 5.0f
-        private const val DEFAULT_WIDGET_OPACITY = 0.85f
-        private const val DEFAULT_WIDGET_GRAPH_MINUTES = 120
-        private const val DEFAULT_WIDGET_GRAPH_MINUTES_MAX = 180
-        private const val DEFAULT_NOTIF_GRAPH_MINUTES_MAX = 30
     }
 
     val nightscoutUrl: Flow<String> = dataStore.data.map { it[KEY_NIGHTSCOUT_URL] ?: "" }
