@@ -14,6 +14,7 @@ import com.psjostrom.strimma.notification.NotificationHelper
 import com.psjostrom.strimma.receiver.DebugLog
 import com.psjostrom.strimma.receiver.GlucoseNotificationListener
 import com.psjostrom.strimma.receiver.XdripBroadcastReceiver
+import com.psjostrom.strimma.webserver.LocalWebServer
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import com.psjostrom.strimma.widget.StrimmaWidget
 import dagger.hilt.android.AndroidEntryPoint
@@ -36,6 +37,7 @@ class StrimmaService : Service() {
     @Inject lateinit var nightscoutPuller: NightscoutPuller
     @Inject lateinit var treatmentSyncer: TreatmentSyncer
     @Inject lateinit var treatmentDao: TreatmentDao
+    @Inject lateinit var localWebServer: LocalWebServer
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var pruneJob: Job? = null
@@ -102,6 +104,17 @@ class StrimmaService : Service() {
             }
         }
 
+        // Web server lifecycle
+        scope.launch {
+            settings.webServerEnabled.collect { enabled ->
+                if (enabled) {
+                    localWebServer.start()
+                } else {
+                    localWebServer.stop()
+                }
+            }
+        }
+
         pusher.pushPending()
         scope.launch { nightscoutPuller.pullIfEmpty() }
         scope.launch { updateNotification() }
@@ -149,6 +162,7 @@ class StrimmaService : Service() {
         stopFollower()
         treatmentSyncJob?.cancel()
         pruneJob?.cancel()
+        localWebServer.stop()
         scope.cancel()
         super.onDestroy()
     }
