@@ -41,6 +41,11 @@ class StrimmaWidget : GlanceAppWidget() {
         const val DEFAULT_OPACITY = 0.85f
         const val DEFAULT_GRAPH_MINUTES = 60
         const val DEFAULT_SHOW_PREDICTION = false
+
+        private const val MS_PER_MINUTE = 60_000L
+        private const val MAX_WINDOW_MS = 180 * MS_PER_MINUTE // 3h — largest selectable graph window
+        private const val DEFAULT_PREDICTION_MINUTES = 5
+        const val STALE_THRESHOLD_MINUTES = 10
     }
 
     override val stateDefinition = PreferencesGlanceStateDefinition
@@ -63,8 +68,8 @@ class StrimmaWidget : GlanceAppWidget() {
             val opacity = state[KEY_OPACITY] ?: DEFAULT_OPACITY
             val graphMinutes = state[KEY_GRAPH_MINUTES] ?: DEFAULT_GRAPH_MINUTES
             val showPrediction = state[KEY_SHOW_PREDICTION] ?: DEFAULT_SHOW_PREDICTION
-            val graphWindowMs = graphMinutes * 60_000L
-            val predictionMinutes = if (showPrediction) 5 else 0
+            val graphWindowMs = graphMinutes * MS_PER_MINUTE
+            val predictionMinutes = if (showPrediction) DEFAULT_PREDICTION_MINUTES else 0
 
             val since = System.currentTimeMillis() - graphWindowMs
             val readings = allReadings.filter { it.ts >= since }
@@ -83,8 +88,6 @@ class StrimmaWidget : GlanceAppWidget() {
         }
     }
 }
-
-private const val MAX_WINDOW_MS = 180 * 60_000L // 3h — largest selectable graph window
 
 @Composable
 private fun WidgetContent(
@@ -107,7 +110,7 @@ private fun WidgetContent(
     val minutesAgo = if (reading != null) {
         ((System.currentTimeMillis() - reading.ts) / 60_000).toInt()
     } else -1
-    val isStale = minutesAgo > 10
+    val isStale = minutesAgo > StrimmaWidget.STALE_THRESHOLD_MINUTES
     val textColor = if (isStale) staleColor else statusColor
 
     val direction = reading?.let {

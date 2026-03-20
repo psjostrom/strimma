@@ -22,6 +22,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
+@Suppress("TooManyFunctions") // One function per setting + reading/export logic
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val dao: ReadingDao,
@@ -31,6 +32,11 @@ class MainViewModel @Inject constructor(
     private val nightscoutFollower: NightscoutFollower,
     private val nightscoutPuller: NightscoutPuller
 ) : ViewModel() {
+
+    companion object {
+        private const val HOURS_PER_DAY = 24
+        private const val MS_PER_HOUR = 3600_000L
+    }
 
     val latestReading: StateFlow<GlucoseReading?> = dao.latest()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
@@ -51,7 +57,7 @@ class MainViewModel @Inject constructor(
 
     val readings: StateFlow<List<GlucoseReading>> = dao.latest()
         .map { _ ->
-            val since = System.currentTimeMillis() - 24 * 3600_000L
+            val since = System.currentTimeMillis() - HOURS_PER_DAY * MS_PER_HOUR
             dao.since(since)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -161,7 +167,7 @@ class MainViewModel @Inject constructor(
     val treatments: StateFlow<List<Treatment>> = settings.treatmentsSyncEnabled
         .flatMapLatest { enabled ->
             if (enabled) {
-                val since = System.currentTimeMillis() - 24 * 3600_000L
+                val since = System.currentTimeMillis() - HOURS_PER_DAY * MS_PER_HOUR
                 treatmentDao.since(since)
             } else {
                 kotlinx.coroutines.flow.flowOf(emptyList())
@@ -185,7 +191,7 @@ class MainViewModel @Inject constructor(
     suspend fun importSettings(json: String) = settings.importFromJson(json)
 
     suspend fun readingsForPeriod(hours: Int): List<GlucoseReading> {
-        val since = System.currentTimeMillis() - hours * 3600_000L
+        val since = System.currentTimeMillis() - hours * MS_PER_HOUR
         return dao.since(since)
     }
 

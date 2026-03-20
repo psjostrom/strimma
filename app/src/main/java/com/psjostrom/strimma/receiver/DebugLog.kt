@@ -14,6 +14,13 @@ import java.util.Locale
  */
 object DebugLog {
 
+    private const val MAX_IN_MEMORY_ENTRIES = 50
+    private const val LOG_RETENTION_DAYS = 7L
+    private const val HOURS_PER_DAY = 24
+    private const val MINUTES_PER_HOUR = 60
+    private const val SECONDS_PER_MINUTE = 60
+    private const val MS_PER_SECOND = 1000L
+
     private val _entries = MutableStateFlow<List<String>>(emptyList())
     val entries: StateFlow<List<String>> = _entries
 
@@ -30,7 +37,7 @@ object DebugLog {
     fun log(message: String) {
         val ts = sdf.format(Date())
         val entry = "$ts $message"
-        _entries.value = (_entries.value + entry).takeLast(50)
+        _entries.value = (_entries.value + entry).takeLast(MAX_IN_MEMORY_ENTRIES)
         android.util.Log.d("StrimmaDebug", entry)
 
         logsDir?.let { dir ->
@@ -44,7 +51,7 @@ object DebugLog {
     }
 
     // Keep for backward compat — callers that pass context
-    fun log(context: android.content.Context? = null, message: String) = log(message)
+    fun log(@Suppress("UNUSED_PARAMETER") context: android.content.Context? = null, message: String) = log(message)
 
     fun readLogFiles(): List<String> {
         val dir = logsDir ?: return emptyList()
@@ -64,7 +71,7 @@ object DebugLog {
 
     private fun pruneOldLogs() {
         val dir = logsDir ?: return
-        val cutoff = System.currentTimeMillis() - 7L * 24 * 60 * 60 * 1000
+        val cutoff = System.currentTimeMillis() - LOG_RETENTION_DAYS * HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MS_PER_SECOND
         dir.listFiles()?.forEach { file ->
             if (file.lastModified() < cutoff) file.delete()
         }

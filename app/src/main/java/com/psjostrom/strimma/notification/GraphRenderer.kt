@@ -22,6 +22,47 @@ object GraphRenderer {
     private const val ZONE_IN_RANGE = 0x1256CCF2.toInt()
     private const val COLOR_AXIS_TEXT = 0xFFA898C0.toInt()
 
+    // Margins
+    private const val MARGIN_COMPACT = 4f
+    private const val MARGIN_LEFT_FULL = 40f
+    private const val MARGIN_RIGHT_FULL = 10f
+    private const val MARGIN_TOP_FULL = 10f
+    private const val MARGIN_BOTTOM_FULL = 24f
+
+    // Dash patterns
+    private const val DASH_LENGTH = 6f
+    private const val DASH_GAP = 4f
+
+    // Compact mode
+    private const val COMPACT_DOT_RADIUS = 5f
+    private const val COMPACT_DOT_SCALE = 0.6f
+
+    // Time intervals
+    private const val HOUR_IN_MS = 3600_000L
+    private const val MINUTE_IN_MS = 60_000L
+    private const val TIME_TICK_15_MIN = 15 * MINUTE_IN_MS
+    private const val TIME_TICK_30_MIN = 30 * MINUTE_IN_MS
+
+    // Axis label dimensions
+    private const val LABEL_TEXT_SIZE = 22f
+    private const val LABEL_Y_OFFSET = 4f
+    private const val LABEL_X_OFFSET = 6f
+    private const val LABEL_MARGIN_TOP = 8f
+    private const val LABEL_MARGIN_BOTTOM = 8f
+
+    // Y-axis step thresholds
+    private const val MGDL_Y_RANGE_THRESHOLD = 180.0
+    private const val MGDL_Y_STEP_LARGE = 50.0
+    private const val MGDL_Y_STEP_SMALL = 25.0
+    private const val MMOL_Y_RANGE_THRESHOLD = 10.0
+
+    // Alpha values
+    private const val PREDICTION_ALPHA = 128
+
+    // Gradient
+    private const val GRADIENT_HEIGHT_FRACTION = 0.45f
+
+    @Suppress("CyclomaticComplexMethod", "LongMethod") // Sequential render pipeline
     fun render(
         readings: List<GlucoseReading>,
         width: Int,
@@ -38,14 +79,14 @@ object GraphRenderer {
         canvas.drawColor(BG_COLOR)
 
         val now = System.currentTimeMillis()
-        val predictionMs = predictionMinutes * 60_000L
+        val predictionMs = predictionMinutes * MINUTE_IN_MS
         val endTime = now + predictionMs
         val startTime = endTime - windowMs - predictionMs
 
-        val marginLeft = if (compact) 4f else 40f
-        val marginRight = if (compact) 4f else 10f
-        val marginTop = if (compact) 4f else 10f
-        val marginBottom = if (compact) 4f else 24f
+        val marginLeft = if (compact) MARGIN_COMPACT else MARGIN_LEFT_FULL
+        val marginRight = if (compact) MARGIN_COMPACT else MARGIN_RIGHT_FULL
+        val marginTop = if (compact) MARGIN_COMPACT else MARGIN_TOP_FULL
+        val marginBottom = if (compact) MARGIN_COMPACT else MARGIN_BOTTOM_FULL
         val plotWidth = width - marginLeft - marginRight
         val plotHeight = height - marginTop - marginBottom
 
@@ -70,11 +111,11 @@ object GraphRenderer {
 
         // Threshold lines
         val thresholdPaint = Paint().apply {
-            strokeWidth = 2f
+            strokeWidth = LINE_WIDTH
             style = Paint.Style.STROKE
         }
         thresholdPaint.color = CANVAS_HIGH
-        thresholdPaint.pathEffect = DashPathEffect(floatArrayOf(6f, 4f), 0f)
+        thresholdPaint.pathEffect = DashPathEffect(floatArrayOf(DASH_LENGTH, DASH_GAP), 0f)
         canvas.drawLine(marginLeft, lowY, width - marginRight, lowY, thresholdPaint)
         canvas.drawLine(marginLeft, highY, width - marginRight, highY, thresholdPaint)
 
@@ -91,7 +132,7 @@ object GraphRenderer {
             strokeWidth = LINE_WIDTH
             style = Paint.Style.STROKE
         }
-        val dotR = if (compact) 5f else DOT_RADIUS
+        val dotR = if (compact) COMPACT_DOT_RADIUS else DOT_RADIUS
 
         for (i in visible.indices) {
             val r = visible[i]
@@ -115,23 +156,23 @@ object GraphRenderer {
             val predPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 style = Paint.Style.FILL
                 color = Color.WHITE
-                alpha = 128
+                alpha = PREDICTION_ALPHA
             }
             val predLinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 strokeWidth = LINE_WIDTH
                 style = Paint.Style.STROKE
-                pathEffect = DashPathEffect(floatArrayOf(6f, 6f), 0f)
+                pathEffect = DashPathEffect(floatArrayOf(DASH_LENGTH, DASH_LENGTH), 0f)
                 color = Color.WHITE
-                alpha = 128
+                alpha = PREDICTION_ALPHA
             }
             var prevPx = xFor(prediction.anchorTs)
             var prevPy = yFor(prediction.anchorMmol)
             for (pt in prediction.points) {
-                val px = xFor(prediction.anchorTs + pt.minuteOffset * 60_000L)
+                val px = xFor(prediction.anchorTs + pt.minuteOffset * MINUTE_IN_MS)
                 val py = yFor(pt.mmol)
                 if (px > width - marginRight) break
                 canvas.drawLine(prevPx, prevPy, px, py, predLinePaint)
-                canvas.drawCircle(px, py, dotR * 0.6f, predPaint)
+                canvas.drawCircle(px, py, dotR * COMPACT_DOT_SCALE, predPaint)
                 prevPx = px
                 prevPy = py
             }
@@ -142,38 +183,38 @@ object GraphRenderer {
         if (!compact) {
             val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = COLOR_AXIS_TEXT
-                textSize = 22f
+                textSize = LABEL_TEXT_SIZE
                 textAlign = Paint.Align.CENTER
             }
 
-            val intervalMs = if (windowMs <= 3600_000L) 15 * 60_000L else 30 * 60_000L
+            val intervalMs = if (windowMs <= HOUR_IN_MS) TIME_TICK_15_MIN else TIME_TICK_30_MIN
             var tickTime = startTime - (startTime % intervalMs) + intervalMs
             val sdf = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
             while (tickTime < endTime) {
                 val x = xFor(tickTime)
                 if (x > marginLeft && x < width - marginRight) {
-                    canvas.drawText(sdf.format(java.util.Date(tickTime)), x, height.toFloat() - 4f, textPaint)
+                    canvas.drawText(sdf.format(java.util.Date(tickTime)), x, height.toFloat() - LABEL_Y_OFFSET, textPaint)
                 }
                 tickTime += intervalMs
             }
 
             textPaint.textAlign = Paint.Align.RIGHT
             val yStep = if (glucoseUnit == GlucoseUnit.MGDL) {
-                val mgStep = if (yr.range * GlucoseUnit.MGDL_FACTOR > 180) 50.0 else 25.0
+                val mgStep = if (yr.range * GlucoseUnit.MGDL_FACTOR > MGDL_Y_RANGE_THRESHOLD) MGDL_Y_STEP_LARGE else MGDL_Y_STEP_SMALL
                 mgStep / GlucoseUnit.MGDL_FACTOR
             } else {
-                if (yr.range > 10) 2.0 else 1.0
+                if (yr.range > MMOL_Y_RANGE_THRESHOLD) 2.0 else 1.0
             }
             var yLabel = Math.ceil(yr.yMin / yStep) * yStep
             while (yLabel <= yr.yMax) {
                 val y = yFor(yLabel)
-                if (y > marginTop + 8 && y < height - marginBottom - 8) {
+                if (y > marginTop + LABEL_MARGIN_TOP && y < height - marginBottom - LABEL_MARGIN_BOTTOM) {
                     val labelText = if (glucoseUnit == GlucoseUnit.MGDL) {
                         "%.0f".format(yLabel * GlucoseUnit.MGDL_FACTOR)
                     } else {
                         "%.0f".format(yLabel)
                     }
-                    canvas.drawText(labelText, marginLeft - 4f, y + 6f, textPaint)
+                    canvas.drawText(labelText, marginLeft - LABEL_Y_OFFSET, y + LABEL_X_OFFSET, textPaint)
                 }
                 yLabel += yStep
             }
@@ -183,12 +224,12 @@ object GraphRenderer {
         if (compact) {
             val gradientPaint = Paint().apply {
                 shader = LinearGradient(
-                    0f, 0f, 0f, height * 0.45f,
+                    0f, 0f, 0f, height * GRADIENT_HEIGHT_FRACTION,
                     0xE0000000.toInt(), 0x00000000,
                     Shader.TileMode.CLAMP
                 )
             }
-            canvas.drawRect(0f, 0f, width.toFloat(), height * 0.45f, gradientPaint)
+            canvas.drawRect(0f, 0f, width.toFloat(), height * GRADIENT_HEIGHT_FRACTION, gradientPaint)
         }
 
         return bitmap
