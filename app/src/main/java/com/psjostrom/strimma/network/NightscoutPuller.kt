@@ -18,6 +18,13 @@ class NightscoutPuller @Inject constructor(
 ) {
     companion object {
         private const val PAGE_SIZE = 2016
+        private const val HOURS_PER_DAY = 24
+        private const val MINUTES_PER_HOUR = 60
+        private const val SECONDS_PER_MINUTE = 60
+        private const val MS_PER_SECOND = 1000L
+        private const val MS_PER_DAY = HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MS_PER_SECOND
+        private const val AUTO_PULL_DAYS = 30
+        private const val MAX_ERROR_LENGTH = 80
     }
 
     suspend fun pullHistory(days: Int): Result<Int> {
@@ -27,7 +34,7 @@ class NightscoutPuller @Inject constructor(
             return Result.failure(IllegalStateException("Nightscout URL or secret not configured"))
         }
 
-        val since = System.currentTimeMillis() - days.toLong() * 24 * 60 * 60 * 1000
+        val since = System.currentTimeMillis() - days.toLong() * MS_PER_DAY
         return pullSince(url, secret, since)
     }
 
@@ -41,13 +48,13 @@ class NightscoutPuller @Inject constructor(
         val secret = settings.getNightscoutSecret()
         if (url.isBlank() || secret.isBlank()) return
 
-        DebugLog.log(message = "Pull: DB empty, pulling 30 days from Nightscout")
-        val since = System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000
+        DebugLog.log(message = "Pull: DB empty, pulling $AUTO_PULL_DAYS days from Nightscout")
+        val since = System.currentTimeMillis() - AUTO_PULL_DAYS * MS_PER_DAY
         val result = pullSince(url, secret, since)
         result.onSuccess { count ->
             DebugLog.log(message = "Pull: auto-pull complete, $count readings")
         }.onFailure { e ->
-            DebugLog.log(message = "Pull: auto-pull failed: ${e.message?.take(80)}")
+            DebugLog.log(message = "Pull: auto-pull failed: ${e.message?.take(MAX_ERROR_LENGTH)}")
         }
     }
 
@@ -75,8 +82,11 @@ class NightscoutPuller @Inject constructor(
 
             DebugLog.log(message = "Pull: $totalInserted readings from Nightscout")
             Result.success(totalInserted)
-        } catch (e: Exception) {
-            DebugLog.log(message = "Pull error: ${e.message?.take(80)}")
+        } catch (
+            @Suppress("TooGenericExceptionCaught") // Network boundary — Ktor can throw any exception type
+            e: Exception
+        ) {
+            DebugLog.log(message = "Pull error: ${e.message?.take(MAX_ERROR_LENGTH)}")
             Result.failure(e)
         }
     }

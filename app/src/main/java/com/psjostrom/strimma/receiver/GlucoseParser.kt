@@ -1,6 +1,8 @@
 package com.psjostrom.strimma.receiver
 
-private val MGDL_CONVERSION = 18.0182
+private const val MGDL_CONVERSION = 18.0182
+private const val MIN_MGDL_RANGE = 51
+private const val MAX_MGDL_RANGE = 500
 
 private fun cleanGlucoseText(raw: String): String = raw
     .replace("\u00a0", " ")  // non-breaking space
@@ -26,6 +28,7 @@ private fun cleanGlucoseText(raw: String): String = raw
  * Values with a decimal are treated as mmol/L. Integer values above 50 are treated
  * as mg/dL and converted. Integer values 20-50 are ambiguous and skipped.
  */
+@Suppress("ReturnCount") // Early returns in parser
 fun tryParseGlucose(raw: String): Double? {
     val cleaned = cleanGlucoseText(raw)
     if (cleaned.isBlank()) return null
@@ -42,7 +45,7 @@ fun tryParseGlucose(raw: String): Double? {
     val mgdlMatch = Regex("^(\\d{2,3})$").find(cleaned)
     if (mgdlMatch != null) {
         val mgdl = mgdlMatch.groupValues[1].toIntOrNull() ?: return null
-        if (mgdl in 51..500) return mgdl / MGDL_CONVERSION
+        if (mgdl in MIN_MGDL_RANGE..MAX_MGDL_RANGE) return mgdl / MGDL_CONVERSION
     }
 
     return null

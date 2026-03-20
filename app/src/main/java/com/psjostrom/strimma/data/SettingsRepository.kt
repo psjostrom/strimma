@@ -17,6 +17,7 @@ import javax.inject.Singleton
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
+@Suppress("TooManyFunctions") // One getter+setter per setting
 @Singleton
 class SettingsRepository @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -69,21 +70,42 @@ class SettingsRepository @Inject constructor(
         private val KEY_TREATMENTS_SYNC_ENABLED = booleanPreferencesKey("treatments_sync_enabled")
         private val KEY_INSULIN_TYPE = stringPreferencesKey("insulin_type")
         private val KEY_CUSTOM_DIA = floatPreferencesKey("custom_dia")
+        private const val DEFAULT_CUSTOM_DIA_HOURS = 5.0
+
+        private val KEY_WEB_SERVER_ENABLED = booleanPreferencesKey("web_server_enabled")
+        private const val KEY_WEB_SERVER_SECRET = "web_server_secret"
+
+        // Settings defaults
+        private const val DEFAULT_GRAPH_WINDOW_HOURS = 4
+        private const val DEFAULT_BG_LOW = 4.0f
+        private const val DEFAULT_BG_HIGH = 10.0f
+        private const val DEFAULT_ALERT_LOW = 4.0f
+        private const val DEFAULT_ALERT_HIGH = 10.0f
+        private const val DEFAULT_ALERT_URGENT_LOW = 3.0f
+        private const val DEFAULT_ALERT_URGENT_HIGH = 13.0f
+        private const val DEFAULT_NOTIF_GRAPH_MINUTES = 60
+        private const val DEFAULT_PREDICTION_MINUTES = 15
+        private const val DEFAULT_FOLLOWER_POLL_SECONDS = 60
+        private const val DEFAULT_CUSTOM_DIA_FLOAT = 5.0f
+        private const val DEFAULT_WIDGET_OPACITY = 0.85f
+        private const val DEFAULT_WIDGET_GRAPH_MINUTES = 120
+        private const val DEFAULT_WIDGET_GRAPH_MINUTES_MAX = 180
+        private const val DEFAULT_NOTIF_GRAPH_MINUTES_MAX = 30
     }
 
     val nightscoutUrl: Flow<String> = dataStore.data.map { it[KEY_NIGHTSCOUT_URL] ?: "" }
-    val graphWindowHours: Flow<Int> = dataStore.data.map { it[KEY_GRAPH_WINDOW_HOURS] ?: 4 }
-    val bgLow: Flow<Float> = dataStore.data.map { it[KEY_BG_LOW] ?: 4.0f }
-    val bgHigh: Flow<Float> = dataStore.data.map { it[KEY_BG_HIGH] ?: 10.0f }
+    val graphWindowHours: Flow<Int> = dataStore.data.map { it[KEY_GRAPH_WINDOW_HOURS] ?: DEFAULT_GRAPH_WINDOW_HOURS }
+    val bgLow: Flow<Float> = dataStore.data.map { it[KEY_BG_LOW] ?: DEFAULT_BG_LOW }
+    val bgHigh: Flow<Float> = dataStore.data.map { it[KEY_BG_HIGH] ?: DEFAULT_BG_HIGH }
 
     val alertLowEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_LOW_ENABLED] ?: true }
     val alertHighEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_HIGH_ENABLED] ?: true }
     val alertUrgentLowEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_URGENT_LOW_ENABLED] ?: true }
-    val alertLow: Flow<Float> = dataStore.data.map { it[KEY_ALERT_LOW] ?: 4.0f }
-    val alertHigh: Flow<Float> = dataStore.data.map { it[KEY_ALERT_HIGH] ?: 10.0f }
-    val alertUrgentLow: Flow<Float> = dataStore.data.map { it[KEY_ALERT_URGENT_LOW] ?: 3.0f }
+    val alertLow: Flow<Float> = dataStore.data.map { it[KEY_ALERT_LOW] ?: DEFAULT_ALERT_LOW }
+    val alertHigh: Flow<Float> = dataStore.data.map { it[KEY_ALERT_HIGH] ?: DEFAULT_ALERT_HIGH }
+    val alertUrgentLow: Flow<Float> = dataStore.data.map { it[KEY_ALERT_URGENT_LOW] ?: DEFAULT_ALERT_URGENT_LOW }
     val alertUrgentHighEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_URGENT_HIGH_ENABLED] ?: true }
-    val alertUrgentHigh: Flow<Float> = dataStore.data.map { it[KEY_ALERT_URGENT_HIGH] ?: 13.0f }
+    val alertUrgentHigh: Flow<Float> = dataStore.data.map { it[KEY_ALERT_URGENT_HIGH] ?: DEFAULT_ALERT_URGENT_HIGH }
     val alertStaleEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_STALE_ENABLED] ?: true }
     val alertLowSoonEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_LOW_SOON_ENABLED] ?: true }
     val alertHighSoonEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_HIGH_SOON_ENABLED] ?: true }
@@ -113,10 +135,10 @@ class SettingsRepository @Inject constructor(
     val themeMode: Flow<String> = dataStore.data.map { it[KEY_THEME_MODE] ?: "System" }
     suspend fun setThemeMode(mode: String) { dataStore.edit { it[KEY_THEME_MODE] = mode } }
 
-    val notifGraphMinutes: Flow<Int> = dataStore.data.map { it[KEY_NOTIF_GRAPH_MINUTES] ?: 60 }
+    val notifGraphMinutes: Flow<Int> = dataStore.data.map { it[KEY_NOTIF_GRAPH_MINUTES] ?: DEFAULT_NOTIF_GRAPH_MINUTES }
     suspend fun setNotifGraphMinutes(minutes: Int) { dataStore.edit { it[KEY_NOTIF_GRAPH_MINUTES] = minutes } }
 
-    val predictionMinutes: Flow<Int> = dataStore.data.map { it[KEY_NOTIF_PREDICTION_MINUTES] ?: 15 }
+    val predictionMinutes: Flow<Int> = dataStore.data.map { it[KEY_NOTIF_PREDICTION_MINUTES] ?: DEFAULT_PREDICTION_MINUTES }
     suspend fun setPredictionMinutes(minutes: Int) { dataStore.edit { it[KEY_NOTIF_PREDICTION_MINUTES] = minutes } }
 
     val glucoseUnit: Flow<GlucoseUnit> = dataStore.data.map {
@@ -145,7 +167,7 @@ class SettingsRepository @Inject constructor(
     val followerUrl: Flow<String> = dataStore.data.map { it[KEY_FOLLOWER_URL] ?: "" }
     suspend fun setFollowerUrl(url: String) { dataStore.edit { it[KEY_FOLLOWER_URL] = url } }
 
-    val followerPollSeconds: Flow<Int> = dataStore.data.map { it[KEY_FOLLOWER_POLL_SECONDS] ?: 60 }
+    val followerPollSeconds: Flow<Int> = dataStore.data.map { it[KEY_FOLLOWER_POLL_SECONDS] ?: DEFAULT_FOLLOWER_POLL_SECONDS }
     suspend fun setFollowerPollSeconds(seconds: Int) { dataStore.edit { it[KEY_FOLLOWER_POLL_SECONDS] = seconds } }
 
     fun getFollowerSecret(): String = encryptedPrefs.getString(KEY_FOLLOWER_SECRET, "") ?: ""
@@ -161,44 +183,56 @@ class SettingsRepository @Inject constructor(
     }
     suspend fun setInsulinType(type: InsulinType) { dataStore.edit { it[KEY_INSULIN_TYPE] = type.name } }
 
-    val customDIA: Flow<Float> = dataStore.data.map { it[KEY_CUSTOM_DIA] ?: 5.0f }
+    val customDIA: Flow<Float> = dataStore.data.map { it[KEY_CUSTOM_DIA] ?: DEFAULT_CUSTOM_DIA_FLOAT }
     suspend fun setCustomDIA(hours: Float) { dataStore.edit { it[KEY_CUSTOM_DIA] = hours } }
 
+    val webServerEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_WEB_SERVER_ENABLED] ?: false }
+    suspend fun setWebServerEnabled(enabled: Boolean) { dataStore.edit { it[KEY_WEB_SERVER_ENABLED] = enabled } }
+
+    fun getWebServerSecret(): String = encryptedPrefs.getString(KEY_WEB_SERVER_SECRET, "") ?: ""
+    fun setWebServerSecret(secret: String) {
+        encryptedPrefs.edit().putString(KEY_WEB_SERVER_SECRET, secret).apply()
+    }
+
+
+    @Suppress("CyclomaticComplexMethod") // Flat serialization of all settings
     suspend fun exportToJson(): String {
         val prefs = dataStore.data.first()
 
         val settings = JSONObject().apply {
             put("nightscout_url", prefs[KEY_NIGHTSCOUT_URL] ?: "")
-            put("graph_window_hours", prefs[KEY_GRAPH_WINDOW_HOURS] ?: 4)
-            put("bg_low", prefs[KEY_BG_LOW]?.toDouble() ?: 4.0)
-            put("bg_high", prefs[KEY_BG_HIGH]?.toDouble() ?: 10.0)
+            put("graph_window_hours", prefs[KEY_GRAPH_WINDOW_HOURS] ?: DEFAULT_GRAPH_WINDOW_HOURS)
+            put("bg_low", prefs[KEY_BG_LOW]?.toDouble() ?: DEFAULT_BG_LOW.toDouble())
+            put("bg_high", prefs[KEY_BG_HIGH]?.toDouble() ?: DEFAULT_BG_HIGH.toDouble())
             put("alert_low_enabled", prefs[KEY_ALERT_LOW_ENABLED] ?: true)
             put("alert_high_enabled", prefs[KEY_ALERT_HIGH_ENABLED] ?: true)
             put("alert_urgent_low_enabled", prefs[KEY_ALERT_URGENT_LOW_ENABLED] ?: true)
             put("alert_urgent_high_enabled", prefs[KEY_ALERT_URGENT_HIGH_ENABLED] ?: true)
-            put("alert_low", prefs[KEY_ALERT_LOW]?.toDouble() ?: 4.0)
-            put("alert_high", prefs[KEY_ALERT_HIGH]?.toDouble() ?: 10.0)
-            put("alert_urgent_low", prefs[KEY_ALERT_URGENT_LOW]?.toDouble() ?: 3.0)
-            put("alert_urgent_high", prefs[KEY_ALERT_URGENT_HIGH]?.toDouble() ?: 13.0)
+            put("alert_low", prefs[KEY_ALERT_LOW]?.toDouble() ?: DEFAULT_ALERT_LOW.toDouble())
+            put("alert_high", prefs[KEY_ALERT_HIGH]?.toDouble() ?: DEFAULT_ALERT_HIGH.toDouble())
+            put("alert_urgent_low", prefs[KEY_ALERT_URGENT_LOW]?.toDouble() ?: DEFAULT_ALERT_URGENT_LOW.toDouble())
+            put("alert_urgent_high", prefs[KEY_ALERT_URGENT_HIGH]?.toDouble() ?: DEFAULT_ALERT_URGENT_HIGH.toDouble())
             put("alert_stale_enabled", prefs[KEY_ALERT_STALE_ENABLED] ?: true)
             put("alert_low_soon_enabled", prefs[KEY_ALERT_LOW_SOON_ENABLED] ?: true)
             put("alert_high_soon_enabled", prefs[KEY_ALERT_HIGH_SOON_ENABLED] ?: true)
             put("theme_mode", prefs[KEY_THEME_MODE] ?: "System")
-            put("notif_graph_minutes", prefs[KEY_NOTIF_GRAPH_MINUTES] ?: 60)
-            put("notif_prediction_minutes", prefs[KEY_NOTIF_PREDICTION_MINUTES] ?: 15)
+            put("notif_graph_minutes", prefs[KEY_NOTIF_GRAPH_MINUTES] ?: DEFAULT_NOTIF_GRAPH_MINUTES)
+            put("notif_prediction_minutes", prefs[KEY_NOTIF_PREDICTION_MINUTES] ?: DEFAULT_PREDICTION_MINUTES)
             put("glucose_unit", prefs[KEY_GLUCOSE_UNIT] ?: "MMOL")
             put("bg_broadcast_enabled", prefs[KEY_BG_BROADCAST_ENABLED] ?: false)
             put("glucose_source", prefs[KEY_GLUCOSE_SOURCE] ?: "COMPANION")
             put("follower_url", prefs[KEY_FOLLOWER_URL] ?: "")
-            put("follower_poll_seconds", prefs[KEY_FOLLOWER_POLL_SECONDS] ?: 60)
+            put("follower_poll_seconds", prefs[KEY_FOLLOWER_POLL_SECONDS] ?: DEFAULT_FOLLOWER_POLL_SECONDS)
             put("treatments_sync_enabled", prefs[KEY_TREATMENTS_SYNC_ENABLED] ?: false)
             put("insulin_type", prefs[KEY_INSULIN_TYPE] ?: "FIASP")
-            put("custom_dia", prefs[KEY_CUSTOM_DIA]?.toDouble() ?: 5.0)
+            put("custom_dia", prefs[KEY_CUSTOM_DIA]?.toDouble() ?: DEFAULT_CUSTOM_DIA_HOURS)
+            put("web_server_enabled", prefs[KEY_WEB_SERVER_ENABLED] ?: false)
         }
 
         val secrets = JSONObject().apply {
             put("nightscout_secret", getNightscoutSecret())
             put("follower_secret", getFollowerSecret())
+            put("web_server_secret", getWebServerSecret())
         }
 
         return JSONObject().apply {
@@ -210,6 +244,7 @@ class SettingsRepository @Inject constructor(
         }.toString(2)
     }
 
+    @Suppress("CyclomaticComplexMethod") // Flat deserialization of all settings
     suspend fun importFromJson(json: String) {
         val root = JSONObject(json)
         val settings = root.getJSONObject("settings")
@@ -221,8 +256,10 @@ class SettingsRepository @Inject constructor(
             if (settings.has("bg_high")) prefs[KEY_BG_HIGH] = settings.getDouble("bg_high").toFloat()
             if (settings.has("alert_low_enabled")) prefs[KEY_ALERT_LOW_ENABLED] = settings.getBoolean("alert_low_enabled")
             if (settings.has("alert_high_enabled")) prefs[KEY_ALERT_HIGH_ENABLED] = settings.getBoolean("alert_high_enabled")
-            if (settings.has("alert_urgent_low_enabled")) prefs[KEY_ALERT_URGENT_LOW_ENABLED] = settings.getBoolean("alert_urgent_low_enabled")
-            if (settings.has("alert_urgent_high_enabled")) prefs[KEY_ALERT_URGENT_HIGH_ENABLED] = settings.getBoolean("alert_urgent_high_enabled")
+            if (settings.has("alert_urgent_low_enabled"))
+                prefs[KEY_ALERT_URGENT_LOW_ENABLED] = settings.getBoolean("alert_urgent_low_enabled")
+            if (settings.has("alert_urgent_high_enabled"))
+                prefs[KEY_ALERT_URGENT_HIGH_ENABLED] = settings.getBoolean("alert_urgent_high_enabled")
             if (settings.has("alert_low")) prefs[KEY_ALERT_LOW] = settings.getDouble("alert_low").toFloat()
             if (settings.has("alert_high")) prefs[KEY_ALERT_HIGH] = settings.getDouble("alert_high").toFloat()
             if (settings.has("alert_urgent_low")) prefs[KEY_ALERT_URGENT_LOW] = settings.getDouble("alert_urgent_low").toFloat()
@@ -241,6 +278,7 @@ class SettingsRepository @Inject constructor(
             if (settings.has("treatments_sync_enabled")) prefs[KEY_TREATMENTS_SYNC_ENABLED] = settings.getBoolean("treatments_sync_enabled")
             if (settings.has("insulin_type")) prefs[KEY_INSULIN_TYPE] = settings.getString("insulin_type")
             if (settings.has("custom_dia")) prefs[KEY_CUSTOM_DIA] = settings.getDouble("custom_dia").toFloat()
+            if (settings.has("web_server_enabled")) prefs[KEY_WEB_SERVER_ENABLED] = settings.getBoolean("web_server_enabled")
 
             // Sync glucose source to SharedPreferences atomically with DataStore edit
             val sourceName = settings.optString("glucose_source", "COMPANION")
@@ -252,6 +290,7 @@ class SettingsRepository @Inject constructor(
             val secrets = root.getJSONObject("secrets")
             if (secrets.has("nightscout_secret")) setNightscoutSecret(secrets.getString("nightscout_secret"))
             if (secrets.has("follower_secret")) setFollowerSecret(secrets.getString("follower_secret"))
+            if (secrets.has("web_server_secret")) setWebServerSecret(secrets.getString("web_server_secret"))
         }
 
         if (root.has("widget")) {

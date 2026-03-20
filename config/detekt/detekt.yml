@@ -5,6 +5,19 @@
 complexity:
   CyclomaticComplexMethod:
     threshold: 15
+    ignoreAnnotated: ['Composable']
+  ComplexCondition:
+    threshold: 5
+  LongMethod:
+    threshold: 60
+    ignoreAnnotated: ['Composable']
+  LongParameterList:
+    functionThreshold: 7
+    constructorThreshold: 7
+    ignoreDefaultParameters: true
+    ignoreAnnotated: ['Composable']
+  NestedBlockDepth:
+    threshold: 5
 
 coroutines:
   active: true
@@ -20,8 +33,9 @@ exceptions:
 
 naming:
   FunctionNaming:
-    # Compose @Composable functions use PascalCase
     ignoreAnnotated: ['Composable']
+  MatchingDeclarationName:
+    mustBeFirst: false
 
 performance:
   active: true
@@ -38,7 +52,36 @@ style:
       - '1'
       - '2'
     ignoreAnnotated: ['Composable']
+    ignorePropertyDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+    ignoreEnums: true
   MaxLineLength:
     maxLineLength: 140
+    excludeCommentStatements: true
+  ReturnCount:
+    max: 4
+    excludeGuardClauses: true
+  LoopWithTooManyJumpStatements:
+    maxJumpCount: 2
   WildcardImport:
     active: true
+    excludeImports:
+      - 'java.util.*'
+      - 'kotlinx.coroutines.*'
+      - 'kotlinx.coroutines.flow.*'
+      - 'androidx.compose.runtime.*'
+      - 'androidx.compose.foundation.layout.*'
+      - 'androidx.compose.material3.*'
+      - 'androidx.glance.*'
+      - 'androidx.glance.layout.*'
+      - 'androidx.datastore.preferences.core.*'
+      - 'android.graphics.*'
+      - 'io.ktor.client.*'
+      - 'io.ktor.client.call.*'
+      - 'io.ktor.client.engine.cio.*'
+      - 'io.ktor.client.plugins.contentnegotiation.*'
+      - 'io.ktor.client.request.*'
+      - 'io.ktor.client.statement.*'
+      - 'io.ktor.http.*'
+      - 'io.ktor.serialization.kotlinx.json.*'
+      - 'org.junit.Assert.*'

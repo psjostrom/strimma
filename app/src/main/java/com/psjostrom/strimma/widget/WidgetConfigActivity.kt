@@ -29,6 +29,11 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+private const val GRAPH_MINUTES_30 = 30
+private const val GRAPH_MINUTES_60 = 60
+private const val GRAPH_MINUTES_120 = 120
+private const val GRAPH_MINUTES_180 = 180
+
 @AndroidEntryPoint
 class WidgetConfigActivity : ComponentActivity() {
 
@@ -85,7 +90,12 @@ class WidgetConfigActivity : ComponentActivity() {
     }
 }
 
-private val GRAPH_OPTIONS = listOf(30 to "30m", 60 to "1h", 120 to "2h", 180 to "3h")
+private val GRAPH_OPTIONS = listOf(
+    GRAPH_MINUTES_30 to "30m",
+    GRAPH_MINUTES_60 to "1h",
+    GRAPH_MINUTES_120 to "2h",
+    GRAPH_MINUTES_180 to "3h"
+)
 
 @Composable
 private fun WidgetConfigScreen(

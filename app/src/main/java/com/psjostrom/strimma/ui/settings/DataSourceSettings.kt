@@ -111,7 +111,8 @@ fun DataSourceSettings(
                     fontSize = 14.sp
                 )
                 Text(
-                    "How often to check for new readings. Lower values catch updates faster but use more battery. CGM readings typically arrive every 5 minutes.",
+                    "How often to check for new readings. Lower values catch updates faster" +
+                        " but use more battery. CGM readings typically arrive every 5 minutes.",
                     color = outline,
                     fontSize = 12.sp
                 )
