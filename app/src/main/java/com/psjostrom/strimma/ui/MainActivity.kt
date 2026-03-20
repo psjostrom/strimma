@@ -23,7 +23,12 @@ import androidx.navigation.compose.rememberNavController
 import com.psjostrom.strimma.network.FollowerStatus
 import com.psjostrom.strimma.receiver.GlucoseNotificationListener
 import com.psjostrom.strimma.service.StrimmaService
-import com.psjostrom.strimma.ui.settings.*
+import com.psjostrom.strimma.ui.settings.AlertsSettings
+import com.psjostrom.strimma.ui.settings.DataSettings
+import com.psjostrom.strimma.ui.settings.DataSourceSettings
+import com.psjostrom.strimma.ui.settings.DisplaySettings
+import com.psjostrom.strimma.ui.settings.NotificationSettings
+import com.psjostrom.strimma.ui.settings.TreatmentsSettings
 import com.psjostrom.strimma.ui.theme.StrimmaTheme
 import com.psjostrom.strimma.ui.theme.ThemeMode
 import dagger.hilt.android.AndroidEntryPoint
