@@ -83,7 +83,7 @@ class NotificationHelper @Inject constructor(
             val direction = try { Direction.valueOf(reading.direction) } catch (_: Exception) { Direction.NONE }
             val bgText = glucoseUnit.format(reading.mmol)
             val baseDelta = reading.deltaMmol?.let {
-                glucoseUnit.formatDelta(it)
+                glucoseUnit.formatDeltaCompact(it)
             } ?: ""
 
             val prediction = PredictionComputer.compute(recentReadings, predictionMinutes, bgLow, bgHigh)
