@@ -142,6 +142,47 @@ class IOBComputerTest {
             novoRapidResult > lyumjevResult)
     }
 
+    // --- lookbackMs ---
+
+    @Test
+    fun `lookbackMs returns 5 tau in milliseconds`() {
+        // 5 * 55 min * 60_000 ms/min = 16_500_000
+        assertEquals(16_500_000L, IOBComputer.lookbackMs(tau))
+    }
+
+    @Test
+    fun `lookbackMs scales with tau`() {
+        val lyumjev = IOBComputer.lookbackMs(50.0)
+        val novoRapid = IOBComputer.lookbackMs(75.0)
+        assertEquals(15_000_000L, lyumjev)
+        assertEquals(22_500_000L, novoRapid)
+    }
+
+    // --- iobForTreatment ---
+
+    @Test
+    fun `iobForTreatment at zero minutes returns full dose`() {
+        assertEquals(5.0, IOBComputer.iobForTreatment(5.0, 0.0, tau), 0.001)
+    }
+
+    @Test
+    fun `iobForTreatment at one tau matches decay formula`() {
+        // (1 + 1) * exp(-1) = 0.7358
+        val expected = 5.0 * 2.0 * exp(-1.0)
+        assertEquals(expected, IOBComputer.iobForTreatment(5.0, tau, tau), 0.001)
+    }
+
+    @Test
+    fun `iobForTreatment returns unrounded value`() {
+        // Verify it does NOT round — unlike computeIOB which rounds to 1 decimal
+        val result = IOBComputer.iobForTreatment(3.7, 20.0, tau)
+        val rounded = Math.round(result * 10.0) / 10.0
+        // Raw result should differ from rounded (unless it happens to land on a tenth)
+        val t = 20.0 / tau
+        val expected = 3.7 * (1.0 + t) * exp(-t)
+        assertEquals(expected, result, 0.0001)
+    }
+
     @Test
     fun `result is rounded to one decimal`() {
         val now = 1_000_000_000_000L
