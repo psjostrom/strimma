@@ -119,6 +119,13 @@ class MainViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
     fun setBgBroadcastEnabled(enabled: Boolean) = viewModelScope.launch { settings.setBgBroadcastEnabled(enabled) }
 
+    val webServerEnabled: StateFlow<Boolean> = settings.webServerEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    fun setWebServerEnabled(enabled: Boolean) = viewModelScope.launch { settings.setWebServerEnabled(enabled) }
+
+    val webServerSecret: String get() = settings.getWebServerSecret()
+    fun setWebServerSecret(secret: String) = settings.setWebServerSecret(secret)
+
     val glucoseSource: StateFlow<GlucoseSource> = settings.glucoseSource
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), GlucoseSource.COMPANION)
     fun setGlucoseSource(source: GlucoseSource) = viewModelScope.launch { settings.setGlucoseSource(source) }
