@@ -442,8 +442,8 @@ fun GlucoseGraph(
         modifier = modifier
             .pointerInput(Unit) {
                 val mRight = GRAPH_MARGIN_RIGHT
-                val mTop = 16f
-                val mBottom = 40f
+                val mTop = GRAPH_MARGIN_TOP
+                val mBottom = GRAPH_MARGIN_BOTTOM
                 val touchSlop = viewConfiguration.touchSlop
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
@@ -462,6 +462,7 @@ fun GlucoseGraph(
 
                     var totalPan = Offset.Zero
                     var pastSlop = false
+                    var gestureZoom = currentZoom // local accumulator avoids stale rememberUpdatedState
 
                     do {
                         val event = awaitPointerEvent()
@@ -501,11 +502,11 @@ fun GlucoseGraph(
                             pastSlop = true
                         }
 
-                        val newZoom = (currentZoom * zoomChange).coerceIn(1f, 5f)
-                        onZoomChange(newZoom)
+                        gestureZoom = (gestureZoom * zoomChange).coerceIn(1f, 5f)
+                        onZoomChange(gestureZoom)
 
                         val plotWidth = size.width - mLeft - mRight
-                        val visMs = currentWindowMs / newZoom
+                        val visMs = currentWindowMs / gestureZoom
                         val msPerPx = visMs / plotWidth
                         val timeShift = (-panChange.x * msPerPx).toLong()
                         val now = System.currentTimeMillis()
@@ -521,9 +522,9 @@ fun GlucoseGraph(
             }
     ) {
         val marginLeft = if (glucoseUnit == GlucoseUnit.MGDL) 70f else 50f
-        val marginRight = 16f
-        val marginTop = 16f
-        val marginBottom = 40f
+        val marginRight = GRAPH_MARGIN_RIGHT
+        val marginTop = GRAPH_MARGIN_TOP
+        val marginBottom = GRAPH_MARGIN_BOTTOM
         val plotWidth = size.width - marginLeft - marginRight
         val plotHeight = size.height - marginTop - marginBottom
 
@@ -888,11 +889,13 @@ private fun dotColor(mmol: Double, bgLow: Double, bgHigh: Double): Color = when 
     else -> InRange
 }
 
-private const val GRAPH_MARGIN_RIGHT = 16f
+internal const val GRAPH_MARGIN_TOP = 16f
+internal const val GRAPH_MARGIN_BOTTOM = 40f
+internal const val GRAPH_MARGIN_RIGHT = 16f
 
-private const val DOT_HIT_RADIUS = 40f
+internal const val DOT_HIT_RADIUS = 40f
 
-private fun findNearestDot(
+internal fun findNearestDot(
     finger: Offset,
     sorted: List<GlucoseReading>,
     visibleStart: Long,
