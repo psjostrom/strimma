@@ -157,7 +157,10 @@ class GlucoseNotificationListener : NotificationListenerService() {
                     val parsed = tryParseGlucose(text)
                     if (parsed != null) return parsed
                 }
-            } catch (e: Exception) {
+            } catch (
+                @Suppress("TooGenericExceptionCaught") // RemoteViews from external apps can throw any exception
+                e: Exception
+            ) {
                 DebugLog.log(message = "RemoteViews error: ${e.message}")
             }
         }

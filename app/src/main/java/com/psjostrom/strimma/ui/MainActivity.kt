@@ -46,7 +46,10 @@ class MainActivity : ComponentActivity() {
                     ?: error("Could not read file")
                 viewModelRef?.importSettings(json)
                 Toast.makeText(this@MainActivity, "Settings imported", Toast.LENGTH_SHORT).show()
-            } catch (e: Exception) {
+            } catch (
+                @Suppress("TooGenericExceptionCaught") // File I/O + JSON parsing — multiple exception types possible
+                e: Exception
+            ) {
                 Toast.makeText(this@MainActivity, "Import failed: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
@@ -286,7 +289,11 @@ class MainActivity : ComponentActivity() {
                                                     },
                                                     "Export Settings"
                                                 ))
-                                            } catch (e: Exception) {
+                                            } catch (
+                                                // File I/O + intent dispatch — multiple exception types
+                                                @Suppress("TooGenericExceptionCaught")
+                                                e: Exception
+                                            ) {
                                                 Toast.makeText(
                                                     this@MainActivity,
                                                     "Export failed: ${e.message}",

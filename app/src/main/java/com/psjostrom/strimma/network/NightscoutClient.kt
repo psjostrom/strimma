@@ -102,7 +102,10 @@ class NightscoutClient @Inject constructor() {
                 )
             }
             response.status.isSuccess()
-        } catch (e: Exception) {
+        } catch (
+            @Suppress("TooGenericExceptionCaught") // Network boundary — Ktor can throw any exception type
+            e: Exception
+        ) {
             com.psjostrom.strimma.receiver.DebugLog.log(
                 message = "Push error: ${e.message?.take(MAX_ERROR_LENGTH)}"
             )
@@ -133,7 +136,10 @@ class NightscoutClient @Inject constructor() {
             } else {
                 response.body<List<NightscoutEntryResponse>>()
             }
-        } catch (e: Exception) {
+        } catch (
+            @Suppress("TooGenericExceptionCaught") // Network boundary — Ktor can throw any exception type
+            e: Exception
+        ) {
             com.psjostrom.strimma.receiver.DebugLog.log(
                 message = "Fetch error: ${e.message?.take(MAX_ERROR_LENGTH)}"
             )
@@ -189,7 +195,10 @@ class NightscoutClient @Inject constructor() {
                     fetchedAt = now
                 )
             }
-        } catch (e: Exception) {
+        } catch (
+            @Suppress("TooGenericExceptionCaught") // Network boundary — Ktor can throw any exception type
+            e: Exception
+        ) {
             com.psjostrom.strimma.receiver.DebugLog.log(
                 message = "Treatments fetch error: ${e.message?.take(MAX_ERROR_LENGTH)}"
             )

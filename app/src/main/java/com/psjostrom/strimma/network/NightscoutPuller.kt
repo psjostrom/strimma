@@ -82,7 +82,10 @@ class NightscoutPuller @Inject constructor(
 
             DebugLog.log(message = "Pull: $totalInserted readings from Nightscout")
             Result.success(totalInserted)
-        } catch (e: Exception) {
+        } catch (
+            @Suppress("TooGenericExceptionCaught") // Network boundary — Ktor can throw any exception type
+            e: Exception
+        ) {
             DebugLog.log(message = "Pull error: ${e.message?.take(MAX_ERROR_LENGTH)}")
             Result.failure(e)
         }
