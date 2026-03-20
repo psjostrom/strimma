@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.detekt)
 }
 
 android {
@@ -75,12 +76,25 @@ android {
         }
     }
 
+    lint {
+        warningsAsErrors = true
+        abortOnError = true
+        checkDependencies = true
+        baseline = file("lint-baseline.xml")
+    }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
 
+}
+
+detekt {
+    config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
+    buildUponDefaultConfig = true
+    baseline = file("$rootDir/config/detekt/baseline.xml")
 }
 
 dependencies {
@@ -119,6 +133,8 @@ dependencies {
 
     implementation(libs.glance.appwidget)
     implementation(libs.glance.material3)
+
+    debugImplementation(libs.leakcanary)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

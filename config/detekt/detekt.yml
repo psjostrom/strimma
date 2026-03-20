@@ -1,0 +1,44 @@
+# Detekt config for Strimma — medical CGM app
+# Builds on default config (buildUponDefaultConfig = true)
+# Only overrides where defaults need adjustment
+
+complexity:
+  CyclomaticComplexMethod:
+    threshold: 15
+
+coroutines:
+  active: true
+
+exceptions:
+  TooGenericExceptionCaught:
+    active: true
+    exceptionNames:
+      - 'Error'
+      - 'Exception'
+      - 'RuntimeException'
+      - 'Throwable'
+
+naming:
+  FunctionNaming:
+    # Compose @Composable functions use PascalCase
+    ignoreAnnotated: ['Composable']
+
+performance:
+  active: true
+
+potential-bugs:
+  active: true
+
+style:
+  MagicNumber:
+    active: true
+    ignoreNumbers:
+      - '-1'
+      - '0'
+      - '1'
+      - '2'
+    ignoreAnnotated: ['Composable']
+  MaxLineLength:
+    maxLineLength: 140
+  WildcardImport:
+    active: true
