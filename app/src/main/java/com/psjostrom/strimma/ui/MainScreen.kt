@@ -528,8 +528,8 @@ fun GlucoseGraph(
 
         fun xFor(ts: Long): Float =
             marginLeft + ((ts - visibleStart).toFloat() / visibleMs) * plotWidth
-        fun yFor(mmol: Double): Float =
-            marginTop + ((yr.yMax - mmol) / yr.range).toFloat() * plotHeight
+        fun yFor(mgdl: Double): Float =
+            marginTop + ((yr.yMax - mgdl) / yr.range).toFloat() * plotHeight
 
         // In-range zone band
         drawRect(
@@ -816,7 +816,7 @@ fun Minimap(
         val yr = computeYRange(sorted.map { it.sgv.toDouble() }, bgLow, bgHigh)
 
         fun xFor(ts: Long): Float = ((ts - minimapStart).toFloat() / MINIMAP_WINDOW_MS) * w
-        fun yFor(mmol: Double): Float = ((yr.yMax - mmol) / yr.range).toFloat() * h
+        fun yFor(mgdl: Double): Float = ((yr.yMax - mgdl) / yr.range).toFloat() * h
 
         // Threshold lines (subtle)
         val dashEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 4f))
@@ -877,11 +877,11 @@ fun Minimap(
 
 // --- Helpers ---
 
-private fun dotColor(mmol: Double, bgLow: Double, bgHigh: Double): Color = when {
-    mmol <= CRITICAL_LOW -> BelowLow
-    mmol < bgLow -> BelowLow
-    mmol >= CRITICAL_HIGH -> BelowLow
-    mmol > bgHigh -> AboveHigh
+private fun dotColor(mgdl: Double, bgLow: Double, bgHigh: Double): Color = when {
+    mgdl <= CRITICAL_LOW -> BelowLow
+    mgdl < bgLow -> BelowLow
+    mgdl >= CRITICAL_HIGH -> BelowLow
+    mgdl > bgHigh -> AboveHigh
     else -> InRange
 }
 
@@ -901,8 +901,8 @@ internal fun findNearestDot(
 
     fun xFor(ts: Long): Float =
         viewport.marginLeft + ((ts - viewport.visibleStart).toFloat() / viewport.visibleMs) * viewport.plotWidth
-    fun yFor(mmol: Double): Float =
-        GRAPH_MARGIN_TOP + ((yr.yMax - mmol) / yr.range).toFloat() * viewport.plotHeight
+    fun yFor(mgdl: Double): Float =
+        GRAPH_MARGIN_TOP + ((yr.yMax - mgdl) / yr.range).toFloat() * viewport.plotHeight
 
     var closest: GlucoseReading? = null
     var closestDist = DOT_HIT_RADIUS

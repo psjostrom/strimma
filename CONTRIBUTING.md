@@ -104,8 +104,8 @@ In `receiver/`, create a class that receives data and forwards it to `StrimmaSer
 ```kotlin
 class YourReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        // Extract glucose value, convert to mmol/L
-        // Validate range (1.0-50.0 mmol/L)
+        // Extract glucose value, convert to mg/dL
+        // Validate range (18-900 mg/dL)
         // Forward to StrimmaService via startForegroundService()
     }
 }

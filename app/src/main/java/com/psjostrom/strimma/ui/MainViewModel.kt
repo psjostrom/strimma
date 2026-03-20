@@ -198,7 +198,7 @@ class MainViewModel @Inject constructor(
     suspend fun exportCsv(hours: Int): String {
         val readings = readingsForPeriod(hours)
         return buildString {
-            appendLine("timestamp,datetime,sgv,direction,delta")
+            appendLine("timestamp,datetime,sgv,direction,delta_mgdl")
             val sdf = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault())
             for (r in readings) {
                 appendLine("${r.ts},${sdf.format(java.util.Date(r.ts))},${r.sgv},${r.direction},${r.delta ?: ""}")
