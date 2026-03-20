@@ -290,7 +290,8 @@ fun SettingsScreen(
                         SegmentedButton(
                             selected = glucoseUnit == unit,
                             onClick = { onGlucoseUnitChange(unit) },
-                            shape = SegmentedButtonDefaults.itemShape(index, GlucoseUnit.entries.size)
+                            shape = SegmentedButtonDefaults.itemShape(index, GlucoseUnit.entries.size),
+
                         ) {
                             Text(unit.label)
                         }
@@ -341,7 +342,8 @@ fun SettingsScreen(
                         SegmentedButton(
                             selected = themeMode == label,
                             onClick = { onThemeModeChange(label) },
-                            shape = SegmentedButtonDefaults.itemShape(index, 3)
+                            shape = SegmentedButtonDefaults.itemShape(index, 3),
+
                         ) {
                             Text(label)
                         }
@@ -360,7 +362,8 @@ fun SettingsScreen(
                         SegmentedButton(
                             selected = notifGraphMinutes == minutes,
                             onClick = { onNotifGraphMinutesChange(minutes) },
-                            shape = SegmentedButtonDefaults.itemShape(index, 4)
+                            shape = SegmentedButtonDefaults.itemShape(index, 4),
+
                         ) {
                             Text(label)
                         }
@@ -373,11 +376,12 @@ fun SettingsScreen(
                     fontSize = 14.sp
                 )
                 SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                    listOf(0 to "Off", 10 to "10m", 15 to "15m", 20 to "20m", 30 to "30m").forEachIndexed { index, (minutes, label) ->
+                    listOf(0 to "Off", 15 to "15m", 30 to "30m").forEachIndexed { index, (minutes, label) ->
                         SegmentedButton(
                             selected = predictionMinutes == minutes,
                             onClick = { onPredictionMinutesChange(minutes) },
-                            shape = SegmentedButtonDefaults.itemShape(index, 5)
+                            shape = SegmentedButtonDefaults.itemShape(index, 3),
+
                         ) {
                             Text(label)
                         }
@@ -550,9 +554,10 @@ fun SettingsScreen(
                     listOf(7 to "7 days", 14 to "14 days", 30 to "30 days").forEach { (days, label) ->
                         OutlinedButton(
                             onClick = { onPullFromNightscout(days) },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
                         ) {
-                            Text(label, fontSize = 13.sp)
+                            Text(label, fontSize = 13.sp, maxLines = 1)
                         }
                     }
                 }
