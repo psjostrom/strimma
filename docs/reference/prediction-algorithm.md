@@ -30,7 +30,7 @@ Recent readings carry more weight than older ones:
 weight(t) = e^(DECAY × t)
 ```
 
-where `t` is seconds before now (negative, so recent readings get higher weights) and `DECAY = 0.35`.
+where `t` is minutes before now (negative, so recent readings get higher weights) and `DECAY = 0.35`.
 
 **Effect:** The last 4 minutes hold approximately **84% of the total weight**. The full 12-minute window is preserved for better slope estimation, but the velocity is dominated by recent behavior.
 

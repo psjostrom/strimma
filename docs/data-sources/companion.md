@@ -18,7 +18,7 @@ graph LR
     C -->|Extract BG| D[Process & Store]
 ```
 
-Strimma automatically detects whether the notification shows glucose in mmol/L or mg/dL and converts as needed. Values are validated to be in the physiological range (1.0–50.0 mmol/L / 18–900 mg/dL) — anything outside this is ignored.
+Strimma automatically detects whether the notification shows glucose in mmol/L or mg/dL and converts as needed. Values are validated to be in the physiological range (2.8–27.8 mmol/L / 51–500 mg/dL) — anything outside this is ignored.
 
 ---
 
