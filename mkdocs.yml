@@ -1,0 +1,127 @@
+site_name: Strimma
+site_description: Open-source Android CGM companion app — real-time glucose display, alerts, and Nightscout integration
+site_url: https://psjostrom.github.io/Strimma/
+repo_url: https://github.com/psjostrom/Strimma
+repo_name: psjostrom/Strimma
+edit_uri: edit/main/docs/
+
+copyright: Copyright &copy; 2025–2026 Strimma contributors. Licensed under GPLv3.
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep purple
+      accent: cyan
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep purple
+      accent: cyan
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+  features:
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.tabs.link
+    - toc.follow
+  logo: assets/logo.svg
+  favicon: assets/logo.svg
+  icon:
+    repo: fontawesome/brands/github
+  font:
+    text: Inter
+    code: JetBrains Mono
+
+plugins:
+  - search
+  - minify:
+      minify_html: true
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.critic
+  - attr_list
+  - md_in_html
+  - def_list
+  - tables
+  - toc:
+      permalink: true
+
+extra_javascript:
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
+
+extra_css:
+  - assets/stylesheets/strimma.css
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/psjostrom/Strimma
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Install Strimma: getting-started/install.md
+    - Initial Setup: getting-started/setup.md
+    - Your First Reading: getting-started/first-reading.md
+  - User Guide:
+    - Main Screen: guide/main-screen.md
+    - The Graph: guide/graph.md
+    - Notifications: guide/notifications.md
+    - Alerts: guide/alerts.md
+    - Prediction: guide/prediction.md
+    - Treatments & IOB: guide/treatments.md
+    - Statistics: guide/statistics.md
+    - Home Screen Widget: guide/widget.md
+    - All Settings: guide/settings.md
+  - Data Sources:
+    - Overview: data-sources/overview.md
+    - Companion Mode: data-sources/companion.md
+    - xDrip Broadcast: data-sources/xdrip-broadcast.md
+    - Nightscout Follower: data-sources/nightscout-follower.md
+    - Supported CGM Apps: data-sources/supported-apps.md
+  - Nightscout:
+    - What is Nightscout?: nightscout/overview.md
+    - Push Setup: nightscout/push-setup.md
+    - Follower Mode: nightscout/follower-setup.md
+  - Integrations:
+    - xDrip Broadcast Output: integrations/xdrip-broadcast.md
+    - Local Web Server: integrations/web-server.md
+    - Garmin Watches: integrations/garmin.md
+  - Reference:
+    - Units (mmol/L vs mg/dL): reference/units.md
+    - Direction Arrows: reference/direction.md
+    - Prediction Algorithm: reference/prediction-algorithm.md
+    - IOB Calculation: reference/iob-calculation.md
+    - Nightscout API: reference/nightscout-api.md
+    - Privacy & Security: reference/privacy.md
+  - Troubleshooting: troubleshooting.md
+  - FAQ: faq.md

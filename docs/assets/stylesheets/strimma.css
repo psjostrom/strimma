@@ -1,0 +1,149 @@
+/* Strimma design system — purple-warm dark with cyan accent */
+
+/* Dark mode (default) */
+[data-md-color-scheme="slate"] {
+  /* Primary/accent */
+  --md-primary-fg-color: #181520;
+  --md-primary-fg-color--light: #1E1A2A;
+  --md-primary-fg-color--dark: #111018;
+  --md-primary-bg-color: #FFFFFF;
+  --md-accent-fg-color: #56CCF2;
+  --md-accent-fg-color--transparent: rgba(86, 204, 242, 0.1);
+
+  /* Background */
+  --md-default-bg-color: #111018;
+  --md-default-bg-color--light: #181520;
+  --md-default-bg-color--lighter: #1E1A2A;
+  --md-default-bg-color--lightest: #2C2840;
+
+  /* Foreground / text */
+  --md-default-fg-color: rgba(255, 255, 255, 0.87);
+  --md-default-fg-color--light: #A898C0;
+  --md-default-fg-color--lighter: #6A5F80;
+  --md-default-fg-color--lightest: rgba(255, 255, 255, 0.06);
+
+  /* Code blocks */
+  --md-code-bg-color: #1E1A2A;
+  --md-code-fg-color: #E0D8F0;
+
+  /* Footer */
+  --md-footer-bg-color: #111018;
+  --md-footer-bg-color--dark: #0A0810;
+
+  /* Typeset */
+  --md-typeset-color: rgba(255, 255, 255, 0.87);
+  --md-typeset-a-color: #56CCF2;
+
+  /* Admonitions — match Strimma status colors */
+  --md-admonition-bg-color: #1E1A2A;
+}
+
+/* Header bar */
+[data-md-color-scheme="slate"] .md-header {
+  background-color: #111018;
+  border-bottom: 1px solid #2C2840;
+}
+
+/* Tabs bar */
+[data-md-color-scheme="slate"] .md-tabs {
+  background-color: #181520;
+}
+
+/* Navigation sidebar */
+[data-md-color-scheme="slate"] .md-sidebar {
+  background-color: #111018;
+}
+
+/* Search bar */
+[data-md-color-scheme="slate"] .md-search__input {
+  background-color: #1E1A2A;
+}
+
+/* Table styling */
+[data-md-color-scheme="slate"] .md-typeset table:not([class]) {
+  border: 1px solid #2C2840;
+}
+
+[data-md-color-scheme="slate"] .md-typeset table:not([class]) th {
+  background-color: #1E1A2A;
+  border-bottom: 1px solid #2C2840;
+}
+
+[data-md-color-scheme="slate"] .md-typeset table:not([class]) td {
+  border-top: 1px solid #2C2840;
+}
+
+/* Light mode — Strimma light palette */
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: #FAFAFC;
+  --md-primary-fg-color--light: #F4F2F7;
+  --md-primary-fg-color--dark: #EEEAF5;
+  --md-primary-bg-color: #18151F;
+  --md-accent-fg-color: #0D7FAA;
+  --md-accent-fg-color--transparent: rgba(13, 127, 170, 0.1);
+
+  --md-default-bg-color: #F4F2F7;
+  --md-default-fg-color: #18151F;
+  --md-default-fg-color--light: #6A5F80;
+  --md-default-fg-color--lighter: #9088A0;
+
+  --md-typeset-a-color: #0D7FAA;
+  --md-code-bg-color: #EEEAF5;
+  --md-code-fg-color: #18151F;
+
+  --md-admonition-bg-color: #FAFAFC;
+}
+
+[data-md-color-scheme="default"] .md-header {
+  background-color: #FAFAFC;
+  color: #18151F;
+  border-bottom: 1px solid #D5D0E0;
+}
+
+[data-md-color-scheme="default"] .md-header .md-header__title,
+[data-md-color-scheme="default"] .md-header .md-header__topic,
+[data-md-color-scheme="default"] .md-header .md-logo,
+[data-md-color-scheme="default"] .md-header [data-md-component="header-topic"] {
+  color: #18151F;
+}
+
+[data-md-color-scheme="default"] .md-header .md-search__input {
+  background-color: #EEEAF5;
+  color: #18151F;
+}
+
+[data-md-color-scheme="default"] .md-header .md-icon {
+  color: #6A5F80;
+}
+
+[data-md-color-scheme="default"] .md-tabs {
+  background-color: #EEEAF5;
+  border-bottom: 1px solid #D5D0E0;
+}
+
+[data-md-color-scheme="default"] .md-tabs__link {
+  color: #6A5F80;
+}
+
+[data-md-color-scheme="default"] .md-tabs__link--active,
+[data-md-color-scheme="default"] .md-tabs__link:hover {
+  color: #18151F;
+}
+
+[data-md-color-scheme="default"] .md-sidebar {
+  background-color: #F4F2F7;
+}
+
+[data-md-color-scheme="default"] .md-typeset table:not([class]) th {
+  background-color: #EEEAF5;
+  border-bottom: 1px solid #D5D0E0;
+}
+
+[data-md-color-scheme="default"] .md-typeset table:not([class]) td {
+  border-top: 1px solid #D5D0E0;
+}
+
+[data-md-color-scheme="default"] .md-footer {
+  background-color: #EEEAF5;
+  border-top: 1px solid #D5D0E0;
+}

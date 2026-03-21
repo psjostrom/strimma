@@ -55,7 +55,7 @@ Strimma is a Nightscout-compatible client. All HTTP endpoints, URL formats, quer
 - **Colors:** InRange=cyan (#56CCF2), AboveHigh=amber (#FFB800), BelowLow=coral (#FF4D6A). Defined in `ui/theme/Color.kt` (Compose, prefixed `Dark`/`Light`) and `graph/GraphColors.kt` (Canvas int constants, prefixed `CANVAS_`). Keep in sync.
 - **Theme:** Dark/Light/System via `ThemeMode` enum. Graphs always render on dark surfaces regardless of theme mode.
 - **Direction:** Computed locally via 3-point averaged SGV + EASD/ISPAD thresholds. Never trust CamAPS broadcast direction.
-- **Units:** Configurable mmol/L or mg/dL via `GlucoseUnit` enum. Store internally as mmol/L, convert at display time. SGV stored as mg/dL (Nightscout protocol). Conversion factor: `18.0182`.
+- **Units:** Configurable mmol/L or mg/dL via `GlucoseUnit` enum. Store internally as mg/dL (Room DB), convert at display time. Conversion factor: `18.0182`.
 - **Graph rendering:** Two renderers sharing logic — Compose Canvas (MainScreen) and Android Canvas (GraphRenderer for notifications). Both use `computeYRange()` from `graph/GraphColors.kt`.
 - **Notification graph:** 1-hour window. Main graph: configurable (1-8h, default 4h).
 - **Nightscout push:** Immediate on new reading via `/api/v1/entries`. Retry with linear backoff. Unpushed readings marked `pushed=0` in Room.
