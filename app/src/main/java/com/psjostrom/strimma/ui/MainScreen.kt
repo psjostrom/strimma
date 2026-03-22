@@ -665,7 +665,7 @@ fun GlucoseGraph(
             val timeStr = sdf.format(java.util.Date(sel.ts))
             val valueStr = glucoseUnit.format(sel.sgv)
             val direction = try { Direction.valueOf(sel.direction) } catch (_: Exception) { Direction.NONE }
-            val deltaStr = sel.delta?.let { glucoseUnit.format(kotlin.math.abs(it)) }
+            val deltaStr = sel.delta?.let { glucoseUnit.formatDeltaCompact(it) }
 
             val line1 = "$valueStr ${direction.arrow}"
             val line2 = if (deltaStr != null) "$timeStr  $deltaStr" else timeStr
