@@ -44,7 +44,7 @@ Single-module app. Hilt DI. All async via Coroutines/Flow.
 
 Strimma is a Nightscout-compatible client. All HTTP endpoints, URL formats, query parameters, and data shapes MUST follow the Nightscout API spec. This is non-negotiable — Strimma must work with any real Nightscout server, not just Springa.
 
-- **Endpoints use `.json` suffix:** `/api/v1/entries.json`, `/api/v1/treatments.json` — this is the Nightscout convention.
+- **GET endpoints use `.json` suffix:** `/api/v1/entries.json`, `/api/v1/treatments.json`. POST endpoints do not use `.json`. This is the Nightscout convention.
 - **Query params use Nightscout's MongoDB-style syntax:** `find[date][$gt]=`, `find[created_at][$gte]=`, `count=`.
 - **Auth via `api-secret` header** with SHA-1 hashed secret.
 - **Data shapes match Nightscout spec:** `sgv`, `date`, `dateString`, `direction`, `type` for entries; `_id`, `eventType`, `created_at`, `insulin`, `carbs`, `absolute`, `duration`, `enteredBy` for treatments.
