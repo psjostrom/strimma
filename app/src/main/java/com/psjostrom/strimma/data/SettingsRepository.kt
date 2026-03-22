@@ -139,7 +139,19 @@ class SettingsRepository @Inject constructor(
     val alertLowSoonEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_LOW_SOON_ENABLED] ?: true }
     val alertHighSoonEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_HIGH_SOON_ENABLED] ?: true }
 
-    suspend fun setNightscoutUrl(url: String) { dataStore.edit { it[KEY_NIGHTSCOUT_URL] = url } }
+    suspend fun setNightscoutUrl(url: String) {
+        dataStore.edit { it[KEY_NIGHTSCOUT_URL] = normalizeUrl(url) }
+    }
+
+    private fun normalizeUrl(raw: String): String {
+        val trimmed = raw.trim().trimEnd('/')
+        if (trimmed.isBlank()) return ""
+        return if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+            trimmed
+        } else {
+            "https://$trimmed"
+        }
+    }
     suspend fun setGraphWindowHours(hours: Int) { dataStore.edit { it[KEY_GRAPH_WINDOW_HOURS] = hours } }
     suspend fun setBgLow(value: Float) { dataStore.edit { it[KEY_BG_LOW] = value } }
     suspend fun setBgHigh(value: Float) { dataStore.edit { it[KEY_BG_HIGH] = value } }
