@@ -175,6 +175,7 @@ class StrimmaService : Service() {
                 delay(STALE_CHECK_INTERVAL_SECONDS * SECONDS_TO_MS)
                 val latest = dao.latestOnce()
                 alertManager.checkStale(latest?.ts)
+                updateNotification()
             }
         }
     }
@@ -282,7 +283,9 @@ class StrimmaService : Service() {
     }
 
     private suspend fun updateNotification() {
-        val latest = dao.latestOnce()
+        val latest = dao.latestOnce()?.takeUnless { reading ->
+            (System.currentTimeMillis() - reading.ts) > AlertManager.STALE_THRESHOLD_MINUTES * MINUTES_TO_MS
+        }
         val graphWindowMs = notifGraphMinutes.value.toLong() * MINUTES_TO_MS
         val recent = dao.since(System.currentTimeMillis() - graphWindowMs)
 

@@ -62,7 +62,7 @@ class AlertManager @Inject constructor(
         private const val SNOOZE_INTENT_ID_OFFSET = 200
 
         // Stale data threshold
-        private const val STALE_THRESHOLD_MINUTES = 10
+        const val STALE_THRESHOLD_MINUTES = 10
         private const val MINUTES_TO_MS = 60 * 1000L
 
         val ALL_CHANNELS = listOf(
