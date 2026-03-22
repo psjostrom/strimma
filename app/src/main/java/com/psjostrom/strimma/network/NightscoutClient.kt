@@ -25,6 +25,7 @@ data class NightscoutEntry(
     val date: Long,
     val dateString: String,
     val direction: String,
+    val delta: Double? = null,
     val type: String = "sgv",
     val device: String = "Strimma"
 )
@@ -85,7 +86,8 @@ class NightscoutClient @Inject constructor() {
                 sgv = reading.sgv,
                 date = reading.ts,
                 dateString = isoFormatter.format(Instant.ofEpochMilli(reading.ts)),
-                direction = reading.direction
+                direction = reading.direction,
+                delta = reading.delta
             )
         }
 

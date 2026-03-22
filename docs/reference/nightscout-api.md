@@ -27,6 +27,7 @@ api-secret: <sha1-hash>
     "date": 1711029600000,
     "dateString": "2025-03-21T14:00:00.000Z",
     "direction": "Flat",
+    "delta": -2.3,
     "type": "sgv",
     "device": "Strimma"
   }
@@ -38,6 +39,7 @@ api-secret: <sha1-hash>
 - `date` is Unix timestamp in milliseconds
 - `dateString` is ISO 8601 UTC
 - `direction` uses Nightscout standard names: DoubleDown, SingleDown, FortyFiveDown, Flat, FortyFiveUp, SingleUp, DoubleUp, NONE
+- `delta` is the smoothed SGV change in mg/dL over a ~5 minute window (see [Extension Fields](#extension-fields))
 - `device` is always "Strimma"
 
 ### Fetch Readings
@@ -123,6 +125,20 @@ When receiving entries (from pull or follower mode):
 
 - Readings within **3 seconds** of an existing reading are treated as duplicates
 - A **15-minute lookback window** is used for duplicate detection
+
+---
+
+## Extension Fields
+
+Strimma includes one field beyond the standard Nightscout entry schema:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `delta` | Double? | Smoothed SGV change in mg/dL over a ~5 minute window. Computed from 3-point averaged SGV values using EASD/ISPAD thresholds. Null when insufficient history is available (e.g., first reading after a sensor start). |
+
+Standard Nightscout servers ignore unknown fields, so this does not break compatibility. The `delta` field is included because direction and delta express the same underlying trend — direction as a categorical label, delta as the numeric value. Both are derived from the same computation, so shipping both avoids forcing consumers to reconstruct delta from raw SGV values.
+
+Servers that understand `delta` can store and return it directly. Servers that don't will silently drop it.
 
 ---
 

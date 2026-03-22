@@ -47,15 +47,8 @@ suspend fun processNightscoutEntry(
     )
     val (computedDirection, deltaMgdl) = directionComputer.compute(recentReadings, tempReading)
 
-    // Use server-provided direction if available and valid, otherwise use locally computed
-    val directionName = if (entry.direction != null && entry.direction != "NONE" && entry.direction != "NOT COMPUTABLE") {
-        entry.direction
-    } else {
-        computedDirection.name
-    }
-
     val reading = tempReading.copy(
-        direction = directionName,
+        direction = computedDirection.name,
         delta = deltaMgdl?.let { Math.round(it * DELTA_ROUNDING_FACTOR) / DELTA_ROUNDING_FACTOR }
     )
 
