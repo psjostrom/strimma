@@ -51,9 +51,9 @@ class DataSourceSettingsTest {
     @Test
     fun `displays all data source options`() {
         render()
-        GlucoseSource.entries.forEach { source ->
-            composeRule.onNodeWithText(source.label).assertExists()
-        }
+        composeRule.onNodeWithText("Companion Mode").assertExists()
+        composeRule.onNodeWithText("xDrip Broadcast").assertExists()
+        composeRule.onNodeWithText("Nightscout Follower").assertExists()
     }
 
     @Test

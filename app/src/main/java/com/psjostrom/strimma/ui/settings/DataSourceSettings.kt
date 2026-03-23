@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import com.psjostrom.strimma.data.GlucoseSource
 
@@ -44,8 +45,8 @@ fun DataSourceSettings(
                         onClick = { onGlucoseSourceChange(source) }
                     )
                     Column(modifier = Modifier.padding(start = 8.dp)) {
-                        Text(source.label, color = onBg, fontSize = 14.sp)
-                        Text(source.description, color = outline, fontSize = 12.sp)
+                        Text(stringResource(source.labelRes), color = onBg, fontSize = 14.sp)
+                        Text(stringResource(source.descriptionRes), color = outline, fontSize = 12.sp)
                     }
                 }
             }
