@@ -153,8 +153,6 @@ class AlertManager @Inject constructor(
         audioAttrs: AudioAttributes, bypassDnd: Boolean,
         vibration: LongArray
     ) {
-        // Only create if channel doesn't exist yet — once created, the user owns the settings
-        if (notificationManager.getNotificationChannel(id) != null) return
         val channel = NotificationChannel(id, name, importance).apply {
             description = desc
             enableVibration(true)
