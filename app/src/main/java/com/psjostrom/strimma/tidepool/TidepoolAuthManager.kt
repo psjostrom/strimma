@@ -232,6 +232,14 @@ class TidepoolAuthManager @Inject constructor(
         }
     }
 
+    /**
+     * Returns the data API base URL for the given environment.
+     */
+    fun getApiBase(environment: String): String = when (environment.uppercase()) {
+        "INTEGRATION" -> "https://api.integration.tidepool.org"
+        else -> "https://api.tidepool.org"
+    }
+
     private fun authBaseUrl(environment: String): String = when (environment.uppercase()) {
         "INTEGRATION" -> "https://auth.integration.tidepool.org/realms/integration"
         else -> "https://auth.tidepool.org/realms/tidepool"
