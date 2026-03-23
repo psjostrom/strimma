@@ -2,7 +2,7 @@ package com.psjostrom.strimma.tidepool
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
+import androidx.core.net.toUri
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.receiver.DebugLog
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -67,15 +67,15 @@ class TidepoolAuthManager @Inject constructor(
     fun buildAuthIntent(environment: String): Intent {
         val authBase = authBaseUrl(environment)
         val config = AuthorizationServiceConfiguration(
-            Uri.parse("$authBase/protocol/openid-connect/auth"),
-            Uri.parse("$authBase/protocol/openid-connect/token")
+            "$authBase/protocol/openid-connect/auth".toUri(),
+            "$authBase/protocol/openid-connect/token".toUri()
         )
 
         val request = AuthorizationRequest.Builder(
             config,
             CLIENT_ID,
             ResponseTypeValues.CODE,
-            Uri.parse(REDIRECT_URI)
+            REDIRECT_URI.toUri()
         )
             .setScopes(SCOPES.split(" "))
             .build()
@@ -174,8 +174,8 @@ class TidepoolAuthManager @Inject constructor(
         val environment = settings.tidepoolEnvironment.first()
         val authBase = authBaseUrl(environment)
         val config = AuthorizationServiceConfiguration(
-            Uri.parse("$authBase/protocol/openid-connect/auth"),
-            Uri.parse("$authBase/protocol/openid-connect/token")
+            "$authBase/protocol/openid-connect/auth".toUri(),
+            "$authBase/protocol/openid-connect/token".toUri()
         )
 
         val tokenRequest = TokenRequest.Builder(config, CLIENT_ID)

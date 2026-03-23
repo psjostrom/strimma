@@ -299,7 +299,7 @@ class SettingsRepository @Inject constructor(
 
     fun getTidepoolRefreshToken(): String = encryptedPrefs.getString(KEY_TIDEPOOL_REFRESH_TOKEN, "") ?: ""
     fun setTidepoolRefreshToken(token: String) {
-        encryptedPrefs.edit().putString(KEY_TIDEPOOL_REFRESH_TOKEN, token).apply()
+        encryptedPrefs.edit { putString(KEY_TIDEPOOL_REFRESH_TOKEN, token) }
     }
 
     @Suppress("CyclomaticComplexMethod") // Flat serialization of all settings
