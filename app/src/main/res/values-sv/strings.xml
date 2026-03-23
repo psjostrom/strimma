@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Common -->
+    <string name="common_ok">OK</string>
+    <string name="common_cancel">Avbryt</string>
+    <string name="common_save">Spara</string>
+    <string name="common_export">Exportera</string>
+    <string name="common_sound">Ljud</string>
+    <string name="common_no_data">Ingen data</string>
+    <string name="common_content_desc_statistics">Statistik</string>
+    <string name="common_content_desc_settings">Inst\u00E4llningar</string>
+    <string name="common_content_desc_back">Tillbaka</string>
+    <string name="common_content_desc_export">Exportera</string>
+    <string name="common_content_desc_share_log">Dela logg</string>
+
+    <!-- Main Screen -->
+    <string name="main_just_now">Just nu</string>
+    <string name="main_min_ago">%1$d min sedan</string>
+    <string name="main_prediction_low">L\u00E5gt om %1$d min</string>
+    <string name="main_prediction_high">H\u00F6gt om %1$d min</string>
+    <string name="main_iob_value">IOB %1$.1fU</string>
+    <string name="main_follower_connecting">F\u00F6ljer \u00B7 ansluter\u2026</string>
+    <string name="main_follower_seconds_ago">F\u00F6ljer \u00B7 %1$ds sedan</string>
+    <string name="main_follower_minutes_ago">F\u00F6ljer \u00B7 %1$dm sedan</string>
+    <string name="main_follower_lost">F\u00F6ljer \u00B7 anslutning tappad</string>
+    <string name="main_follower_lost_minutes">F\u00F6ljer \u00B7 anslutning tappad %1$dm</string>
+    <string name="main_iob_breakdown_title">IOB-f\u00F6rdelning</string>
+    <string name="main_no_active_treatments">Inga aktiva insulinbehandlingar</string>
+    <string name="main_bolus_label">%1$.1fU</string>
+    <string name="main_carb_label">%1$.0fg</string>
+
+    <!-- Settings Menu -->
+    <string name="settings_title">Inst\u00E4llningar</string>
+    <string name="settings_data_source">Datak\u00E4lla</string>
+    <string name="settings_data_source_subtitle">K\u00E4lla, Nightscout-anslutning</string>
+    <string name="settings_treatments">Behandlingar</string>
+    <string name="settings_treatments_subtitle">IOB, insulintyp</string>
+    <string name="settings_display">Visning</string>
+    <string name="settings_display_subtitle">Enhet, graf, tr\u00F6sklar, tema</string>
+    <string name="settings_notifications">Aviseringar</string>
+    <string name="settings_notifications_subtitle">Grafintervall, prediktion</string>
+    <string name="settings_alerts">Larm</string>
+    <string name="settings_alerts_subtitle">L\u00E5gt, h\u00F6gt, gammal data-larm</string>
+    <string name="settings_data">Data</string>
+    <string name="settings_data_subtitle">Statistik, export, Nightscout-h\u00E4mtning</string>
+    <string name="settings_debug_log">Fels\u00F6kningslogg</string>
+
+    <!-- Data Source Settings -->
+    <string name="settings_source_title">Datak\u00E4lla</string>
+    <string name="settings_source_section">K\u00E4lla</string>
+    <string name="settings_source_nightscout_push">Nightscout Push</string>
+    <string name="settings_source_nightscout_url">Nightscout-URL</string>
+    <string name="settings_source_url_placeholder">https://din-nightscout.example.com</string>
+    <string name="settings_source_url_hint">Bara bas-URL \u2014 ingen /api-s\u00F6kv\u00E4g</string>
+    <string name="settings_source_api_secret">API-hemlighet</string>
+    <string name="settings_source_following">F\u00F6ljer</string>
+    <string name="settings_source_follower_url_placeholder">https://nightscout.example.com</string>
+    <string name="settings_source_follower_url_hint">Nightscout-servern att f\u00F6lja</string>
+    <string name="settings_source_poll_interval">Pollintervall: %1$ds</string>
+    <string name="settings_source_poll_explanation">Hur ofta nya avl\u00E4sningar kontrolleras. L\u00E4gre v\u00E4rden f\u00E5ngar uppdateringar snabbare men drar mer batteri. CGM-avl\u00E4sningar kommer vanligtvis var 5:e minut.</string>
+    <string name="settings_source_companion_label">Kompanjonl\u00E4ge</string>
+    <string name="settings_source_companion_desc">Tolka aviseringar fr\u00E5n CGM-appar</string>
+    <string name="settings_source_xdrip_label">xDrip-s\u00E4ndning</string>
+    <string name="settings_source_xdrip_desc">Ta emot xDrip-kompatibla BG-s\u00E4ndningar</string>
+    <string name="settings_source_follower_label">Nightscout-f\u00F6ljare</string>
+    <string name="settings_source_follower_desc">F\u00F6lj en fj\u00E4rr-Nightscout-server</string>
+
+    <!-- Treatments Settings -->
+    <string name="settings_treatments_title">Behandlingar</string>
+    <string name="settings_treatments_section">Behandlingar</string>
+    <string name="settings_treatments_sync">Synka behandlingar</string>
+    <string name="settings_treatments_sync_desc">H\u00E4mta bolus-, kolhydrat- och basaldata f\u00F6r IOB-visning</string>
+    <string name="settings_treatments_insulin_type">Insulintyp</string>
+    <string name="settings_treatments_custom_dia">Anpassad DIA (timmar)</string>
+    <string name="settings_treatments_dia_hint">Insulinets verkningstid, 2\u201310 timmar</string>
+    <string name="settings_treatments_custom">Anpassad</string>
+
+    <!-- Display Settings -->
+    <string name="settings_display_title">Visning</string>
+    <string name="settings_display_section">Visning</string>
+    <string name="settings_display_unit">Enhet</string>
+    <string name="settings_display_hba1c_unit">HbA1c-enhet</string>
+    <string name="settings_display_graph_window">Graff\u00F6nster: %1$d timmar</string>
+    <string name="settings_display_low_threshold">L\u00E5g tr\u00F6skel (%1$s)</string>
+    <string name="settings_display_high_threshold">H\u00F6g tr\u00F6skel (%1$s)</string>
+    <string name="settings_display_theme">Tema</string>
+    <string name="settings_display_theme_light">Ljust</string>
+    <string name="settings_display_theme_dark">M\u00F6rkt</string>
+    <string name="settings_display_theme_system">System</string>
+
+    <!-- Notification Settings -->
+    <string name="settings_notif_title">Aviseringar</string>
+    <string name="settings_notif_section">Aviseringsgrafer</string>
+    <string name="settings_notif_time_range_minutes">Tidsintervall: %1$dm</string>
+    <string name="settings_notif_time_range_hours">Tidsintervall: %1$dh</string>
+    <string name="settings_notif_prediction_off">Prediktion: Av</string>
+    <string name="settings_notif_prediction_minutes">Prediktion: %1$d m</string>
+    <string name="settings_notif_off">Av</string>
+
+    <!-- Alerts Settings -->
+    <string name="settings_alerts_title">Larm</string>
+    <string name="settings_alerts_section">Larm</string>
+    <string name="settings_alerts_tap_sound">Tryck p\u00E5 \"Ljud\" f\u00F6r att v\u00E4lja ringsignal, vibration och \u00E5sidos\u00E4ttningsinst\u00E4llningar per larm.</string>
+    <string name="settings_alerts_urgent_low">Akut l\u00E5gt</string>
+    <string name="settings_alerts_urgent_low_threshold">Akut l\u00E5gt (%1$s)</string>
+    <string name="settings_alerts_low">L\u00E5gt</string>
+    <string name="settings_alerts_low_threshold">L\u00E5gt-larm (%1$s)</string>
+    <string name="settings_alerts_high">H\u00F6gt</string>
+    <string name="settings_alerts_high_threshold">H\u00F6gt-larm (%1$s)</string>
+    <string name="settings_alerts_urgent_high">Akut h\u00F6gt</string>
+    <string name="settings_alerts_urgent_high_threshold">Akut h\u00F6gt (%1$s)</string>
+    <string name="settings_alerts_low_soon">Snart l\u00E5gt</string>
+    <string name="settings_alerts_low_soon_desc">F\u00F6ruts\u00E4gt l\u00E5gt inom prediktionsf\u00F6nstret</string>
+    <string name="settings_alerts_high_soon">Snart h\u00F6gt</string>
+    <string name="settings_alerts_high_soon_desc">F\u00F6ruts\u00E4gt h\u00F6gt inom prediktionsf\u00F6nstret</string>
+    <string name="settings_alerts_stale">Gammal data (10+ min)</string>
+
+    <!-- Data Settings -->
+    <string name="settings_data_title">Data</string>
+    <string name="settings_data_views">Vyer</string>
+    <string name="settings_data_statistics">Statistik</string>
+    <string name="settings_data_nightscout">Nightscout</string>
+    <string name="settings_data_pull">H\u00E4mta fr\u00E5n Nightscout</string>
+    <string name="settings_data_pull_desc">Ladda ner glukoshistorik fr\u00E5n din Nightscout-server</string>
+    <string name="settings_data_pull_7d">7 dagar</string>
+    <string name="settings_data_pull_14d">14 dagar</string>
+    <string name="settings_data_pull_30d">30 dagar</string>
+    <string name="settings_data_integration">Integration</string>
+    <string name="settings_data_bg_broadcast">BG-s\u00E4ndning</string>
+    <string name="settings_data_bg_broadcast_desc">xDrip-kompatibel intent f\u00F6r AAPS, GDH, klockor</string>
+    <string name="settings_data_web_server">Lokal webbserver</string>
+    <string name="settings_data_web_server_desc">Servera BG-data p\u00E5 port 17580 f\u00F6r urtavlor och appar</string>
+    <string name="settings_data_api_secret">API-hemlighet</string>
+    <string name="settings_data_backup">S\u00E4kerhetskopia</string>
+    <string name="settings_data_export_settings">Exportera inst\u00E4llningar</string>
+    <string name="settings_data_import_settings">Importera inst\u00E4llningar</string>
+
+    <!-- Stats Screen -->
+    <string name="stats_title">Statistik</string>
+    <string name="stats_export_chooser">Exportera avl\u00E4sningar</string>
+    <string name="stats_time_in_range">Tid i intervall</string>
+    <string name="stats_low">L\u00E5gt</string>
+    <string name="stats_in_range">I intervall</string>
+    <string name="stats_high">H\u00F6gt</string>
+    <string name="stats_average">Medelv\u00E4rde</string>
+    <string name="stats_gmi">GMI (eHbA1c)</string>
+    <string name="stats_std_dev">Standardavvikelse</string>
+    <string name="stats_readings">Avl\u00E4sningar</string>
+    <string name="stats_range">Intervall: %1$s \u2013 %2$s %3$s</string>
+
+    <!-- Debug Screen -->
+    <string name="debug_title">Fels\u00F6kningslogg</string>
+    <string name="debug_share_chooser">Dela logg</string>
+    <string name="debug_live_marker">\u2014\u2014 Live \u2014\u2014</string>
+    <string name="debug_empty">Inga loggposter \u00E4nnu.</string>
+
+    <!-- Alert Notifications -->
+    <string name="alert_channel_urgent_low">Akut l\u00E5gt-larm</string>
+    <string name="alert_channel_urgent_low_desc">Glukos kritiskt l\u00E5gt</string>
+    <string name="alert_channel_low">L\u00E5gt-larm</string>
+    <string name="alert_channel_low_desc">Glukos under l\u00E5g tr\u00F6skel</string>
+    <string name="alert_channel_high">H\u00F6gt-larm</string>
+    <string name="alert_channel_high_desc">Glukos \u00F6ver h\u00F6g tr\u00F6skel</string>
+    <string name="alert_channel_urgent_high">Akut h\u00F6gt-larm</string>
+    <string name="alert_channel_urgent_high_desc">Glukos kritiskt h\u00F6gt</string>
+    <string name="alert_channel_stale">Gammal data-larm</string>
+    <string name="alert_channel_stale_desc">Ingen glukosavl\u00E4sning p\u00E5 10+ minuter</string>
+    <string name="alert_channel_low_soon">Snart l\u00E5gt-larm</string>
+    <string name="alert_channel_low_soon_desc">Glukos f\u00F6rutsp\u00E5s sjunka under tr\u00F6skel</string>
+    <string name="alert_channel_high_soon">Snart h\u00F6gt-larm</string>
+    <string name="alert_channel_high_soon_desc">Glukos f\u00F6rutsp\u00E5s stiga \u00F6ver tr\u00F6skel</string>
+    <string name="alert_urgent_low_title">Akut l\u00E5gt</string>
+    <string name="alert_low_title">L\u00E5gt glukos</string>
+    <string name="alert_high_title">H\u00F6gt glukos</string>
+    <string name="alert_urgent_high_title">Akut h\u00F6gt</string>
+    <string name="alert_low_in">L\u00E5gt om %1$d min</string>
+    <string name="alert_high_in">H\u00F6gt om %1$d min</string>
+    <string name="alert_predicted">F\u00F6rutsp\u00E5tt %1$s</string>
+    <string name="alert_stale_title">Ingen data</string>
+    <string name="alert_stale_body">Ingen glukosavl\u00E4sning p\u00E5 10+ minuter</string>
+    <string name="alert_snooze">Snooze 30 min</string>
+
+    <!-- Foreground Notification -->
+    <string name="notif_channel_name">Glukosavl\u00E4sningar</string>
+    <string name="notif_waiting">V\u00E4ntar p\u00E5 glukosdata\u2026</string>
+    <string name="notif_low_crossing">L\u00E5gt %1$dm</string>
+    <string name="notif_high_crossing">H\u00F6gt %1$dm</string>
+    <string name="notif_iob">IOB %1$s</string>
+
+    <!-- Widget -->
+    <string name="widget_now">nu</string>
+    <string name="widget_minutes_suffix">%1$dm</string>
+    <string name="widget_config_title">Widgetinst\u00E4llningar</string>
+    <string name="widget_config_graph_range">Grafintervall</string>
+    <string name="widget_config_show_prediction">Visa prediktion</string>
+    <string name="widget_config_background">Bakgrund</string>
+    <string name="widget_config_opacity">%1$d%%</string>
+    <string name="widget_config_background_hint">Styr bara bakgrunden \u2014 graf och v\u00E4rden syns alltid fullt</string>
+
+    <!-- Activity (dialogs, toasts) -->
+    <string name="activity_settings_imported">Inst\u00E4llningar importerade</string>
+    <string name="activity_import_failed">Import misslyckades: %1$s</string>
+    <string name="activity_export_dialog_title">Exportera inst\u00E4llningar</string>
+    <string name="activity_export_dialog_message">Exportfilen inneh\u00E5ller dina Nightscout-hemligheter i klartext. Dela den bara med appar du litar p\u00E5.</string>
+    <string name="activity_export_chooser">Exportera inst\u00E4llningar</string>
+    <string name="activity_export_failed">Export misslyckades: %1$s</string>
+    <string name="activity_pull_progress">H\u00E4mtar %1$d dagar fr\u00E5n Nightscout\u2026</string>
+    <string name="activity_pull_success">H\u00E4mtade %1$d avl\u00E4sningar</string>
+    <string name="activity_pull_failed">H\u00E4mtning misslyckades: %1$s</string>
+</resources>

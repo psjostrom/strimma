@@ -8,7 +8,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
+import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.GlucoseSource
 
 @Composable
@@ -30,8 +32,8 @@ fun DataSourceSettings(
     val onBg = MaterialTheme.colorScheme.onBackground
     val outline = MaterialTheme.colorScheme.outline
 
-    SettingsScaffold(title = "Data Source", onBack = onBack) {
-        SettingsSection("Source") {
+    SettingsScaffold(title = stringResource(R.string.settings_source_title), onBack = onBack) {
+        SettingsSection(stringResource(R.string.settings_source_section)) {
             GlucoseSource.entries.forEach { source ->
                 Row(
                     modifier = Modifier
@@ -44,22 +46,22 @@ fun DataSourceSettings(
                         onClick = { onGlucoseSourceChange(source) }
                     )
                     Column(modifier = Modifier.padding(start = 8.dp)) {
-                        Text(source.label, color = onBg, fontSize = 14.sp)
-                        Text(source.description, color = outline, fontSize = 12.sp)
+                        Text(stringResource(source.labelRes), color = onBg, fontSize = 14.sp)
+                        Text(stringResource(source.descriptionRes), color = outline, fontSize = 12.sp)
                     }
                 }
             }
         }
 
         if (glucoseSource != GlucoseSource.NIGHTSCOUT_FOLLOWER) {
-            SettingsSection("Nightscout Push") {
+            SettingsSection(stringResource(R.string.settings_source_nightscout_push)) {
                 var urlText by remember(nightscoutUrl) { mutableStateOf(nightscoutUrl) }
                 OutlinedTextField(
                     value = urlText,
                     onValueChange = { urlText = it },
-                    label = { Text("Nightscout URL") },
-                    placeholder = { Text("https://your-nightscout.example.com") },
-                    supportingText = { Text("Base URL only — no /api path") },
+                    label = { Text(stringResource(R.string.settings_source_nightscout_url)) },
+                    placeholder = { Text(stringResource(R.string.settings_source_url_placeholder)) },
+                    supportingText = { Text(stringResource(R.string.settings_source_url_hint)) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .onFocusChanged { if (!it.isFocused) onNightscoutUrlChange(urlText) },
@@ -70,7 +72,7 @@ fun DataSourceSettings(
                 OutlinedTextField(
                     value = secretText,
                     onValueChange = { secretText = it },
-                    label = { Text("API Secret") },
+                    label = { Text(stringResource(R.string.settings_source_api_secret)) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .onFocusChanged { if (!it.isFocused) onNightscoutSecretChange(secretText) },
@@ -79,14 +81,14 @@ fun DataSourceSettings(
                 )
             }
         } else {
-            SettingsSection("Following") {
+            SettingsSection(stringResource(R.string.settings_source_following)) {
                 var urlText by remember(followerUrl) { mutableStateOf(followerUrl) }
                 OutlinedTextField(
                     value = urlText,
                     onValueChange = { urlText = it },
-                    label = { Text("Nightscout URL") },
-                    placeholder = { Text("https://nightscout.example.com") },
-                    supportingText = { Text("The Nightscout server to follow") },
+                    label = { Text(stringResource(R.string.settings_source_nightscout_url)) },
+                    placeholder = { Text(stringResource(R.string.settings_source_follower_url_placeholder)) },
+                    supportingText = { Text(stringResource(R.string.settings_source_follower_url_hint)) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .onFocusChanged { if (!it.isFocused) onFollowerUrlChange(urlText) },
@@ -97,7 +99,7 @@ fun DataSourceSettings(
                 OutlinedTextField(
                     value = secretText,
                     onValueChange = { secretText = it },
-                    label = { Text("API Secret") },
+                    label = { Text(stringResource(R.string.settings_source_api_secret)) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .onFocusChanged { if (!it.isFocused) onFollowerSecretChange(secretText) },
@@ -106,13 +108,12 @@ fun DataSourceSettings(
                 )
 
                 Text(
-                    "Poll Interval: ${followerPollSeconds}s",
+                    stringResource(R.string.settings_source_poll_interval, followerPollSeconds),
                     color = onBg,
                     fontSize = 14.sp
                 )
                 Text(
-                    "How often to check for new readings. Lower values catch updates faster" +
-                        " but use more battery. CGM readings typically arrive every 5 minutes.",
+                    stringResource(R.string.settings_source_poll_explanation),
                     color = outline,
                     fontSize = 12.sp
                 )

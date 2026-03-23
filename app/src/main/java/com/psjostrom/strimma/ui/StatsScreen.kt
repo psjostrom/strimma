@@ -17,10 +17,12 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
+import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseStats
 import com.psjostrom.strimma.data.GlucoseUnit
@@ -37,11 +39,12 @@ private const val HOURS_7_DAYS = 168
 private const val HOURS_14_DAYS = 336
 private const val HOURS_30_DAYS = 720
 
-private val PERIODS = listOf(
-    HOURS_24 to "24h",
-    HOURS_7_DAYS to "7d",
-    HOURS_14_DAYS to "14d",
-    HOURS_30_DAYS to "30d"
+@Composable
+private fun getPeriods() = listOf(
+    HOURS_24 to stringResource(R.string.stats_period_24h),
+    HOURS_7_DAYS to stringResource(R.string.stats_period_7d),
+    HOURS_14_DAYS to stringResource(R.string.stats_period_14d),
+    HOURS_30_DAYS to stringResource(R.string.stats_period_30d)
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,9 +67,11 @@ fun StatsScreen(
     var selectedPeriod by remember { mutableIntStateOf(1) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val periods = getPeriods()
+    val exportChooserTitle = stringResource(R.string.stats_export_chooser)
 
     val stats by produceState<GlucoseStats?>(null, selectedPeriod, bgLow, bgHigh) {
-        val (hours, label) = PERIODS[selectedPeriod]
+        val (hours, label) = periods[selectedPeriod]
         val readings = onLoadReadings(hours)
         value = StatsCalculator.compute(readings, bgLow.toDouble(), bgHigh.toDouble(), label)
     }
@@ -74,16 +79,16 @@ fun StatsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Statistics") },
+                title = { Text(stringResource(R.string.stats_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_content_desc_back))
                     }
                 },
                 actions = {
                     IconButton(onClick = {
                         scope.launch {
-                            val (hours, _) = PERIODS[selectedPeriod]
+                            val (hours, _) = periods[selectedPeriod]
                             val csv = onExportCsv(hours)
                             val file = File(context.cacheDir, "strimma_readings.csv")
                             file.writeText(csv)
@@ -96,11 +101,11 @@ fun StatsScreen(
                                     putExtra(Intent.EXTRA_STREAM, uri)
                                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                 },
-                                "Export Readings"
+                                exportChooserTitle
                             ))
                         }
                     }) {
-                        Icon(Icons.Outlined.Share, contentDescription = "Export")
+                        Icon(Icons.Outlined.Share, contentDescription = stringResource(R.string.common_content_desc_export))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -123,11 +128,11 @@ fun StatsScreen(
 
             // Period selector
             SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                PERIODS.forEachIndexed { index, (_, label) ->
+                periods.forEachIndexed { index, (_, label) ->
                     SegmentedButton(
                         selected = selectedPeriod == index,
                         onClick = { selectedPeriod = index },
-                        shape = SegmentedButtonDefaults.itemShape(index, PERIODS.size)
+                        shape = SegmentedButtonDefaults.itemShape(index, periods.size)
                     ) {
                         Text(label)
                     }
@@ -140,7 +145,7 @@ fun StatsScreen(
                     modifier = Modifier.fillMaxWidth().height(200.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("No data", color = onSurfaceVar)
+                    Text(stringResource(R.string.common_no_data), color = onSurfaceVar)
                 }
             } else {
                 // TIR card
@@ -150,7 +155,7 @@ fun StatsScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            "Time in Range",
+                            stringResource(R.string.stats_time_in_range),
                             color = onBg,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold
@@ -213,9 +218,9 @@ fun StatsScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            TirLabel("%.0f%%".format(s.belowPercent), "Low", BelowLow, onSurfaceVar)
-                            TirLabel("%.0f%%".format(s.tirPercent), "In Range", InRange, onSurfaceVar)
-                            TirLabel("%.0f%%".format(s.abovePercent), "High", AboveHigh, onSurfaceVar)
+                            TirLabel("%.0f%%".format(s.belowPercent), stringResource(R.string.stats_low), BelowLow, onSurfaceVar)
+                            TirLabel("%.0f%%".format(s.tirPercent), stringResource(R.string.stats_in_range), InRange, onSurfaceVar)
+                            TirLabel("%.0f%%".format(s.abovePercent), stringResource(R.string.stats_high), AboveHigh, onSurfaceVar)
                         }
                     }
                 }
@@ -229,21 +234,26 @@ fun StatsScreen(
                         modifier = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        StatRow("Average", glucoseUnit.formatWithUnit(s.averageMgdl), onBg, onSurfaceVar)
+                        StatRow(stringResource(R.string.stats_average), glucoseUnit.formatWithUnit(s.averageMgdl), onBg, onSurfaceVar)
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                        StatRow("GMI (eHbA1c)", hbA1cUnit.format(s.gmi), onBg, onSurfaceVar)
+                        StatRow(stringResource(R.string.stats_gmi), hbA1cUnit.format(s.gmi), onBg, onSurfaceVar)
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                        StatRow("CV", "%.1f%%".format(s.cv), onBg, onSurfaceVar)
+                        StatRow(stringResource(R.string.stats_cv), "%.1f%%".format(s.cv), onBg, onSurfaceVar)
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                        StatRow("Std Dev", glucoseUnit.formatWithUnit(s.stdDevMgdl), onBg, onSurfaceVar)
+                        StatRow(stringResource(R.string.stats_std_dev), glucoseUnit.formatWithUnit(s.stdDevMgdl), onBg, onSurfaceVar)
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                        StatRow("Readings", "%,d".format(s.count), onBg, onSurfaceVar)
+                        StatRow(stringResource(R.string.stats_readings), "%,d".format(s.count), onBg, onSurfaceVar)
                     }
                 }
 
                 // Targets info
                 Text(
-                    "Range: ${glucoseUnit.formatThreshold(bgLow)} – ${glucoseUnit.formatThreshold(bgHigh)} ${glucoseUnit.label}",
+                    stringResource(
+                        R.string.stats_range,
+                        glucoseUnit.formatThreshold(bgLow),
+                        glucoseUnit.formatThreshold(bgHigh),
+                        glucoseUnit.label
+                    ),
                     color = outline,
                     fontSize = 12.sp,
                     modifier = Modifier.padding(start = 4.dp)

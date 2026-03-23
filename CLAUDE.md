@@ -73,6 +73,10 @@ NEVER treat Strimma as a "single-user app" or use that as justification to cut c
 - xDrip+ retired — Strimma is the sole data source (validated equivalent coverage and accuracy)
 - `foregroundServiceType="specialUse"` (not connectedDevice — no direct BLE)
 
+## Git Workflow
+
+When a merge or push fails, ALWAYS check CI status (`gh pr checks`) and read the failure logs before retrying. Never blindly force or retry — diagnose the failure first.
+
 ## Spec
 
 Full spec in `docs/strimma-spec.md`. Roadmap in `docs/strimma-p2-roadmap.md` (Phase 3 substantially complete).

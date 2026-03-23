@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Common -->
+    <string name="common_ok">OK</string>
+    <string name="common_cancel">Annuler</string>
+    <string name="common_save">Enregistrer</string>
+    <string name="common_export">Exporter</string>
+    <string name="common_sound">Son</string>
+    <string name="common_no_data">Pas de donn\u00E9es</string>
+    <string name="common_content_desc_statistics">Statistiques</string>
+    <string name="common_content_desc_settings">Param\u00E8tres</string>
+    <string name="common_content_desc_back">Retour</string>
+    <string name="common_content_desc_export">Exporter</string>
+    <string name="common_content_desc_share_log">Partager le journal</string>
+
+    <!-- Main Screen -->
+    <string name="main_just_now">\u00C0 l\u2019instant</string>
+    <string name="main_min_ago">Il y a %1$d min</string>
+    <string name="main_prediction_low">Bas dans %1$d min</string>
+    <string name="main_prediction_high">Haut dans %1$d min</string>
+    <string name="main_iob_value">IOB %1$.1fU</string>
+    <string name="main_follower_connecting">Suivi \u00B7 connexion\u2026</string>
+    <string name="main_follower_seconds_ago">Suivi \u00B7 il y a %1$ds</string>
+    <string name="main_follower_minutes_ago">Suivi \u00B7 il y a %1$dm</string>
+    <string name="main_follower_lost">Suivi \u00B7 connexion perdue</string>
+    <string name="main_follower_lost_minutes">Suivi \u00B7 connexion perdue %1$dm</string>
+    <string name="main_iob_breakdown_title">D\u00E9tail IOB</string>
+    <string name="main_no_active_treatments">Aucun traitement insuline actif</string>
+    <string name="main_bolus_label">%1$.1fU</string>
+    <string name="main_carb_label">%1$.0fg</string>
+
+    <!-- Settings Menu -->
+    <string name="settings_title">Param\u00E8tres</string>
+    <string name="settings_data_source">Source de donn\u00E9es</string>
+    <string name="settings_data_source_subtitle">Source, connexion Nightscout</string>
+    <string name="settings_treatments">Traitements</string>
+    <string name="settings_treatments_subtitle">IOB, type d\u2019insuline</string>
+    <string name="settings_display">Affichage</string>
+    <string name="settings_display_subtitle">Unit\u00E9, graphique, seuils, th\u00E8me</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_notifications_subtitle">Plage du graphique, pr\u00E9diction</string>
+    <string name="settings_alerts">Alertes</string>
+    <string name="settings_alerts_subtitle">Alertes bas, haut, donn\u00E9es obsol\u00E8tes</string>
+    <string name="settings_data">Donn\u00E9es</string>
+    <string name="settings_data_subtitle">Statistiques, export, t\u00E9l\u00E9chargement Nightscout</string>
+    <string name="settings_debug_log">Journal de d\u00E9bogage</string>
+
+    <!-- Data Source Settings -->
+    <string name="settings_source_title">Source de donn\u00E9es</string>
+    <string name="settings_source_section">Source</string>
+    <string name="settings_source_nightscout_push">Nightscout Push</string>
+    <string name="settings_source_nightscout_url">URL Nightscout</string>
+    <string name="settings_source_url_placeholder">https://votre-nightscout.example.com</string>
+    <string name="settings_source_url_hint">URL de base uniquement \u2014 pas de chemin /api</string>
+    <string name="settings_source_api_secret">Secret API</string>
+    <string name="settings_source_following">Suivi</string>
+    <string name="settings_source_follower_url_placeholder">https://nightscout.example.com</string>
+    <string name="settings_source_follower_url_hint">Le serveur Nightscout \u00E0 suivre</string>
+    <string name="settings_source_poll_interval">Intervalle de scrutation : %1$ds</string>
+    <string name="settings_source_poll_explanation">Fr\u00E9quence de v\u00E9rification des nouvelles lectures. Des valeurs plus basses d\u00E9tectent les mises \u00E0 jour plus vite mais consomment plus de batterie. Les lectures CGM arrivent g\u00E9n\u00E9ralement toutes les 5 minutes.</string>
+    <string name="settings_source_companion_label">Mode compagnon</string>
+    <string name="settings_source_companion_desc">Lire les notifications des applications CGM</string>
+    <string name="settings_source_xdrip_label">Diffusion xDrip</string>
+    <string name="settings_source_xdrip_desc">Recevoir les diffusions BG compatibles xDrip</string>
+    <string name="settings_source_follower_label">Suiveur Nightscout</string>
+    <string name="settings_source_follower_desc">Suivre un serveur Nightscout distant</string>
+
+    <!-- Treatments Settings -->
+    <string name="settings_treatments_title">Traitements</string>
+    <string name="settings_treatments_section">Traitements</string>
+    <string name="settings_treatments_sync">Synchroniser les traitements</string>
+    <string name="settings_treatments_sync_desc">R\u00E9cup\u00E9rer les donn\u00E9es de bolus, glucides et basal pour l\u2019affichage IOB</string>
+    <string name="settings_treatments_insulin_type">Type d\u2019insuline</string>
+    <string name="settings_treatments_custom_dia">DIA personnalis\u00E9e (heures)</string>
+    <string name="settings_treatments_dia_hint">Dur\u00E9e d\u2019action de l\u2019insuline, 2\u201310 heures</string>
+    <string name="settings_treatments_custom">Personnalis\u00E9</string>
+
+    <!-- Display Settings -->
+    <string name="settings_display_title">Affichage</string>
+    <string name="settings_display_section">Affichage</string>
+    <string name="settings_display_unit">Unit\u00E9</string>
+    <string name="settings_display_hba1c_unit">Unit\u00E9 HbA1c</string>
+    <string name="settings_display_graph_window">Fen\u00EAtre du graphique : %1$d heures</string>
+    <string name="settings_display_low_threshold">Seuil bas (%1$s)</string>
+    <string name="settings_display_high_threshold">Seuil haut (%1$s)</string>
+    <string name="settings_display_theme">Th\u00E8me</string>
+    <string name="settings_display_theme_light">Clair</string>
+    <string name="settings_display_theme_dark">Sombre</string>
+    <string name="settings_display_theme_system">Syst\u00E8me</string>
+
+    <!-- Notification Settings -->
+    <string name="settings_notif_title">Notifications</string>
+    <string name="settings_notif_section">Graphique de notification</string>
+    <string name="settings_notif_time_range_minutes">Plage de temps : %1$dm</string>
+    <string name="settings_notif_time_range_hours">Plage de temps : %1$dh</string>
+    <string name="settings_notif_prediction_off">Pr\u00E9diction : D\u00E9sactiv\u00E9e</string>
+    <string name="settings_notif_prediction_minutes">Pr\u00E9diction : %1$d m</string>
+    <string name="settings_notif_off">D\u00E9sactiv\u00E9</string>
+
+    <!-- Alerts Settings -->
+    <string name="settings_alerts_title">Alertes</string>
+    <string name="settings_alerts_section">Alertes</string>
+    <string name="settings_alerts_tap_sound">Appuyez sur \"Son\" pour choisir la sonnerie, la vibration et les param\u00E8tres de contournement par alarme.</string>
+    <string name="settings_alerts_urgent_low">Bas urgent</string>
+    <string name="settings_alerts_urgent_low_threshold">Bas urgent (%1$s)</string>
+    <string name="settings_alerts_low">Bas</string>
+    <string name="settings_alerts_low_threshold">Alerte bas (%1$s)</string>
+    <string name="settings_alerts_high">Haut</string>
+    <string name="settings_alerts_high_threshold">Alerte haut (%1$s)</string>
+    <string name="settings_alerts_urgent_high">Haut urgent</string>
+    <string name="settings_alerts_urgent_high_threshold">Haut urgent (%1$s)</string>
+    <string name="settings_alerts_low_soon">Bient\u00F4t bas</string>
+    <string name="settings_alerts_low_soon_desc">Glyc\u00E9mie pr\u00E9dite basse dans la fen\u00EAtre de pr\u00E9diction</string>
+    <string name="settings_alerts_high_soon">Bient\u00F4t haut</string>
+    <string name="settings_alerts_high_soon_desc">Glyc\u00E9mie pr\u00E9dite haute dans la fen\u00EAtre de pr\u00E9diction</string>
+    <string name="settings_alerts_stale">Donn\u00E9es obsol\u00E8tes (10+ min)</string>
+
+    <!-- Data Settings -->
+    <string name="settings_data_title">Donn\u00E9es</string>
+    <string name="settings_data_views">Vues</string>
+    <string name="settings_data_statistics">Statistiques</string>
+    <string name="settings_data_nightscout">Nightscout</string>
+    <string name="settings_data_pull">T\u00E9l\u00E9charger depuis Nightscout</string>
+    <string name="settings_data_pull_desc">T\u00E9l\u00E9charger l\u2019historique de glyc\u00E9mie depuis votre serveur Nightscout</string>
+    <string name="settings_data_pull_7d">7 jours</string>
+    <string name="settings_data_pull_14d">14 jours</string>
+    <string name="settings_data_pull_30d">30 jours</string>
+    <string name="settings_data_integration">Int\u00E9gration</string>
+    <string name="settings_data_bg_broadcast">Diffusion BG</string>
+    <string name="settings_data_bg_broadcast_desc">Intent compatible xDrip pour AAPS, GDH, montres</string>
+    <string name="settings_data_web_server">Serveur web local</string>
+    <string name="settings_data_web_server_desc">Servir les donn\u00E9es BG sur le port 17580 pour cadrans et applications</string>
+    <string name="settings_data_api_secret">Secret API</string>
+    <string name="settings_data_backup">Sauvegarde</string>
+    <string name="settings_data_export_settings">Exporter les param\u00E8tres</string>
+    <string name="settings_data_import_settings">Importer les param\u00E8tres</string>
+
+    <!-- Stats Screen -->
+    <string name="stats_title">Statistiques</string>
+    <string name="stats_export_chooser">Exporter les lectures</string>
+    <string name="stats_time_in_range">Temps dans la cible</string>
+    <string name="stats_low">Bas</string>
+    <string name="stats_in_range">Dans la cible</string>
+    <string name="stats_high">Haut</string>
+    <string name="stats_average">Moyenne</string>
+    <string name="stats_gmi">GMI (eHbA1c)</string>
+    <string name="stats_std_dev">\u00C9cart type</string>
+    <string name="stats_readings">Lectures</string>
+    <string name="stats_range">Plage : %1$s \u2013 %2$s %3$s</string>
+
+    <!-- Debug Screen -->
+    <string name="debug_title">Journal de d\u00E9bogage</string>
+    <string name="debug_share_chooser">Partager le journal</string>
+    <string name="debug_live_marker">\u2014\u2014 En direct \u2014\u2014</string>
+    <string name="debug_empty">Aucune entr\u00E9e dans le journal.</string>
+
+    <!-- Alert Notifications -->
+    <string name="alert_channel_urgent_low">Alerte bas urgent</string>
+    <string name="alert_channel_urgent_low_desc">Glyc\u00E9mie dangereusement basse</string>
+    <string name="alert_channel_low">Alerte bas</string>
+    <string name="alert_channel_low_desc">Glyc\u00E9mie en dessous du seuil bas</string>
+    <string name="alert_channel_high">Alerte haut</string>
+    <string name="alert_channel_high_desc">Glyc\u00E9mie au-dessus du seuil haut</string>
+    <string name="alert_channel_urgent_high">Alerte haut urgent</string>
+    <string name="alert_channel_urgent_high_desc">Glyc\u00E9mie dangereusement haute</string>
+    <string name="alert_channel_stale">Alerte donn\u00E9es obsol\u00E8tes</string>
+    <string name="alert_channel_stale_desc">Aucune lecture de glyc\u00E9mie depuis 10+ minutes</string>
+    <string name="alert_channel_low_soon">Alerte bient\u00F4t bas</string>
+    <string name="alert_channel_low_soon_desc">Glyc\u00E9mie pr\u00E9dite en baisse</string>
+    <string name="alert_channel_high_soon">Alerte bient\u00F4t haut</string>
+    <string name="alert_channel_high_soon_desc">Glyc\u00E9mie pr\u00E9dite en hausse</string>
+    <string name="alert_urgent_low_title">Bas urgent</string>
+    <string name="alert_low_title">Glyc\u00E9mie basse</string>
+    <string name="alert_high_title">Glyc\u00E9mie haute</string>
+    <string name="alert_urgent_high_title">Haut urgent</string>
+    <string name="alert_low_in">Bas dans %1$d min</string>
+    <string name="alert_high_in">Haut dans %1$d min</string>
+    <string name="alert_predicted">Pr\u00E9dit %1$s</string>
+    <string name="alert_stale_title">Pas de donn\u00E9es</string>
+    <string name="alert_stale_body">Aucune lecture de glyc\u00E9mie depuis 10+ minutes</string>
+    <string name="alert_snooze">Snooze 30 min</string>
+
+    <!-- Foreground Notification -->
+    <string name="notif_channel_name">Lectures de glyc\u00E9mie</string>
+    <string name="notif_waiting">En attente de donn\u00E9es de glyc\u00E9mie\u2026</string>
+    <string name="notif_low_crossing">Bas %1$dm</string>
+    <string name="notif_high_crossing">Haut %1$dm</string>
+    <string name="notif_iob">IOB %1$s</string>
+
+    <!-- Widget -->
+    <string name="widget_now">maint.</string>
+    <string name="widget_minutes_suffix">%1$dm</string>
+    <string name="widget_config_title">Param\u00E8tres du widget</string>
+    <string name="widget_config_graph_range">Plage du graphique</string>
+    <string name="widget_config_show_prediction">Afficher la pr\u00E9diction</string>
+    <string name="widget_config_background">Arri\u00E8re-plan</string>
+    <string name="widget_config_opacity">%1$d%%</string>
+    <string name="widget_config_background_hint">Contr\u00F4le uniquement l\u2019arri\u00E8re-plan \u2014 le graphique et les valeurs restent enti\u00E8rement visibles</string>
+
+    <!-- Activity (dialogs, toasts) -->
+    <string name="activity_settings_imported">Param\u00E8tres import\u00E9s</string>
+    <string name="activity_import_failed">\u00C9chec de l\u2019importation : %1$s</string>
+    <string name="activity_export_dialog_title">Exporter les param\u00E8tres</string>
+    <string name="activity_export_dialog_message">Le fichier d\u2019exportation contient vos secrets Nightscout en texte clair. Ne le partagez qu\u2019avec des applications de confiance.</string>
+    <string name="activity_export_chooser">Exporter les param\u00E8tres</string>
+    <string name="activity_export_failed">\u00C9chec de l\u2019exportation : %1$s</string>
+    <string name="activity_pull_progress">T\u00E9l\u00E9chargement de %1$d jours depuis Nightscout\u2026</string>
+    <string name="activity_pull_success">%1$d lectures t\u00E9l\u00E9charg\u00E9es</string>
+    <string name="activity_pull_failed">\u00C9chec du t\u00E9l\u00E9chargement : %1$s</string>
+</resources>
