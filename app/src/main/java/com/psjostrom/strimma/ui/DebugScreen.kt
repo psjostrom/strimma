@@ -11,9 +11,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
+import com.psjostrom.strimma.R
 import com.psjostrom.strimma.receiver.DebugLog
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -22,14 +24,15 @@ fun DebugScreen(onBack: () -> Unit) {
     val liveEntries by DebugLog.entries.collectAsState()
     val fileEntries = remember { DebugLog.readLogFiles() }
     val context = LocalContext.current
+    val shareChooserTitle = stringResource(R.string.debug_share_chooser)
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Debug Log") },
+                title = { Text(stringResource(R.string.debug_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_content_desc_back))
                     }
                 },
                 actions = {
@@ -43,9 +46,9 @@ fun DebugScreen(onBack: () -> Unit) {
                             putExtra(Intent.EXTRA_STREAM, uri)
                             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                         }
-                        context.startActivity(Intent.createChooser(intent, "Share log"))
+                        context.startActivity(Intent.createChooser(intent, shareChooserTitle))
                     }) {
-                        Icon(Icons.Default.Share, contentDescription = "Share log")
+                        Icon(Icons.Default.Share, contentDescription = stringResource(R.string.common_content_desc_share_log))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -64,12 +67,12 @@ fun DebugScreen(onBack: () -> Unit) {
                 .verticalScroll(rememberScrollState())
         ) {
             val entries = if (liveEntries.isNotEmpty()) {
-                listOf("--- Live ---") + liveEntries.reversed()
+                listOf(stringResource(R.string.debug_live_marker)) + liveEntries.reversed()
             } else emptyList()
             val allEntries = entries + fileEntries
 
             if (allEntries.isEmpty()) {
-                Text("No log entries yet.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                Text(stringResource(R.string.debug_empty), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
             } else {
                 allEntries.forEach { entry ->
                     Text(
