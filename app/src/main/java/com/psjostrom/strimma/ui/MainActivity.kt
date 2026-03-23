@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
+import androidx.core.net.toUri
 import android.os.PowerManager
 import android.provider.Settings
 import android.app.AlertDialog
@@ -279,7 +280,7 @@ class MainActivity : ComponentActivity() {
                                 // Acceptable per https://developer.android.com/training/monitoring-device-state/doze-standby
                                 @SuppressLint("BatteryLife")
                                 val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                                    data = Uri.parse("package:$packageName")
+                                    data = "package:$packageName".toUri()
                                 }
                                 startActivity(intent)
                             },
