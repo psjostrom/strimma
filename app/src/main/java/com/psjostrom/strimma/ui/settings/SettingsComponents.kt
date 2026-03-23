@@ -14,8 +14,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.ui.theme.InRange
 
@@ -35,7 +37,7 @@ fun SettingsScaffold(
                 title = { Text(title) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_content_desc_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -126,7 +128,7 @@ fun AlertBlock(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
         )
         TextButton(onClick = { onOpenSound(channelId) }) {
-            Text("Sound", color = InRange, fontSize = 13.sp)
+            Text(stringResource(R.string.common_sound), color = InRange, fontSize = 13.sp)
         }
     }
 }

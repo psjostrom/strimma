@@ -9,8 +9,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.psjostrom.strimma.R
 
 @Composable
 fun DataSettings(
@@ -31,20 +33,20 @@ fun DataSettings(
     val outlineVar = MaterialTheme.colorScheme.outlineVariant
 
 
-    SettingsScaffold(title = "Data", onBack = onBack) {
-        SettingsSection("Views") {
+    SettingsScaffold(title = stringResource(R.string.settings_data_title), onBack = onBack) {
+        SettingsSection(stringResource(R.string.settings_data_views)) {
             OutlinedButton(
                 onClick = onStats,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Statistics")
+                Text(stringResource(R.string.settings_data_statistics))
             }
         }
 
-        SettingsSection("Nightscout") {
-            Text("Pull from Nightscout", color = onBg, fontSize = 14.sp)
+        SettingsSection(stringResource(R.string.settings_data_nightscout)) {
+            Text(stringResource(R.string.settings_data_pull), color = onBg, fontSize = 14.sp)
             Text(
-                "Download glucose history from your Nightscout server",
+                stringResource(R.string.settings_data_pull_desc),
                 color = outline,
                 fontSize = 12.sp
             )
@@ -52,7 +54,11 @@ fun DataSettings(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                listOf(7 to "7 days", 14 to "14 days", 30 to "30 days").forEach { (days, label) ->
+                listOf(
+                    7 to stringResource(R.string.settings_data_pull_7d),
+                    14 to stringResource(R.string.settings_data_pull_14d),
+                    30 to stringResource(R.string.settings_data_pull_30d)
+                ).forEach { (days, label) ->
                     OutlinedButton(
                         onClick = { onPullFromNightscout(days) },
                         modifier = Modifier.weight(1f),
@@ -64,16 +70,16 @@ fun DataSettings(
             }
         }
 
-        SettingsSection("Integration") {
+        SettingsSection(stringResource(R.string.settings_data_integration)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-                    Text("BG Broadcast", color = onBg, fontSize = 14.sp)
+                    Text(stringResource(R.string.settings_data_bg_broadcast), color = onBg, fontSize = 14.sp)
                     Text(
-                        "xDrip-compatible intent for AAPS, GDH, watches",
+                        stringResource(R.string.settings_data_bg_broadcast_desc),
                         color = outline,
                         fontSize = 12.sp
                     )
@@ -87,9 +93,9 @@ fun DataSettings(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-                    Text("Local Web Server", color = onBg, fontSize = 14.sp)
+                    Text(stringResource(R.string.settings_data_web_server), color = onBg, fontSize = 14.sp)
                     Text(
-                        "Serve BG data on port 17580 for watchfaces and apps",
+                        stringResource(R.string.settings_data_web_server_desc),
                         color = outline,
                         fontSize = 12.sp
                     )
@@ -107,25 +113,25 @@ fun DataSettings(
                         secretText = it
                         onWebServerSecretChange(it)
                     },
-                    label = { Text("API Secret") },
+                    label = { Text(stringResource(R.string.settings_data_api_secret)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
             }
         }
 
-        SettingsSection("Backup") {
+        SettingsSection(stringResource(R.string.settings_data_backup)) {
             OutlinedButton(
                 onClick = onExportSettings,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Export Settings")
+                Text(stringResource(R.string.settings_data_export_settings))
             }
             OutlinedButton(
                 onClick = onImportSettings,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Import Settings")
+                Text(stringResource(R.string.settings_data_import_settings))
             }
         }
     }

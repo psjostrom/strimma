@@ -21,8 +21,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.psjostrom.strimma.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,10 +40,10 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Settings") },
+                title = { Text(stringResource(R.string.settings_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_content_desc_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -65,36 +67,36 @@ fun SettingsScreen(
             SettingsMenuGroup(surfVar) {
                 SettingsMenuItem(
                     icon = Icons.Default.Sensors,
-                    title = "Data Source",
-                    subtitle = "Source, Nightscout connection",
+                    title = stringResource(R.string.settings_data_source),
+                    subtitle = stringResource(R.string.settings_data_source_subtitle),
                     onClick = { onNavigate("settings/data-source") }
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 SettingsMenuItem(
                     icon = Icons.Default.Medication,
-                    title = "Treatments",
-                    subtitle = "IOB, insulin type",
+                    title = stringResource(R.string.settings_treatments),
+                    subtitle = stringResource(R.string.settings_treatments_subtitle),
                     onClick = { onNavigate("settings/treatments") }
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 SettingsMenuItem(
                     icon = Icons.Default.Palette,
-                    title = "Display",
-                    subtitle = "Units, graph, thresholds, theme",
+                    title = stringResource(R.string.settings_display),
+                    subtitle = stringResource(R.string.settings_display_subtitle),
                     onClick = { onNavigate("settings/display") }
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 SettingsMenuItem(
                     icon = Icons.Default.Notifications,
-                    title = "Notifications",
-                    subtitle = "Graph range, prediction",
+                    title = stringResource(R.string.settings_notifications),
+                    subtitle = stringResource(R.string.settings_notifications_subtitle),
                     onClick = { onNavigate("settings/notifications") }
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 SettingsMenuItem(
                     icon = Icons.Default.Warning,
-                    title = "Alerts",
-                    subtitle = "Low, high, stale alerts",
+                    title = stringResource(R.string.settings_alerts),
+                    subtitle = stringResource(R.string.settings_alerts_subtitle),
                     onClick = { onNavigate("settings/alerts") }
                 )
             }
@@ -102,14 +104,14 @@ fun SettingsScreen(
             SettingsMenuGroup(surfVar) {
                 SettingsMenuItem(
                     icon = Icons.Default.Storage,
-                    title = "Data",
-                    subtitle = "Statistics, export, Nightscout pull",
+                    title = stringResource(R.string.settings_data),
+                    subtitle = stringResource(R.string.settings_data_subtitle),
                     onClick = { onNavigate("settings/data") }
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 SettingsMenuItem(
                     icon = Icons.Default.BugReport,
-                    title = "Debug Log",
+                    title = stringResource(R.string.settings_debug_log),
                     onClick = { onNavigate("debug") }
                 )
             }
