@@ -112,6 +112,17 @@ class SettingsRepository @Inject constructor(
         private const val KEY_START_ON_BOOT_SYNC = "start_on_boot"
         private val KEY_LANGUAGE = stringPreferencesKey("language")
 
+        private val KEY_TIDEPOOL_ENABLED = booleanPreferencesKey("tidepool_enabled")
+        private val KEY_TIDEPOOL_ENVIRONMENT = stringPreferencesKey("tidepool_environment")
+        private val KEY_TIDEPOOL_ONLY_WHILE_CHARGING = booleanPreferencesKey("tidepool_only_while_charging")
+        private val KEY_TIDEPOOL_ONLY_WHILE_WIFI = booleanPreferencesKey("tidepool_only_while_wifi")
+        private val KEY_TIDEPOOL_USER_ID = stringPreferencesKey("tidepool_user_id")
+        private val KEY_TIDEPOOL_DATASET_ID = stringPreferencesKey("tidepool_dataset_id")
+        private val KEY_TIDEPOOL_LAST_UPLOAD_END = longPreferencesKey("tidepool_last_upload_end")
+        private val KEY_TIDEPOOL_LAST_UPLOAD_TIME = longPreferencesKey("tidepool_last_upload_time")
+        private val KEY_TIDEPOOL_LAST_ERROR = stringPreferencesKey("tidepool_last_error")
+        private const val KEY_TIDEPOOL_REFRESH_TOKEN = "tidepool_refresh_token"
+
         // Settings defaults (mg/dL)
         private const val DEFAULT_GRAPH_WINDOW_HOURS = 4
         private const val DEFAULT_BG_LOW = 72f
@@ -257,6 +268,39 @@ class SettingsRepository @Inject constructor(
         try { HbA1cUnit.valueOf(it[KEY_HBA1C_UNIT] ?: "MMOL_MOL") } catch (_: Exception) { HbA1cUnit.MMOL_MOL }
     }
     suspend fun setHbA1cUnit(unit: HbA1cUnit) { dataStore.edit { it[KEY_HBA1C_UNIT] = unit.name } }
+
+    // Tidepool
+    val tidepoolEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_TIDEPOOL_ENABLED] ?: false }
+    suspend fun setTidepoolEnabled(enabled: Boolean) { dataStore.edit { it[KEY_TIDEPOOL_ENABLED] = enabled } }
+
+    val tidepoolEnvironment: Flow<String> = dataStore.data.map { it[KEY_TIDEPOOL_ENVIRONMENT] ?: "PRODUCTION" }
+    suspend fun setTidepoolEnvironment(env: String) { dataStore.edit { it[KEY_TIDEPOOL_ENVIRONMENT] = env } }
+
+    val tidepoolOnlyWhileCharging: Flow<Boolean> = dataStore.data.map { it[KEY_TIDEPOOL_ONLY_WHILE_CHARGING] ?: false }
+    suspend fun setTidepoolOnlyWhileCharging(enabled: Boolean) { dataStore.edit { it[KEY_TIDEPOOL_ONLY_WHILE_CHARGING] = enabled } }
+
+    val tidepoolOnlyWhileWifi: Flow<Boolean> = dataStore.data.map { it[KEY_TIDEPOOL_ONLY_WHILE_WIFI] ?: false }
+    suspend fun setTidepoolOnlyWhileWifi(enabled: Boolean) { dataStore.edit { it[KEY_TIDEPOOL_ONLY_WHILE_WIFI] = enabled } }
+
+    val tidepoolUserId: Flow<String> = dataStore.data.map { it[KEY_TIDEPOOL_USER_ID] ?: "" }
+    suspend fun setTidepoolUserId(id: String) { dataStore.edit { it[KEY_TIDEPOOL_USER_ID] = id } }
+
+    val tidepoolDatasetId: Flow<String> = dataStore.data.map { it[KEY_TIDEPOOL_DATASET_ID] ?: "" }
+    suspend fun setTidepoolDatasetId(id: String) { dataStore.edit { it[KEY_TIDEPOOL_DATASET_ID] = id } }
+
+    val tidepoolLastUploadEnd: Flow<Long> = dataStore.data.map { it[KEY_TIDEPOOL_LAST_UPLOAD_END] ?: 0L }
+    suspend fun setTidepoolLastUploadEnd(ts: Long) { dataStore.edit { it[KEY_TIDEPOOL_LAST_UPLOAD_END] = ts } }
+
+    val tidepoolLastUploadTime: Flow<Long> = dataStore.data.map { it[KEY_TIDEPOOL_LAST_UPLOAD_TIME] ?: 0L }
+    suspend fun setTidepoolLastUploadTime(ts: Long) { dataStore.edit { it[KEY_TIDEPOOL_LAST_UPLOAD_TIME] = ts } }
+
+    val tidepoolLastError: Flow<String> = dataStore.data.map { it[KEY_TIDEPOOL_LAST_ERROR] ?: "" }
+    suspend fun setTidepoolLastError(error: String) { dataStore.edit { it[KEY_TIDEPOOL_LAST_ERROR] = error } }
+
+    fun getTidepoolRefreshToken(): String = encryptedPrefs.getString(KEY_TIDEPOOL_REFRESH_TOKEN, "") ?: ""
+    fun setTidepoolRefreshToken(token: String) {
+        encryptedPrefs.edit().putString(KEY_TIDEPOOL_REFRESH_TOKEN, token).apply()
+    }
 
     @Suppress("CyclomaticComplexMethod") // Flat serialization of all settings
     suspend fun exportToJson(): String {
