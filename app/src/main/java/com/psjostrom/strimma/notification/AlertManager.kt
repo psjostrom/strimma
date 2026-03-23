@@ -89,56 +89,56 @@ class AlertManager @Inject constructor(
         notificationManager.deleteNotificationChannel(LEGACY_CHANNEL)
 
         createChannel(
-            CHANNEL_URGENT_LOW, "Urgent Low Alert",
-            "Glucose critically low",
+            CHANNEL_URGENT_LOW, context.getString(R.string.alert_channel_urgent_low),
+            context.getString(R.string.alert_channel_urgent_low_desc),
             NotificationManager.IMPORTANCE_HIGH,
             RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM),
             alarmAudioAttrs, bypassDnd = true,
             vibration = longArrayOf(0, VIBRATE_LONG, VIBRATE_BRIEF, VIBRATE_LONG, VIBRATE_BRIEF, VIBRATE_LONG)
         )
         createChannel(
-            CHANNEL_LOW, "Low Alert",
-            "Glucose below low threshold",
+            CHANNEL_LOW, context.getString(R.string.alert_channel_low),
+            context.getString(R.string.alert_channel_low_desc),
             NotificationManager.IMPORTANCE_HIGH,
             RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
             notifAudioAttrs, bypassDnd = false,
             vibration = longArrayOf(0, VIBRATE_MEDIUM, VIBRATE_BRIEF, VIBRATE_MEDIUM)
         )
         createChannel(
-            CHANNEL_HIGH, "High Alert",
-            "Glucose above high threshold",
+            CHANNEL_HIGH, context.getString(R.string.alert_channel_high),
+            context.getString(R.string.alert_channel_high_desc),
             NotificationManager.IMPORTANCE_HIGH,
             RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
             notifAudioAttrs, bypassDnd = false,
             vibration = longArrayOf(0, VIBRATE_SHORT, VIBRATE_BRIEF, VIBRATE_SHORT)
         )
         createChannel(
-            CHANNEL_URGENT_HIGH, "Urgent High Alert",
-            "Glucose critically high",
+            CHANNEL_URGENT_HIGH, context.getString(R.string.alert_channel_urgent_high),
+            context.getString(R.string.alert_channel_urgent_high_desc),
             NotificationManager.IMPORTANCE_HIGH,
             RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM),
             alarmAudioAttrs, bypassDnd = true,
             vibration = longArrayOf(0, VIBRATE_LONG, VIBRATE_BRIEF, VIBRATE_LONG, VIBRATE_BRIEF, VIBRATE_LONG)
         )
         createChannel(
-            CHANNEL_STALE, "Stale Data Alert",
-            "No glucose reading for 10+ minutes",
+            CHANNEL_STALE, context.getString(R.string.alert_channel_stale),
+            context.getString(R.string.alert_channel_stale_desc),
             NotificationManager.IMPORTANCE_DEFAULT,
             RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
             notifAudioAttrs, bypassDnd = false,
             vibration = longArrayOf(0, VIBRATE_BRIEF, VIBRATE_BRIEF, VIBRATE_BRIEF)
         )
         createChannel(
-            CHANNEL_LOW_SOON, "Low Soon Alert",
-            "Glucose predicted to go low",
+            CHANNEL_LOW_SOON, context.getString(R.string.alert_channel_low_soon),
+            context.getString(R.string.alert_channel_low_soon_desc),
             NotificationManager.IMPORTANCE_DEFAULT,
             RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
             notifAudioAttrs, bypassDnd = false,
             vibration = longArrayOf(0, VIBRATE_BRIEF, VIBRATE_BRIEF, VIBRATE_BRIEF)
         )
         createChannel(
-            CHANNEL_HIGH_SOON, "High Soon Alert",
-            "Glucose predicted to go high",
+            CHANNEL_HIGH_SOON, context.getString(R.string.alert_channel_high_soon),
+            context.getString(R.string.alert_channel_high_soon_desc),
             NotificationManager.IMPORTANCE_DEFAULT,
             RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
             notifAudioAttrs, bypassDnd = false,
@@ -193,13 +193,13 @@ class AlertManager @Inject constructor(
         if (urgentLowEnabled && mgdl <= urgentLowThreshold) {
             alreadyLow = true
             if (!isSnoozed(ALERT_URGENT_LOW_ID, now)) {
-                fireAlert(ALERT_URGENT_LOW_ID, CHANNEL_URGENT_LOW, "Urgent Low", unit.formatWithUnit(mgdl))
+                fireAlert(ALERT_URGENT_LOW_ID, CHANNEL_URGENT_LOW, context.getString(R.string.alert_urgent_low_title), unit.formatWithUnit(mgdl))
                 notificationManager.cancel(ALERT_LOW_ID)
             }
         } else if (lowEnabled && mgdl < lowThreshold) {
             alreadyLow = true
             if (!isSnoozed(ALERT_LOW_ID, now)) {
-                fireAlert(ALERT_LOW_ID, CHANNEL_LOW, "Low Glucose", unit.formatWithUnit(mgdl))
+                fireAlert(ALERT_LOW_ID, CHANNEL_LOW, context.getString(R.string.alert_low_title), unit.formatWithUnit(mgdl))
             }
             notificationManager.cancel(ALERT_URGENT_LOW_ID)
             clearSnooze(ALERT_URGENT_LOW_ID)
@@ -212,13 +212,13 @@ class AlertManager @Inject constructor(
         if (urgentHighEnabled && mgdl >= urgentHighThreshold) {
             alreadyHigh = true
             if (!isSnoozed(ALERT_URGENT_HIGH_ID, now)) {
-                fireAlert(ALERT_URGENT_HIGH_ID, CHANNEL_URGENT_HIGH, "Urgent High", unit.formatWithUnit(mgdl))
+                fireAlert(ALERT_URGENT_HIGH_ID, CHANNEL_URGENT_HIGH, context.getString(R.string.alert_urgent_high_title), unit.formatWithUnit(mgdl))
                 notificationManager.cancel(ALERT_HIGH_ID)
             }
         } else if (highEnabled && mgdl > highThreshold) {
             alreadyHigh = true
             if (!isSnoozed(ALERT_HIGH_ID, now)) {
-                fireAlert(ALERT_HIGH_ID, CHANNEL_HIGH, "High Glucose", unit.formatWithUnit(mgdl))
+                fireAlert(ALERT_HIGH_ID, CHANNEL_HIGH, context.getString(R.string.alert_high_title), unit.formatWithUnit(mgdl))
             }
             notificationManager.cancel(ALERT_URGENT_HIGH_ID)
             clearSnooze(ALERT_URGENT_HIGH_ID)
@@ -260,8 +260,8 @@ class AlertManager @Inject constructor(
             && crossing.minutesUntil >= MIN_CROSSING_MINUTES) {
             if (!isSnoozed(ALERT_LOW_SOON_ID, now)) {
                 fireAlert(ALERT_LOW_SOON_ID, CHANNEL_LOW_SOON,
-                    "Low in ${crossing.minutesUntil} min",
-                    "Predicted ${unit.formatWithUnit(crossing.mgdlAtCrossing)}")
+                    context.getString(R.string.alert_low_in, crossing.minutesUntil),
+                    context.getString(R.string.alert_predicted, unit.formatWithUnit(crossing.mgdlAtCrossing)))
             }
         } else {
             notificationManager.cancel(ALERT_LOW_SOON_ID)
@@ -273,8 +273,8 @@ class AlertManager @Inject constructor(
             && crossing.minutesUntil >= MIN_CROSSING_MINUTES) {
             if (!isSnoozed(ALERT_HIGH_SOON_ID, now)) {
                 fireAlert(ALERT_HIGH_SOON_ID, CHANNEL_HIGH_SOON,
-                    "High in ${crossing.minutesUntil} min",
-                    "Predicted ${unit.formatWithUnit(crossing.mgdlAtCrossing)}")
+                    context.getString(R.string.alert_high_in, crossing.minutesUntil),
+                    context.getString(R.string.alert_predicted, unit.formatWithUnit(crossing.mgdlAtCrossing)))
             }
         } else {
             notificationManager.cancel(ALERT_HIGH_SOON_ID)
@@ -289,7 +289,7 @@ class AlertManager @Inject constructor(
         val now = System.currentTimeMillis()
         if (lastReadingTs == null || (now - lastReadingTs) > STALE_THRESHOLD_MINUTES * MINUTES_TO_MS) {
             if (!isSnoozed(ALERT_STALE_ID, now)) {
-                fireAlert(ALERT_STALE_ID, CHANNEL_STALE, "No Data", "No glucose reading for 10+ minutes")
+                fireAlert(ALERT_STALE_ID, CHANNEL_STALE, context.getString(R.string.alert_stale_title), context.getString(R.string.alert_stale_body))
             }
         } else {
             notificationManager.cancel(ALERT_STALE_ID)
@@ -341,7 +341,7 @@ class AlertManager @Inject constructor(
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setContentIntent(contentIntent)
             .setAutoCancel(false)
-            .addAction(0, "Snooze 30 min", snoozeIntent)
+            .addAction(0, context.getString(R.string.alert_snooze), snoozeIntent)
             .build()
 
         notificationManager.notify(alertId, notification)
