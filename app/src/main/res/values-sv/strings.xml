@@ -41,9 +41,25 @@
     <string name="settings_notifications_subtitle">Grafintervall, prediktion</string>
     <string name="settings_alerts">Larm</string>
     <string name="settings_alerts_subtitle">L\u00E5gt, h\u00F6gt, gammal data-larm</string>
+    <string name="settings_general">Allm\u00E4nt</string>
+    <string name="settings_general_subtitle">Uppstart, spr\u00E5k, batteri, om</string>
     <string name="settings_data">Data</string>
     <string name="settings_data_subtitle">Statistik, export, Nightscout-h\u00E4mtning</string>
     <string name="settings_debug_log">Fels\u00F6kningslogg</string>
+
+    <!-- General Settings -->
+    <string name="settings_general_title">Allm\u00E4nt</string>
+    <string name="settings_general_startup">Uppstart</string>
+    <string name="settings_general_start_on_boot">Starta vid uppstart</string>
+    <string name="settings_general_start_on_boot_desc">Starta Strimma automatiskt n\u00E4r telefonen startar om</string>
+    <string name="settings_general_battery">Batterioptimering</string>
+    <string name="settings_general_battery_desc">Strimma m\u00E5ste undantas fr\u00E5n batterioptimering f\u00F6r att k\u00F6ra tillf\u00F6rlitligt i bakgrunden</string>
+    <string name="settings_general_battery_button">\u00D6ppna batteriinst\u00E4llningar</string>
+    <string name="settings_general_language">Spr\u00E5k</string>
+    <string name="settings_general_language_system_desc">Anv\u00E4nd telefonens spr\u00E5k</string>
+    <string name="settings_general_about">Om</string>
+    <string name="settings_general_version">Version</string>
+    <string name="settings_general_build">Bygge</string>
 
     <!-- Data Source Settings -->
     <string name="settings_source_title">Datak\u00E4lla</string>

@@ -108,6 +108,9 @@ class SettingsRepository @Inject constructor(
         private val KEY_WEB_SERVER_ENABLED = booleanPreferencesKey("web_server_enabled")
         private const val KEY_WEB_SERVER_SECRET = "web_server_secret"
         private val KEY_HBA1C_UNIT = stringPreferencesKey("hba1c_unit")
+        private val KEY_START_ON_BOOT = booleanPreferencesKey("start_on_boot")
+        private const val KEY_START_ON_BOOT_SYNC = "start_on_boot"
+        private val KEY_LANGUAGE = stringPreferencesKey("language")
 
         // Settings defaults (mg/dL)
         private const val DEFAULT_GRAPH_WINDOW_HOURS = 4
@@ -236,6 +239,20 @@ class SettingsRepository @Inject constructor(
         encryptedPrefs.edit().putString(KEY_WEB_SERVER_SECRET, secret).apply()
     }
 
+    val startOnBoot: Flow<Boolean> = dataStore.data.map { it[KEY_START_ON_BOOT] ?: true }
+    suspend fun setStartOnBoot(enabled: Boolean) {
+        dataStore.edit { it[KEY_START_ON_BOOT] = enabled }
+        context.getSharedPreferences(SYNC_PREFS, Context.MODE_PRIVATE)
+            .edit { putBoolean(KEY_START_ON_BOOT_SYNC, enabled) }
+    }
+    fun getStartOnBootSync(): Boolean {
+        return context.getSharedPreferences(SYNC_PREFS, Context.MODE_PRIVATE)
+            .getBoolean(KEY_START_ON_BOOT_SYNC, true)
+    }
+
+    val language: Flow<String> = dataStore.data.map { it[KEY_LANGUAGE] ?: "" }
+    suspend fun setLanguage(tag: String) { dataStore.edit { it[KEY_LANGUAGE] = tag } }
+
     val hbA1cUnit: Flow<HbA1cUnit> = dataStore.data.map {
         try { HbA1cUnit.valueOf(it[KEY_HBA1C_UNIT] ?: "MMOL_MOL") } catch (_: Exception) { HbA1cUnit.MMOL_MOL }
     }
@@ -274,6 +291,8 @@ class SettingsRepository @Inject constructor(
             put("insulin_type", prefs[KEY_INSULIN_TYPE] ?: "FIASP")
             put("custom_dia", prefs[KEY_CUSTOM_DIA]?.toDouble() ?: DEFAULT_CUSTOM_DIA_HOURS)
             put("web_server_enabled", prefs[KEY_WEB_SERVER_ENABLED] ?: false)
+            put("start_on_boot", prefs[KEY_START_ON_BOOT] ?: true)
+            put("language", prefs[KEY_LANGUAGE] ?: "")
         }
 
         val secrets = JSONObject().apply {
@@ -333,11 +352,17 @@ class SettingsRepository @Inject constructor(
             if (settings.has("insulin_type")) prefs[KEY_INSULIN_TYPE] = settings.getString("insulin_type")
             if (settings.has("custom_dia")) prefs[KEY_CUSTOM_DIA] = settings.getDouble("custom_dia").toFloat()
             if (settings.has("web_server_enabled")) prefs[KEY_WEB_SERVER_ENABLED] = settings.getBoolean("web_server_enabled")
+            if (settings.has("start_on_boot")) prefs[KEY_START_ON_BOOT] = settings.getBoolean("start_on_boot")
+            if (settings.has("language")) prefs[KEY_LANGUAGE] = settings.getString("language")
 
-            // Sync glucose source to SharedPreferences atomically with DataStore edit
+            // Sync to SharedPreferences atomically with DataStore edit
             val sourceName = settings.optString("glucose_source", "COMPANION")
+            val bootEnabled = settings.optBoolean("start_on_boot", true)
             context.getSharedPreferences(SYNC_PREFS, Context.MODE_PRIVATE)
-                .edit { putString(KEY_GLUCOSE_SOURCE_SYNC, sourceName) }
+                .edit {
+                    putString(KEY_GLUCOSE_SOURCE_SYNC, sourceName)
+                    putBoolean(KEY_START_ON_BOOT_SYNC, bootEnabled)
+                }
         }
 
         if (root.has("secrets")) {

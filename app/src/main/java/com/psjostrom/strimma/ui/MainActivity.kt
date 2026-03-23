@@ -1,10 +1,12 @@
 package com.psjostrom.strimma.ui
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
+import androidx.core.net.toUri
 import android.os.PowerManager
 import android.provider.Settings
 import android.app.AlertDialog
@@ -28,6 +30,7 @@ import com.psjostrom.strimma.service.StrimmaService
 import com.psjostrom.strimma.ui.settings.AlertsSettings
 import com.psjostrom.strimma.ui.settings.DataSettings
 import com.psjostrom.strimma.ui.settings.DataSourceSettings
+import com.psjostrom.strimma.ui.settings.GeneralSettings
 import com.psjostrom.strimma.ui.settings.DisplaySettings
 import com.psjostrom.strimma.ui.settings.NotificationSettings
 import com.psjostrom.strimma.ui.settings.TreatmentsSettings
@@ -250,6 +253,37 @@ class MainActivity : ComponentActivity() {
                             onAlertLowSoonEnabledChange = viewModel::setAlertLowSoonEnabled,
                             onAlertHighSoonEnabledChange = viewModel::setAlertHighSoonEnabled,
                             onOpenAlertSound = viewModel::openAlertChannelSettings,
+                            onBack = { navController.popBackStack() }
+                        )
+                    }
+                    composable("settings/general") {
+                        val startOnBoot by viewModel.startOnBoot.collectAsState()
+                        val language by viewModel.language.collectAsState()
+                        GeneralSettings(
+                            startOnBoot = startOnBoot,
+                            onStartOnBootChange = viewModel::setStartOnBoot,
+                            language = language,
+                            onLanguageChange = { tag ->
+                                viewModel.setLanguage(tag)
+                                val localeManager = getSystemService(android.app.LocaleManager::class.java)
+                                localeManager.applicationLocales = if (tag.isEmpty()) {
+                                    android.os.LocaleList.getEmptyLocaleList()
+                                } else {
+                                    android.os.LocaleList.forLanguageTags(tag)
+                                }
+                            },
+                            appVersion = packageManager.getPackageInfo(packageName, 0).versionName ?: "",
+                            isDebug = com.psjostrom.strimma.BuildConfig.DEBUG,
+                            onOpenBatteryOptimization = {
+                                // BatteryLife: Strimma is a CGM safety app whose core function
+                                // (real-time glucose alerts) is adversely affected by Doze.
+                                // Acceptable per https://developer.android.com/training/monitoring-device-state/doze-standby
+                                @SuppressLint("BatteryLife")
+                                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                                    data = "package:$packageName".toUri()
+                                }
+                                startActivity(intent)
+                            },
                             onBack = { navController.popBackStack() }
                         )
                     }
