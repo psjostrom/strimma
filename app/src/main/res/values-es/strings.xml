@@ -41,9 +41,25 @@
     <string name="settings_notifications_subtitle">Rango del gr\u00E1fico, predicci\u00F3n</string>
     <string name="settings_alerts">Alertas</string>
     <string name="settings_alerts_subtitle">Alertas de bajo, alto y datos obsoletos</string>
+    <string name="settings_general">General</string>
+    <string name="settings_general_subtitle">Inicio, idioma, bater\u00EDa, acerca de</string>
     <string name="settings_data">Datos</string>
     <string name="settings_data_subtitle">Estad\u00EDsticas, exportar, descarga de Nightscout</string>
     <string name="settings_debug_log">Registro de depuraci\u00F3n</string>
+
+    <!-- General Settings -->
+    <string name="settings_general_title">General</string>
+    <string name="settings_general_startup">Inicio</string>
+    <string name="settings_general_start_on_boot">Iniciar al arrancar</string>
+    <string name="settings_general_start_on_boot_desc">Iniciar Strimma autom\u00E1ticamente cuando el tel\u00E9fono se reinicia</string>
+    <string name="settings_general_battery">Optimizaci\u00F3n de bater\u00EDa</string>
+    <string name="settings_general_battery_desc">Strimma debe estar excluido de la optimizaci\u00F3n de bater\u00EDa para funcionar de forma fiable en segundo plano</string>
+    <string name="settings_general_battery_button">Abrir ajustes de bater\u00EDa</string>
+    <string name="settings_general_language">Idioma</string>
+    <string name="settings_general_language_system_desc">Usar idioma del tel\u00E9fono</string>
+    <string name="settings_general_about">Acerca de</string>
+    <string name="settings_general_version">Versi\u00F3n</string>
+    <string name="settings_general_build">Compilaci\u00F3n</string>
 
     <!-- Data Source Settings -->
     <string name="settings_source_title">Fuente de datos</string>

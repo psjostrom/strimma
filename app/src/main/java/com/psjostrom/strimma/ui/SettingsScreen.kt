@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Sensors
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
@@ -102,6 +103,13 @@ fun SettingsScreen(
             }
 
             SettingsMenuGroup(surfVar) {
+                SettingsMenuItem(
+                    icon = Icons.Default.Settings,
+                    title = stringResource(R.string.settings_general),
+                    subtitle = stringResource(R.string.settings_general_subtitle),
+                    onClick = { onNavigate("settings/general") }
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 SettingsMenuItem(
                     icon = Icons.Default.Storage,
                     title = stringResource(R.string.settings_data),

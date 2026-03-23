@@ -28,6 +28,7 @@ import com.psjostrom.strimma.service.StrimmaService
 import com.psjostrom.strimma.ui.settings.AlertsSettings
 import com.psjostrom.strimma.ui.settings.DataSettings
 import com.psjostrom.strimma.ui.settings.DataSourceSettings
+import com.psjostrom.strimma.ui.settings.GeneralSettings
 import com.psjostrom.strimma.ui.settings.DisplaySettings
 import com.psjostrom.strimma.ui.settings.NotificationSettings
 import com.psjostrom.strimma.ui.settings.TreatmentsSettings
@@ -250,6 +251,32 @@ class MainActivity : ComponentActivity() {
                             onAlertLowSoonEnabledChange = viewModel::setAlertLowSoonEnabled,
                             onAlertHighSoonEnabledChange = viewModel::setAlertHighSoonEnabled,
                             onOpenAlertSound = viewModel::openAlertChannelSettings,
+                            onBack = { navController.popBackStack() }
+                        )
+                    }
+                    composable("settings/general") {
+                        val startOnBoot by viewModel.startOnBoot.collectAsState()
+                        val language by viewModel.language.collectAsState()
+                        GeneralSettings(
+                            startOnBoot = startOnBoot,
+                            onStartOnBootChange = viewModel::setStartOnBoot,
+                            language = language,
+                            onLanguageChange = { tag ->
+                                viewModel.setLanguage(tag)
+                                val localeManager = getSystemService(android.app.LocaleManager::class.java)
+                                localeManager.applicationLocales = if (tag.isEmpty()) {
+                                    android.os.LocaleList.getEmptyLocaleList()
+                                } else {
+                                    android.os.LocaleList.forLanguageTags(tag)
+                                }
+                            },
+                            appVersion = packageManager.getPackageInfo(packageName, 0).versionName ?: "",
+                            isDebug = com.psjostrom.strimma.BuildConfig.DEBUG,
+                            onOpenBatteryOptimization = {
+                                startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                                    data = Uri.parse("package:$packageName")
+                                })
+                            },
                             onBack = { navController.popBackStack() }
                         )
                     }
