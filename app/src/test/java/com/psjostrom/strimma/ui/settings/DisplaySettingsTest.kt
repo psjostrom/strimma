@@ -6,6 +6,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import com.psjostrom.strimma.data.GlucoseUnit
+import com.psjostrom.strimma.data.HbA1cUnit
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -20,11 +21,13 @@ class DisplaySettingsTest {
 
     private fun render(
         glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
+        hbA1cUnit: HbA1cUnit = HbA1cUnit.MMOL_MOL,
         graphWindowHours: Int = 4,
         bgLow: Float = 4.0f,
         bgHigh: Float = 10.0f,
         themeMode: String = "System",
         onGlucoseUnitChange: (GlucoseUnit) -> Unit = {},
+        onHbA1cUnitChange: (HbA1cUnit) -> Unit = {},
         onGraphWindowChange: (Int) -> Unit = {},
         onBgLowChange: (Float) -> Unit = {},
         onBgHighChange: (Float) -> Unit = {},
@@ -34,11 +37,13 @@ class DisplaySettingsTest {
         composeRule.setContent {
             DisplaySettings(
                 glucoseUnit = glucoseUnit,
+                hbA1cUnit = hbA1cUnit,
                 graphWindowHours = graphWindowHours,
                 bgLow = bgLow,
                 bgHigh = bgHigh,
                 themeMode = themeMode,
                 onGlucoseUnitChange = onGlucoseUnitChange,
+                onHbA1cUnitChange = onHbA1cUnitChange,
                 onGraphWindowChange = onGraphWindowChange,
                 onBgLowChange = onBgLowChange,
                 onBgHighChange = onBgHighChange,
@@ -82,6 +87,22 @@ class DisplaySettingsTest {
         render(glucoseUnit = GlucoseUnit.MGDL, bgLow = 4.0f, bgHigh = 10.0f)
         composeRule.onNodeWithText("Low Threshold (mg/dL)").assertExists()
         composeRule.onNodeWithText("High Threshold (mg/dL)").assertExists()
+    }
+
+    @Test
+    fun `shows hba1c unit selector`() {
+        render()
+        composeRule.onNodeWithText("HbA1c Unit").assertExists()
+        composeRule.onNodeWithText("mmol/mol").assertExists()
+        composeRule.onNodeWithText("%").assertExists()
+    }
+
+    @Test
+    fun `switching hba1c unit fires callback`() {
+        var selected: HbA1cUnit? = null
+        render(onHbA1cUnitChange = { selected = it })
+        composeRule.onNodeWithText("%", useUnmergedTree = true).performClick()
+        assertEquals(HbA1cUnit.PERCENT, selected)
     }
 
     @Test

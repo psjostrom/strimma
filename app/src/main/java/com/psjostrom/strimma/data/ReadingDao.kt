@@ -11,6 +11,9 @@ interface ReadingDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(reading: GlucoseReading)
 
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertBatch(readings: List<GlucoseReading>)
+
     @Query("SELECT * FROM readings ORDER BY ts DESC LIMIT 1")
     fun latest(): Flow<GlucoseReading?>
 

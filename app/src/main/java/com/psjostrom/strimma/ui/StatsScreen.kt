@@ -24,6 +24,7 @@ import androidx.core.content.FileProvider
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseStats
 import com.psjostrom.strimma.data.GlucoseUnit
+import com.psjostrom.strimma.data.HbA1cUnit
 import com.psjostrom.strimma.data.StatsCalculator
 import com.psjostrom.strimma.ui.theme.AboveHigh
 import com.psjostrom.strimma.ui.theme.BelowLow
@@ -49,6 +50,7 @@ fun StatsScreen(
     bgLow: Float,
     bgHigh: Float,
     glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
+    hbA1cUnit: HbA1cUnit = HbA1cUnit.MMOL_MOL,
     onLoadReadings: suspend (Int) -> List<GlucoseReading>,
     onExportCsv: suspend (Int) -> String,
     onBack: () -> Unit
@@ -60,14 +62,13 @@ fun StatsScreen(
     val outline = MaterialTheme.colorScheme.outline
 
     var selectedPeriod by remember { mutableIntStateOf(1) }
-    var stats by remember { mutableStateOf<GlucoseStats?>(null) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    LaunchedEffect(selectedPeriod) {
+    val stats by produceState<GlucoseStats?>(null, selectedPeriod, bgLow, bgHigh) {
         val (hours, label) = PERIODS[selectedPeriod]
         val readings = onLoadReadings(hours)
-        stats = StatsCalculator.compute(readings, bgLow.toDouble(), bgHigh.toDouble(), label)
+        value = StatsCalculator.compute(readings, bgLow.toDouble(), bgHigh.toDouble(), label)
     }
 
     Scaffold(
@@ -230,7 +231,7 @@ fun StatsScreen(
                     ) {
                         StatRow("Average", glucoseUnit.formatWithUnit(s.averageMgdl), onBg, onSurfaceVar)
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                        StatRow("GMI (eHbA1c)", "%.1f%%".format(s.gmi), onBg, onSurfaceVar)
+                        StatRow("GMI (eHbA1c)", hbA1cUnit.format(s.gmi), onBg, onSurfaceVar)
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                         StatRow("CV", "%.1f%%".format(s.cv), onBg, onSurfaceVar)
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)

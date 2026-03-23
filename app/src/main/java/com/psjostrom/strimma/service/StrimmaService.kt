@@ -47,6 +47,7 @@ class StrimmaService : Service() {
         private const val DUPLICATE_THRESHOLD_MS = 3_000L
         private const val LOOKBACK_MINUTES = 15
         private const val MINUTES_TO_MS = 60 * 1000L
+        private const val HOURS_TO_MS = 60 * MINUTES_TO_MS
 
         private const val RETRY_INTERVAL_MINUTES = 5
         private const val PRUNE_INTERVAL_DAYS = 1
@@ -165,9 +166,9 @@ class StrimmaService : Service() {
         }
         scope.launch {
             while (isActive) {
-                val thirtyDaysAgo = System.currentTimeMillis() - PRUNE_RETENTION_DAYS * HOURS_PER_DAY * MINUTES_TO_MS
+                val thirtyDaysAgo = System.currentTimeMillis() - PRUNE_RETENTION_DAYS * HOURS_PER_DAY * HOURS_TO_MS
                 dao.pruneBefore(thirtyDaysAgo)
-                delay(PRUNE_INTERVAL_DAYS * HOURS_PER_DAY * MINUTES_TO_MS)
+                delay(PRUNE_INTERVAL_DAYS * HOURS_PER_DAY * HOURS_TO_MS)
             }
         }
         scope.launch {

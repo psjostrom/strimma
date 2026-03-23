@@ -107,6 +107,7 @@ class SettingsRepository @Inject constructor(
 
         private val KEY_WEB_SERVER_ENABLED = booleanPreferencesKey("web_server_enabled")
         private const val KEY_WEB_SERVER_SECRET = "web_server_secret"
+        private val KEY_HBA1C_UNIT = stringPreferencesKey("hba1c_unit")
 
         // Settings defaults (mg/dL)
         private const val DEFAULT_GRAPH_WINDOW_HOURS = 4
@@ -235,6 +236,10 @@ class SettingsRepository @Inject constructor(
         encryptedPrefs.edit().putString(KEY_WEB_SERVER_SECRET, secret).apply()
     }
 
+    val hbA1cUnit: Flow<HbA1cUnit> = dataStore.data.map {
+        try { HbA1cUnit.valueOf(it[KEY_HBA1C_UNIT] ?: "MMOL_MOL") } catch (_: Exception) { HbA1cUnit.MMOL_MOL }
+    }
+    suspend fun setHbA1cUnit(unit: HbA1cUnit) { dataStore.edit { it[KEY_HBA1C_UNIT] = unit.name } }
 
     @Suppress("CyclomaticComplexMethod") // Flat serialization of all settings
     suspend fun exportToJson(): String {
@@ -260,6 +265,7 @@ class SettingsRepository @Inject constructor(
             put("notif_graph_minutes", prefs[KEY_NOTIF_GRAPH_MINUTES] ?: DEFAULT_NOTIF_GRAPH_MINUTES)
             put("notif_prediction_minutes", prefs[KEY_NOTIF_PREDICTION_MINUTES] ?: DEFAULT_PREDICTION_MINUTES)
             put("glucose_unit", prefs[KEY_GLUCOSE_UNIT] ?: "MMOL")
+            put("hba1c_unit", prefs[KEY_HBA1C_UNIT] ?: "MMOL_MOL")
             put("bg_broadcast_enabled", prefs[KEY_BG_BROADCAST_ENABLED] ?: false)
             put("glucose_source", prefs[KEY_GLUCOSE_SOURCE] ?: "COMPANION")
             put("follower_url", prefs[KEY_FOLLOWER_URL] ?: "")
@@ -318,6 +324,7 @@ class SettingsRepository @Inject constructor(
             if (settings.has("notif_graph_minutes")) prefs[KEY_NOTIF_GRAPH_MINUTES] = settings.getInt("notif_graph_minutes")
             if (settings.has("notif_prediction_minutes")) prefs[KEY_NOTIF_PREDICTION_MINUTES] = settings.getInt("notif_prediction_minutes")
             if (settings.has("glucose_unit")) prefs[KEY_GLUCOSE_UNIT] = settings.getString("glucose_unit")
+            if (settings.has("hba1c_unit")) prefs[KEY_HBA1C_UNIT] = settings.getString("hba1c_unit")
             if (settings.has("bg_broadcast_enabled")) prefs[KEY_BG_BROADCAST_ENABLED] = settings.getBoolean("bg_broadcast_enabled")
             if (settings.has("glucose_source")) prefs[KEY_GLUCOSE_SOURCE] = settings.getString("glucose_source")
             if (settings.has("follower_url")) prefs[KEY_FOLLOWER_URL] = settings.getString("follower_url")
