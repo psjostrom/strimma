@@ -13,6 +13,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.*
+import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.IOBComputer
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
@@ -51,12 +52,12 @@ class MainActivity : ComponentActivity() {
                 val json = contentResolver.openInputStream(uri)?.bufferedReader()?.readText()
                     ?: error("Could not read file")
                 viewModelRef?.importSettings(json)
-                Toast.makeText(this@MainActivity, "Settings imported", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@MainActivity, getString(R.string.activity_settings_imported), Toast.LENGTH_SHORT).show()
             } catch (
                 @Suppress("TooGenericExceptionCaught") // File I/O + JSON parsing — multiple exception types possible
                 e: Exception
             ) {
-                Toast.makeText(this@MainActivity, "Import failed: ${e.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(this@MainActivity, getString(R.string.activity_import_failed, e.message ?: ""), Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -268,12 +269,9 @@ class MainActivity : ComponentActivity() {
                             },
                             onExportSettings = {
                                 AlertDialog.Builder(this@MainActivity)
-                                    .setTitle("Export Settings")
-                                    .setMessage(
-                                        "The export file contains your Nightscout secrets" +
-                                            " in plain text. Only share it with apps you trust."
-                                    )
-                                    .setPositiveButton("Export") { _, _ ->
+                                    .setTitle(getString(R.string.activity_export_dialog_title))
+                                    .setMessage(getString(R.string.activity_export_dialog_message))
+                                    .setPositiveButton(getString(R.string.common_export)) { _, _ ->
                                         lifecycleScope.launch {
                                             try {
                                                 val json = viewModel.exportSettings()
@@ -291,7 +289,7 @@ class MainActivity : ComponentActivity() {
                                                         putExtra(Intent.EXTRA_STREAM, uri)
                                                         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                                     },
-                                                    "Export Settings"
+                                                    getString(R.string.activity_export_chooser)
                                                 ))
                                             } catch (
                                                 // File I/O + intent dispatch — multiple exception types
@@ -300,13 +298,13 @@ class MainActivity : ComponentActivity() {
                                             ) {
                                                 Toast.makeText(
                                                     this@MainActivity,
-                                                    "Export failed: ${e.message}",
+                                                    getString(R.string.activity_export_failed, e.message ?: ""),
                                                     Toast.LENGTH_LONG
                                                 ).show()
                                             }
                                         }
                                     }
-                                    .setNegativeButton("Cancel", null)
+                                    .setNegativeButton(getString(R.string.common_cancel), null)
                                     .show()
                             },
                             onImportSettings = {
@@ -314,12 +312,12 @@ class MainActivity : ComponentActivity() {
                             },
                             onPullFromNightscout = { days ->
                                 lifecycleScope.launch {
-                                    Toast.makeText(this@MainActivity, "Pulling $days days from Nightscout…", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(this@MainActivity, getString(R.string.activity_pull_progress, days), Toast.LENGTH_SHORT).show()
                                     val result = viewModel.pullFromNightscout(days)
                                     result.onSuccess { count ->
-                                        Toast.makeText(this@MainActivity, "Pulled $count readings", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(this@MainActivity, getString(R.string.activity_pull_success, count), Toast.LENGTH_SHORT).show()
                                     }.onFailure { e ->
-                                        Toast.makeText(this@MainActivity, "Pull failed: ${e.message}", Toast.LENGTH_LONG).show()
+                                        Toast.makeText(this@MainActivity, getString(R.string.activity_pull_failed, e.message ?: ""), Toast.LENGTH_LONG).show()
                                     }
                                 }
                             },
