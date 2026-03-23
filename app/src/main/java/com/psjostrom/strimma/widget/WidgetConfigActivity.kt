@@ -14,9 +14,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.psjostrom.strimma.R
 import com.psjostrom.strimma.ui.theme.DarkBg
 import com.psjostrom.strimma.ui.theme.DarkSurfaceCard
 import com.psjostrom.strimma.ui.theme.DarkTextPrimary
@@ -90,11 +92,12 @@ class WidgetConfigActivity : ComponentActivity() {
     }
 }
 
-private val GRAPH_OPTIONS = listOf(
-    GRAPH_MINUTES_30 to "30m",
-    GRAPH_MINUTES_60 to "1h",
-    GRAPH_MINUTES_120 to "2h",
-    GRAPH_MINUTES_180 to "3h"
+@Composable
+private fun graphOptions() = listOf(
+    GRAPH_MINUTES_30 to stringResource(R.string.settings_notif_30m),
+    GRAPH_MINUTES_60 to stringResource(R.string.settings_notif_1h),
+    GRAPH_MINUTES_120 to stringResource(R.string.settings_notif_2h),
+    GRAPH_MINUTES_180 to stringResource(R.string.settings_notif_3h)
 )
 
 @Composable
@@ -107,6 +110,7 @@ private fun WidgetConfigScreen(
     var opacity by remember { mutableFloatStateOf(initialOpacity) }
     var graphMinutes by remember { mutableIntStateOf(initialGraphMinutes) }
     var showPrediction by remember { mutableStateOf(initialShowPrediction) }
+    val options = graphOptions()
 
     Scaffold(containerColor = DarkBg) { padding ->
         Column(
@@ -118,7 +122,7 @@ private fun WidgetConfigScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                "Widget Settings",
+                stringResource(R.string.widget_config_title),
                 color = DarkTextPrimary,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.SemiBold
@@ -135,13 +139,13 @@ private fun WidgetConfigScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     // Graph time range
-                    Text("Graph Range", color = DarkTextPrimary, fontSize = 14.sp)
+                    Text(stringResource(R.string.widget_config_graph_range), color = DarkTextPrimary, fontSize = 14.sp)
                     SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                        GRAPH_OPTIONS.forEachIndexed { index, (minutes, label) ->
+                        options.forEachIndexed { index, (minutes, label) ->
                             SegmentedButton(
                                 selected = graphMinutes == minutes,
                                 onClick = { graphMinutes = minutes },
-                                shape = SegmentedButtonDefaults.itemShape(index, GRAPH_OPTIONS.size)
+                                shape = SegmentedButtonDefaults.itemShape(index, options.size)
                             ) {
                                 Text(label)
                             }
@@ -153,7 +157,7 @@ private fun WidgetConfigScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Show Prediction", color = DarkTextPrimary, fontSize = 14.sp)
+                        Text(stringResource(R.string.widget_config_show_prediction), color = DarkTextPrimary, fontSize = 14.sp)
                         Switch(checked = showPrediction, onCheckedChange = { showPrediction = it })
                     }
 
@@ -164,9 +168,9 @@ private fun WidgetConfigScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("Background", color = DarkTextPrimary, fontSize = 14.sp)
+                        Text(stringResource(R.string.widget_config_background), color = DarkTextPrimary, fontSize = 14.sp)
                         Text(
-                            "${(opacity * 100).toInt()}%",
+                            stringResource(R.string.widget_config_opacity, (opacity * 100).toInt()),
                             color = DarkTextSecondary,
                             fontSize = 14.sp
                         )
@@ -177,7 +181,7 @@ private fun WidgetConfigScreen(
                         valueRange = 0.0f..1.0f
                     )
                     Text(
-                        "Controls background only — graph and values stay fully visible",
+                        stringResource(R.string.widget_config_background_hint),
                         color = DarkTextTertiary,
                         fontSize = 12.sp
                     )
@@ -191,7 +195,7 @@ private fun WidgetConfigScreen(
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = InRange)
             ) {
-                Text("Save", color = DarkBg, fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.common_save), color = DarkBg, fontWeight = FontWeight.SemiBold)
             }
         }
     }
