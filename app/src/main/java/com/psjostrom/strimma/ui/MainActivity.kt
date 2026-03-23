@@ -1,6 +1,7 @@
 package com.psjostrom.strimma.ui
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -273,9 +274,14 @@ class MainActivity : ComponentActivity() {
                             appVersion = packageManager.getPackageInfo(packageName, 0).versionName ?: "",
                             isDebug = com.psjostrom.strimma.BuildConfig.DEBUG,
                             onOpenBatteryOptimization = {
-                                startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                                // BatteryLife: Strimma is a CGM safety app whose core function
+                                // (real-time glucose alerts) is adversely affected by Doze.
+                                // Acceptable per https://developer.android.com/training/monitoring-device-state/doze-standby
+                                @SuppressLint("BatteryLife")
+                                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
                                     data = Uri.parse("package:$packageName")
-                                })
+                                }
+                                startActivity(intent)
                             },
                             onBack = { navController.popBackStack() }
                         )
