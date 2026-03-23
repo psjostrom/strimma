@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
+import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.HbA1cUnit
 import com.psjostrom.strimma.ui.theme.ThemeMode
@@ -30,9 +31,9 @@ fun DisplaySettings(
 ) {
     val onBg = MaterialTheme.colorScheme.onBackground
 
-    SettingsScaffold(title = "Display", onBack = onBack) {
-        SettingsSection("Display") {
-            Text("Unit", color = onBg, fontSize = 14.sp)
+    SettingsScaffold(title = stringResource(R.string.settings_display_title), onBack = onBack) {
+        SettingsSection(stringResource(R.string.settings_display_section)) {
+            Text(stringResource(R.string.settings_display_unit), color = onBg, fontSize = 14.sp)
             SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                 GlucoseUnit.entries.forEachIndexed { index, unit ->
                     SegmentedButton(
@@ -45,7 +46,7 @@ fun DisplaySettings(
                 }
             }
 
-            Text("HbA1c Unit", color = onBg, fontSize = 14.sp)
+            Text(stringResource(R.string.settings_display_hba1c_unit), color = onBg, fontSize = 14.sp)
             SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                 HbA1cUnit.entries.forEachIndexed { index, unit ->
                     SegmentedButton(
@@ -59,7 +60,7 @@ fun DisplaySettings(
             }
 
             Text(
-                "Graph Window: $graphWindowHours hours",
+                stringResource(R.string.settings_display_graph_window, graphWindowHours),
                 color = onBg,
                 fontSize = 14.sp
             )
@@ -77,7 +78,7 @@ fun DisplaySettings(
                     bgLowText = text
                     glucoseUnit.parseThreshold(text)?.let { onBgLowChange(it) }
                 },
-                label = { Text("Low Threshold (${glucoseUnit.label})") },
+                label = { Text(stringResource(R.string.settings_display_low_threshold, glucoseUnit.label)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
@@ -90,13 +91,13 @@ fun DisplaySettings(
                     bgHighText = text
                     glucoseUnit.parseThreshold(text)?.let { onBgHighChange(it) }
                 },
-                label = { Text("High Threshold (${glucoseUnit.label})") },
+                label = { Text(stringResource(R.string.settings_display_high_threshold, glucoseUnit.label)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
             )
 
-            Text("Theme", color = onBg, fontSize = 14.sp)
+            Text(stringResource(R.string.settings_display_theme), color = onBg, fontSize = 14.sp)
             SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                 ThemeMode.entries.forEachIndexed { index, mode ->
                     SegmentedButton(

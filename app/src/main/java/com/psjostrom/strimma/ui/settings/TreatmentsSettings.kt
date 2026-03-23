@@ -10,6 +10,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
+import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.InsulinType
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -26,17 +27,17 @@ fun TreatmentsSettings(
     val onBg = MaterialTheme.colorScheme.onBackground
     val outline = MaterialTheme.colorScheme.outline
 
-    SettingsScaffold(title = "Treatments", onBack = onBack) {
-        SettingsSection("Treatments") {
+    SettingsScaffold(title = stringResource(R.string.settings_treatments_title), onBack = onBack) {
+        SettingsSection(stringResource(R.string.settings_treatments_section)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-                    Text("Treatments sync", color = onBg, fontSize = 14.sp)
+                    Text(stringResource(R.string.settings_treatments_sync), color = onBg, fontSize = 14.sp)
                     Text(
-                        "Fetch bolus, carb, and basal data for IOB display",
+                        stringResource(R.string.settings_treatments_sync_desc),
                         color = outline,
                         fontSize = 12.sp
                     )
@@ -45,7 +46,7 @@ fun TreatmentsSettings(
             }
 
             if (treatmentsSyncEnabled) {
-                Text("Insulin type", color = onBg, fontSize = 14.sp)
+                Text(stringResource(R.string.settings_treatments_insulin_type), color = onBg, fontSize = 14.sp)
                 var expanded by remember { mutableStateOf(false) }
                 ExposedDropdownMenuBox(
                     expanded = expanded,
@@ -82,8 +83,8 @@ fun TreatmentsSettings(
                             diaText = text
                             text.toFloatOrNull()?.let { if (it in 2f..10f) onCustomDIAChange(it) }
                         },
-                        label = { Text("Custom DIA (hours)") },
-                        supportingText = { Text("Duration of Insulin Action, 2-10 hours") },
+                        label = { Text(stringResource(R.string.settings_treatments_custom_dia)) },
+                        supportingText = { Text(stringResource(R.string.settings_treatments_dia_hint)) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
