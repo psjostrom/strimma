@@ -1,8 +1,12 @@
-# Strimma
+<p align="center">
+  <img src="docs/screenshots/icon.png" width="96" alt="Strimma icon" />
+</p>
 
-Android CGM companion app. Receives glucose readings from CGM apps, displays them with an interactive graph and persistent notification, and pushes to Nightscout.
+<h1 align="center">Strimma</h1>
 
-A modern alternative to xDrip+ — built with Kotlin, Jetpack Compose, and Material 3.
+<p align="center">Android CGM companion app. Receives glucose readings from CGM apps, displays them with an interactive graph and persistent notification, and pushes to Nightscout.</p>
+
+<p align="center">A modern alternative to xDrip+ — built with Kotlin, Jetpack Compose, and Material 3.</p>
 
 ## Features
 
@@ -19,6 +23,14 @@ A modern alternative to xDrip+ — built with Kotlin, Jetpack Compose, and Mater
 - **Units** — mmol/L and mg/dL with one-tap toggle
 - **BG broadcast** — emits xDrip-compatible intents so watches and other apps (AAPS, GDH) can receive data
 - **Dark / Light / System theme**
+
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/main-screen.png" width="240" alt="Main screen with BG graph" />
+  <img src="docs/screenshots/notification-expanded.png" width="240" alt="Expanded notification with graph" />
+  <img src="docs/screenshots/statistics.png" width="240" alt="Statistics" />
+</p>
 
 ## Data Flow
 

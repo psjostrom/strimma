@@ -2,6 +2,8 @@
 
 Strimma computes standard diabetes metrics from your glucose data.
 
+![Statistics screen](../screenshots/statistics.png){ width="300" }
+
 ---
 
 ## Viewing Statistics

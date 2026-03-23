@@ -2,6 +2,8 @@
 
 Strimma supports three ways to receive glucose data. You choose one in **Settings > Data Source**.
 
+![Data source settings](../screenshots/data-source.png){ width="300" }
+
 ---
 
 ## Companion Mode (Default)

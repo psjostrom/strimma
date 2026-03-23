@@ -2,6 +2,8 @@
 
 The main screen is what you see when you open Strimma. Everything is designed to give you the most important information at a glance.
 
+![Main screen](../screenshots/main-screen.png){ width="300", align="right" }
+
 ---
 
 ## Layout

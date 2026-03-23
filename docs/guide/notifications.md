@@ -13,6 +13,8 @@ The foreground notification is always visible while Strimma is running. It serve
 
 ### Collapsed View
 
+![Collapsed notification](../screenshots/notification-collapsed.png){ width="300" }
+
 The notification bar shows:
 
 - **Small icon** — your current BG value rendered as a tiny bitmap (visible in the status bar)
@@ -20,6 +22,8 @@ The notification bar shows:
 - **Subtitle** — delta, prediction warning, and IOB (e.g., "+5 · Low 10m · IOB 2.3U")
 
 ### Expanded View
+
+![Expanded notification](../screenshots/notification-expanded.png){ width="300" }
 
 Pull down the notification to see:
 
