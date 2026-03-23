@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <!-- App -->
     <string name="app_name" translatable="false">Strimma</string>
 
@@ -6,7 +6,6 @@
     <string name="common_ok">OK</string>
     <string name="common_cancel">Cancel</string>
     <string name="common_save">Save</string>
-    <string name="common_back">Back</string>
     <string name="common_export">Export</string>
     <string name="common_sound">Sound</string>
     <string name="common_no_data">No data</string>
@@ -16,14 +15,6 @@
     <string name="common_content_desc_export">Export</string>
     <string name="common_content_desc_share_log">Share log</string>
 
-    <!-- Non-translatable technical terms -->
-    <string name="common_unit_mmol" translatable="false">mmol/L</string>
-    <string name="common_unit_mgdl" translatable="false">mg/dL</string>
-    <string name="common_iob_label" translatable="false">IOB</string>
-    <string name="common_unit_insulin" translatable="false">U</string>
-    <string name="common_unit_grams" translatable="false">g</string>
-    <string name="common_hba1c_mmol_mol" translatable="false">mmol/mol</string>
-    <string name="common_hba1c_percent" translatable="false">%</string>
 
     <!-- Main Screen -->
     <string name="main_just_now">Just now</string>
@@ -97,7 +88,7 @@
     <string name="settings_display_section">Display</string>
     <string name="settings_display_unit">Unit</string>
     <string name="settings_display_hba1c_unit">HbA1c Unit</string>
-    <string name="settings_display_graph_window">Graph Window: %1$d hours</string>
+    <string name="settings_display_graph_window" tools:ignore="PluralsCandidate">Graph Window: %1$d hours</string>
     <string name="settings_display_low_threshold">Low Threshold (%1$s)</string>
     <string name="settings_display_high_threshold">High Threshold (%1$s)</string>
     <string name="settings_display_theme">Theme</string>
@@ -231,7 +222,7 @@
     <string name="activity_export_dialog_message">The export file contains your Nightscout secrets in plain text. Only share it with apps you trust.</string>
     <string name="activity_export_chooser">Export Settings</string>
     <string name="activity_export_failed">Export failed: %1$s</string>
-    <string name="activity_pull_progress">Pulling %1$d days from Nightscout…</string>
-    <string name="activity_pull_success">Pulled %1$d readings</string>
+    <string name="activity_pull_progress" tools:ignore="PluralsCandidate">Pulling %1$d days from Nightscout…</string>
+    <string name="activity_pull_success" tools:ignore="PluralsCandidate">Pulled %1$d readings</string>
     <string name="activity_pull_failed">Pull failed: %1$s</string>
 </resources>
