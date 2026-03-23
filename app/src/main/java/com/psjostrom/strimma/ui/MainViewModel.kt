@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseSource
 import com.psjostrom.strimma.data.GlucoseUnit
+import com.psjostrom.strimma.data.HbA1cUnit
 import com.psjostrom.strimma.data.IOBComputer
 import com.psjostrom.strimma.data.InsulinType
 import com.psjostrom.strimma.data.ReadingDao
@@ -120,6 +121,10 @@ class MainViewModel @Inject constructor(
     val glucoseUnit: StateFlow<GlucoseUnit> = settings.glucoseUnit
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), GlucoseUnit.MMOL)
     fun setGlucoseUnit(unit: GlucoseUnit) = viewModelScope.launch { settings.setGlucoseUnit(unit) }
+
+    val hbA1cUnit: StateFlow<HbA1cUnit> = settings.hbA1cUnit
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), HbA1cUnit.MMOL_MOL)
+    fun setHbA1cUnit(unit: HbA1cUnit) = viewModelScope.launch { settings.setHbA1cUnit(unit) }
 
     val bgBroadcastEnabled: StateFlow<Boolean> = settings.bgBroadcastEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)

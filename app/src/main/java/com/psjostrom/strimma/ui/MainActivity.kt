@@ -122,6 +122,7 @@ class MainActivity : ComponentActivity() {
                 val notifGraphMinutes by viewModel.notifGraphMinutes.collectAsState()
                 val predictionMinutes by viewModel.predictionMinutes.collectAsState()
                 val glucoseUnit by viewModel.glucoseUnit.collectAsState()
+                val hbA1cUnit by viewModel.hbA1cUnit.collectAsState()
                 val bgBroadcastEnabled by viewModel.bgBroadcastEnabled.collectAsState()
                 val glucoseSource by viewModel.glucoseSource.collectAsState()
                 val followerStatus by viewModel.followerStatus.collectAsState()
@@ -199,11 +200,13 @@ class MainActivity : ComponentActivity() {
                     composable("settings/display") {
                         DisplaySettings(
                             glucoseUnit = glucoseUnit,
+                            hbA1cUnit = hbA1cUnit,
                             graphWindowHours = graphWindowHours,
                             bgLow = bgLow,
                             bgHigh = bgHigh,
                             themeMode = themeModeStr,
                             onGlucoseUnitChange = viewModel::setGlucoseUnit,
+                            onHbA1cUnitChange = viewModel::setHbA1cUnit,
                             onGraphWindowChange = viewModel::setGraphWindowHours,
                             onBgLowChange = viewModel::setBgLow,
                             onBgHighChange = viewModel::setBgHigh,
@@ -328,6 +331,7 @@ class MainActivity : ComponentActivity() {
                             bgLow = bgLow,
                             bgHigh = bgHigh,
                             glucoseUnit = glucoseUnit,
+                            hbA1cUnit = hbA1cUnit,
                             onLoadReadings = viewModel::readingsForPeriod,
                             onExportCsv = viewModel::exportCsv,
                             onBack = { navController.popBackStack() }

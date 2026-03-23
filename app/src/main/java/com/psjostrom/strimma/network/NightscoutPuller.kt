@@ -1,6 +1,6 @@
 package com.psjostrom.strimma.network
 
-import com.psjostrom.strimma.data.DirectionComputer
+import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseSource
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
@@ -13,7 +13,6 @@ import javax.inject.Singleton
 class NightscoutPuller @Inject constructor(
     private val client: NightscoutClient,
     private val dao: ReadingDao,
-    private val directionComputer: DirectionComputer,
     private val settings: SettingsRepository
 ) {
     companion object {
@@ -59,25 +58,33 @@ class NightscoutPuller @Inject constructor(
     }
 
     private suspend fun pullSince(url: String, secret: String, since: Long): Result<Int> {
-        var cursor = since
+        var beforeCursor: Long? = null
         var totalInserted = 0
 
         return try {
             while (true) {
-                val entries = client.fetchEntries(url, secret, since = cursor, count = PAGE_SIZE)
-                    ?: return Result.failure(IllegalStateException("Failed to fetch from Nightscout"))
+                val entries = client.fetchEntries(
+                    url, secret, since = since, count = PAGE_SIZE, before = beforeCursor
+                ) ?: return Result.failure(IllegalStateException("Failed to fetch from Nightscout"))
 
                 val valid = NightscoutFollower.filterValidEntries(entries)
                 if (valid.isEmpty()) break
 
-                for (entry in valid) {
-                    if (processNightscoutEntry(entry, dao, directionComputer) != null) {
-                        totalInserted++
-                    }
+                val readings = valid.mapNotNull { entry ->
+                    val sgv = entry.sgv ?: return@mapNotNull null
+                    val ts = entry.date ?: return@mapNotNull null
+                    GlucoseReading(
+                        ts = ts, sgv = sgv,
+                        direction = entry.direction ?: "NONE",
+                        delta = entry.delta,
+                        pushed = 1
+                    )
                 }
+                dao.insertBatch(readings)
+                totalInserted += readings.size
 
                 if (entries.size < PAGE_SIZE) break
-                cursor = entries.maxOf { it.date ?: 0L } + 1
+                beforeCursor = entries.minOf { it.date ?: Long.MAX_VALUE }
             }
 
             DebugLog.log(message = "Pull: $totalInserted readings from Nightscout")

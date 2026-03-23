@@ -35,7 +35,8 @@ data class NightscoutEntryResponse(
     val sgv: Int? = null,
     val date: Long? = null,
     val type: String? = null,
-    val direction: String? = null
+    val direction: String? = null,
+    val delta: Double? = null
 )
 
 @Serializable
@@ -58,8 +59,9 @@ class NightscoutClient @Inject constructor() {
         private const val HTTP_NOT_FOUND = 404
         private const val MAX_ERROR_LENGTH = 80
 
-        fun buildFetchUrl(baseUrl: String, since: Long, count: Int): String {
-            return "${baseUrl.trimEnd('/')}/api/v1/entries.json?find[date][\$gt]=$since&count=$count"
+        fun buildFetchUrl(baseUrl: String, since: Long, count: Int, before: Long? = null): String {
+            val base = "${baseUrl.trimEnd('/')}/api/v1/entries.json?find[date][\$gt]=$since&count=$count"
+            return if (before != null) "$base&find[date][\$lt]=$before" else base
         }
     }
 
@@ -119,12 +121,13 @@ class NightscoutClient @Inject constructor() {
         baseUrl: String,
         apiSecret: String,
         since: Long,
-        count: Int = 2016
+        count: Int = 2016,
+        before: Long? = null
     ): List<NightscoutEntryResponse>? {
         if (baseUrl.isBlank() || apiSecret.isBlank()) return emptyList()
 
         val hashedSecret = hashSecret(apiSecret)
-        val fullUrl = buildFetchUrl(baseUrl, since, count)
+        val fullUrl = buildFetchUrl(baseUrl, since, count, before)
 
         return try {
             val response = client.get(fullUrl) {

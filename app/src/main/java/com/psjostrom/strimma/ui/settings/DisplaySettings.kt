@@ -8,15 +8,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.sp
 import com.psjostrom.strimma.data.GlucoseUnit
+import com.psjostrom.strimma.data.HbA1cUnit
 
 @Composable
 fun DisplaySettings(
     glucoseUnit: GlucoseUnit,
+    hbA1cUnit: HbA1cUnit,
     graphWindowHours: Int,
     bgLow: Float,
     bgHigh: Float,
     themeMode: String,
     onGlucoseUnitChange: (GlucoseUnit) -> Unit,
+    onHbA1cUnitChange: (HbA1cUnit) -> Unit,
     onGraphWindowChange: (Int) -> Unit,
     onBgLowChange: (Float) -> Unit,
     onBgHighChange: (Float) -> Unit,
@@ -34,6 +37,19 @@ fun DisplaySettings(
                         selected = glucoseUnit == unit,
                         onClick = { onGlucoseUnitChange(unit) },
                         shape = SegmentedButtonDefaults.itemShape(index, GlucoseUnit.entries.size),
+                    ) {
+                        Text(unit.label)
+                    }
+                }
+            }
+
+            Text("HbA1c Unit", color = onBg, fontSize = 14.sp)
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                HbA1cUnit.entries.forEachIndexed { index, unit ->
+                    SegmentedButton(
+                        selected = hbA1cUnit == unit,
+                        onClick = { onHbA1cUnitChange(unit) },
+                        shape = SegmentedButtonDefaults.itemShape(index, HbA1cUnit.entries.size),
                     ) {
                         Text(unit.label)
                     }

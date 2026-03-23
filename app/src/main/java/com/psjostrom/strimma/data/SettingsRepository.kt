@@ -107,6 +107,7 @@ class SettingsRepository @Inject constructor(
 
         private val KEY_WEB_SERVER_ENABLED = booleanPreferencesKey("web_server_enabled")
         private const val KEY_WEB_SERVER_SECRET = "web_server_secret"
+        private val KEY_HBA1C_UNIT = stringPreferencesKey("hba1c_unit")
 
         // Settings defaults (mg/dL)
         private const val DEFAULT_GRAPH_WINDOW_HOURS = 4
@@ -235,6 +236,10 @@ class SettingsRepository @Inject constructor(
         encryptedPrefs.edit().putString(KEY_WEB_SERVER_SECRET, secret).apply()
     }
 
+    val hbA1cUnit: Flow<HbA1cUnit> = dataStore.data.map {
+        try { HbA1cUnit.valueOf(it[KEY_HBA1C_UNIT] ?: "MMOL_MOL") } catch (_: Exception) { HbA1cUnit.MMOL_MOL }
+    }
+    suspend fun setHbA1cUnit(unit: HbA1cUnit) { dataStore.edit { it[KEY_HBA1C_UNIT] = unit.name } }
 
     @Suppress("CyclomaticComplexMethod") // Flat serialization of all settings
     suspend fun exportToJson(): String {
