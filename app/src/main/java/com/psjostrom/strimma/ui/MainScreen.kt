@@ -20,6 +20,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -52,6 +53,8 @@ import com.psjostrom.strimma.ui.theme.InRangeZone
 import com.psjostrom.strimma.ui.theme.Stale
 import com.psjostrom.strimma.ui.theme.TintDanger
 import com.psjostrom.strimma.ui.theme.TintWarning
+import com.psjostrom.strimma.ui.theme.LightTintDanger
+import com.psjostrom.strimma.ui.theme.LightTintWarning
 import androidx.compose.ui.graphics.Path
 import kotlinx.coroutines.delay
 
@@ -264,9 +267,10 @@ private fun BgHeader(
                 CrossingType.HIGH -> stringResource(R.string.main_prediction_high, crossing.minutesUntil)
             }
             Spacer(modifier = Modifier.height(8.dp))
+            val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
             val pillBg = when (crossing.type) {
-                CrossingType.LOW -> TintDanger
-                CrossingType.HIGH -> TintWarning
+                CrossingType.LOW -> if (isDark) TintDanger else LightTintDanger
+                CrossingType.HIGH -> if (isDark) TintWarning else LightTintWarning
             }
             Surface(
                 shape = RoundedCornerShape(100),
