@@ -2,6 +2,8 @@
 
 Complete reference for every Strimma setting.
 
+![Settings screen](../screenshots/settings.png){ width="300" }
+
 ---
 
 ## Settings Menu

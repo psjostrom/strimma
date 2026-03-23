@@ -8,6 +8,16 @@ Strimma stands on the shoulders of the incredible [xDrip+](https://github.com/Ni
 
 ---
 
+<div class="grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 1.5rem 0;" markdown>
+
+![Main screen](screenshots/main-screen.png){ width="100%" }
+
+![Expanded notification](screenshots/notification-expanded.png){ width="100%" }
+
+![Statistics](screenshots/statistics.png){ width="100%" }
+
+</div>
+
 ## What Strimma Does
 
 - **Receives glucose three ways** — reads notifications from 60+ CGM apps (Dexcom, Libre, CamAPS FX, etc.), receives xDrip-compatible broadcasts (from xDrip+, Juggluco, AAPS), or follows a remote Nightscout server. See [Data Sources](data-sources/overview.md).
