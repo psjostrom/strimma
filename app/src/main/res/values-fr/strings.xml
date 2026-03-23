@@ -83,6 +83,8 @@
     <string name="settings_display_graph_window">Fen\u00EAtre du graphique : %1$d heures</string>
     <string name="settings_display_low_threshold">Seuil bas (%1$s)</string>
     <string name="settings_display_high_threshold">Seuil haut (%1$s)</string>
+    <string name="settings_display_language">Langue</string>
+    <string name="settings_display_language_system">Par d\u00E9faut du syst\u00E8me</string>
     <string name="settings_display_theme">Th\u00E8me</string>
     <string name="settings_display_theme_light">Clair</string>
     <string name="settings_display_theme_dark">Sombre</string>
