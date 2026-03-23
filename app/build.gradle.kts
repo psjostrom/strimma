@@ -20,17 +20,15 @@ android {
 
     signingConfigs {
         create("release") {
-            val keystoreFile = providers.gradleProperty("STRIMMA_KEYSTORE_FILE")
-                .orElse(providers.environmentVariable("STRIMMA_KEYSTORE_FILE"))
-                .orNull
+            fun prop(key: String): String? =
+                providers.gradleProperty(key).orNull
+                    ?: providers.environmentVariable(key).orNull
+            val keystoreFile = prop("STRIMMA_KEYSTORE_FILE")
             if (keystoreFile != null) {
                 storeFile = file(keystoreFile)
-                storePassword = providers.gradleProperty("STRIMMA_KEYSTORE_PASSWORD")
-                    .orElse(providers.environmentVariable("STRIMMA_KEYSTORE_PASSWORD")).get()
-                keyAlias = providers.gradleProperty("STRIMMA_KEY_ALIAS")
-                    .orElse(providers.environmentVariable("STRIMMA_KEY_ALIAS")).get()
-                keyPassword = providers.gradleProperty("STRIMMA_KEY_PASSWORD")
-                    .orElse(providers.environmentVariable("STRIMMA_KEY_PASSWORD")).get()
+                storePassword = prop("STRIMMA_KEYSTORE_PASSWORD")!!
+                keyAlias = prop("STRIMMA_KEY_ALIAS")!!
+                keyPassword = prop("STRIMMA_KEY_PASSWORD")!!
             }
         }
     }
