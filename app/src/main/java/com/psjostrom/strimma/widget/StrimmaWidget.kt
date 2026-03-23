@@ -22,6 +22,7 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
+import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.Direction
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseUnit
@@ -94,6 +95,7 @@ private fun WidgetContent(
     opacity: Float,
     glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL
 ) {
+    val ctx = LocalContext.current
     val staleColor = ColorProvider(Color(0xFF6A5F80))
 
     val statusColor = when {
@@ -116,9 +118,9 @@ private fun WidgetContent(
     val bgValue = reading?.let { glucoseUnit.format(it.sgv) } ?: "--"
     val deltaText = reading?.delta?.let { glucoseUnit.formatDeltaCompact(it) } ?: ""
     val timeText = when {
-        minutesAgo < 0 -> "No data"
-        minutesAgo == 0 -> "now"
-        else -> "${minutesAgo}m"
+        minutesAgo < 0 -> ctx.getString(R.string.common_no_data)
+        minutesAgo == 0 -> ctx.getString(R.string.widget_now)
+        else -> ctx.getString(R.string.widget_minutes_suffix, minutesAgo)
     }
     val subtitle = if (deltaText.isNotEmpty()) "$deltaText · $timeText" else timeText
 
