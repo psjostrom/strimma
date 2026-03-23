@@ -7,8 +7,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.HbA1cUnit
+import com.psjostrom.strimma.ui.theme.ThemeMode
 
 @Composable
 fun DisplaySettings(
@@ -96,13 +98,13 @@ fun DisplaySettings(
 
             Text("Theme", color = onBg, fontSize = 14.sp)
             SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                listOf("Light", "Dark", "System").forEachIndexed { index, label ->
+                ThemeMode.entries.forEachIndexed { index, mode ->
                     SegmentedButton(
-                        selected = themeMode == label,
-                        onClick = { onThemeModeChange(label) },
-                        shape = SegmentedButtonDefaults.itemShape(index, 3),
+                        selected = themeMode == mode.name,
+                        onClick = { onThemeModeChange(mode.name) },
+                        shape = SegmentedButtonDefaults.itemShape(index, ThemeMode.entries.size),
                     ) {
-                        Text(label)
+                        Text(stringResource(mode.labelRes))
                     }
                 }
             }

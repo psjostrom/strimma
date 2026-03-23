@@ -10,9 +10,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
+import androidx.annotation.StringRes
 import androidx.core.view.WindowCompat
+import com.psjostrom.strimma.R
 
-enum class ThemeMode { Dark, Light, System }
+enum class ThemeMode(@StringRes val labelRes: Int) {
+    Dark(R.string.settings_display_theme_dark),
+    Light(R.string.settings_display_theme_light),
+    System(R.string.settings_display_theme_system)
+}
 
 private val DarkColorScheme = darkColorScheme(
     primary = InRange,
