@@ -33,6 +33,7 @@ import com.psjostrom.strimma.ui.settings.DataSourceSettings
 import com.psjostrom.strimma.ui.settings.GeneralSettings
 import com.psjostrom.strimma.ui.settings.DisplaySettings
 import com.psjostrom.strimma.ui.settings.NotificationSettings
+import com.psjostrom.strimma.ui.settings.TidepoolSettings
 import com.psjostrom.strimma.ui.settings.TreatmentsSettings
 import com.psjostrom.strimma.ui.theme.StrimmaTheme
 import com.psjostrom.strimma.ui.theme.ThemeMode
@@ -64,6 +65,10 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    private val tidepoolAuthLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { /* Auth handled by TidepoolAuthActivity via redirect */ }
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -365,6 +370,30 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
                             },
+                            onBack = { navController.popBackStack() }
+                        )
+                    }
+                    composable("settings/tidepool") {
+                        val tidepoolEnabled by viewModel.tidepoolEnabled.collectAsState()
+                        val tidepoolOnlyWhileCharging by viewModel.tidepoolOnlyWhileCharging.collectAsState()
+                        val tidepoolOnlyWhileWifi by viewModel.tidepoolOnlyWhileWifi.collectAsState()
+                        val tidepoolLastUploadTime by viewModel.tidepoolLastUploadTime.collectAsState()
+                        val tidepoolLastError by viewModel.tidepoolLastError.collectAsState()
+
+                        TidepoolSettings(
+                            enabled = tidepoolEnabled,
+                            onEnabledChange = viewModel::setTidepoolEnabled,
+                            isLoggedIn = viewModel.isTidepoolLoggedIn(),
+                            onLogin = {
+                                tidepoolAuthLauncher.launch(viewModel.buildTidepoolAuthIntent())
+                            },
+                            onLogout = viewModel::tidepoolLogout,
+                            onlyWhileCharging = tidepoolOnlyWhileCharging,
+                            onOnlyWhileChargingChange = viewModel::setTidepoolOnlyWhileCharging,
+                            onlyWhileWifi = tidepoolOnlyWhileWifi,
+                            onOnlyWhileWifiChange = viewModel::setTidepoolOnlyWhileWifi,
+                            lastUploadTime = tidepoolLastUploadTime,
+                            lastError = tidepoolLastError,
                             onBack = { navController.popBackStack() }
                         )
                     }

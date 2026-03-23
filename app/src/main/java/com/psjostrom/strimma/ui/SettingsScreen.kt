@@ -8,6 +8,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.Notifications
@@ -115,6 +116,13 @@ fun SettingsScreen(
                     title = stringResource(R.string.settings_data),
                     subtitle = stringResource(R.string.settings_data_subtitle),
                     onClick = { onNavigate("settings/data") }
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                SettingsMenuItem(
+                    icon = Icons.Default.Cloud,
+                    title = "Tidepool",
+                    subtitle = "Upload to Tidepool",
+                    onClick = { onNavigate("settings/tidepool") }
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 SettingsMenuItem(
