@@ -27,8 +27,10 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.Direction
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.IOBComputer
@@ -94,14 +96,14 @@ fun MainScreen(
                     IconButton(onClick = onStatsClick) {
                         Icon(
                             Icons.Outlined.BarChart,
-                            contentDescription = "Statistics",
+                            contentDescription = stringResource(R.string.common_content_desc_statistics),
                             tint = MaterialTheme.colorScheme.outline
                         )
                     }
                     IconButton(onClick = onSettingsClick) {
                         Icon(
                             Icons.Default.Settings,
-                            contentDescription = "Settings",
+                            contentDescription = stringResource(R.string.common_content_desc_settings),
                             tint = MaterialTheme.colorScheme.outline
                         )
                     }
@@ -237,9 +239,9 @@ private fun BgHeader(
 
         // Delta + timestamp on one line
         val timeText = when {
-            minutesAgo < 0 -> "No data"
-            minutesAgo == 0 -> "Just now"
-            else -> "$minutesAgo min ago"
+            minutesAgo < 0 -> stringResource(R.string.common_no_data)
+            minutesAgo == 0 -> stringResource(R.string.main_just_now)
+            else -> stringResource(R.string.main_min_ago, minutesAgo)
         }
         val subtitleParts = buildList {
             reading?.delta?.let { add(glucoseUnit.formatDelta(it)) }
@@ -258,8 +260,8 @@ private fun BgHeader(
                 CrossingType.HIGH -> AboveHigh
             }
             val crossingText = when (crossing.type) {
-                CrossingType.LOW -> "Low in ${crossing.minutesUntil} min"
-                CrossingType.HIGH -> "High in ${crossing.minutesUntil} min"
+                CrossingType.LOW -> stringResource(R.string.main_prediction_low, crossing.minutesUntil)
+                CrossingType.HIGH -> stringResource(R.string.main_prediction_high, crossing.minutesUntil)
             }
             Spacer(modifier = Modifier.height(8.dp))
             val pillBg = when (crossing.type) {
@@ -291,7 +293,7 @@ private fun BgHeader(
                 color = InRange.copy(alpha = 0.12f)
             ) {
                 Text(
-                    text = "IOB ${"%.1f".format(iob)}U",
+                    text = stringResource(R.string.main_iob_value, iob),
                     color = iobColor,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -307,15 +309,16 @@ private fun BgHeader(
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = when (followerStatus) {
-                    is FollowerStatus.Connecting -> "Following \u00b7 connecting\u2026"
+                    is FollowerStatus.Connecting -> stringResource(R.string.main_follower_connecting)
                     is FollowerStatus.Connected -> {
                         val secsAgo = ((System.currentTimeMillis() - followerStatus.lastPollTs) / 1000).toInt()
-                        if (secsAgo < 60) "Following \u00b7 ${secsAgo}s ago"
-                        else "Following \u00b7 ${secsAgo / 60}m ago"
+                        if (secsAgo < 60) stringResource(R.string.main_follower_seconds_ago, secsAgo)
+                        else stringResource(R.string.main_follower_minutes_ago, secsAgo / 60)
                     }
                     is FollowerStatus.Disconnected -> {
                         val minsAgo = ((System.currentTimeMillis() - followerStatus.since) / 60_000).toInt()
-                        "Following \u00b7 connection lost${if (minsAgo > 0) " ${minsAgo}m" else ""}"
+                        if (minsAgo > 0) stringResource(R.string.main_follower_lost_minutes, minsAgo)
+                        else stringResource(R.string.main_follower_lost)
                     }
                     else -> ""
                 },
@@ -342,12 +345,12 @@ private fun IobDetailDialog(treatments: List<Treatment>, tauMinutes: Double, onD
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text("OK") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_ok)) }
         },
-        title = { Text("IOB Breakdown") },
+        title = { Text(stringResource(R.string.main_iob_breakdown_title)) },
         text = {
             if (insulinTreatments.isEmpty()) {
-                Text("No active insulin treatments")
+                Text(stringResource(R.string.main_no_active_treatments))
             } else {
                 Column {
                     insulinTreatments.forEach { t ->
@@ -365,14 +368,14 @@ private fun IobDetailDialog(treatments: List<Treatment>, tauMinutes: Double, onD
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 14.sp
                             )
-                            val parts = mutableListOf("%.1f".format(dose) + "U")
-                            t.carbs?.let { if (it > 0.0) parts.add("%.0f".format(it) + "g") }
+                            val parts = mutableListOf(stringResource(R.string.main_bolus_label, dose))
+                            t.carbs?.let { if (it > 0.0) parts.add(stringResource(R.string.main_carb_label, it)) }
                             Text(
                                 text = parts.joinToString("  "),
                                 fontSize = 14.sp
                             )
                             Text(
-                                text = "%.1f".format(remainingIob) + "U",
+                                text = stringResource(R.string.main_bolus_label, remainingIob),
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = InRange
@@ -430,6 +433,10 @@ fun GlucoseGraph(
     val currentGlucoseUnit by rememberUpdatedState(glucoseUnit)
     val currentWindowMs by rememberUpdatedState(windowMs)
     val currentPredictionMs by rememberUpdatedState(predictionMs)
+    // Resolve format strings in Composable scope for use inside Canvas drawText
+    val bolusLabelFmt = stringResource(R.string.main_bolus_label)
+    val carbLabelFmt = stringResource(R.string.main_carb_label)
+
     val treatmentLabelPaint = remember {
         android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
             textSize = 28f
@@ -622,7 +629,7 @@ fun GlucoseGraph(
                     close()
                 }
                 drawPath(path, bolusColor)
-                val label = "${"%.1f".format(dose)}U"
+                val label = String.format(bolusLabelFmt, dose)
                 treatmentLabelPaint.color = bolusColor.toArgb()
                 drawContext.canvas.nativeCanvas.drawText(
                     label, tx, baseY - triSize - 4f, treatmentLabelPaint
@@ -641,7 +648,7 @@ fun GlucoseGraph(
                     close()
                 }
                 drawPath(path, carbColor)
-                val label = "${"%.0f".format(grams)}g"
+                val label = String.format(carbLabelFmt, grams)
                 treatmentLabelPaint.color = carbColor.toArgb()
                 drawContext.canvas.nativeCanvas.drawText(
                     label, tx, baseY + triSize + treatmentLabelPaint.fontSpacing, treatmentLabelPaint
