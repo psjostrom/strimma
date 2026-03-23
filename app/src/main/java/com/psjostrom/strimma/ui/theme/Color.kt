@@ -27,10 +27,15 @@ val AboveHigh = Color(0xFFFFB800)
 val BelowLow = Color(0xFFFF4D6A)
 val Stale = Color(0xFF6A5F80)
 
-// --- Semantic tinted backgrounds ---
+// --- Semantic tinted backgrounds (dark) ---
 val TintInRange = Color(0xFF152535)
 val TintWarning = Color(0xFF35280E)
 val TintDanger = Color(0xFF351525)
+
+// --- Semantic tinted backgrounds (light) ---
+val LightTintInRange = Color(0xFFDCF3FB)
+val LightTintWarning = Color(0xFFFFF3D6)
+val LightTintDanger = Color(0xFFFFE0E8)
 
 // --- Treatment marker colors ---
 val BolusBlue = Color(0xFF5B8DEF)
