@@ -1,12 +1,17 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
     alias(libs.plugins.detekt)
     jacoco
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+    }
 }
 
 android {
@@ -59,12 +64,8 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = "17"
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 
     buildFeatures {
@@ -105,7 +106,7 @@ tasks.register<JacocoReport>("jacocoTestReport") {
         html.required.set(true)
     }
     val mainSrc = "$projectDir/src/main/java"
-    val debugTree = fileTree("$buildDir/tmp/kotlin-classes/debug") {
+    val debugTree = fileTree(layout.buildDirectory.dir("tmp/kotlin-classes/debug")) {
         exclude("**/R.class", "**/R\$*.class", "**/BuildConfig.*",
             "**/Manifest*.*", "**/*_Hilt*.*", "**/Hilt_*.*",
             "**/*_Factory.*", "**/*_MembersInjector.*",
@@ -113,7 +114,7 @@ tasks.register<JacocoReport>("jacocoTestReport") {
     }
     sourceDirectories.setFrom(files(mainSrc))
     classDirectories.setFrom(debugTree)
-    executionData.setFrom(fileTree(buildDir) { include("jacoco/testDebugUnitTest.exec") })
+    executionData.setFrom(fileTree(layout.buildDirectory) { include("jacoco/testDebugUnitTest.exec") })
 }
 
 dependencies {
