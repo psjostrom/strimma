@@ -193,7 +193,8 @@ class AlertManager @Inject constructor(
         if (urgentLowEnabled && mgdl <= urgentLowThreshold) {
             alreadyLow = true
             if (!isSnoozed(ALERT_URGENT_LOW_ID, now)) {
-                fireAlert(ALERT_URGENT_LOW_ID, CHANNEL_URGENT_LOW, context.getString(R.string.alert_urgent_low_title), unit.formatWithUnit(mgdl))
+                val title = context.getString(R.string.alert_urgent_low_title)
+                fireAlert(ALERT_URGENT_LOW_ID, CHANNEL_URGENT_LOW, title, unit.formatWithUnit(mgdl))
                 notificationManager.cancel(ALERT_LOW_ID)
             }
         } else if (lowEnabled && mgdl < lowThreshold) {
@@ -212,7 +213,8 @@ class AlertManager @Inject constructor(
         if (urgentHighEnabled && mgdl >= urgentHighThreshold) {
             alreadyHigh = true
             if (!isSnoozed(ALERT_URGENT_HIGH_ID, now)) {
-                fireAlert(ALERT_URGENT_HIGH_ID, CHANNEL_URGENT_HIGH, context.getString(R.string.alert_urgent_high_title), unit.formatWithUnit(mgdl))
+                val title = context.getString(R.string.alert_urgent_high_title)
+                fireAlert(ALERT_URGENT_HIGH_ID, CHANNEL_URGENT_HIGH, title, unit.formatWithUnit(mgdl))
                 notificationManager.cancel(ALERT_HIGH_ID)
             }
         } else if (highEnabled && mgdl > highThreshold) {
@@ -289,7 +291,9 @@ class AlertManager @Inject constructor(
         val now = System.currentTimeMillis()
         if (lastReadingTs == null || (now - lastReadingTs) > STALE_THRESHOLD_MINUTES * MINUTES_TO_MS) {
             if (!isSnoozed(ALERT_STALE_ID, now)) {
-                fireAlert(ALERT_STALE_ID, CHANNEL_STALE, context.getString(R.string.alert_stale_title), context.getString(R.string.alert_stale_body))
+                val title = context.getString(R.string.alert_stale_title)
+                val body = context.getString(R.string.alert_stale_body)
+                fireAlert(ALERT_STALE_ID, CHANNEL_STALE, title, body)
             }
         } else {
             notificationManager.cancel(ALERT_STALE_ID)

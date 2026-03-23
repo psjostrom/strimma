@@ -312,12 +312,15 @@ class MainActivity : ComponentActivity() {
                             },
                             onPullFromNightscout = { days ->
                                 lifecycleScope.launch {
-                                    Toast.makeText(this@MainActivity, getString(R.string.activity_pull_progress, days), Toast.LENGTH_SHORT).show()
+                                    val msg = getString(R.string.activity_pull_progress, days)
+                                    Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
                                     val result = viewModel.pullFromNightscout(days)
                                     result.onSuccess { count ->
-                                        Toast.makeText(this@MainActivity, getString(R.string.activity_pull_success, count), Toast.LENGTH_SHORT).show()
+                                        val ok = getString(R.string.activity_pull_success, count)
+                                        Toast.makeText(this@MainActivity, ok, Toast.LENGTH_SHORT).show()
                                     }.onFailure { e ->
-                                        Toast.makeText(this@MainActivity, getString(R.string.activity_pull_failed, e.message ?: ""), Toast.LENGTH_LONG).show()
+                                        val err = getString(R.string.activity_pull_failed, e.message ?: "")
+                                        Toast.makeText(this@MainActivity, err, Toast.LENGTH_LONG).show()
                                     }
                                 }
                             },
