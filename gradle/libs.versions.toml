@@ -58,6 +58,9 @@ kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutine
 glance-appwidget = { module = "androidx.glance:glance-appwidget", version.ref = "glance" }
 glance-material3 = { module = "androidx.glance:glance-material3", version.ref = "glance" }
 
+androidx-appcompat = { module = "androidx.appcompat:appcompat", version = "1.7.0" }
+appauth = { module = "net.openid:appauth", version = "0.11.1" }
+
 leakcanary = { module = "com.squareup.leakcanary:leakcanary-android", version.ref = "leakcanary" }
 
 junit = { module = "junit:junit", version = "4.13.2" }

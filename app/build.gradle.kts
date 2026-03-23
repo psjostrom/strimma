@@ -48,6 +48,8 @@ android {
         ksp {
             arg("room.schemaLocation", "$projectDir/schemas")
         }
+
+        manifestPlaceholders["appAuthRedirectScheme"] = "strimma"
     }
 
     buildTypes {
@@ -158,6 +160,9 @@ dependencies {
 
     implementation(libs.glance.appwidget)
     implementation(libs.glance.material3)
+
+    implementation(libs.androidx.appcompat)
+    implementation(libs.appauth)
 
     debugImplementation(libs.leakcanary)
 
