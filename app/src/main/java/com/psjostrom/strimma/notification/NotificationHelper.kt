@@ -47,7 +47,7 @@ class NotificationHelper @Inject constructor(
     fun createChannel() {
         val channel = NotificationChannel(
             CHANNEL_ID,
-            context.getString(R.string.notification_channel_name),
+            context.getString(R.string.notif_channel_name),
             NotificationManager.IMPORTANCE_LOW
         ).apply {
             setShowBadge(false)
@@ -89,11 +89,11 @@ class NotificationHelper @Inject constructor(
             val prediction = PredictionComputer.compute(recentReadings, predictionMinutes, bgLow, bgHigh)
             val crossingText = prediction?.crossing?.let { crossing ->
                 when (crossing.type) {
-                    CrossingType.LOW -> "Low ${crossing.minutesUntil}m"
-                    CrossingType.HIGH -> "High ${crossing.minutesUntil}m"
+                    CrossingType.LOW -> context.getString(R.string.notif_low_crossing, crossing.minutesUntil)
+                    CrossingType.HIGH -> context.getString(R.string.notif_high_crossing, crossing.minutesUntil)
                 }
             }
-            val iobText = if (iob > 0.0) "IOB ${"%.1f".format(iob)}U" else null
+            val iobText = if (iob > 0.0) context.getString(R.string.notif_iob, "%.1f".format(iob)) else null
             val deltaText = listOfNotNull(
                 baseDelta.ifEmpty { null },
                 crossingText,
@@ -108,8 +108,8 @@ class NotificationHelper @Inject constructor(
             )
         } else {
             builder.setSmallIcon(createBgIcon("--"))
-            builder.setContentTitle("Strimma")
-            builder.setContentText("Waiting for glucose data…")
+            builder.setContentTitle(context.getString(R.string.app_name))
+            builder.setContentText(context.getString(R.string.notif_waiting))
         }
 
         return builder.build()

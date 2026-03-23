@@ -208,8 +208,6 @@
     <string name="alert_snooze">Snooze 30 min</string>
 
     <!-- Foreground Notification -->
-    <!-- Keep old key as alias until NotificationHelper is updated in Task 7 -->
-    <string name="notification_channel_name">Glucose Readings</string>
     <string name="notif_channel_name">Glucose Readings</string>
     <string name="notif_waiting">Waiting for glucose data…</string>
     <string name="notif_low_crossing">Low %1$dm</string>
