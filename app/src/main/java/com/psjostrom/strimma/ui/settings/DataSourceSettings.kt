@@ -5,8 +5,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
@@ -58,26 +56,27 @@ fun DataSourceSettings(
                 var urlText by remember(nightscoutUrl) { mutableStateOf(nightscoutUrl) }
                 OutlinedTextField(
                     value = urlText,
-                    onValueChange = { urlText = it },
+                    onValueChange = {
+                        urlText = it
+                        onNightscoutUrlChange(it)
+                    },
                     label = { Text(stringResource(R.string.settings_source_nightscout_url)) },
                     placeholder = { Text(stringResource(R.string.settings_source_url_placeholder)) },
                     supportingText = { Text(stringResource(R.string.settings_source_url_hint)) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .onFocusChanged { if (!it.isFocused) onNightscoutUrlChange(urlText) },
+                    modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
 
                 var secretText by remember(nightscoutSecret) { mutableStateOf(nightscoutSecret) }
                 OutlinedTextField(
                     value = secretText,
-                    onValueChange = { secretText = it },
+                    onValueChange = {
+                        secretText = it
+                        onNightscoutSecretChange(it)
+                    },
                     label = { Text(stringResource(R.string.settings_source_api_secret)) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .onFocusChanged { if (!it.isFocused) onNightscoutSecretChange(secretText) },
-                    singleLine = true,
-                    visualTransformation = PasswordVisualTransformation()
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
                 )
             }
         } else {
@@ -85,26 +84,27 @@ fun DataSourceSettings(
                 var urlText by remember(followerUrl) { mutableStateOf(followerUrl) }
                 OutlinedTextField(
                     value = urlText,
-                    onValueChange = { urlText = it },
+                    onValueChange = {
+                        urlText = it
+                        onFollowerUrlChange(it)
+                    },
                     label = { Text(stringResource(R.string.settings_source_nightscout_url)) },
                     placeholder = { Text(stringResource(R.string.settings_source_follower_url_placeholder)) },
                     supportingText = { Text(stringResource(R.string.settings_source_follower_url_hint)) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .onFocusChanged { if (!it.isFocused) onFollowerUrlChange(urlText) },
+                    modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
 
                 var secretText by remember(followerSecret) { mutableStateOf(followerSecret) }
                 OutlinedTextField(
                     value = secretText,
-                    onValueChange = { secretText = it },
+                    onValueChange = {
+                        secretText = it
+                        onFollowerSecretChange(it)
+                    },
                     label = { Text(stringResource(R.string.settings_source_api_secret)) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .onFocusChanged { if (!it.isFocused) onFollowerSecretChange(secretText) },
-                    singleLine = true,
-                    visualTransformation = PasswordVisualTransformation()
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
                 )
 
                 Text(
