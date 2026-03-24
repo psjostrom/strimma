@@ -238,6 +238,29 @@
     <string name="exercise_type_swimming">Nataci\u00F3n</string>
     <string name="exercise_type_other">Ejercicio</string>
 
+    <!-- Exercise Detail -->
+    <string name="exercise_detail_before">ANTES</string>
+    <string name="exercise_detail_during">DURANTE</string>
+    <string name="exercise_detail_after">DESPU\u00C9S</string>
+    <string name="exercise_detail_entry_bg">Entrada</string>
+    <string name="exercise_detail_min_bg">M\u00EDn</string>
+    <string name="exercise_detail_lowest_bg">M\u00E1s bajo</string>
+    <string name="exercise_detail_max_drop">Ca\u00EDda m\u00E1x</string>
+    <string name="exercise_detail_avg_hr">FC prom</string>
+    <string name="exercise_detail_max_hr">FC m\u00E1x</string>
+    <string name="exercise_detail_steps">Pasos</string>
+    <string name="exercise_detail_calories">Calor\u00EDas</string>
+    <string name="exercise_detail_time_to_lowest">Tiempo al m\u00E1s bajo</string>
+    <string name="exercise_detail_time_to_stable">Tiempo hasta estable</string>
+    <string name="exercise_detail_still_dropping">A\u00FAn bajando</string>
+    <string name="exercise_detail_post_hypo">Bajo post-ejercicio</string>
+    <string name="exercise_detail_no_data">Datos de glucosa insuficientes</string>
+    <string name="exercise_detail_no_value">\u2014</string>
+    <string name="exercise_detail_per_10min">por 10 min</string>
+    <string name="exercise_detail_after_duration">%s despu\u00E9s</string>
+    <string name="exercise_history_title">Ejercicio</string>
+    <string name="exercise_history_empty">No hay sesiones de ejercicio. Conecta Health Connect en Ajustes para ver tus entrenamientos aqu\u00ED.</string>
+
     <!-- Activity (dialogs, toasts) -->
     <string name="activity_settings_imported">Ajustes importados</string>
     <string name="activity_import_failed">Importaci\u00F3n fallida: %1$s</string>

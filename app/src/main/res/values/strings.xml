@@ -260,6 +260,29 @@
     <string name="hc_rationale_title">Health Connect Permissions</string>
     <string name="hc_rationale_body">Strimma uses Health Connect to read your exercise sessions, heart rate, steps, and calories to show how exercise affects your glucose. Optionally, Strimma can write glucose readings so other health apps can see them.</string>
 
+    <!-- Exercise Detail -->
+    <string name="exercise_detail_before">BEFORE</string>
+    <string name="exercise_detail_during">DURING</string>
+    <string name="exercise_detail_after">AFTER</string>
+    <string name="exercise_detail_entry_bg">Entry</string>
+    <string name="exercise_detail_min_bg">Min</string>
+    <string name="exercise_detail_lowest_bg">Lowest</string>
+    <string name="exercise_detail_max_drop">Max drop</string>
+    <string name="exercise_detail_avg_hr">Avg HR</string>
+    <string name="exercise_detail_max_hr">Max HR</string>
+    <string name="exercise_detail_steps">Steps</string>
+    <string name="exercise_detail_calories">Calories</string>
+    <string name="exercise_detail_time_to_lowest">Time to lowest</string>
+    <string name="exercise_detail_time_to_stable">Time to stable</string>
+    <string name="exercise_detail_still_dropping">Still dropping</string>
+    <string name="exercise_detail_post_hypo">Post-exercise low</string>
+    <string name="exercise_detail_no_data">Not enough glucose data</string>
+    <string name="exercise_detail_no_value">\u2014</string>
+    <string name="exercise_detail_per_10min">per 10 min</string>
+    <string name="exercise_detail_after_duration">%s after</string>
+    <string name="exercise_history_title">Exercise</string>
+    <string name="exercise_history_empty">No exercise sessions yet. Connect Health Connect in Settings to see your workouts here.</string>
+
     <!-- Activity (dialogs, toasts) -->
     <string name="activity_settings_imported">Settings imported</string>
     <string name="activity_import_failed">Import failed: %1$s</string>

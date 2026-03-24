@@ -10,6 +10,8 @@ import com.psjostrom.strimma.data.IOBComputer
 import com.psjostrom.strimma.data.InsulinType
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
+import com.psjostrom.strimma.data.health.ExerciseBGAnalyzer
+import com.psjostrom.strimma.data.health.ExerciseBGContext
 import com.psjostrom.strimma.data.health.ExerciseDao
 import com.psjostrom.strimma.data.health.StoredExerciseSession
 import com.psjostrom.strimma.data.Treatment
@@ -31,6 +33,7 @@ class MainViewModel @Inject constructor(
     private val dao: ReadingDao,
     private val treatmentDao: TreatmentDao,
     private val exerciseDao: ExerciseDao,
+    private val exerciseBGAnalyzer: ExerciseBGAnalyzer,
     val settings: SettingsRepository,
     private val alertManager: AlertManager,
     private val nightscoutFollower: NightscoutFollower,
@@ -207,6 +210,14 @@ class MainViewModel @Inject constructor(
             val since = System.currentTimeMillis() - HOURS_PER_DAY * MS_PER_HOUR
             sessions.filter { it.startTime >= since }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    suspend fun computeExerciseBGContext(session: StoredExerciseSession): ExerciseBGContext? {
+        val preStart = session.startTime - 30 * 60_000L
+        val postEnd = session.endTime + 4 * 60 * 60_000L
+        val readings = dao.readingsInRange(preStart, postEnd)
+        val hrSamples = exerciseDao.getHeartRateForSession(session.id)
+        return exerciseBGAnalyzer.analyze(session, readings, hrSamples, bgLow.value.toDouble())
+    }
 
     suspend fun exportSettings(): String = settings.exportToJson()
 

@@ -238,6 +238,29 @@
     <string name="exercise_type_swimming">Simning</string>
     <string name="exercise_type_other">Tr\u00E4ning</string>
 
+    <!-- Exercise Detail -->
+    <string name="exercise_detail_before">F\u00D6RE</string>
+    <string name="exercise_detail_during">UNDER</string>
+    <string name="exercise_detail_after">EFTER</string>
+    <string name="exercise_detail_entry_bg">Ing\u00E5ng</string>
+    <string name="exercise_detail_min_bg">Min</string>
+    <string name="exercise_detail_lowest_bg">L\u00E4gsta</string>
+    <string name="exercise_detail_max_drop">Max fall</string>
+    <string name="exercise_detail_avg_hr">Snitt HF</string>
+    <string name="exercise_detail_max_hr">Max HF</string>
+    <string name="exercise_detail_steps">Steg</string>
+    <string name="exercise_detail_calories">Kalorier</string>
+    <string name="exercise_detail_time_to_lowest">Tid till l\u00E4gsta</string>
+    <string name="exercise_detail_time_to_stable">Tid till stabilt</string>
+    <string name="exercise_detail_still_dropping">Faller fortfarande</string>
+    <string name="exercise_detail_post_hypo">L\u00E5gt efter tr\u00E4ning</string>
+    <string name="exercise_detail_no_data">Inte tillr\u00E4ckligt med glukosdata</string>
+    <string name="exercise_detail_no_value">\u2014</string>
+    <string name="exercise_detail_per_10min">per 10 min</string>
+    <string name="exercise_detail_after_duration">%s efter</string>
+    <string name="exercise_history_title">Tr\u00E4ning</string>
+    <string name="exercise_history_empty">Inga tr\u00E4ningspass \u00E4nnu. Anslut Health Connect i Inst\u00E4llningar f\u00F6r att se dina tr\u00E4ningar h\u00E4r.</string>
+
     <!-- Activity (dialogs, toasts) -->
     <string name="activity_settings_imported">Inst\u00E4llningar importerade</string>
     <string name="activity_import_failed">Import misslyckades: %1$s</string>

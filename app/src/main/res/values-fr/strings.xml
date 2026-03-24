@@ -238,6 +238,29 @@
     <string name="exercise_type_swimming">Natation</string>
     <string name="exercise_type_other">Exercice</string>
 
+    <!-- Exercise Detail -->
+    <string name="exercise_detail_before">AVANT</string>
+    <string name="exercise_detail_during">PENDANT</string>
+    <string name="exercise_detail_after">APR\u00C8S</string>
+    <string name="exercise_detail_entry_bg">Entr\u00E9e</string>
+    <string name="exercise_detail_min_bg">Min</string>
+    <string name="exercise_detail_lowest_bg">Le plus bas</string>
+    <string name="exercise_detail_max_drop">Chute max</string>
+    <string name="exercise_detail_avg_hr">FC moy.</string>
+    <string name="exercise_detail_max_hr">FC max</string>
+    <string name="exercise_detail_steps">Pas</string>
+    <string name="exercise_detail_calories">Calories</string>
+    <string name="exercise_detail_time_to_lowest">Temps au plus bas</string>
+    <string name="exercise_detail_time_to_stable">Temps jusqu\u0027\u00E0 stable</string>
+    <string name="exercise_detail_still_dropping">Encore en baisse</string>
+    <string name="exercise_detail_post_hypo">Hypo post-exercice</string>
+    <string name="exercise_detail_no_data">Pas assez de donn\u00E9es de glucose</string>
+    <string name="exercise_detail_no_value">\u2014</string>
+    <string name="exercise_detail_per_10min">par 10 min</string>
+    <string name="exercise_detail_after_duration">%s apr\u00E8s</string>
+    <string name="exercise_history_title">Exercice</string>
+    <string name="exercise_history_empty">Aucune s\u00E9ance d\u2019exercice. Connectez Health Connect dans les param\u00E8tres pour voir vos entra\u00EEnements ici.</string>
+
     <!-- Activity (dialogs, toasts) -->
     <string name="activity_settings_imported">Param\u00E8tres import\u00E9s</string>
     <string name="activity_import_failed">\u00C9chec de l\u2019importation : %1$s</string>

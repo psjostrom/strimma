@@ -238,6 +238,29 @@
     <string name="exercise_type_swimming">Schwimmen</string>
     <string name="exercise_type_other">Training</string>
 
+    <!-- Exercise Detail -->
+    <string name="exercise_detail_before">VORHER</string>
+    <string name="exercise_detail_during">W\u00C4HREND</string>
+    <string name="exercise_detail_after">NACHHER</string>
+    <string name="exercise_detail_entry_bg">Eingang</string>
+    <string name="exercise_detail_min_bg">Min</string>
+    <string name="exercise_detail_lowest_bg">Tiefster</string>
+    <string name="exercise_detail_max_drop">Max. Abfall</string>
+    <string name="exercise_detail_avg_hr">\u00D8 HF</string>
+    <string name="exercise_detail_max_hr">Max HF</string>
+    <string name="exercise_detail_steps">Schritte</string>
+    <string name="exercise_detail_calories">Kalorien</string>
+    <string name="exercise_detail_time_to_lowest">Zeit bis Tiefstwert</string>
+    <string name="exercise_detail_time_to_stable">Zeit bis stabil</string>
+    <string name="exercise_detail_still_dropping">F\u00E4llt noch</string>
+    <string name="exercise_detail_post_hypo">Tief nach Training</string>
+    <string name="exercise_detail_no_data">Nicht gen\u00FCgend Glukosedaten</string>
+    <string name="exercise_detail_no_value">\u2014</string>
+    <string name="exercise_detail_per_10min">pro 10 Min.</string>
+    <string name="exercise_detail_after_duration">%s danach</string>
+    <string name="exercise_history_title">Training</string>
+    <string name="exercise_history_empty">Noch keine Trainingseinheiten. Verbinde Health Connect in den Einstellungen, um deine Workouts hier zu sehen.</string>
+
     <!-- Activity (dialogs, toasts) -->
     <string name="activity_settings_imported">Einstellungen importiert</string>
     <string name="activity_import_failed">Import fehlgeschlagen: %1$s</string>
