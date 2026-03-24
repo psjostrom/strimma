@@ -803,12 +803,12 @@ fun GlucoseGraph(
             val line2 = if (deltaStr != null) "$timeStr  $deltaStr" else timeStr
 
             val tooltipPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-                this.color = tooltipText.hashCode() or 0xFF000000.toInt()
+                this.color = tooltipText.toArgb()
                 textSize = 44f
                 typeface = android.graphics.Typeface.DEFAULT_BOLD
             }
             val subtextPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-                this.color = tooltipSubtext.hashCode() or 0xFF000000.toInt()
+                this.color = tooltipSubtext.toArgb()
                 textSize = 36f
             }
 
@@ -852,7 +852,7 @@ fun GlucoseGraph(
 
         // Axis labels
         val textPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-            this.color = axisColor.hashCode() or 0xFF000000.toInt()
+            this.color = axisColor.toArgb()
             textSize = 38f
             textAlign = android.graphics.Paint.Align.CENTER
         }
@@ -994,7 +994,7 @@ fun Minimap(
 
         // Time labels
         val textPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-            this.color = miniAxisColor.hashCode() or 0xFF000000.toInt()
+            this.color = miniAxisColor.toArgb()
             textSize = 28f
             textAlign = android.graphics.Paint.Align.CENTER
         }

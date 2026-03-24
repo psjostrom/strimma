@@ -311,6 +311,7 @@ class SettingsRepository @Inject constructor(
             put("web_server_enabled", prefs[KEY_WEB_SERVER_ENABLED] ?: false)
             put("start_on_boot", prefs[KEY_START_ON_BOOT] ?: true)
             put("language", prefs[KEY_LANGUAGE] ?: "")
+            put("hc_write_enabled", prefs[KEY_HC_WRITE_ENABLED] ?: false)
         }
 
         val secrets = JSONObject().apply {
@@ -372,6 +373,7 @@ class SettingsRepository @Inject constructor(
             if (settings.has("web_server_enabled")) prefs[KEY_WEB_SERVER_ENABLED] = settings.getBoolean("web_server_enabled")
             if (settings.has("start_on_boot")) prefs[KEY_START_ON_BOOT] = settings.getBoolean("start_on_boot")
             if (settings.has("language")) prefs[KEY_LANGUAGE] = settings.getString("language")
+            if (settings.has("hc_write_enabled")) prefs[KEY_HC_WRITE_ENABLED] = settings.getBoolean("hc_write_enabled")
 
             // Sync to SharedPreferences atomically with DataStore edit
             val sourceName = settings.optString("glucose_source", "COMPANION")
