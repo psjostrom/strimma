@@ -39,7 +39,11 @@ jobs:
         run: ./gradlew testDebugUnitTest
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: app/build/outputs/apk/release/app-release.apk
-          generate_release_notes: true
+        run: |
+          PREV_TAG=$(git tag --sort=-v:refname | grep '^v' | sed -n '2p')
+          gh release create "${{ github.ref_name }}" \
+            app/build/outputs/apk/release/app-release.apk \
+            --generate-notes \
+            --notes-start-tag "$PREV_TAG"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
