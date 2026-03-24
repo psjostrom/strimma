@@ -14,6 +14,9 @@ const val CANVAS_LOW = 0xFFFF4D6A.toInt()
 const val CANVAS_BOLUS = 0xFF5B8DEF.toInt()
 const val CANVAS_CARB = 0xFF4CAF50.toInt()
 
+// Exercise band color — keep in sync with Color.kt (ExerciseDefault)
+const val CANVAS_EXERCISE = 0xFF8B8BBA.toInt()
+
 fun canvasColorFor(mgdl: Double, bgLow: Double, bgHigh: Double): Int = when {
     mgdl <= CRITICAL_LOW -> CANVAS_LOW
     mgdl < bgLow -> CANVAS_LOW
