@@ -11,7 +11,6 @@ import androidx.health.connect.client.records.ActiveCaloriesBurnedRecord
 import androidx.health.connect.client.records.BloodGlucoseRecord
 import androidx.health.connect.client.records.ExerciseSessionRecord
 import androidx.health.connect.client.records.HeartRateRecord
-import androidx.health.connect.client.records.MealType
 import androidx.health.connect.client.records.StepsRecord
 import androidx.health.connect.client.records.metadata.Device
 import androidx.health.connect.client.records.metadata.Metadata as HcMetadata
@@ -162,9 +161,7 @@ class HealthConnectManager @Inject constructor(
                     device = Device(type = Device.TYPE_PHONE)
                 ),
                 level = BloodGlucose.milligramsPerDeciliter(reading.sgv.toDouble()),
-                specimenSource = BloodGlucoseRecord.SPECIMEN_SOURCE_INTERSTITIAL_FLUID,
-                mealType = MealType.MEAL_TYPE_UNKNOWN,
-                relationToMeal = BloodGlucoseRecord.RELATION_TO_MEAL_GENERAL
+                specimenSource = BloodGlucoseRecord.SPECIMEN_SOURCE_INTERSTITIAL_FLUID
             )
             client.insertRecords(listOf(record))
         } catch (
