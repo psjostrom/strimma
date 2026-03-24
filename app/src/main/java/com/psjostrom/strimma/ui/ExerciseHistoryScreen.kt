@@ -87,6 +87,7 @@ fun ExerciseHistoryScreen(
 ) {
     val sessions by viewModel.sessions.collectAsState()
     val glucoseUnit by viewModel.glucoseUnit.collectAsState()
+    val bgLow by viewModel.bgLow.collectAsState()
 
     var selectedExercise by remember { mutableStateOf<StoredExerciseSession?>(null) }
     var selectedBGContext by remember { mutableStateOf<ExerciseBGContext?>(null) }
@@ -160,6 +161,7 @@ fun ExerciseHistoryScreen(
                     ExerciseCard(
                         session = session,
                         glucoseUnit = glucoseUnit,
+                        bgLow = bgLow,
                         viewModel = viewModel,
                         onClick = { selectedExercise = session }
                     )
@@ -173,6 +175,7 @@ fun ExerciseHistoryScreen(
 private fun ExerciseCard(
     session: StoredExerciseSession,
     glucoseUnit: GlucoseUnit,
+    bgLow: Float,
     viewModel: ExerciseHistoryViewModel,
     onClick: () -> Unit
 ) {
@@ -245,11 +248,11 @@ private fun ExerciseCard(
                             value = glucoseUnit.format(entry)
                         )
                     }
-                    ctx.lowestBG?.let { lowest ->
+                    ctx.minBG?.let { min ->
                         StatChip(
                             label = stringResource(R.string.exercise_detail_lowest_bg),
-                            value = glucoseUnit.format(lowest),
-                            valueColor = if (ctx.postExerciseHypo) BelowLow else null
+                            value = glucoseUnit.format(min),
+                            valueColor = if (min < bgLow.toInt()) BelowLow else null
                         )
                     }
                     ctx.avgHR?.let { hr ->

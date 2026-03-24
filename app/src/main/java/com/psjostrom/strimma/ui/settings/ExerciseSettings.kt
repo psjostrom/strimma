@@ -86,10 +86,8 @@ fun ExerciseSettings(
     val hcLastSync by viewModel.hcLastSync.collectAsState()
 
     val permissionContract = remember { viewModel.healthConnectManager.createPermissionContract() }
-    val permissionLauncher = permissionContract?.let { contract ->
-        rememberLauncherForActivityResult(contract) {
-            viewModel.refreshPermissions()
-        }
+    val permissionLauncher = rememberLauncherForActivityResult(permissionContract) {
+        viewModel.refreshPermissions()
     }
 
     SettingsScaffold(title = stringResource(R.string.exercise_settings_title), onBack = onBack) {
@@ -106,44 +104,8 @@ fun ExerciseSettings(
                     AboveHigh to stringResource(R.string.exercise_hc_status_permissions)
             }
 
-            val statusAction: (() -> Unit)? = when {
-                hcStatus == HealthConnectStatus.NOT_INSTALLED -> {
-                    {
-                        val intent = Intent(Intent.ACTION_VIEW).apply {
-                            data = "market://details?id=com.google.android.apps.healthdata".toUri()
-                        }
-                        context.startActivity(intent)
-                    }
-                }
-                hcStatus == HealthConnectStatus.AVAILABLE && !hasPermissions -> {
-                    {
-                        DebugLog.log("HC: Permission row tapped, launching contract")
-                        if (permissionLauncher != null) {
-                            permissionLauncher.launch(viewModel.healthConnectManager.permissions)
-                        } else {
-                            DebugLog.log("HC: Contract null, opening HC settings")
-                            try {
-                                context.startActivity(
-                                    Intent("android.health.connect.action.MANAGE_HEALTH_PERMISSIONS")
-                                        .putExtra(Intent.EXTRA_PACKAGE_NAME, context.packageName)
-                                )
-                            } catch (e: Exception) {
-                                DebugLog.log("HC: Failed: ${e.message}")
-                            }
-                        }
-                    }
-                }
-                else -> null
-            }
-
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .then(
-                        if (statusAction != null) Modifier.clickable { statusAction() }
-                        else Modifier
-                    )
-                    .padding(vertical = 4.dp),
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
@@ -153,18 +115,30 @@ fun ExerciseSettings(
                         .background(dotColor)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(statusText, color = onBg, fontSize = 14.sp)
-                    if (statusAction != null) {
-                        Text(
-                            if (hcStatus == HealthConnectStatus.NOT_INSTALLED)
-                                stringResource(R.string.exercise_hc_install_prompt)
-                            else
-                                stringResource(R.string.exercise_hc_status_permissions),
-                            color = InRange,
-                            fontSize = 12.sp
+                Text(statusText, color = onBg, fontSize = 14.sp)
+            }
+
+            if (hcStatus == HealthConnectStatus.NOT_INSTALLED) {
+                Button(
+                    onClick = {
+                        context.startActivity(
+                            Intent(Intent.ACTION_VIEW).apply {
+                                data = "market://details?id=com.google.android.apps.healthdata".toUri()
+                            }
                         )
-                    }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.exercise_hc_install_prompt))
+                }
+            } else if (hcStatus == HealthConnectStatus.AVAILABLE && !hasPermissions) {
+                Button(
+                    onClick = {
+                        permissionLauncher.launch(viewModel.healthConnectManager.permissions)
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.exercise_hc_status_permissions))
                 }
             }
 

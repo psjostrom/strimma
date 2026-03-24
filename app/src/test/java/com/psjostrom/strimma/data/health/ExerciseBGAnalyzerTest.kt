@@ -423,6 +423,55 @@ class ExerciseBGAnalyzerTest {
     }
 
     @Test
+    fun `minBG reflects during-exercise low even when post-window dips lower`() {
+        // Real-world scenario: BG is stable during run (stays ~150-130),
+        // but crashes to 70 in the 4h post-exercise window (delayed hypo).
+        // The card "Lowest" should show 130 (during), not 70 (post).
+        val pre = flatReadings(-30, -1, 150)
+        val during = linearReadings(0, 60, 150, 130)
+        val postDrop = linearReadings(61, 120, 128, 70)
+        val postRecover = linearReadings(121, 300, 72, 110)
+        val allReadings = pre + during + postDrop + postRecover
+
+        val result = analyzer.analyze(
+            session = session(startMinutes = 0, endMinutes = 60),
+            readings = allReadings,
+            heartRateSamples = emptyList(),
+            bgLowMgdl = 72.0
+        )
+
+        assertNotNull(result)
+        result!!
+
+        assertEquals(130, result.minBG)    // during-exercise low
+        assertEquals(70, result.lowestBG)  // post-exercise low (much lower)
+        assertTrue(result.postExerciseHypo)
+    }
+
+    @Test
+    fun `minBG when BG rises during exercise`() {
+        // BG rises during exercise (e.g. adrenaline spike). minBG should be the start value.
+        val pre = flatReadings(-30, -1, 100)
+        val during = linearReadings(0, 60, 100, 180)
+        val post = flatReadings(61, 300, 170)
+        val allReadings = pre + during + post
+
+        val result = analyzer.analyze(
+            session = session(startMinutes = 0, endMinutes = 60),
+            readings = allReadings,
+            heartRateSamples = emptyList(),
+            bgLowMgdl = 72.0
+        )
+
+        assertNotNull(result)
+        result!!
+
+        assertEquals(100, result.minBG)   // lowest point is the start
+        assertEquals(170, result.lowestBG) // post-window is higher
+        assertFalse(result.postExerciseHypo)
+    }
+
+    @Test
     fun `inferSensorInterval returns null for insufficient readings`() {
         val single = listOf(reading(0, 140))
         assertNull(analyzer.inferSensorInterval(single))

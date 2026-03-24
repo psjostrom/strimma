@@ -80,8 +80,7 @@ class HealthConnectManager @Inject constructor(
         return missing.isEmpty()
     }
 
-    fun createPermissionContract(): ActivityResultContract<Set<String>, Set<String>>? {
-        if (isAvailable() != HealthConnectStatus.AVAILABLE) return null
+    fun createPermissionContract(): ActivityResultContract<Set<String>, Set<String>> {
         return PermissionController.createRequestPermissionResultContract()
     }
 

@@ -501,10 +501,10 @@ fun GlucoseGraph(
 
     val exerciseLabelPaint = remember {
         android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-            textSize = 24f
+            textSize = 32f
             textAlign = android.graphics.Paint.Align.LEFT
             typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
-            color = ExerciseDefault.copy(alpha = 0.7f).toArgb()
+            color = ExerciseDefault.toArgb()
         }
     }
 
