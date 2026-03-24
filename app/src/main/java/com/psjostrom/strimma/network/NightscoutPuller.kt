@@ -27,8 +27,7 @@ class NightscoutPuller @Inject constructor(
     }
 
     suspend fun pullHistory(days: Int): Result<Int> {
-        val url = settings.nightscoutUrl.first()
-        val secret = settings.getNightscoutSecret()
+        val (url, secret) = resolveUrlAndSecret()
         if (url.isBlank() || secret.isBlank()) {
             return Result.failure(IllegalStateException("Nightscout URL or secret not configured"))
         }
@@ -54,6 +53,14 @@ class NightscoutPuller @Inject constructor(
             DebugLog.log(message = "Pull: auto-pull complete, $count readings")
         }.onFailure { e ->
             DebugLog.log(message = "Pull: auto-pull failed: ${e.message?.take(MAX_ERROR_LENGTH)}")
+        }
+    }
+
+    private suspend fun resolveUrlAndSecret(): Pair<String, String> {
+        return if (settings.glucoseSource.first() == GlucoseSource.NIGHTSCOUT_FOLLOWER) {
+            settings.followerUrl.first() to settings.getFollowerSecret()
+        } else {
+            settings.nightscoutUrl.first() to settings.getNightscoutSecret()
         }
     }
 
