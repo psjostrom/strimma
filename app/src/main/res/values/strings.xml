@@ -181,6 +181,7 @@
     <string name="stats_average">Average</string>
     <string name="stats_gmi">GMI (eHbA1c)</string>
     <string name="stats_cv" translatable="false">CV</string>
+    <string name="stats_gvp" translatable="false">GVP</string>
     <string name="stats_std_dev">Std Dev</string>
     <string name="stats_readings">Readings</string>
     <string name="stats_range">Range: %1$s – %2$s %3$s</string>

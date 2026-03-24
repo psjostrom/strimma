@@ -239,6 +239,10 @@ fun StatsScreen(
                         StatRow(stringResource(R.string.stats_gmi), hbA1cUnit.format(s.gmi), onBg, onSurfaceVar)
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                         StatRow(stringResource(R.string.stats_cv), "%.1f%%".format(s.cv), onBg, onSurfaceVar)
+                        if (s.gvp != null) {
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                            StatRow(stringResource(R.string.stats_gvp), "%.1f%%".format(s.gvp), onBg, onSurfaceVar)
+                        }
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                         StatRow(stringResource(R.string.stats_std_dev), glucoseUnit.formatWithUnit(s.stdDevMgdl), onBg, onSurfaceVar)
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
