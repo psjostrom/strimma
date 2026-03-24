@@ -298,18 +298,11 @@ class StrimmaService : Service() {
     }
 
     private fun writeToHealthConnectIfEnabled(reading: GlucoseReading) {
-        if (!hcWriteEnabled.value) {
-            DebugLog.log("HC write: toggle off")
-            return
-        }
+        if (!hcWriteEnabled.value) return
         scope.launch {
             try {
-                if (!healthConnectManager.hasPermissions()) {
-                    DebugLog.log("HC write: no permissions")
-                    return@launch
-                }
+                if (!healthConnectManager.hasPermissions()) return@launch
                 healthConnectManager.writeGlucoseReading(reading)
-                DebugLog.log("HC write: OK ${reading.sgv} mg/dL")
             } catch (
                 @Suppress("TooGenericExceptionCaught") // HC SDK can throw various platform exceptions
                 e: Exception
