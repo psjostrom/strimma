@@ -65,6 +65,9 @@
     <!-- Data Source Settings -->
     <string name="settings_source_title">Datak\u00E4lla</string>
     <string name="settings_source_section">K\u00E4lla</string>
+    <string name="settings_source_notification_access">Notifieringsåtkomst</string>
+    <string name="settings_source_notification_granted">Beviljad</string>
+    <string name="settings_source_notification_not_granted">Ej beviljad — tryck för att öppna inställningar</string>
     <string name="settings_source_nightscout_push">Nightscout Push</string>
     <string name="settings_source_nightscout_url">Nightscout-URL</string>
     <string name="settings_source_url_placeholder">https://din-nightscout.example.com</string>

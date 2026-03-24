@@ -65,6 +65,9 @@
     <!-- Data Source Settings -->
     <string name="settings_source_title">Fuente de datos</string>
     <string name="settings_source_section">Fuente</string>
+    <string name="settings_source_notification_access">Acceso a notificaciones</string>
+    <string name="settings_source_notification_granted">Concedido</string>
+    <string name="settings_source_notification_not_granted">No concedido — toca para abrir ajustes</string>
     <string name="settings_source_nightscout_push">Nightscout Push</string>
     <string name="settings_source_nightscout_url">URL de Nightscout</string>
     <string name="settings_source_url_placeholder">https://tu-nightscout.example.com</string>

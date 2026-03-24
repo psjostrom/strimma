@@ -90,9 +90,6 @@ class MainActivity : ComponentActivity() {
                 })
             }
 
-            if (!GlucoseNotificationListener.isEnabled(this)) {
-                GlucoseNotificationListener.openSettings(this)
-            }
         }
 
         startForegroundService(Intent(this, StrimmaService::class.java))
@@ -187,6 +184,11 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable("settings/data-source") {
+                        val dsLifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+                        val dsLifecycleState by dsLifecycleOwner.lifecycle.currentStateFlow.collectAsState()
+                        val isNotifAccessGranted = remember(dsLifecycleState) {
+                            GlucoseNotificationListener.isEnabled(this@MainActivity)
+                        }
                         DataSourceSettings(
                             glucoseSource = glucoseSource,
                             nightscoutUrl = nightscoutUrl,
@@ -194,12 +196,16 @@ class MainActivity : ComponentActivity() {
                             followerUrl = followerUrl,
                             followerSecret = viewModel.followerSecret,
                             followerPollSeconds = followerPollSeconds,
+                            isNotificationAccessGranted = isNotifAccessGranted,
                             onGlucoseSourceChange = viewModel::setGlucoseSource,
                             onNightscoutUrlChange = viewModel::setNightscoutUrl,
                             onNightscoutSecretChange = viewModel::setNightscoutSecret,
                             onFollowerUrlChange = viewModel::setFollowerUrl,
                             onFollowerSecretChange = viewModel::setFollowerSecret,
                             onFollowerPollSecondsChange = viewModel::setFollowerPollSeconds,
+                            onOpenNotificationAccess = {
+                                GlucoseNotificationListener.openSettings(this@MainActivity)
+                            },
                             onBack = { navController.popBackStack() }
                         )
                     }
