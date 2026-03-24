@@ -924,7 +924,10 @@ fun Minimap(
                         val now0 = System.currentTimeMillis()
                         val start0 = now0 - MINIMAP_WINDOW_MS
                         val time = start0 + ((down.position.x / size.width) * MINIMAP_WINDOW_MS).toLong()
-                        onViewportChange((time + visibleMs / 2).coerceIn(start0 + visibleMs, now0))
+                        val rangeMin0 = start0 + visibleMs
+                        if (rangeMin0 <= now0) {
+                            onViewportChange((time + visibleMs / 2).coerceIn(rangeMin0, now0))
+                        }
 
                         while (true) {
                             val event = awaitPointerEvent()
@@ -933,7 +936,10 @@ fun Minimap(
                             val nowD = System.currentTimeMillis()
                             val startD = nowD - MINIMAP_WINDOW_MS
                             val dragTime = startD + ((pos.x.coerceIn(0f, size.width.toFloat()) / size.width) * MINIMAP_WINDOW_MS).toLong()
-                            onViewportChange((dragTime + visibleMs / 2).coerceIn(startD + visibleMs, nowD))
+                            val rangeMinD = startD + visibleMs
+                            if (rangeMinD <= nowD) {
+                                onViewportChange((dragTime + visibleMs / 2).coerceIn(rangeMinD, nowD))
+                            }
                             event.changes.forEach { it.consume() }
                         }
                     }
