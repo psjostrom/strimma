@@ -153,6 +153,7 @@ class MainActivity : ComponentActivity() {
                             iob = iob,
                             iobTauMinutes = IOBComputer.tauForInsulinType(insulinType, customDIA),
                             exerciseSessions = exerciseSessions,
+                            onComputeBGContext = viewModel::computeExerciseBGContext,
                             onSettingsClick = {
                                 navController.navigate("settings") {
                                     launchSingleTop = true
@@ -164,10 +165,15 @@ class MainActivity : ComponentActivity() {
                                 }
                             },
                             onExerciseClick = {
-                                navController.navigate("settings/exercise") {
+                                navController.navigate("exercise") {
                                     launchSingleTop = true
                                 }
                             }
+                        )
+                    }
+                    composable("exercise") {
+                        ExerciseHistoryScreen(
+                            onBack = { navController.popBackStack() }
                         )
                     }
                     composable("settings") {
