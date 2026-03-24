@@ -10,6 +10,8 @@ import com.psjostrom.strimma.data.IOBComputer
 import com.psjostrom.strimma.data.InsulinType
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
+import com.psjostrom.strimma.data.health.ExerciseDao
+import com.psjostrom.strimma.data.health.StoredExerciseSession
 import com.psjostrom.strimma.data.Treatment
 import com.psjostrom.strimma.data.TreatmentDao
 import com.psjostrom.strimma.network.FollowerStatus
@@ -28,6 +30,7 @@ import javax.inject.Inject
 class MainViewModel @Inject constructor(
     private val dao: ReadingDao,
     private val treatmentDao: TreatmentDao,
+    private val exerciseDao: ExerciseDao,
     val settings: SettingsRepository,
     private val alertManager: AlertManager,
     private val nightscoutFollower: NightscoutFollower,
@@ -198,6 +201,12 @@ class MainViewModel @Inject constructor(
         val tau = IOBComputer.tauForInsulinType(insulinType, customDIA)
         IOBComputer.computeIOB(treatments, System.currentTimeMillis(), tau)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+
+    val exerciseSessions: StateFlow<List<StoredExerciseSession>> = exerciseDao.getAllSessions()
+        .map { sessions ->
+            val since = System.currentTimeMillis() - HOURS_PER_DAY * MS_PER_HOUR
+            sessions.filter { it.startTime >= since }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     suspend fun exportSettings(): String = settings.exportToJson()
 

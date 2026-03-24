@@ -9,6 +9,7 @@ import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material3.*
@@ -37,6 +38,8 @@ import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.IOBComputer
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.Treatment
+import com.psjostrom.strimma.data.health.ExerciseCategory
+import com.psjostrom.strimma.data.health.StoredExerciseSession
 import com.psjostrom.strimma.graph.CRITICAL_HIGH
 import com.psjostrom.strimma.graph.CRITICAL_LOW
 import com.psjostrom.strimma.graph.PredictionComputer
@@ -48,6 +51,7 @@ import com.psjostrom.strimma.ui.theme.AboveHigh
 import com.psjostrom.strimma.ui.theme.BelowLow
 import com.psjostrom.strimma.ui.theme.BolusBlue
 import com.psjostrom.strimma.ui.theme.CarbGreen
+import com.psjostrom.strimma.ui.theme.ExerciseDefault
 import com.psjostrom.strimma.ui.theme.InRange
 import com.psjostrom.strimma.ui.theme.InRangeZone
 import com.psjostrom.strimma.ui.theme.Stale
@@ -74,8 +78,10 @@ fun MainScreen(
     treatments: List<Treatment> = emptyList(),
     iob: Double = 0.0,
     iobTauMinutes: Double = 55.0,
+    exerciseSessions: List<StoredExerciseSession> = emptyList(),
     onSettingsClick: () -> Unit,
-    onStatsClick: () -> Unit = {}
+    onStatsClick: () -> Unit = {},
+    onExerciseClick: () -> Unit = {}
 ) {
     val mainWindowMs = graphWindowHours * 3600_000L
 
@@ -96,6 +102,13 @@ fun MainScreen(
             TopAppBar(
                 title = { },
                 actions = {
+                    IconButton(onClick = onExerciseClick) {
+                        Icon(
+                            Icons.Default.FitnessCenter,
+                            contentDescription = stringResource(R.string.settings_exercise),
+                            tint = MaterialTheme.colorScheme.outline
+                        )
+                    }
                     IconButton(onClick = onStatsClick) {
                         Icon(
                             Icons.Outlined.BarChart,
@@ -152,6 +165,7 @@ fun MainScreen(
                     predictionMinutes = predictionMinutes,
                     glucoseUnit = glucoseUnit,
                     treatments = treatments,
+                    exerciseSessions = exerciseSessions,
                     onViewportChange = { viewportEnd = it },
                     onZoomChange = { zoomScale = it },
                     modifier = Modifier.fillMaxSize()
@@ -405,6 +419,7 @@ fun GlucoseGraph(
     predictionMinutes: Int = 15,
     glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
     treatments: List<Treatment> = emptyList(),
+    exerciseSessions: List<StoredExerciseSession> = emptyList(),
     onViewportChange: (Long) -> Unit,
     onZoomChange: (Float) -> Unit,
     modifier: Modifier = Modifier
@@ -446,6 +461,18 @@ fun GlucoseGraph(
             textSize = 28f
             textAlign = android.graphics.Paint.Align.CENTER
             typeface = android.graphics.Typeface.DEFAULT_BOLD
+        }
+    }
+
+    // Resolve exercise category labels in Composable scope (stringResource unavailable in Canvas)
+    val exerciseCategoryLabels = ExerciseCategory.entries.associateWith { stringResource(it.labelRes) }
+
+    val exerciseLabelPaint = remember {
+        android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            textSize = 24f
+            textAlign = android.graphics.Paint.Align.LEFT
+            typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
+            color = ExerciseDefault.copy(alpha = 0.7f).toArgb()
         }
     }
 
@@ -565,6 +592,49 @@ fun GlucoseGraph(
                 end = Offset(size.width - marginRight, y),
                 pathEffect = dashEffect,
                 strokeWidth = 1.5f
+            )
+        }
+
+        // Exercise bands (rendered before BG data so dots/lines draw on top)
+        for (session in exerciseSessions) {
+            // Skip sessions that don't overlap the visible window
+            if (session.endTime < visibleStart || session.startTime > viewportEnd) continue
+
+            val xStart = xFor(session.startTime).coerceIn(marginLeft, size.width - marginRight)
+            val xEnd = xFor(session.endTime).coerceIn(marginLeft, size.width - marginRight)
+            if (xEnd <= xStart) continue
+
+            // Filled band
+            drawRect(
+                color = ExerciseDefault.copy(alpha = 0.15f),
+                topLeft = Offset(xStart, marginTop),
+                size = Size(xEnd - xStart, plotHeight)
+            )
+
+            // Left and right border lines
+            val borderColor = ExerciseDefault.copy(alpha = 0.5f)
+            if (xFor(session.startTime) >= marginLeft) {
+                drawLine(
+                    color = borderColor,
+                    start = Offset(xStart, marginTop),
+                    end = Offset(xStart, marginTop + plotHeight),
+                    strokeWidth = 2f
+                )
+            }
+            if (xFor(session.endTime) <= size.width - marginRight) {
+                drawLine(
+                    color = borderColor,
+                    start = Offset(xEnd, marginTop),
+                    end = Offset(xEnd, marginTop + plotHeight),
+                    strokeWidth = 2f
+                )
+            }
+
+            // Label at top-left of band
+            val category = ExerciseCategory.fromHCType(session.type)
+            val label = "${category.emoji} ${exerciseCategoryLabels[category] ?: ""}"
+            drawContext.canvas.nativeCanvas.drawText(
+                label, xStart + 4f, marginTop + exerciseLabelPaint.fontSpacing, exerciseLabelPaint
             )
         }
 

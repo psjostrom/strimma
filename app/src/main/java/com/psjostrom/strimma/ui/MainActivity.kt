@@ -137,6 +137,7 @@ class MainActivity : ComponentActivity() {
                 val customDIA by viewModel.customDIA.collectAsState()
                 val treatments by viewModel.treatments.collectAsState()
                 val iob by viewModel.iob.collectAsState()
+                val exerciseSessions by viewModel.exerciseSessions.collectAsState()
                 NavHost(navController, startDestination = "main") {
                     composable("main") {
                         MainScreen(
@@ -151,6 +152,7 @@ class MainActivity : ComponentActivity() {
                             treatments = treatments,
                             iob = iob,
                             iobTauMinutes = IOBComputer.tauForInsulinType(insulinType, customDIA),
+                            exerciseSessions = exerciseSessions,
                             onSettingsClick = {
                                 navController.navigate("settings") {
                                     launchSingleTop = true
@@ -158,6 +160,11 @@ class MainActivity : ComponentActivity() {
                             },
                             onStatsClick = {
                                 navController.navigate("stats") {
+                                    launchSingleTop = true
+                                }
+                            },
+                            onExerciseClick = {
+                                navController.navigate("settings/exercise") {
                                     launchSingleTop = true
                                 }
                             }
