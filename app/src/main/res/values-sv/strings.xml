@@ -55,6 +55,7 @@
     <string name="settings_general_battery">Batterioptimering</string>
     <string name="settings_general_battery_desc">Strimma m\u00E5ste undantas fr\u00E5n batterioptimering f\u00F6r att k\u00F6ra tillf\u00F6rlitligt i bakgrunden</string>
     <string name="settings_general_battery_button">\u00D6ppna batteriinst\u00E4llningar</string>
+    <string name="settings_general_battery_allowed">Strimma \u00E4r undantagen fr\u00E5n batterioptimering</string>
     <string name="settings_general_language">Spr\u00E5k</string>
     <string name="settings_general_language_system_desc">Anv\u00E4nd telefonens spr\u00E5k</string>
     <string name="settings_general_about">Om</string>

@@ -55,6 +55,7 @@
     <string name="settings_general_battery">Akkuoptimierung</string>
     <string name="settings_general_battery_desc">Strimma muss von der Akkuoptimierung ausgenommen werden, um zuverl\u00E4ssig im Hintergrund zu laufen</string>
     <string name="settings_general_battery_button">Akkueinstellungen \u00F6ffnen</string>
+    <string name="settings_general_battery_allowed">Strimma ist von der Akkuoptimierung ausgenommen</string>
     <string name="settings_general_language">Sprache</string>
     <string name="settings_general_language_system_desc">Telefonsprache verwenden</string>
     <string name="settings_general_about">\u00DCber</string>
