@@ -185,6 +185,24 @@
     <string name="stats_readings">Readings</string>
     <string name="stats_range">Range: %1$s – %2$s %3$s</string>
 
+    <!-- Stats Tabs -->
+    <string name="stats_tab_metrics">Metrics</string>
+    <string name="stats_tab_agp" translatable="false">AGP</string>
+
+    <!-- AGP -->
+    <string name="agp_title">Ambulatory Glucose Profile</string>
+
+    <string name="agp_very_low">Very Low</string>
+    <string name="agp_low">Low</string>
+    <string name="agp_in_range">In Range</string>
+    <string name="agp_high">High</string>
+    <string name="agp_very_high">Very High</string>
+    <string name="agp_sensor_active">Sensor Active</string>
+    <string name="agp_no_data">Not enough data for 14-day AGP</string>
+    <string name="agp_thresholds">ADA standard thresholds: %1$s – %2$s – %3$s – %4$s %5$s</string>
+    <string name="agp_info">The Ambulatory Glucose Profile (AGP) is an ADA-endorsed standard for presenting CGM data. It overlays 14 days of readings into a single 24-hour chart, showing median glucose and variability bands by time of day.</string>
+    <string name="stats_user_thresholds">Based on your configured range (%1$s – %2$s %3$s)</string>
+
     <!-- Debug Screen -->
     <string name="debug_title">Debug Log</string>
     <string name="debug_share_chooser">Share log</string>

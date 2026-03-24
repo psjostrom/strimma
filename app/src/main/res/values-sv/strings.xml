@@ -167,6 +167,22 @@
     <string name="stats_readings">Avl\u00E4sningar</string>
     <string name="stats_range">Intervall: %1$s \u2013 %2$s %3$s</string>
 
+    <!-- Stats Tabs -->
+    <string name="stats_tab_metrics">M\u00E4tv\u00E4rden</string>
+
+    <!-- AGP -->
+    <string name="agp_title">Ambulatorisk glukosprofil</string>
+    <string name="agp_very_low">Mycket l\u00E5gt</string>
+    <string name="agp_low">L\u00E5gt</string>
+    <string name="agp_in_range">Inom intervall</string>
+    <string name="agp_high">H\u00F6gt</string>
+    <string name="agp_very_high">Mycket h\u00F6gt</string>
+    <string name="agp_sensor_active">Sensor aktiv</string>
+    <string name="agp_no_data">Inte tillr\u00E4ckligt med data f\u00F6r 14-dagars AGP</string>
+    <string name="agp_thresholds">ADA-standardgr\u00E4nser: %1$s \u2013 %2$s \u2013 %3$s \u2013 %4$s %5$s</string>
+    <string name="agp_info">Den ambulatoriska glukosprofilen (AGP) \u00E4r en ADA-rekommenderad standard f\u00F6r att presentera CGM-data. Den l\u00E4gger 14 dagars avl\u00E4sningar p\u00E5 en enda 24-timmarsgraf som visar medianglukos och variationsband per tid p\u00E5 dygnet.</string>
+    <string name="stats_user_thresholds">Baserat p\u00E5 dina inst\u00E4llda gr\u00E4nser (%1$s \u2013 %2$s %3$s)</string>
+
     <!-- Debug Screen -->
     <string name="debug_title">Fels\u00F6kningslogg</string>
     <string name="debug_share_chooser">Dela logg</string>

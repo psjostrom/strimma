@@ -167,6 +167,22 @@
     <string name="stats_readings">Lectures</string>
     <string name="stats_range">Plage : %1$s \u2013 %2$s %3$s</string>
 
+    <!-- Stats Tabs -->
+    <string name="stats_tab_metrics">M\u00E9triques</string>
+
+    <!-- AGP -->
+    <string name="agp_title">Profil ambulatoire du glucose</string>
+    <string name="agp_very_low">Tr\u00E8s bas</string>
+    <string name="agp_low">Bas</string>
+    <string name="agp_in_range">Dans la cible</string>
+    <string name="agp_high">Haut</string>
+    <string name="agp_very_high">Tr\u00E8s haut</string>
+    <string name="agp_sensor_active">Capteur actif</string>
+    <string name="agp_no_data">Pas assez de donn\u00E9es pour l\u0027AGP de 14 jours</string>
+    <string name="agp_thresholds">Seuils standard ADA : %1$s \u2013 %2$s \u2013 %3$s \u2013 %4$s %5$s</string>
+    <string name="agp_info">Le Profil Ambulatoire du Glucose (AGP) est un standard recommand\u00E9 par l\u0027ADA pour pr\u00E9senter les donn\u00E9es de CGM. Il superpose 14 jours de lectures sur un graphique de 24 heures, montrant la m\u00E9diane de glyc\u00E9mie et les bandes de variabilit\u00E9 par heure de la journ\u00E9e.</string>
+    <string name="stats_user_thresholds">Bas\u00E9 sur votre plage configur\u00E9e (%1$s \u2013 %2$s %3$s)</string>
+
     <!-- Debug Screen -->
     <string name="debug_title">Journal de d\u00E9bogage</string>
     <string name="debug_share_chooser">Partager le journal</string>

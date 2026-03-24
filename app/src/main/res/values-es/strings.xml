@@ -167,6 +167,22 @@
     <string name="stats_readings">Lecturas</string>
     <string name="stats_range">Rango: %1$s \u2013 %2$s %3$s</string>
 
+    <!-- Stats Tabs -->
+    <string name="stats_tab_metrics">M\u00E9tricas</string>
+
+    <!-- AGP -->
+    <string name="agp_title">Perfil ambulatorio de glucosa</string>
+    <string name="agp_very_low">Muy bajo</string>
+    <string name="agp_low">Bajo</string>
+    <string name="agp_in_range">En rango</string>
+    <string name="agp_high">Alto</string>
+    <string name="agp_very_high">Muy alto</string>
+    <string name="agp_sensor_active">Sensor activo</string>
+    <string name="agp_no_data">No hay suficientes datos para el AGP de 14 d\u00EDas</string>
+    <string name="agp_thresholds">Umbrales est\u00E1ndar ADA: %1$s \u2013 %2$s \u2013 %3$s \u2013 %4$s %5$s</string>
+    <string name="agp_info">El Perfil Ambulatorio de Glucosa (AGP) es un est\u00E1ndar respaldado por la ADA para presentar datos de MCG. Superpone 14 d\u00EDas de lecturas en un gr\u00E1fico de 24 horas, mostrando la mediana de glucosa y bandas de variabilidad por hora del d\u00EDa.</string>
+    <string name="stats_user_thresholds">Basado en tu rango configurado (%1$s \u2013 %2$s %3$s)</string>
+
     <!-- Debug Screen -->
     <string name="debug_title">Registro de depuraci\u00F3n</string>
     <string name="debug_share_chooser">Compartir registro</string>
