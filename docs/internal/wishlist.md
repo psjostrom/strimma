@@ -1,6 +1,6 @@
 # Strimma — Ideas
 
-**Updated:** 2026-03-23
+**Updated:** 2026-03-24
 
 ---
 
@@ -11,15 +11,6 @@
 ADA-endorsed standard for presenting CGM data to clinicians. 14-day composite glucose profile showing median + percentile bands (25th/75th, 5th/95th) by time of day, plus standardized metrics block (TIR breakdown, GMI, CV%, mean glucose, sensor active %). PDF export for sharing with your endo.
 
 Strimma already computes TIR, GMI, CV%, and coverage. AGP adds the composite profile chart that clinicians know how to read.
-
-### GVI/PGS Variability Metrics
-
-Two research-validated composite metrics (Thomas et al., Dexcom, 2016):
-
-- **GVI (Glycemic Variability Index)** — ratio of total glucose trace length to ideal straight line. GVI 1.0 = flat, >2.0 = roller coaster. Captures *how* you got your TIR — flat 6.0 all day and bouncing between 4.0 and 10.0 both give ~100% TIR, but very different GVI.
-- **PGS (Patient Glycemic Status)** — composite combining GVI, mean glucose, TIR, and hypo frequency. Single number, lower = better. <35 excellent, 35-100 needs work, >100 poor.
-
-Add to existing Statistics screen. ~200 lines on top of existing infrastructure.
 
 ### Health Connect Integration
 
@@ -94,3 +85,4 @@ Deferred until there's demand or hardware.
 - **LibreView upload** — Abbott's walled garden
 - **Meal photo AI** — requires cloud ML, doesn't fit local-first approach
 - **Gamification** — doesn't match Strimma's tone
+- **GVI/PGS/GVP variability metrics** — trace-length-based metrics (Thomas 2012, Peyser 2018) are fundamentally sensor-dependent. Reference values were established on Dexcom G4 data with heavy proprietary smoothing. Libre 3 (1-min, less smoothed) produces GVP ~100% for well-controlled T1D (CV 33%, TIR 83%) — misleading when the reference "T1D mean" is 45%. Resampling to 5-min and bucket averaging reduce noise but can't compensate for the smoothing difference. The old PGS (multiplicative formula) is mathematically dubious; Dexcom themselves abandoned these metrics. ATTD international consensus recommends CV as the primary variability metric — Strimma already has it.
