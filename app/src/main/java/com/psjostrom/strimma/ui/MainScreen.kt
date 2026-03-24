@@ -592,10 +592,12 @@ fun GlucoseGraph(
                                 val timeShift = (-panChange.x * msPerPx).toLong()
                                 val now = System.currentTimeMillis()
                                 val maxEnd = now + currentPredictionMs
-                                val newEnd = (currentViewportEnd + timeShift).coerceIn(
-                                    currentReadings.minOfOrNull { it.ts }?.plus(visMs.toLong()) ?: maxEnd,
+                                val minEnd = currentReadings.minOfOrNull { it.ts }?.plus(visMs.toLong()) ?: maxEnd
+                                val newEnd = if (minEnd <= maxEnd) {
+                                    (currentViewportEnd + timeShift).coerceIn(minEnd, maxEnd)
+                                } else {
                                     maxEnd
-                                )
+                                }
                                 onViewportChange(newEnd)
                                 event.changes.forEach { if (it.positionChanged()) it.consume() }
                             }
