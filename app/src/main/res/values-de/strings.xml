@@ -165,7 +165,22 @@
     <string name="stats_gmi">GMI (eHbA1c)</string>
     <string name="stats_std_dev">Standardabweichung</string>
     <string name="stats_readings">Messwerte</string>
-    <string name="stats_range">Bereich: %1$s \u2013 %2$s %3$s</string>
+
+    <!-- Stats Tabs -->
+    <string name="stats_tab_metrics">Messwerte</string>
+
+    <!-- AGP -->
+    <string name="agp_title">Ambulantes Glukoseprofil</string>
+    <string name="agp_very_low">Sehr niedrig</string>
+    <string name="agp_low">Niedrig</string>
+    <string name="agp_in_range">Im Bereich</string>
+    <string name="agp_high">Hoch</string>
+    <string name="agp_very_high">Sehr hoch</string>
+    <string name="agp_sensor_active">Sensor aktiv</string>
+    <string name="agp_no_data">Nicht gen\u00FCgend Daten f\u00FCr 14-Tage-AGP</string>
+    <string name="agp_thresholds">ADA-Standardschwellen: %1$s \u2013 %2$s \u2013 %3$s \u2013 %4$s %5$s</string>
+    <string name="agp_info">Das Ambulante Glukoseprofil (AGP) ist ein von der ADA empfohlener Standard zur Darstellung von CGM-Daten. Es \u00FCberlagert 14 Tage an Messwerten in einem 24-Stunden-Diagramm, das den Medianglukosewert und Variabilit\u00E4tsb\u00E4nder nach Tageszeit zeigt.</string>
+    <string name="stats_user_thresholds">Basierend auf Ihrem konfigurierten Bereich (%1$s \u2013 %2$s %3$s)</string>
 
     <!-- Debug Screen -->
     <string name="debug_title">Fehlerprotokoll</string>

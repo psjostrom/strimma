@@ -37,6 +37,10 @@ val LightTintInRange = Color(0xFFDCF3FB)
 val LightTintWarning = Color(0xFFFFF3D6)
 val LightTintDanger = Color(0xFFFFE0E8)
 
+// --- AGP 5-tier colors ---
+val VeryLow = Color(0xFFE53935)
+val VeryHigh = Color(0xFFEF6C00)
+
 // --- Treatment marker colors ---
 val BolusBlue = Color(0xFF5B8DEF)
 val CarbGreen = Color(0xFF4CAF50)
