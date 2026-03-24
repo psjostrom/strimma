@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.StrimmaDatabase
 import com.psjostrom.strimma.data.TreatmentDao
+import com.psjostrom.strimma.data.health.ExerciseDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -27,4 +28,7 @@ object AppModule {
 
     @Provides
     fun provideTreatmentDao(db: StrimmaDatabase): TreatmentDao = db.treatmentDao()
+
+    @Provides
+    fun provideExerciseDao(db: StrimmaDatabase): ExerciseDao = db.exerciseDao()
 }

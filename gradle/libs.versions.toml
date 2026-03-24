@@ -17,6 +17,7 @@ hilt-navigation-compose = "1.3.0"
 glance = "1.1.1"
 detekt = "1.23.8"
 leakcanary = "2.14"
+health-connect = "1.1.0"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "core-ktx" }
@@ -58,6 +59,8 @@ glance-appwidget = { module = "androidx.glance:glance-appwidget", version.ref = 
 glance-material3 = { module = "androidx.glance:glance-material3", version.ref = "glance" }
 
 leakcanary = { module = "com.squareup.leakcanary:leakcanary-android", version.ref = "leakcanary" }
+
+health-connect = { module = "androidx.health.connect:connect-client", version.ref = "health-connect" }
 
 junit = { module = "junit:junit", version = "4.13.2" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }

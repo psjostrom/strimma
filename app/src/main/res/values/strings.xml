@@ -234,6 +234,10 @@
     <string name="widget_config_opacity">%1$d%%</string>
     <string name="widget_config_background_hint">Controls background only — graph and values stay fully visible</string>
 
+    <!-- Health Connect -->
+    <string name="hc_rationale_title">Health Connect Permissions</string>
+    <string name="hc_rationale_body">Strimma uses Health Connect to read your exercise sessions, heart rate, steps, and calories to show how exercise affects your glucose. Optionally, Strimma can write glucose readings so other health apps can see them.</string>
+
     <!-- Activity (dialogs, toasts) -->
     <string name="activity_settings_imported">Settings imported</string>
     <string name="activity_import_failed">Import failed: %1$s</string>
