@@ -94,7 +94,7 @@ class ExerciseBGAnalyzer @Inject constructor() {
             .filter { it.ts in (endMs + 1)..postWindowEnd }
             .sortedBy { it.ts }
 
-        val postAnalysis = analyzePostWindow(postReadings, endMs, bgLowMgdl)
+        val postAnalysis = analyzePostWindow(postReadings, bgLowMgdl)
 
         // HR aggregation
         val avgHR = if (heartRateSamples.isNotEmpty()) {
@@ -205,7 +205,6 @@ class ExerciseBGAnalyzer @Inject constructor() {
 
     private fun analyzePostWindow(
         readings: List<GlucoseReading>,
-        endMs: Long,
         bgLowMgdl: Double
     ): PostAnalysis {
         if (readings.isEmpty()) return PostAnalysis(null, null, null, null, false)
