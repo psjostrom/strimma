@@ -122,11 +122,13 @@ fun ExerciseDetailSheet(
                     }
                 }
 
-                val stableText = bgContext.timeToStable?.let { duration ->
+                bgContext.timeToStable?.let { duration ->
                     val mins = duration.toMinutes()
-                    stringResource(R.string.exercise_detail_after_duration, "${mins}min")
-                } ?: stringResource(R.string.exercise_detail_still_dropping)
-                DetailRow(stringResource(R.string.exercise_detail_time_to_stable), stableText)
+                    DetailRow(
+                        stringResource(R.string.exercise_detail_time_to_stable),
+                        stringResource(R.string.exercise_detail_after_duration, "${mins}min")
+                    )
+                }
 
                 // Post-exercise hypo flag
                 if (isHypo) {
