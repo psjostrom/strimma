@@ -18,6 +18,7 @@ fun GeneralSettings(
     onLanguageChange: (String) -> Unit,
     appVersion: String,
     isDebug: Boolean,
+    isBatteryOptimizationIgnored: Boolean,
     onOpenBatteryOptimization: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -51,8 +52,16 @@ fun GeneralSettings(
                     fontSize = 12.sp
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                OutlinedButton(onClick = onOpenBatteryOptimization) {
-                    Text(stringResource(R.string.settings_general_battery_button))
+                if (isBatteryOptimizationIgnored) {
+                    Text(
+                        stringResource(R.string.settings_general_battery_allowed),
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 12.sp
+                    )
+                } else {
+                    OutlinedButton(onClick = onOpenBatteryOptimization) {
+                        Text(stringResource(R.string.settings_general_battery_button))
+                    }
                 }
             }
         }

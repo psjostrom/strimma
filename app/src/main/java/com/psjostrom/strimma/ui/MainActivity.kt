@@ -259,6 +259,12 @@ class MainActivity : ComponentActivity() {
                     composable("settings/general") {
                         val startOnBoot by viewModel.startOnBoot.collectAsState()
                         val language by viewModel.language.collectAsState()
+                        val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+                        val lifecycleState by lifecycleOwner.lifecycle.currentStateFlow.collectAsState()
+                        val isBatteryOptimizationIgnored = remember(lifecycleState) {
+                            getSystemService(PowerManager::class.java)
+                                .isIgnoringBatteryOptimizations(packageName)
+                        }
                         GeneralSettings(
                             startOnBoot = startOnBoot,
                             onStartOnBootChange = viewModel::setStartOnBoot,
@@ -274,6 +280,7 @@ class MainActivity : ComponentActivity() {
                             },
                             appVersion = packageManager.getPackageInfo(packageName, 0).versionName ?: "",
                             isDebug = com.psjostrom.strimma.BuildConfig.DEBUG,
+                            isBatteryOptimizationIgnored = isBatteryOptimizationIgnored,
                             onOpenBatteryOptimization = {
                                 // BatteryLife: Strimma is a CGM safety app whose core function
                                 // (real-time glucose alerts) is adversely affected by Doze.
