@@ -51,17 +51,33 @@ class HealthConnectManager @Inject constructor(
 
     fun isAvailable(): HealthConnectStatus {
         val status = HealthConnectClient.getSdkStatus(context)
-        return when (status) {
-            HealthConnectClient.SDK_AVAILABLE -> HealthConnectStatus.AVAILABLE
-            HealthConnectClient.SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED -> HealthConnectStatus.NOT_INSTALLED
-            else -> HealthConnectStatus.NOT_SUPPORTED
+        if (status != HealthConnectClient.SDK_AVAILABLE) {
+            return if (status == HealthConnectClient.SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED) {
+                HealthConnectStatus.NOT_INSTALLED
+            } else {
+                HealthConnectStatus.NOT_SUPPORTED
+            }
+        }
+        // SDK reports available, but verify the provider is actually usable
+        // On some devices, getSdkStatus returns AVAILABLE even when the HC app isn't installed
+        return try {
+            HealthConnectClient.getOrCreate(context)
+            HealthConnectStatus.AVAILABLE
+        } catch (_: Exception) {
+            DebugLog.log("HC: SDK reports available but provider not usable")
+            HealthConnectStatus.NOT_INSTALLED
         }
     }
 
     suspend fun hasPermissions(): Boolean {
         val client = getClient() ?: return false
         val granted = client.permissionController.getGrantedPermissions()
-        return permissions.all { it in granted }
+        val missing = permissions - granted
+        if (missing.isNotEmpty()) {
+            DebugLog.log("HC: Missing permissions: $missing")
+            DebugLog.log("HC: Granted: ${granted.size}, Requested: ${permissions.size}")
+        }
+        return missing.isEmpty()
     }
 
     fun createPermissionContract(): ActivityResultContract<Set<String>, Set<String>>? {

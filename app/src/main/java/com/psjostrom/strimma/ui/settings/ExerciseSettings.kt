@@ -3,6 +3,7 @@
 package com.psjostrom.strimma.ui.settings
 
 import android.content.Intent
+import androidx.compose.foundation.clickable
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -21,6 +22,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.psjostrom.strimma.R
+import com.psjostrom.strimma.receiver.DebugLog
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.health.HealthConnectManager
 import com.psjostrom.strimma.data.health.HealthConnectStatus
@@ -93,61 +95,75 @@ fun ExerciseSettings(
     SettingsScaffold(title = stringResource(R.string.exercise_settings_title), onBack = onBack) {
         SettingsSection(stringResource(R.string.exercise_hc_status_label)) {
             // HC status row
+            val (dotColor, statusText) = when {
+                hcStatus == HealthConnectStatus.NOT_SUPPORTED ->
+                    Stale to stringResource(R.string.exercise_hc_status_not_supported)
+                hcStatus == HealthConnectStatus.NOT_INSTALLED ->
+                    Stale to stringResource(R.string.exercise_hc_status_not_installed)
+                hasPermissions ->
+                    InRange to stringResource(R.string.exercise_hc_status_connected)
+                else ->
+                    AboveHigh to stringResource(R.string.exercise_hc_status_permissions)
+            }
+
+            val statusAction: (() -> Unit)? = when {
+                hcStatus == HealthConnectStatus.NOT_INSTALLED -> {
+                    {
+                        val intent = Intent(Intent.ACTION_VIEW).apply {
+                            data = "market://details?id=com.google.android.apps.healthdata".toUri()
+                        }
+                        context.startActivity(intent)
+                    }
+                }
+                hcStatus == HealthConnectStatus.AVAILABLE && !hasPermissions -> {
+                    {
+                        DebugLog.log("HC: Permission row tapped, launching contract")
+                        if (permissionLauncher != null) {
+                            permissionLauncher.launch(viewModel.healthConnectManager.permissions)
+                        } else {
+                            DebugLog.log("HC: Contract null, opening HC settings")
+                            try {
+                                context.startActivity(
+                                    Intent("android.health.connect.action.MANAGE_HEALTH_PERMISSIONS")
+                                        .putExtra(Intent.EXTRA_PACKAGE_NAME, context.packageName)
+                                )
+                            } catch (e: Exception) {
+                                DebugLog.log("HC: Failed: ${e.message}")
+                            }
+                        }
+                    }
+                }
+                else -> null
+            }
+
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(
+                        if (statusAction != null) Modifier.clickable { statusAction() }
+                        else Modifier
+                    )
+                    .padding(vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    val (dotColor, statusText) = when {
-                        hcStatus == HealthConnectStatus.NOT_SUPPORTED ->
-                            Stale to stringResource(R.string.exercise_hc_status_not_supported)
-                        hcStatus == HealthConnectStatus.NOT_INSTALLED ->
-                            Stale to stringResource(R.string.exercise_hc_status_not_installed)
-                        hasPermissions ->
-                            InRange to stringResource(R.string.exercise_hc_status_connected)
-                        else ->
-                            AboveHigh to stringResource(R.string.exercise_hc_status_permissions)
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(dotColor)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .clip(CircleShape)
+                        .background(dotColor)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Column(modifier = Modifier.weight(1f)) {
                     Text(statusText, color = onBg, fontSize = 14.sp)
-                }
-
-                when {
-                    hcStatus == HealthConnectStatus.NOT_INSTALLED -> {
-                        TextButton(onClick = {
-                            val intent = Intent(Intent.ACTION_VIEW).apply {
-                                data = "market://details?id=com.google.android.apps.healthdata".toUri()
-                            }
-                            context.startActivity(intent)
-                        }) {
-                            Text(
-                                stringResource(R.string.exercise_hc_install_prompt),
-                                color = InRange,
-                                fontSize = 13.sp
-                            )
-                        }
-                    }
-                    hcStatus == HealthConnectStatus.AVAILABLE && !hasPermissions -> {
-                        TextButton(onClick = {
-                            permissionLauncher?.launch(viewModel.healthConnectManager.permissions)
-                        }) {
-                            Text(
-                                stringResource(R.string.common_ok),
-                                color = InRange,
-                                fontSize = 13.sp
-                            )
-                        }
+                    if (statusAction != null) {
+                        Text(
+                            if (hcStatus == HealthConnectStatus.NOT_INSTALLED)
+                                stringResource(R.string.exercise_hc_install_prompt)
+                            else
+                                stringResource(R.string.exercise_hc_status_permissions),
+                            color = InRange,
+                            fontSize = 12.sp
+                        )
                     }
                 }
             }
