@@ -40,7 +40,7 @@ import java.io.File
 
 private const val HOURS_24 = 24
 private const val HOURS_7_DAYS = 168
-private const val HOURS_14_DAYS = 336
+private const val HOURS_14_DAYS = AgpCalculator.AGP_DAYS * 24
 private const val HOURS_30_DAYS = 720
 
 private const val TAB_METRICS = 0
@@ -67,9 +67,6 @@ fun StatsScreen(
 ) {
     val bg = MaterialTheme.colorScheme.background
     val onBg = MaterialTheme.colorScheme.onBackground
-    val onSurfaceVar = MaterialTheme.colorScheme.onSurfaceVariant
-    val surfVar = MaterialTheme.colorScheme.surfaceVariant
-    val outline = MaterialTheme.colorScheme.outline
 
     var selectedTab by remember { mutableIntStateOf(TAB_METRICS) }
     var selectedPeriod by remember { mutableIntStateOf(1) }
@@ -168,19 +165,12 @@ fun StatsScreen(
                     bgLow = bgLow,
                     bgHigh = bgHigh,
                     glucoseUnit = glucoseUnit,
-                    hbA1cUnit = hbA1cUnit,
-                    onBg = onBg,
-                    onSurfaceVar = onSurfaceVar,
-                    surfVar = surfVar,
-                    outline = outline
+                    hbA1cUnit = hbA1cUnit
                 )
                 TAB_AGP -> AgpTab(
                     agpResult = agpResult,
                     glucoseUnit = glucoseUnit,
-                    hbA1cUnit = hbA1cUnit,
-                    onBg = onBg,
-                    onSurfaceVar = onSurfaceVar,
-                    surfVar = surfVar
+                    hbA1cUnit = hbA1cUnit
                 )
             }
 
@@ -198,12 +188,13 @@ private fun MetricsTab(
     bgLow: Float,
     bgHigh: Float,
     glucoseUnit: GlucoseUnit,
-    hbA1cUnit: HbA1cUnit,
-    onBg: androidx.compose.ui.graphics.Color,
-    onSurfaceVar: androidx.compose.ui.graphics.Color,
-    surfVar: androidx.compose.ui.graphics.Color,
-    outline: androidx.compose.ui.graphics.Color
+    hbA1cUnit: HbA1cUnit
 ) {
+    val onBg = MaterialTheme.colorScheme.onBackground
+    val onSurfaceVar = MaterialTheme.colorScheme.onSurfaceVariant
+    val surfVar = MaterialTheme.colorScheme.surfaceVariant
+    val outline = MaterialTheme.colorScheme.outline
+
     // Period selector
     SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
         periods.forEachIndexed { index, (_, label) ->
@@ -341,11 +332,12 @@ private fun MetricsTab(
 private fun AgpTab(
     agpResult: AgpResult?,
     glucoseUnit: GlucoseUnit,
-    hbA1cUnit: HbA1cUnit,
-    onBg: androidx.compose.ui.graphics.Color,
-    onSurfaceVar: androidx.compose.ui.graphics.Color,
-    surfVar: androidx.compose.ui.graphics.Color
+    hbA1cUnit: HbA1cUnit
 ) {
+    val onBg = MaterialTheme.colorScheme.onBackground
+    val onSurfaceVar = MaterialTheme.colorScheme.onSurfaceVariant
+    val surfVar = MaterialTheme.colorScheme.surfaceVariant
+
     val result = agpResult
     if (result == null) {
         Box(

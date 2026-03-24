@@ -46,9 +46,6 @@ object AgpCalculator {
     const val HIGH = 180.0
     const val VERY_HIGH = 250.0
 
-    private const val GMI_INTERCEPT = 3.31
-    private const val GMI_SLOPE = 0.02392
-
     // AGP percentile levels
     private const val P5 = 5.0
     private const val P25 = 25.0
@@ -99,7 +96,7 @@ object AgpCalculator {
         val variance = values.map { (it - avg) * (it - avg) }.average()
         val stdDev = sqrt(variance)
         val cv = if (avg > 0) (stdDev / avg) * PERCENT else 0.0
-        val gmi = GMI_INTERCEPT + GMI_SLOPE * avg
+        val gmi = GmiCalculator.compute(avg)
 
         val veryLow = values.count { it < VERY_LOW }
         val low = values.count { it >= VERY_LOW && it < LOW }
@@ -132,7 +129,13 @@ object AgpCalculator {
 
         // Find typical interval from median of gaps
         val gaps = (1 until sorted.size).map { sorted[it].ts - sorted[it - 1].ts }
-        val medianGapMs = gaps.sorted()[gaps.size / 2]
+        val sortedGaps = gaps.sorted()
+        val mid = sortedGaps.size / 2
+        val medianGapMs = if (sortedGaps.size % 2 == 0) {
+            (sortedGaps[mid - 1] + sortedGaps[mid]) / 2
+        } else {
+            sortedGaps[mid]
+        }
         // Clamp to reasonable range (1-5 min)
         val intervalMs = medianGapMs.coerceIn(MS_PER_MINUTE, MAX_SENSOR_INTERVAL_MINUTES * MS_PER_MINUTE)
 

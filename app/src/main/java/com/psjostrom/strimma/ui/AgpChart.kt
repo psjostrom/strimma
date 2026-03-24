@@ -35,7 +35,7 @@ private const val AXIS_LABEL_OFFSET = 8f
 private const val AXIS_LABEL_BASELINE_OFFSET = 3f
 private const val X_AXIS_LABEL_SPACING = 2f
 private const val HOURS_STEP = 3
-private const val HOURS_IN_DAY = 23
+private const val HOURS_IN_DAY = 24
 private const val MINUTES_PER_HOUR = 60f
 private const val MEDIAN_STROKE_WIDTH = 5f
 private const val THRESHOLD_STROKE_WIDTH = 2f
@@ -51,7 +51,9 @@ private data class ChartBounds(
     val left: Float,
     val top: Float,
     val right: Float,
-    val bottom: Float
+    val bottom: Float,
+    val yMin: Double = 0.0,
+    val yRange: Double = 1.0
 ) {
     val width: Float get() = right - left
     val height: Float get() = bottom - top
@@ -78,7 +80,9 @@ fun AgpChart(
             left = LEFT_MARGIN,
             top = TOP_MARGIN,
             right = size.width - RIGHT_MARGIN,
-            bottom = size.height - BOTTOM_MARGIN
+            bottom = size.height - BOTTOM_MARGIN,
+            yMin = yRange.yMin,
+            yRange = yRange.range
         )
 
         fun xForMinute(minute: Int): Float =
@@ -97,10 +101,10 @@ fun AgpChart(
         )
 
         // 5th-95th band
-        drawPercentileBand(buckets, { it.p5 }, { it.p95 }, InRange.copy(alpha = OUTER_BAND_ALPHA), bounds, yRange.yMin, yRange.range)
+        drawPercentileBand(buckets, { it.p5 }, { it.p95 }, InRange.copy(alpha = OUTER_BAND_ALPHA), bounds)
 
         // 25th-75th band
-        drawPercentileBand(buckets, { it.p25 }, { it.p75 }, InRange.copy(alpha = INNER_BAND_ALPHA), bounds, yRange.yMin, yRange.range)
+        drawPercentileBand(buckets, { it.p25 }, { it.p75 }, InRange.copy(alpha = INNER_BAND_ALPHA), bounds)
 
         // Threshold lines (dashed)
         drawLine(
@@ -132,19 +136,17 @@ fun AgpChart(
     }
 }
 
-@Suppress("LongParameterList") // Chart drawing helper — bounds + y-axis mapping params are cohesive
 private fun DrawScope.drawPercentileBand(
     buckets: List<AgpBucket>,
     lowerFn: (AgpBucket) -> Double,
     upperFn: (AgpBucket) -> Double,
     color: Color,
-    bounds: ChartBounds,
-    yMin: Double, yRange: Double
+    bounds: ChartBounds
 ) {
     if (buckets.isEmpty()) return
 
     fun xForMinute(minute: Int) = bounds.left + (minute / MINUTES_PER_DAY) * bounds.width
-    fun yForMgdl(mgdl: Double) = bounds.bottom - ((mgdl - yMin) / yRange * bounds.height).toFloat()
+    fun yForMgdl(mgdl: Double) = bounds.bottom - ((mgdl - bounds.yMin) / bounds.yRange * bounds.height).toFloat()
 
     val path = Path()
     buckets.forEachIndexed { i, b ->
@@ -191,7 +193,7 @@ private fun DrawScope.drawXAxis(bounds: ChartBounds) {
 
     for (hour in 0..HOURS_IN_DAY step HOURS_STEP) {
         val x = bounds.left + (hour * MINUTES_PER_HOUR / MINUTES_PER_DAY) * bounds.width
-        val label = "%02d".format(hour)
+        val label = "%02d".format(hour % HOURS_IN_DAY)
         drawContext.canvas.nativeCanvas.drawText(
             label, x, bounds.bottom + AXIS_LABEL_SIZE + X_AXIS_LABEL_SPACING, paint
         )

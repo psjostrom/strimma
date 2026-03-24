@@ -16,8 +16,6 @@ data class GlucoseStats(
 
 object StatsCalculator {
 
-    private const val GMI_INTERCEPT = 3.31
-    private const val GMI_SLOPE = 0.02392
     private const val PERCENT_MULTIPLIER = 100.0
 
     fun compute(
@@ -35,8 +33,7 @@ object StatsCalculator {
         val stdDev = sqrt(variance)
         val cv = if (avg > 0) (stdDev / avg) * PERCENT_MULTIPLIER else 0.0
 
-        // GMI (eHbA1c): ATTD consensus formula (uses mg/dL)
-        val gmi = GMI_INTERCEPT + GMI_SLOPE * avg
+        val gmi = GmiCalculator.compute(avg)
 
         val inRange = mgdlValues.count { it in bgLow..bgHigh }
         val below = mgdlValues.count { it < bgLow }
