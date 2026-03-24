@@ -216,6 +216,13 @@
     <string name="widget_config_opacity">%1$d%%</string>
     <string name="widget_config_background_hint">Styr bara bakgrunden \u2014 graf och v\u00E4rden syns alltid fullt</string>
 
+    <!-- Exercise types -->
+    <string name="exercise_type_running">L\u00F6pning</string>
+    <string name="exercise_type_walking">Promenad</string>
+    <string name="exercise_type_cycling">Cykling</string>
+    <string name="exercise_type_swimming">Simning</string>
+    <string name="exercise_type_other">Tr\u00E4ning</string>
+
     <!-- Activity (dialogs, toasts) -->
     <string name="activity_settings_imported">Inst\u00E4llningar importerade</string>
     <string name="activity_import_failed">Import misslyckades: %1$s</string>

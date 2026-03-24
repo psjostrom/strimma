@@ -216,6 +216,13 @@
     <string name="widget_config_opacity">%1$d%%</string>
     <string name="widget_config_background_hint">Steuert nur den Hintergrund \u2014 Diagramm und Werte bleiben voll sichtbar</string>
 
+    <!-- Exercise types -->
+    <string name="exercise_type_running">Lauf</string>
+    <string name="exercise_type_walking">Gehen</string>
+    <string name="exercise_type_cycling">Radfahren</string>
+    <string name="exercise_type_swimming">Schwimmen</string>
+    <string name="exercise_type_other">Training</string>
+
     <!-- Activity (dialogs, toasts) -->
     <string name="activity_settings_imported">Einstellungen importiert</string>
     <string name="activity_import_failed">Import fehlgeschlagen: %1$s</string>

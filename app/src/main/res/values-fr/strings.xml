@@ -216,6 +216,13 @@
     <string name="widget_config_opacity">%1$d%%</string>
     <string name="widget_config_background_hint">Contr\u00F4le uniquement l\u2019arri\u00E8re-plan \u2014 le graphique et les valeurs restent enti\u00E8rement visibles</string>
 
+    <!-- Exercise types -->
+    <string name="exercise_type_running">Course</string>
+    <string name="exercise_type_walking">Marche</string>
+    <string name="exercise_type_cycling">V\u00E9lo</string>
+    <string name="exercise_type_swimming">Natation</string>
+    <string name="exercise_type_other">Exercice</string>
+
     <!-- Activity (dialogs, toasts) -->
     <string name="activity_settings_imported">Param\u00E8tres import\u00E9s</string>
     <string name="activity_import_failed">\u00C9chec de l\u2019importation : %1$s</string>

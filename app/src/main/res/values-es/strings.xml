@@ -216,6 +216,13 @@
     <string name="widget_config_opacity">%1$d%%</string>
     <string name="widget_config_background_hint">Controla solo el fondo \u2014 el gr\u00E1fico y los valores permanecen totalmente visibles</string>
 
+    <!-- Exercise types -->
+    <string name="exercise_type_running">Carrera</string>
+    <string name="exercise_type_walking">Caminata</string>
+    <string name="exercise_type_cycling">Ciclismo</string>
+    <string name="exercise_type_swimming">Nataci\u00F3n</string>
+    <string name="exercise_type_other">Ejercicio</string>
+
     <!-- Activity (dialogs, toasts) -->
     <string name="activity_settings_imported">Ajustes importados</string>
     <string name="activity_import_failed">Importaci\u00F3n fallida: %1$s</string>
