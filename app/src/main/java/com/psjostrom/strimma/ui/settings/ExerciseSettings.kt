@@ -1,3 +1,5 @@
+@file:Suppress("MatchingDeclarationName") // ViewModel is internal to the ExerciseSettings screen
+
 package com.psjostrom.strimma.ui.settings
 
 import android.content.Intent

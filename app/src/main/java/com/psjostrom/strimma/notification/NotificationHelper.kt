@@ -167,7 +167,10 @@ class NotificationHelper @Inject constructor(
         iob: Double = 0.0,
         exerciseSessions: List<StoredExerciseSession> = emptyList()
     ) {
-        val notification = buildNotification(reading, recentReadings, bgLow, bgHigh, graphWindowMs, predictionMinutes, glucoseUnit, iob, exerciseSessions)
+        val notification = buildNotification(
+            reading, recentReadings, bgLow, bgHigh,
+            graphWindowMs, predictionMinutes, glucoseUnit, iob, exerciseSessions
+        )
         notificationManager.notify(NOTIFICATION_ID, notification)
     }
 

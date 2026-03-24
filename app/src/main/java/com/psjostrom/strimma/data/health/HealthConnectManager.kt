@@ -152,7 +152,10 @@ class HealthConnectManager @Inject constructor(
                 relationToMeal = BloodGlucoseRecord.RELATION_TO_MEAL_GENERAL
             )
             client.insertRecords(listOf(record))
-        } catch (e: Exception) {
+        } catch (
+            @Suppress("TooGenericExceptionCaught") // HC SDK can throw various platform exceptions
+            e: Exception
+        ) {
             DebugLog.log("HC write failed: ${e.message}")
         }
     }
@@ -163,7 +166,10 @@ class HealthConnectManager @Inject constructor(
             client.getChangesToken(
                 ChangesTokenRequest(recordTypes = setOf(ExerciseSessionRecord::class))
             )
-        } catch (e: Exception) {
+        } catch (
+            @Suppress("TooGenericExceptionCaught") // HC SDK can throw various platform exceptions
+            e: Exception
+        ) {
             DebugLog.log("HC getChangesToken failed: ${e.message}")
             null
         }

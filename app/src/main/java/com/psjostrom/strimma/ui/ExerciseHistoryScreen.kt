@@ -1,3 +1,5 @@
+@file:Suppress("MatchingDeclarationName") // ViewModel is internal to the ExerciseHistoryScreen
+
 package com.psjostrom.strimma.ui
 
 import androidx.compose.foundation.Canvas

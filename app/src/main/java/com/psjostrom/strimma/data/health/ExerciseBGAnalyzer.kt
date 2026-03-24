@@ -49,6 +49,8 @@ class ExerciseBGAnalyzer @Inject constructor() {
         private const val STABLE_SUSTAIN_MINUTES = 15L
         private const val MIN_INTERVAL_MS = 30_000L // 30 seconds
         private const val MAX_INTERVAL_MS = 600_000L // 10 minutes
+        private const val PERCENT = 100.0
+        private const val MS_PER_MINUTE_D = 60_000.0
     }
 
     fun analyze(
@@ -73,7 +75,7 @@ class ExerciseBGAnalyzer @Inject constructor() {
         val coverage = duringReadings.size / expectedReadings
         if (coverage < MIN_COVERAGE) return null
 
-        val coveragePercent = (coverage * 100.0).coerceAtMost(100.0)
+        val coveragePercent = (coverage * PERCENT).coerceAtMost(PERCENT)
 
         // Pre-activity analysis (30 min before start)
         val preWindowStart = startMs - Duration.ofMinutes(PRE_WINDOW_MINUTES).toMillis()
@@ -150,7 +152,7 @@ class ExerciseBGAnalyzer @Inject constructor() {
 
         // Linear regression: x = time in minutes from first reading, y = sgv
         val firstTs = readings.first().ts
-        val xs = readings.map { (it.ts - firstTs).toDouble() / 60_000.0 }
+        val xs = readings.map { (it.ts - firstTs).toDouble() / MS_PER_MINUTE_D }
         val ys = readings.map { it.sgv.toDouble() }
 
         val regression = linearRegression(xs, ys)
@@ -241,7 +243,7 @@ class ExerciseBGAnalyzer @Inject constructor() {
 
             // Check if ALL consecutive pairs in the window have rate < threshold
             val allStable = windowReadings.zipWithNext().all { (a, b) ->
-                val dtMinutes = (b.ts - a.ts).toDouble() / 60_000.0
+                val dtMinutes = (b.ts - a.ts).toDouble() / MS_PER_MINUTE_D
                 if (dtMinutes <= 0) true
                 else abs(b.sgv - a.sgv) / dtMinutes < STABLE_RATE_THRESHOLD
             }

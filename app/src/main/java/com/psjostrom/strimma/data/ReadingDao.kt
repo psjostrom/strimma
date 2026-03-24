@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
 
+@Suppress("TooManyFunctions") // Room DAO — each query is a distinct data access need
 @Dao
 interface ReadingDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)

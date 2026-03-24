@@ -19,7 +19,6 @@ class ExerciseBGAnalyzerTest {
     private val baseTime = Instant.parse("2026-03-24T08:00:00Z").toEpochMilli()
 
     private fun minutes(n: Long) = Duration.ofMinutes(n).toMillis()
-    private fun hours(n: Long) = Duration.ofHours(n).toMillis()
 
     private fun reading(minutesFromBase: Long, sgv: Int) = GlucoseReading(
         ts = baseTime + minutes(minutesFromBase),
