@@ -22,6 +22,8 @@
 - **Statistics** — time in range, GMI, average glucose, CV%, coverage, with CSV export
 - **Units** — mmol/L and mg/dL with one-tap toggle
 - **BG broadcast** — emits xDrip-compatible intents so watches and other apps (AAPS, GDH) can receive data
+- **Health Connect** — reads exercise sessions (HR, steps, calories) from Garmin, Samsung Health, etc. and writes glucose readings. Exercise bands overlay on the glucose graph.
+- **Exercise-BG analysis** — before/during/after breakdown with entry BG, min BG, drop rate, post-exercise lowest/highest, total drop, and delayed hypo detection
 - **Dark / Light / System theme**
 
 ## Screenshots
@@ -30,6 +32,12 @@
   <img src="docs/screenshots/main-screen.png" width="240" alt="Main screen with BG graph" />
   <img src="docs/screenshots/notification-expanded.png" width="240" alt="Expanded notification with graph" />
   <img src="docs/screenshots/statistics.png" width="240" alt="Statistics" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/exercise-graph.png" width="240" alt="Exercise band on glucose graph" />
+  <img src="docs/screenshots/exercise-history.png" width="240" alt="Exercise history with BG stats" />
+  <img src="docs/screenshots/exercise-detail.png" width="240" alt="Exercise detail with BG analysis" />
 </p>
 
 ## Data Flow
@@ -45,6 +53,11 @@ Libre 3 sensor
           --> Alerts
           --> Widget
           --> BG Broadcast (optional)
+          --> Health Connect (optional, glucose write)
+
+Health Connect <-- Garmin Connect / Samsung Health / etc.
+  --> Strimma (exercise sessions, HR, steps, calories)
+    --> Exercise-BG analysis
 ```
 
 Strimma does not connect to the sensor directly. It reads the glucose value from your CGM app's ongoing notification (Companion Mode) or receives it via xDrip broadcast.
@@ -135,6 +148,7 @@ Single-module app. 35 Kotlin source files, ~3,800 lines.
 | Package | Purpose |
 |---------|---------|
 | `data/` | Room entities, DAO, SettingsRepository, DirectionComputer, GlucoseUnit |
+| `data/health/` | Health Connect integration — exercise sessions, BG analysis, HC sync |
 | `graph/` | Shared graph constants, color functions, Y-range computation, prediction curve fitting |
 | `network/` | NightscoutClient + NightscoutPusher (Ktor, `/api/v1/entries`) |
 | `notification/` | NotificationHelper (collapsed/expanded with graph), GraphRenderer, AlertManager |
