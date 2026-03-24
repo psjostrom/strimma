@@ -7,8 +7,8 @@ Strimma is distributed as an APK from GitHub Releases. It is not on Google Play.
 ## Download
 
 1. Open [Strimma Releases](https://github.com/psjostrom/Strimma/releases) on your Android phone
-2. Find the latest release (e.g., `v0.4.0`)
-3. Under **Assets**, tap `strimma-v0.4.0-release.apk` to download
+2. Find the latest release
+3. Under **Assets**, tap the `.apk` file to download
 4. When prompted, tap **Install**
 
 !!! note "Allow installation from unknown sources"
@@ -20,7 +20,7 @@ Strimma is distributed as an APK from GitHub Releases. It is not on Google Play.
     Every release APK is signed with the Strimma release key. If you want to verify the signature, you can run this on a computer with Android SDK tools installed:
 
     ```bash
-    apksigner verify --print-certs strimma-v0.4.0-release.apk
+    apksigner verify --print-certs strimma-<version>-release.apk
     ```
 
     Most users can skip this — the APK is built and signed automatically by GitHub Actions from the public source code.

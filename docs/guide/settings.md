@@ -8,11 +8,10 @@ Complete reference for every Strimma setting.
 
 ## Settings Menu
 
-The settings screen is organized into two groups:
+The settings screen has two sections, separated by a divider:
 
-**Group 1:** Data Source, Treatments, Display, Notifications, Alerts
-
-**Group 2:** Data, Debug Log
+- **Configuration:** Data Source, Treatments, Display, Notifications, Alerts
+- **Tools:** Data, Debug Log
 
 ---
 

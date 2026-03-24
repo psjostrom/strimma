@@ -24,7 +24,7 @@ This works because the Garmin watch communicates with the phone app over Bluetoo
 
 ### Compatible Watchfaces
 
-- **[SugarWave](https://github.com/psjostrom/SugarWave)** — retrowave-styled watchface with glucose graph, built specifically for Strimma's web server. Shows BG, trend, delta, graph, and supports configurable thresholds.
+- **[SugarWave](https://github.com/psjostrom/SugarWave)** — retrowave-styled watchface with glucose graph, trend, delta, and configurable thresholds. Works with Strimma's local web server, xDrip's local server, or Nightscout.
 - Any watchface that reads from xDrip's web service endpoint (`/sgv.json` on port 17580)
 
 ---

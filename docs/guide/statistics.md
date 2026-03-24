@@ -39,7 +39,7 @@ A horizontal bar chart showing the percentage of readings in each zone:
 | Above range | Amber | % of readings above your high threshold |
 
 !!! info "TIR targets"
-    The international consensus target (ATTD) for most people with Type 1 diabetes is >70% time in range (3.9–10.0 mmol/L / 70–180 mg/dL), <4% time below range, and <25% time above range.
+    The international consensus target (ATTD) for most people with Type 1 diabetes is >70% time in range (3.9–10.0 mmol/L / 70–180 mg/dL), <4% time below range, and <25% time above range. Note: Strimma calculates TIR using your configured thresholds (default 4.0–10.0 mmol/L), which may differ slightly from the ATTD reference range.
 
 ### Average Glucose
 

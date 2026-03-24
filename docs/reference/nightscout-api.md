@@ -6,7 +6,7 @@ Strimma is a fully compliant Nightscout client. This page documents the exact AP
 
 ## Design Principle
 
-Strimma follows the Nightscout API specification exactly. If a Nightscout server can't handle Strimma's requests, the server needs to be fixed — Strimma will never weaken its compliance to work around server bugs.
+Strimma follows the Nightscout API specification exactly.
 
 ---
 
