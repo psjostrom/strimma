@@ -264,6 +264,8 @@
     <string name="exercise_detail_after_duration">%s apr\u00E8s</string>
     <string name="exercise_history_title">Exercice</string>
     <string name="exercise_history_empty">Aucune s\u00E9ance d\u2019exercice. Connectez Health Connect dans les param\u00E8tres pour voir vos entra\u00EEnements ici.</string>
+    <string name="hc_rationale_title">Autorisations Health Connect</string>
+    <string name="hc_rationale_body">Strimma utilise Health Connect pour lire vos s\u00E9ances d\u2019exercice, fr\u00E9quence cardiaque, pas et calories afin de montrer comment l\u2019exercice affecte votre glyc\u00E9mie. Optionnellement, Strimma peut \u00E9crire les valeurs de glucose pour que d\u2019autres apps de sant\u00E9 puissent les voir.</string>
 
     <!-- Activity (dialogs, toasts) -->
     <string name="activity_settings_imported">Param\u00E8tres import\u00E9s</string>

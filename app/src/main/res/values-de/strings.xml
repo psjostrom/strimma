@@ -264,6 +264,8 @@
     <string name="exercise_detail_after_duration">%s danach</string>
     <string name="exercise_history_title">Training</string>
     <string name="exercise_history_empty">Noch keine Trainingseinheiten. Verbinde Health Connect in den Einstellungen, um deine Workouts hier zu sehen.</string>
+    <string name="hc_rationale_title">Health Connect-Berechtigungen</string>
+    <string name="hc_rationale_body">Strimma nutzt Health Connect, um Trainingseinheiten, Herzfrequenz, Schritte und Kalorien zu lesen und zu zeigen, wie Training den Blutzucker beeinflusst. Optional kann Strimma Glukosewerte schreiben, damit andere Gesundheits-Apps sie sehen k\u00F6nnen.</string>
 
     <!-- Activity (dialogs, toasts) -->
     <string name="activity_settings_imported">Einstellungen importiert</string>

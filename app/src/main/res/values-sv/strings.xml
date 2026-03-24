@@ -264,6 +264,8 @@
     <string name="exercise_detail_after_duration">%s efter</string>
     <string name="exercise_history_title">Tr\u00E4ning</string>
     <string name="exercise_history_empty">Inga tr\u00E4ningspass \u00E4nnu. Anslut Health Connect i Inst\u00E4llningar f\u00F6r att se dina tr\u00E4ningar h\u00E4r.</string>
+    <string name="hc_rationale_title">Health Connect-beh\u00F6righeter</string>
+    <string name="hc_rationale_body">Strimma anv\u00E4nder Health Connect f\u00F6r att l\u00E4sa dina tr\u00E4ningspass, puls, steg och kalorier f\u00F6r att visa hur tr\u00E4ning p\u00E5verkar ditt blodsocker. Valfritt kan Strimma skriva glukosvärden s\u00E5 att andra h\u00E4lsoappar kan se dem.</string>
 
     <!-- Activity (dialogs, toasts) -->
     <string name="activity_settings_imported">Inst\u00E4llningar importerade</string>
