@@ -303,8 +303,8 @@ class StrimmaService : Service() {
             try {
                 if (!healthConnectManager.hasPermissions()) return@launch
                 healthConnectManager.writeGlucoseReading(reading)
-            } catch (_: Exception) {
-                // Permissions may have been revoked — silently skip
+            } catch (e: Exception) {
+                DebugLog.log("HC write skipped: ${e.javaClass.simpleName}: ${e.message}")
             }
         }
     }

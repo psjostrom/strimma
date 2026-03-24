@@ -41,8 +41,8 @@ interface ExerciseDao {
         session: StoredExerciseSession,
         heartRate: List<HeartRateSample>
     ) {
-        upsertSession(session)
         deleteHeartRateForSession(session.id)
+        upsertSession(session)
         insertHeartRateSamples(heartRate)
     }
 }

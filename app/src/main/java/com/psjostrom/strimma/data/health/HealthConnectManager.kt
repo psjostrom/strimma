@@ -171,7 +171,7 @@ class HealthConnectManager @Inject constructor(
             @Suppress("TooGenericExceptionCaught") // HC SDK can throw various platform exceptions
             e: Exception
         ) {
-            DebugLog.log("HC write failed: ${e.message}")
+            DebugLog.log("HC write failed: ${e.javaClass.simpleName}: ${e.message}")
         }
     }
 
@@ -206,6 +206,10 @@ class HealthConnectManager @Inject constructor(
             var hasMore = true
             while (hasMore) {
                 val response = client.getChanges(nextToken)
+                if (response.changesTokenExpired) {
+                    DebugLog.log("HC changes token expired")
+                    return ChangesResult(hasChanges = false, nextToken = null, tokenExpired = true)
+                }
                 hasMore = response.hasMore
                 nextToken = response.nextChangesToken
                 if (response.changes.any { it is UpsertionChange || it is DeletionChange }) {
@@ -214,8 +218,8 @@ class HealthConnectManager @Inject constructor(
             }
             ChangesResult(hasChanges = hasChanges, nextToken = nextToken)
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            DebugLog.log("HC getChanges failed (token expired?): ${e.message}")
-            ChangesResult(hasChanges = false, nextToken = null, tokenExpired = true)
+            DebugLog.log("HC getChanges failed: ${e.javaClass.simpleName}: ${e.message}")
+            ChangesResult(hasChanges = false, nextToken = null)
         }
     }
 }
