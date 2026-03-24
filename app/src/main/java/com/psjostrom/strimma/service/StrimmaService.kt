@@ -14,6 +14,8 @@ import com.psjostrom.strimma.data.InsulinType
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.TreatmentDao
+import com.psjostrom.strimma.data.health.ExerciseSyncer
+import com.psjostrom.strimma.data.health.HealthConnectManager
 import com.psjostrom.strimma.network.NightscoutFollower
 import com.psjostrom.strimma.network.NightscoutPuller
 import com.psjostrom.strimma.network.NightscoutPusher
@@ -74,12 +76,15 @@ class StrimmaService : Service() {
     @Inject lateinit var treatmentSyncer: TreatmentSyncer
     @Inject lateinit var treatmentDao: TreatmentDao
     @Inject lateinit var localWebServer: LocalWebServer
+    @Inject lateinit var exerciseSyncer: ExerciseSyncer
+    @Inject lateinit var healthConnectManager: HealthConnectManager
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var pruneJob: Job? = null
     private var xdripReceiver: XdripBroadcastReceiver? = null
     private var followerJob: Job? = null
     private var treatmentSyncJob: Job? = null
+    private var exerciseSyncJob: Job? = null
 
     private lateinit var predMinutes: StateFlow<Int>
     private lateinit var notifGraphMinutes: StateFlow<Int>
@@ -90,6 +95,7 @@ class StrimmaService : Service() {
     private lateinit var treatmentsSyncEnabled: StateFlow<Boolean>
     private lateinit var insulinType: StateFlow<InsulinType>
     private lateinit var customDIA: StateFlow<Float>
+    private lateinit var hcWriteEnabled: StateFlow<Boolean>
 
     override fun onCreate() {
         super.onCreate()
@@ -105,6 +111,7 @@ class StrimmaService : Service() {
         treatmentsSyncEnabled = settings.treatmentsSyncEnabled.stateIn(scope, SharingStarted.Eagerly, false)
         insulinType = settings.insulinType.stateIn(scope, SharingStarted.Eagerly, InsulinType.FIASP)
         customDIA = settings.customDIA.stateIn(scope, SharingStarted.Eagerly, DEFAULT_CUSTOM_DIA)
+        hcWriteEnabled = settings.hcWriteEnabled.stateIn(scope, SharingStarted.Eagerly, false)
 
         startForeground(
             NotificationHelper.NOTIFICATION_ID,
@@ -150,6 +157,9 @@ class StrimmaService : Service() {
                 }
             }
         }
+
+        // Exercise sync (HC availability + permissions checked inside syncer)
+        exerciseSyncJob = exerciseSyncer.start(scope)
 
         pusher.pushPending()
         scope.launch { nightscoutPuller.pullIfEmpty() }
@@ -198,6 +208,7 @@ class StrimmaService : Service() {
         unregisterXdripReceiver()
         stopFollower()
         treatmentSyncJob?.cancel()
+        exerciseSyncJob?.cancel()
         pruneJob?.cancel()
         localWebServer.stop()
         scope.cancel()
@@ -275,12 +286,25 @@ class StrimmaService : Service() {
         val alertReadings = dao.since(timestamp - LOOKBACK_MINUTES * MINUTES_TO_MS)
         alertManager.checkReading(reading, alertReadings, predMinutes.value)
         broadcastBgIfEnabled(reading)
+        writeToHealthConnectIfEnabled(reading)
         try {
             val mgr = GlanceAppWidgetManager(this@StrimmaService)
             mgr.getGlanceIds(StrimmaWidget::class.java).forEach { id ->
                 StrimmaWidget().update(this@StrimmaService, id)
             }
         } catch (_: Exception) {}
+    }
+
+    private fun writeToHealthConnectIfEnabled(reading: GlucoseReading) {
+        if (!hcWriteEnabled.value) return
+        scope.launch {
+            try {
+                if (!healthConnectManager.hasPermissions()) return@launch
+                healthConnectManager.writeGlucoseReading(reading)
+            } catch (_: Exception) {
+                // Permissions may have been revoked — silently skip
+            }
+        }
     }
 
     private suspend fun updateNotification() {
