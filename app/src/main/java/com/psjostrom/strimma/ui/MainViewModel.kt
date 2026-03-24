@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
-@Suppress("TooManyFunctions") // One function per setting + reading/export logic
+@Suppress("TooManyFunctions", "LongParameterList") // Hilt ViewModel: one param per injected dependency
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val dao: ReadingDao,

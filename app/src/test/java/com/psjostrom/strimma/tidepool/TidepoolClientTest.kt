@@ -223,7 +223,7 @@ class TidepoolClientTest {
     @Test
     fun `uploadData returns false on network error`() = runTest {
         val client = mockClient { request ->
-            throw Exception("Network timeout")
+            throw java.io.IOException("Network timeout")
         }
 
         val records = listOf(

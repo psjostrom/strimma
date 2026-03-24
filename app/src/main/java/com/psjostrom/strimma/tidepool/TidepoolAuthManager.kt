@@ -46,6 +46,7 @@ class TidepoolAuthManager @Inject constructor(
         private const val SCOPES = "openid email data_read data_write offline_access"
         private const val TOKEN_EXPIRY_BUFFER_MS = 30_000L
         private const val MAX_ERROR_LENGTH = 80
+        private const val LOG_ID_PREFIX_LENGTH = 8
     }
 
     private val authService = AuthorizationService(context)
@@ -98,7 +99,7 @@ class TidepoolAuthManager @Inject constructor(
         }
 
         val tokenRequest = response.createTokenExchangeRequest()
-        return exchangeToken(tokenRequest)
+        return performTokenExchange(tokenRequest) != null
     }
 
     /**
@@ -135,7 +136,7 @@ class TidepoolAuthManager @Inject constructor(
             }
 
             val userInfo = response.body<UserInfoResponse>()
-            DebugLog.log(message = "Tidepool userinfo fetched, sub=${userInfo.sub.take(8)}...")
+            DebugLog.log(message = "Tidepool userinfo fetched, sub=${userInfo.sub.take(LOG_ID_PREFIX_LENGTH)}...")
             userInfo.sub
         } catch (
             @Suppress("TooGenericExceptionCaught") // Network boundary
@@ -183,38 +184,23 @@ class TidepoolAuthManager @Inject constructor(
             .setRefreshToken(refreshToken)
             .build()
 
-        return@withLock exchangeTokenForAccess(tokenRequest)
+        return@withLock performTokenExchange(tokenRequest, isRefresh = true)
     }
 
-    private suspend fun exchangeToken(tokenRequest: TokenRequest): Boolean {
-        return suspendCoroutine { continuation ->
-            authService.performTokenRequest(tokenRequest) { response, exception ->
-                if (response != null && response.accessToken != null) {
-                    accessToken = response.accessToken
-                    accessTokenExpiry = response.accessTokenExpirationTime ?: 0L
-                    response.refreshToken?.let { settings.setTidepoolRefreshToken(it) }
-                    DebugLog.log(message = "Tidepool token exchange success")
-                    continuation.resume(true)
-                } else {
-                    DebugLog.log(
-                        message = "Tidepool token exchange failed: ${exception?.message?.take(MAX_ERROR_LENGTH)}"
-                    )
-                    continuation.resume(false)
-                }
-            }
-        }
-    }
-
-    private suspend fun exchangeTokenForAccess(tokenRequest: TokenRequest): String? {
-        return suspendCoroutine { continuation ->
-            authService.performTokenRequest(tokenRequest) { response, exception ->
-                if (response != null && response.accessToken != null) {
-                    accessToken = response.accessToken
-                    accessTokenExpiry = response.accessTokenExpirationTime ?: 0L
-                    response.refreshToken?.let { settings.setTidepoolRefreshToken(it) }
-                    DebugLog.log(message = "Tidepool token refresh success")
-                    continuation.resume(response.accessToken)
-                } else {
+    private suspend fun performTokenExchange(
+        tokenRequest: TokenRequest,
+        isRefresh: Boolean = false
+    ): String? = suspendCoroutine { continuation ->
+        authService.performTokenRequest(tokenRequest) { response, exception ->
+            if (response != null && response.accessToken != null) {
+                accessToken = response.accessToken
+                accessTokenExpiry = response.accessTokenExpirationTime ?: 0L
+                response.refreshToken?.let { settings.setTidepoolRefreshToken(it) }
+                val action = if (isRefresh) "refresh" else "exchange"
+                DebugLog.log(message = "Tidepool token $action success")
+                continuation.resume(response.accessToken)
+            } else {
+                if (isRefresh) {
                     val errorType = exception?.type?.toString() ?: ""
                     if (errorType.contains("invalid_grant")) {
                         DebugLog.log(message = "Tidepool refresh token expired, clearing")
@@ -226,8 +212,12 @@ class TidepoolAuthManager @Inject constructor(
                             message = "Tidepool token refresh failed: ${exception?.message?.take(MAX_ERROR_LENGTH)}"
                         )
                     }
-                    continuation.resume(null)
+                } else {
+                    DebugLog.log(
+                        message = "Tidepool token exchange failed: ${exception?.message?.take(MAX_ERROR_LENGTH)}"
+                    )
                 }
+                continuation.resume(null)
             }
         }
     }

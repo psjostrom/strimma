@@ -18,6 +18,10 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class TidepoolAuthActivity : ComponentActivity() {
 
+    companion object {
+        private const val LOG_ID_PREFIX_LENGTH = 8
+    }
+
     @Inject lateinit var authManager: TidepoolAuthManager
     @Inject lateinit var settings: SettingsRepository
 
@@ -35,7 +39,7 @@ class TidepoolAuthActivity : ComponentActivity() {
             if (success) {
                 authManager.fetchUserId()?.let { userId ->
                     settings.setTidepoolUserId(userId)
-                    DebugLog.log(message = "Tidepool auth complete, userId=${userId.take(8)}...")
+                    DebugLog.log(message = "Tidepool auth complete, userId=${userId.take(LOG_ID_PREFIX_LENGTH)}...")
                 }
             }
             finish()

@@ -111,94 +111,85 @@ class TidepoolUploader @Inject constructor(
     }
 
     private suspend fun doUpload() {
-        // Get valid access token
         val token = authManager.getValidAccessToken()
         if (token == null) {
             DebugLog.log(message = "Tidepool upload: no valid token")
             return
         }
 
-        // Get API base URL from environment setting
         val environment = settings.tidepoolEnvironment.first()
         val baseUrl = authManager.getApiBase(environment)
 
-        // Get user ID
         val userId = settings.tidepoolUserId.first()
         if (userId.isBlank()) {
             DebugLog.log(message = "Tidepool upload: no user ID")
             return
         }
 
-        // Get or create dataset
+        val datasetId = getOrCreateDataset(baseUrl, userId, token) ?: return
+        uploadChunk(baseUrl, datasetId, token)
+    }
+
+    private suspend fun getOrCreateDataset(baseUrl: String, userId: String, token: String): String? {
         var datasetId = settings.tidepoolDatasetId.first()
+        if (datasetId.isNotBlank()) return datasetId
+
+        datasetId = client.getExistingDataset(baseUrl, userId, token) ?: ""
+
         if (datasetId.isBlank()) {
-            // Try to get existing dataset
-            datasetId = client.getExistingDataset(baseUrl, userId, token) ?: ""
-
-            // If no existing dataset, create one
-            if (datasetId.isBlank()) {
-                val appVersion = getAppVersion()
-                val now = System.currentTimeMillis()
-                val datasetRequest = DatasetRequest(
-                    client = DatasetRequest.ClientInfo(
-                        name = "com.psjostrom.strimma",
-                        version = appVersion
-                    ),
-                    time = TidepoolDateUtil.toUtcIso8601(now),
-                    computerTime = TidepoolDateUtil.toLocalNoZone(now),
-                    timezoneOffset = TidepoolDateUtil.getTimezoneOffsetMinutes(now),
-                    timezone = java.util.TimeZone.getDefault().id,
+            val appVersion = getAppVersion()
+            val now = System.currentTimeMillis()
+            val datasetRequest = DatasetRequest(
+                client = DatasetRequest.ClientInfo(
+                    name = "com.psjostrom.strimma",
                     version = appVersion
-                )
-                datasetId = client.createDataset(baseUrl, userId, token, datasetRequest) ?: ""
-            }
-
-            if (datasetId.isBlank()) {
-                settings.setTidepoolLastError("Failed to create dataset")
-                DebugLog.log(message = "Tidepool upload: failed to create dataset")
-                return
-            }
-
-            // Store dataset ID
-            settings.setTidepoolDatasetId(datasetId)
+                ),
+                time = TidepoolDateUtil.toUtcIso8601(now),
+                computerTime = TidepoolDateUtil.toLocalNoZone(now),
+                timezoneOffset = TidepoolDateUtil.getTimezoneOffsetMinutes(now),
+                timezone = java.util.TimeZone.getDefault().id,
+                version = appVersion
+            )
+            datasetId = client.createDataset(baseUrl, userId, token, datasetRequest) ?: ""
         }
 
-        // Compute chunk window
+        if (datasetId.isBlank()) {
+            settings.setTidepoolLastError("Failed to create dataset")
+            DebugLog.log(message = "Tidepool upload: failed to create dataset")
+            return null
+        }
+
+        settings.setTidepoolDatasetId(datasetId)
+        return datasetId
+    }
+
+    private suspend fun uploadChunk(baseUrl: String, datasetId: String, token: String) {
         val now = System.currentTimeMillis()
         val storedLastEnd = settings.tidepoolLastUploadEnd.first()
         val lastEnd = clampLastUploadEnd(storedLastEnd, now)
         val chunkEnd = computeChunkEnd(lastEnd, now)
 
-        // Nothing to upload if chunk end hasn't advanced
-        if (chunkEnd <= lastEnd) {
-            return
-        }
+        if (chunkEnd <= lastEnd) return
 
-        // Query readings from Room
-        val allReadings = dao.since(lastEnd)
-        val readings = allReadings.filter { reading ->
+        val readings = dao.since(lastEnd).filter { reading ->
             reading.ts <= chunkEnd && CbgRecord.isValidForUpload(reading)
         }
 
-        // If no valid readings, advance cursor and return
         if (readings.isEmpty()) {
             settings.setTidepoolLastUploadEnd(chunkEnd)
             settings.setTidepoolLastUploadTime(now)
             return
         }
 
-        // Map to CbgRecord and upload
         val records = readings.map { CbgRecord.fromReading(it) }
         val success = client.uploadData(baseUrl, datasetId, token, records)
 
         if (success) {
-            // Advance cursor, update last upload time, clear error
             settings.setTidepoolLastUploadEnd(chunkEnd)
             settings.setTidepoolLastUploadTime(now)
             settings.setTidepoolLastError("")
             DebugLog.log(message = "Tidepool upload: ${records.size} records uploaded")
         } else {
-            // Set error message
             settings.setTidepoolLastError("Upload failed")
             DebugLog.log(message = "Tidepool upload: failed to upload ${records.size} records")
         }
@@ -208,28 +199,21 @@ class TidepoolUploader @Inject constructor(
         return try {
             val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
             packageInfo.versionName ?: "unknown"
-        } catch (e: Exception) {
+        } catch (e: android.content.pm.PackageManager.NameNotFoundException) {
+            DebugLog.log(message = "Tidepool: package info not found: ${e.message}")
             "unknown"
         }
     }
 
     private fun isCharging(): Boolean {
-        return try {
-            val batteryManager = context.getSystemService(BATTERY_SERVICE) as? BatteryManager
-            batteryManager?.isCharging ?: false
-        } catch (e: Exception) {
-            false
-        }
+        val batteryManager = context.getSystemService(BATTERY_SERVICE) as? BatteryManager
+        return batteryManager?.isCharging ?: false
     }
 
     private fun isOnWifi(): Boolean {
-        return try {
-            val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
-            val network = connectivityManager?.activeNetwork
-            val capabilities = connectivityManager?.getNetworkCapabilities(network)
-            capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ?: false
-        } catch (e: Exception) {
-            false
-        }
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+        val network = connectivityManager?.activeNetwork
+        val capabilities = connectivityManager?.getNetworkCapabilities(network)
+        return capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ?: false
     }
 }
