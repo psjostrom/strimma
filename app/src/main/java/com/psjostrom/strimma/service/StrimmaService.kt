@@ -74,6 +74,7 @@ class StrimmaService : Service() {
     @Inject lateinit var treatmentSyncer: TreatmentSyncer
     @Inject lateinit var treatmentDao: TreatmentDao
     @Inject lateinit var localWebServer: LocalWebServer
+    @Inject lateinit var tidepoolUploader: com.psjostrom.strimma.tidepool.TidepoolUploader
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var pruneJob: Job? = null
@@ -152,6 +153,7 @@ class StrimmaService : Service() {
         }
 
         pusher.pushPending()
+        tidepoolUploader.uploadPending()
         scope.launch { nightscoutPuller.pullIfEmpty() }
         scope.launch { updateNotification() }
         startPeriodicJobs()
@@ -162,6 +164,7 @@ class StrimmaService : Service() {
             while (isActive) {
                 delay(RETRY_INTERVAL_MINUTES * MINUTES_TO_MS)
                 pusher.pushPending()
+                tidepoolUploader.uploadPending()
             }
         }
         scope.launch {
@@ -270,6 +273,7 @@ class StrimmaService : Service() {
         dao.insert(reading)
         DebugLog.log("Stored: ${reading.sgv} mg/dL ${direction.arrow}")
         pusher.pushReading(reading)
+        tidepoolUploader.onNewReading()
         updateNotification()
         // PredictionComputer uses 12-min lookback internally; 15 min ensures sufficient history
         val alertReadings = dao.since(timestamp - LOOKBACK_MINUTES * MINUTES_TO_MS)
