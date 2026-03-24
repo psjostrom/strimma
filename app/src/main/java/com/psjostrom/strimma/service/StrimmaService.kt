@@ -14,6 +14,7 @@ import com.psjostrom.strimma.data.InsulinType
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.TreatmentDao
+import com.psjostrom.strimma.data.health.ExerciseDao
 import com.psjostrom.strimma.data.health.ExerciseSyncer
 import com.psjostrom.strimma.data.health.HealthConnectManager
 import com.psjostrom.strimma.network.NightscoutFollower
@@ -76,6 +77,7 @@ class StrimmaService : Service() {
     @Inject lateinit var treatmentSyncer: TreatmentSyncer
     @Inject lateinit var treatmentDao: TreatmentDao
     @Inject lateinit var localWebServer: LocalWebServer
+    @Inject lateinit var exerciseDao: ExerciseDao
     @Inject lateinit var exerciseSyncer: ExerciseSyncer
     @Inject lateinit var healthConnectManager: HealthConnectManager
 
@@ -312,17 +314,20 @@ class StrimmaService : Service() {
             (System.currentTimeMillis() - reading.ts) > AlertManager.STALE_THRESHOLD_MINUTES * MINUTES_TO_MS
         }
         val graphWindowMs = notifGraphMinutes.value.toLong() * MINUTES_TO_MS
-        val recent = dao.since(System.currentTimeMillis() - graphWindowMs)
+        val now = System.currentTimeMillis()
+        val recent = dao.since(now - graphWindowMs)
 
         val iob = if (treatmentsSyncEnabled.value) {
             val tau = IOBComputer.tauForInsulinType(insulinType.value, customDIA.value)
-            val treatments = treatmentDao.insulinSince(System.currentTimeMillis() - IOBComputer.lookbackMs(tau))
-            IOBComputer.computeIOB(treatments, System.currentTimeMillis(), tau)
+            val treatments = treatmentDao.insulinSince(now - IOBComputer.lookbackMs(tau))
+            IOBComputer.computeIOB(treatments, now, tau)
         } else 0.0
+
+        val exerciseSessions = exerciseDao.getSessionsInRange(now - graphWindowMs, now)
 
         notificationHelper.updateNotification(
             latest, recent, bgLow.value.toDouble(), bgHigh.value.toDouble(),
-            graphWindowMs, predMinutes.value, glucoseUnit.value, iob
+            graphWindowMs, predMinutes.value, glucoseUnit.value, iob, exerciseSessions
         )
     }
 
