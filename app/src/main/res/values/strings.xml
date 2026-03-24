@@ -183,7 +183,6 @@
     <string name="stats_cv" translatable="false">CV</string>
     <string name="stats_std_dev">Std Dev</string>
     <string name="stats_readings">Readings</string>
-    <string name="stats_range">Range: %1$s – %2$s %3$s</string>
 
     <!-- Stats Tabs -->
     <string name="stats_tab_metrics">Metrics</string>

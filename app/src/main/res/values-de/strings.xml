@@ -165,7 +165,6 @@
     <string name="stats_gmi">GMI (eHbA1c)</string>
     <string name="stats_std_dev">Standardabweichung</string>
     <string name="stats_readings">Messwerte</string>
-    <string name="stats_range">Bereich: %1$s \u2013 %2$s %3$s</string>
 
     <!-- Stats Tabs -->
     <string name="stats_tab_metrics">Messwerte</string>

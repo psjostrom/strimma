@@ -165,7 +165,6 @@
     <string name="stats_gmi">GMI (eHbA1c)</string>
     <string name="stats_std_dev">Desviaci\u00F3n est\u00E1ndar</string>
     <string name="stats_readings">Lecturas</string>
-    <string name="stats_range">Rango: %1$s \u2013 %2$s %3$s</string>
 
     <!-- Stats Tabs -->
     <string name="stats_tab_metrics">M\u00E9tricas</string>

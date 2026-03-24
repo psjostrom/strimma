@@ -165,7 +165,6 @@
     <string name="stats_gmi">GMI (eHbA1c)</string>
     <string name="stats_std_dev">Standardavvikelse</string>
     <string name="stats_readings">Avl\u00E4sningar</string>
-    <string name="stats_range">Intervall: %1$s \u2013 %2$s %3$s</string>
 
     <!-- Stats Tabs -->
     <string name="stats_tab_metrics">M\u00E4tv\u00E4rden</string>
