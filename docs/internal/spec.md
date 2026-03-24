@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-17
 **Status:** Draft
-**Author:** Steg
+**Author:** psjostrom
 
 Strimma is an open-source Android CGM app inspired by xDrip+. It receives glucose data from CamAPS FX, displays it with notifications and an in-app graph, and pushes readings to Nightscout. Built on modern Android conventions (Kotlin, Compose, Room, Hilt), it aims to be an approachable, well-tested alternative for the CGM community.
 
@@ -37,7 +37,7 @@ xDrip+ is an extraordinary open-source project that has served the diabetes comm
 
 Strimma started as a focused CGM app for a specific setup (Libre 3 + CamAPS FX), but is designed from the ground up as an open-source project that can grow to serve a broader audience. It uses modern Android conventions (Kotlin, Compose, Room, Coroutines, targetSdk 36) to provide a codebase that is approachable for contributors familiar with current Android development.
 
-The open-source roadmap for broader sensor support, Nightscout integration, and community features is documented in `docs/strimma-p2-roadmap.md`.
+Ideas and wishlist in `docs/internal/wishlist.md`. CGM app landscape in `docs/internal/cgm-landscape.md`.
 
 ### Side-by-side validation (completed)
 
@@ -100,7 +100,7 @@ Strimma uses a `NotificationListenerService` to parse glucose values from CamAPS
 | Feature                      | Description                                                                 |
 | ---------------------------- | --------------------------------------------------------------------------- |
 | CamAPS notification listener | Receive glucose data from CamAPS FX (via NotificationListenerService)       |
-| Direction computation        | 3-point averaged sgv, EASD/ISPAD thresholds                                |
+| Direction computation        | 3-point averaged sgv, EASD/ISPAD thresholds                                 |
 | Local Room DB                | Store readings locally                                                      |
 | Nightscout push              | POST to `/api/v1/entries` (standard Nightscout API)                         |
 | Foreground service           | Persistent process with notification                                        |
@@ -274,14 +274,15 @@ If the device is offline, readings accumulate in the local DB with `pushed = 0`.
 
 **Table: `readings`**
 
-| Column       | Type      | Description                        |
-| ------------ | --------- | ---------------------------------- |
-| `ts`         | `INTEGER` | Timestamp ms (PRIMARY KEY)         |
-| `sgv`        | `INTEGER` | Glucose in mg/dL                   |
-| `mmol`       | `REAL`    | Glucose in mmol/L                  |
-| `direction`  | `TEXT`    | Computed direction string          |
-| `delta_mmol` | `REAL`    | 5-min delta in mmol/L (nullable)   |
+| Column       | Type      | Description                           |
+| ------------ | --------- | ------------------------------------- |
+| `ts`         | `INTEGER` | Timestamp ms (PRIMARY KEY)            |
+| `sgv`        | `INTEGER` | Glucose in mg/dL                      |
+| `direction`  | `TEXT`    | Computed direction string             |
+| `delta`      | `REAL`    | 5-min delta in mg/dL (nullable)       |
 | `pushed`     | `INTEGER` | 0 = pending, 1 = pushed to Nightscout |
+
+> **Note:** Schema v3 removed the `mmol` and `delta_mmol` columns. Canonical storage is mg/dL (`sgv` and `delta`). Display-time conversion to mmol/L is handled by `GlucoseUnit`.
 
 No sensor table. Sensor lifecycle is managed entirely by CamAPS FX.
 
@@ -539,13 +540,13 @@ Non-sensitive settings (thresholds, graph window) stored in Jetpack `DataStore` 
 
 ### What to Compare
 
-| Metric                 | How to Validate                                                                           |
-| ---------------------- | ----------------------------------------------------------------------------------------- |
-| **Completeness**       | Count readings per hour in both tables — should be identical                              |
-| **Timing**             | Compare timestamps — both should receive within seconds of each other                     |
-| **Direction accuracy** | Compare direction fields — both should match the independently recomputed direction       |
-| **Push reliability**   | Check for gaps — Strimma should have zero gaps over 24+ hours                             |
-| **Graph quality**      | Visual comparison — Strimma's graph should look as good or better than xDrip's            |
+| Metric                 | How to Validate                                                                     |
+| ---------------------- | ----------------------------------------------------------------------------------- |
+| **Completeness**       | Count readings per hour in both tables — should be identical                        |
+| **Timing**             | Compare timestamps — both should receive within seconds of each other               |
+| **Direction accuracy** | Compare direction fields — both should match the independently recomputed direction |
+| **Push reliability**   | Check for gaps — Strimma should have zero gaps over 24+ hours                       |
+| **Graph quality**      | Visual comparison — Strimma's graph should look as good or better than xDrip's      |
 
 ### Transition Criteria
 
@@ -652,29 +653,29 @@ For generic Nightscout setups, no backend changes are needed — Strimma uses th
 
 ### Delivered
 
-| Feature                 | Description                                                                                                                                                              |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Alerts**              | 5 alert types (urgent low, low, high, urgent high, stale) with per-alarm notification channels, configurable thresholds, persistent snooze, DND bypass for urgent alerts |
-| **Prediction**          | Least-squares curve fitting (linear + quadratic) on last 12 min of readings, inspired by xDrip+. Picks best model by residual error. Renders curved prediction line on main graph and notification. "Low in X min" / "High in X min" warning shown in BG header when prediction crosses thresholds. |
-| **Home screen widget**  | Jetpack Glance widget with BG, arrow, delta, mini graph, configurable opacity                                                                                            |
-| **Statistics**          | TIR, GMI, average glucose, CV%, coverage — with period selector (24h/7d/14d/30d) and CSV export                                                                          |
-| **Theme**               | Dark / Light / System picker with theme-adaptive graph surfaces                                                                                                          |
-| **Persistent logging**  | File-based debug logs with 7-day rotation, shareable via FileProvider                                                                                                    |
-| **Settings debounce**   | URL and API secret save on field blur instead of every keystroke                                                                                                         |
-| **Graph consolidation** | Shared `graph/GraphColors.kt` module, compact top gradient for widget readability                                                                                        |
-| **Testing**             | 77 tests: 57 unit (DirectionComputer, GlucoseParser, GraphColors, SecretHash, GlucoseUnit) + 20 integration (Room DAO, reading pipeline via Robolectric 4.16)           |
-| **Unit switching**      | mmol/L ↔ mg/dL toggle via `GlucoseUnit` enum. Internal storage stays mmol/L, conversion at display time. Affects all display surfaces.                                   |
-| **BG broadcast**        | xDrip-compatible `com.eveningoutpost.dexdrip.BgEstimate` intent emitted on each reading. Settings > Integration toggle, off by default. Verified with GDH.               |
+| Feature                 | Description                                                                                                                                                                                                                                                                                         |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Alerts**              | 5 alert types (urgent low, low, high, urgent high, stale) with per-alarm notification channels, configurable thresholds, persistent snooze, DND bypass for urgent alerts                                                                                                                            |
+| **Prediction**          | Dampened velocity extrapolation on last 12 min of readings with exponential time decay (DECAY=0.35). Weighted linear regression slope, dampened forward projection. Renders prediction line on main graph and notification. "Low in X min" / "High in X min" warning shown in BG header and as dedicated alerts when prediction crosses thresholds. |
+| **Home screen widget**  | Jetpack Glance widget with BG, arrow, delta, mini graph, configurable opacity                                                                                                                                                                                                                       |
+| **Statistics**          | TIR, GMI, average glucose, CV%, coverage — with period selector (24h/7d/14d/30d) and CSV export                                                                                                                                                                                                     |
+| **Theme**               | Dark / Light / System picker with theme-adaptive graph surfaces                                                                                                                                                                                                                                     |
+| **Persistent logging**  | File-based debug logs with 7-day rotation, shareable via FileProvider                                                                                                                                                                                                                               |
+| **Settings debounce**   | URL and API secret save on field blur instead of every keystroke                                                                                                                                                                                                                                    |
+| **Graph consolidation** | Shared `graph/GraphColors.kt` module, compact top gradient for widget readability                                                                                                                                                                                                                   |
+| **Testing**             | 77 tests: 57 unit (DirectionComputer, GlucoseParser, GraphColors, SecretHash, GlucoseUnit) + 20 integration (Room DAO, reading pipeline via Robolectric 4.16)                                                                                                                                       |
+| **Unit switching**      | mmol/L ↔ mg/dL toggle via `GlucoseUnit` enum. Internal storage is mg/dL (industry standard, matching Nightscout), conversion to mmol/L at display time. Affects all display surfaces.                                                                                                               |
+| **BG broadcast**        | xDrip-compatible `com.eveningoutpost.dexdrip.BgEstimate` intent emitted on each reading. Settings > Integration toggle, off by default. Verified with GDH.                                                                                                                                          |
 
 ### Remaining
 
-Phase 2 is complete. See `docs/strimma-p2-roadmap.md` for Phase 3 (open-source) roadmap.
+Phase 2 is complete. See `docs/internal/wishlist.md` for future ideas.
 
 ---
 
 ## 16. Phase 1 Non-Goals
 
-These are out of scope for phase 1. Several are planned for later phases — see the open-source roadmap in `docs/strimma-p2-roadmap.md`.
+These are out of scope for phase 1. Several are planned for later — see `docs/internal/wishlist.md`.
 
 - **BLE CGM collection** — Phase 1 uses CamAPS FX notification listener. Direct BLE planned for later phases.
 - **Calibration** — Not applicable for factory-calibrated Libre 3. Planned for sensors that need it.

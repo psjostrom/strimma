@@ -79,4 +79,4 @@ When a merge or push fails, ALWAYS check CI status (`gh pr checks`) and read the
 
 ## Spec
 
-Full spec in `docs/strimma-spec.md`. Roadmap in `docs/strimma-p2-roadmap.md` (Phase 3 substantially complete).
+Full spec in `docs/internal/spec.md`. Ideas and wishlist in `docs/internal/wishlist.md`. CGM app landscape in `docs/internal/cgm-landscape.md`.

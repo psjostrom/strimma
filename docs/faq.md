@@ -104,7 +104,7 @@ Yes. In Settings > Alerts, each alert type has a **Sound** button that opens the
 
 ### How much battery does Strimma use?
 
-Very little. Strimma passively listens for notifications and briefly processes each reading. The foreground service is lightweight. Most users see negligible battery impact (< 1% per hour).
+Very little. Strimma passively listens for notifications and briefly processes each reading. The foreground service is lightweight — it does not use Bluetooth, GPS, or continuous network connections.
 
 ### Why does Android say Strimma uses a lot of battery?
 
@@ -116,7 +116,7 @@ Android's battery stats can be misleading for foreground services. Because Strim
 
 ### Why does Strimma compute direction locally?
 
-Testing showed a 31% mismatch between CGM app-reported directions and clinically correct directions computed from actual readings. Local computation using EASD/ISPAD thresholds provides consistent, reliable trend information. See [Direction Arrows](reference/direction.md).
+Testing against real CamAPS FX data showed a 31% mismatch rate between the app's reported direction and the direction computed from actual readings using EASD/ISPAD thresholds. Local computation provides consistent trend information regardless of which CGM app you use. See [Direction Arrows](reference/direction.md).
 
 ### What units does Strimma use internally?
 

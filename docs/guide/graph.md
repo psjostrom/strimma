@@ -104,4 +104,4 @@ You can configure the graph in **Settings > Display**:
 | Low threshold | Any value | 4.0 mmol/L (72 mg/dL) |
 | High threshold | Any value | 10.0 mmol/L (180 mg/dL) |
 
-The prediction window is set in **Settings > Notifications** (Off / 15 min / 30 min).
+The prediction window is set in **Settings > Notifications > Prediction** (Off / 15 min / 30 min).

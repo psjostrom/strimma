@@ -22,7 +22,7 @@ Strimma stands on the shoulders of the incredible [xDrip+](https://github.com/Ni
 
 - **Receives glucose three ways** — reads notifications from 60+ CGM apps (Dexcom, Libre, CamAPS FX, etc.), receives xDrip-compatible broadcasts (from xDrip+, Juggluco, AAPS), or follows a remote Nightscout server. See [Data Sources](data-sources/overview.md).
 - **Shows your BG at a glance** — large, color-coded number with direction arrow, delta, and trend graph in your notification bar.
-- **Alerts when it matters** — configurable low, high, urgent low, urgent high, and stale-data alerts. Urgent alerts bypass Do Not Disturb. Any alert can be configured to bypass DND via Android's notification settings.
+- **Configurable alerts** — low, high, urgent low, urgent high, and stale-data alerts, each with its own notification channel. Urgent alerts bypass Do Not Disturb by default; any alert can be configured to bypass DND via Android's notification settings.
 - **Predicts where you're heading** — shows "Low in X min" or "High in X min" warnings before you cross your thresholds.
 - **Pushes to Nightscout** — automatic, immediate upload to any Nightscout-compatible server. Offline-resilient — readings queue and retry.
 - **Tracks treatments and IOB** — fetches bolus and carb data from Nightscout, computes insulin on board with your insulin type's curve.
@@ -51,7 +51,7 @@ You can also receive glucose via **xDrip Broadcast** (from xDrip+, Juggluco, AAP
 
 ## Who Is Strimma For?
 
-- **People with Type 1 or Type 2 diabetes** who want a better glucose display, smarter alerts, or Nightscout integration without running xDrip+.
+- **People with Type 1 or Type 2 diabetes** who want an open-source glucose display with configurable alerts and Nightscout integration.
 - **Parents and caregivers** who want to follow a loved one's glucose remotely via Nightscout follower mode.
 - **DIY diabetes tech users** who want an open-source, hackable CGM display that respects the Nightscout protocol.
 - **Closed-loop users** (CamAPS FX, AndroidAPS) who need a parallel display without interfering with their loop.
