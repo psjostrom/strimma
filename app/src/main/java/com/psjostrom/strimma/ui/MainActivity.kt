@@ -201,6 +201,11 @@ class MainActivity : ComponentActivity() {
                             onBack = { navController.popBackStack() }
                         )
                     }
+                    composable("settings/exercise") {
+                        com.psjostrom.strimma.ui.settings.ExerciseSettings(
+                            onBack = { navController.popBackStack() }
+                        )
+                    }
                     composable("settings/display") {
                         DisplaySettings(
                             glucoseUnit = glucoseUnit,

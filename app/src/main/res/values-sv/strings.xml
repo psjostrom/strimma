@@ -216,6 +216,21 @@
     <string name="widget_config_opacity">%1$d%%</string>
     <string name="widget_config_background_hint">Styr bara bakgrunden \u2014 graf och v\u00E4rden syns alltid fullt</string>
 
+    <!-- Exercise Settings -->
+    <string name="settings_exercise">Tr\u00E4ning</string>
+    <string name="settings_exercise_subtitle">Health Connect, tr\u00E4ningshistorik</string>
+    <string name="exercise_settings_title">Tr\u00E4ning</string>
+    <string name="exercise_hc_status_connected">Ansluten</string>
+    <string name="exercise_hc_status_permissions">Beh\u00F6righeter kr\u00E4vs</string>
+    <string name="exercise_hc_status_not_installed">Inte installerad</string>
+    <string name="exercise_hc_status_not_supported">St\u00F6ds inte</string>
+    <string name="exercise_hc_status_label">Health Connect</string>
+    <string name="exercise_hc_install_prompt">Installera fr\u00E5n Play Butik</string>
+    <string name="exercise_hc_write_toggle">Skriv glukos till Health Connect</string>
+    <string name="exercise_hc_write_subtitle">Dela glukosavl\u00E4sningar med andra h\u00E4lsoappar</string>
+    <string name="exercise_hc_last_sync">Senaste synk</string>
+    <string name="exercise_hc_last_sync_never">Aldrig</string>
+
     <!-- Exercise types -->
     <string name="exercise_type_running">L\u00F6pning</string>
     <string name="exercise_type_walking">Promenad</string>

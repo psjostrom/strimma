@@ -241,6 +241,21 @@
     <string name="exercise_type_swimming">Swim</string>
     <string name="exercise_type_other">Exercise</string>
 
+    <!-- Exercise Settings -->
+    <string name="settings_exercise">Exercise</string>
+    <string name="settings_exercise_subtitle">Health Connect, workout history</string>
+    <string name="exercise_settings_title">Exercise</string>
+    <string name="exercise_hc_status_connected">Connected</string>
+    <string name="exercise_hc_status_permissions">Permissions needed</string>
+    <string name="exercise_hc_status_not_installed">Not installed</string>
+    <string name="exercise_hc_status_not_supported">Not supported</string>
+    <string name="exercise_hc_status_label">Health Connect</string>
+    <string name="exercise_hc_install_prompt">Install from Play Store</string>
+    <string name="exercise_hc_write_toggle">Write glucose to Health Connect</string>
+    <string name="exercise_hc_write_subtitle">Share glucose readings with other health apps</string>
+    <string name="exercise_hc_last_sync">Last sync</string>
+    <string name="exercise_hc_last_sync_never">Never</string>
+
     <!-- Health Connect -->
     <string name="hc_rationale_title">Health Connect Permissions</string>
     <string name="hc_rationale_body">Strimma uses Health Connect to read your exercise sessions, heart rate, steps, and calories to show how exercise affects your glucose. Optionally, Strimma can write glucose readings so other health apps can see them.</string>

@@ -216,6 +216,21 @@
     <string name="widget_config_opacity">%1$d%%</string>
     <string name="widget_config_background_hint">Steuert nur den Hintergrund \u2014 Diagramm und Werte bleiben voll sichtbar</string>
 
+    <!-- Exercise Settings -->
+    <string name="settings_exercise">Training</string>
+    <string name="settings_exercise_subtitle">Health Connect, Trainingshistorie</string>
+    <string name="exercise_settings_title">Training</string>
+    <string name="exercise_hc_status_connected">Verbunden</string>
+    <string name="exercise_hc_status_permissions">Berechtigungen erforderlich</string>
+    <string name="exercise_hc_status_not_installed">Nicht installiert</string>
+    <string name="exercise_hc_status_not_supported">Nicht unterst\u00FCtzt</string>
+    <string name="exercise_hc_status_label">Health Connect</string>
+    <string name="exercise_hc_install_prompt">Aus dem Play Store installieren</string>
+    <string name="exercise_hc_write_toggle">Glukose in Health Connect schreiben</string>
+    <string name="exercise_hc_write_subtitle">Glukosemesswerte mit anderen Gesundheitsapps teilen</string>
+    <string name="exercise_hc_last_sync">Letzte Synchronisierung</string>
+    <string name="exercise_hc_last_sync_never">Nie</string>
+
     <!-- Exercise types -->
     <string name="exercise_type_running">Lauf</string>
     <string name="exercise_type_walking">Gehen</string>
