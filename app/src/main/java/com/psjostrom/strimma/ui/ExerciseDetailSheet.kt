@@ -122,12 +122,35 @@ fun ExerciseDetailSheet(
                     }
                 }
 
-                bgContext.timeToStable?.let { duration ->
-                    val mins = duration.toMinutes()
+                bgContext.highestBG?.let { highest ->
                     DetailRow(
-                        stringResource(R.string.exercise_detail_time_to_stable),
-                        stringResource(R.string.exercise_detail_after_duration, "${mins}min")
+                        stringResource(R.string.exercise_detail_highest_bg),
+                        glucoseUnit.format(highest)
                     )
+                }
+
+                bgContext.highestBGTime?.let { highestTime ->
+                    val minutesAfter = (highestTime.toEpochMilli() - session.endTime) / MS_PER_MINUTE
+                    if (minutesAfter > 0) {
+                        DetailRow(
+                            stringResource(R.string.exercise_detail_time_to_highest),
+                            stringResource(R.string.exercise_detail_after_duration, "${minutesAfter}min")
+                        )
+                    }
+                }
+
+                // Total drop: entry BG → overall lowest (during or post)
+                if (bgContext.entryBG != null) {
+                    val overallLowest = listOfNotNull(bgContext.minBG, bgContext.lowestBG).minOrNull()
+                    if (overallLowest != null) {
+                        val drop = bgContext.entryBG - overallLowest
+                        if (drop > 0) {
+                            DetailRow(
+                                stringResource(R.string.exercise_detail_total_drop),
+                                glucoseUnit.format(drop.toDouble())
+                            )
+                        }
+                    }
                 }
 
                 // Post-exercise hypo flag

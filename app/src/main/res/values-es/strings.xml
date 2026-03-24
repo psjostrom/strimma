@@ -254,8 +254,9 @@
     <string name="exercise_detail_steps">Pasos</string>
     <string name="exercise_detail_calories">Calor\u00EDas</string>
     <string name="exercise_detail_time_to_lowest">Tiempo al m\u00E1s bajo</string>
-    <string name="exercise_detail_time_to_stable">Tiempo hasta estable</string>
-    <string name="exercise_detail_still_dropping">A\u00FAn bajando</string>
+    <string name="exercise_detail_highest_bg">M\u00E1s alto</string>
+    <string name="exercise_detail_time_to_highest">Tiempo al m\u00E1s alto</string>
+    <string name="exercise_detail_total_drop">Ca\u00EDda total</string>
     <string name="exercise_detail_post_hypo">Bajo post-ejercicio</string>
     <string name="exercise_detail_no_data">Datos de glucosa insuficientes</string>
     <string name="exercise_detail_no_value">\u2014</string>

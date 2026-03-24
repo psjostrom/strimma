@@ -254,8 +254,9 @@
     <string name="exercise_detail_steps">Schritte</string>
     <string name="exercise_detail_calories">Kalorien</string>
     <string name="exercise_detail_time_to_lowest">Zeit bis Tiefstwert</string>
-    <string name="exercise_detail_time_to_stable">Zeit bis stabil</string>
-    <string name="exercise_detail_still_dropping">F\u00E4llt noch</string>
+    <string name="exercise_detail_highest_bg">H\u00F6chster</string>
+    <string name="exercise_detail_time_to_highest">Zeit bis H\u00F6chstwert</string>
+    <string name="exercise_detail_total_drop">Gesamtabfall</string>
     <string name="exercise_detail_post_hypo">Tief nach Training</string>
     <string name="exercise_detail_no_data">Nicht gen\u00FCgend Glukosedaten</string>
     <string name="exercise_detail_no_value">\u2014</string>

@@ -5,7 +5,6 @@ import java.time.Duration
 import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.math.abs
 
 enum class Trend { RISING, FALLING, STABLE }
 
@@ -23,7 +22,8 @@ data class ExerciseBGContext(
     // Post-activity (4h after end)
     val lowestBG: Int?,
     val lowestBGTime: Instant?,
-    val timeToStable: Duration?,
+    val highestBG: Int?,
+    val highestBGTime: Instant?,
     val postExerciseHypo: Boolean,
 
     // Aggregated from HC
@@ -45,8 +45,6 @@ class ExerciseBGAnalyzer @Inject constructor() {
         private const val BUCKET_MINUTES = 10L
         private const val MIN_COVERAGE = 0.50
         private const val TREND_THRESHOLD = 1.0 // mg/dL per minute
-        private const val STABLE_RATE_THRESHOLD = 1.5 // mg/dL per minute (~0.8 mmol over 10 min)
-        private const val STABLE_SUSTAIN_MINUTES = 10L
         private const val MIN_INTERVAL_MS = 30_000L // 30 seconds
         private const val MAX_INTERVAL_MS = 600_000L // 10 minutes
         private const val PERCENT = 100.0
@@ -113,7 +111,8 @@ class ExerciseBGAnalyzer @Inject constructor() {
             dropPer10Min = buckets,
             lowestBG = postAnalysis.lowestBG,
             lowestBGTime = postAnalysis.lowestBGTime,
-            timeToStable = postAnalysis.timeToStable,
+            highestBG = postAnalysis.highestBG,
+            highestBGTime = postAnalysis.highestBGTime,
             postExerciseHypo = postAnalysis.postExerciseHypo,
             avgHR = avgHR,
             maxHR = maxHR,
@@ -199,7 +198,8 @@ class ExerciseBGAnalyzer @Inject constructor() {
     private data class PostAnalysis(
         val lowestBG: Int?,
         val lowestBGTime: Instant?,
-        val timeToStable: Duration?,
+        val highestBG: Int?,
+        val highestBGTime: Instant?,
         val postExerciseHypo: Boolean
     )
 
@@ -208,53 +208,19 @@ class ExerciseBGAnalyzer @Inject constructor() {
         endMs: Long,
         bgLowMgdl: Double
     ): PostAnalysis {
-        if (readings.isEmpty()) return PostAnalysis(null, null, null, false)
+        if (readings.isEmpty()) return PostAnalysis(null, null, null, null, false)
 
         val lowest = readings.minByOrNull { it.sgv }!!
-        val lowestBG = lowest.sgv
-        val lowestBGTime = Instant.ofEpochMilli(lowest.ts)
-        val postExerciseHypo = lowestBG < bgLowMgdl
+        val highest = readings.maxByOrNull { it.sgv }!!
+        val postExerciseHypo = lowest.sgv < bgLowMgdl
 
-        val timeToStable = findTimeToStable(readings, endMs)
-
-        return PostAnalysis(lowestBG, lowestBGTime, timeToStable, postExerciseHypo)
-    }
-
-    private fun findTimeToStable(
-        readings: List<GlucoseReading>,
-        endMs: Long
-    ): Duration? {
-        if (readings.size < 2) return null
-
-        val sustainMs = Duration.ofMinutes(STABLE_SUSTAIN_MINUTES).toMillis()
-
-        // Slide a window across post-exercise readings. Use linear regression slope
-        // over the window instead of checking every consecutive pair — this is robust
-        // to the per-minute noise in Libre 3 data. Search window is widened by 2 min
-        // so the reading just past the sustain boundary is included.
-        for (i in readings.indices) {
-            val candidateStart = readings[i]
-            val searchEnd = candidateStart.ts + sustainMs + 2 * 60_000L
-
-            val windowReadings = readings.filter {
-                it.ts in candidateStart.ts..searchEnd
-            }
-
-            if (windowReadings.size < 3) continue
-
-            val windowSpan = windowReadings.last().ts - windowReadings.first().ts
-            if (windowSpan < sustainMs) continue
-
-            val xs = windowReadings.map { (it.ts - candidateStart.ts).toDouble() / MS_PER_MINUTE_D }
-            val ys = windowReadings.map { it.sgv.toDouble() }
-            val regression = linearRegression(xs, ys)
-
-            if (abs(regression.slope) < STABLE_RATE_THRESHOLD) {
-                return Duration.ofMillis(candidateStart.ts - endMs)
-            }
-        }
-
-        return null
+        return PostAnalysis(
+            lowestBG = lowest.sgv,
+            lowestBGTime = Instant.ofEpochMilli(lowest.ts),
+            highestBG = highest.sgv,
+            highestBGTime = Instant.ofEpochMilli(highest.ts),
+            postExerciseHypo = postExerciseHypo
+        )
     }
 
     private data class RegressionResult(val slope: Double, val rSquared: Double)

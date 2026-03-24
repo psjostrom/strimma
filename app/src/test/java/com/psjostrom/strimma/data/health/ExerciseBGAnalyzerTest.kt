@@ -98,6 +98,7 @@ class ExerciseBGAnalyzerTest {
         assertTrue(result.bgCoveragePercent > 95.0)
         assertFalse(result.postExerciseHypo)
         assertEquals(90, result.lowestBG)
+        assertEquals(90, result.highestBG) // flat post = same as lowest
         assertEquals(5000, result.totalSteps)
         assertEquals(350.0, result.activeCalories!!, 0.01)
     }
@@ -338,13 +339,14 @@ class ExerciseBGAnalyzerTest {
     }
 
     @Test
-    fun `time to stable computed for post-exercise flattening`() {
+    fun `post-exercise spike tracked as highestBG`() {
         val pre = flatReadings(-30, -1, 140)
         val during = linearReadings(0, 60, 140, 100)
-        // Post: continues dropping for 20 min, then flat for 20+ min
-        val postDrop = linearReadings(61, 80, 98, 85)
-        val postFlat = flatReadings(81, 120, 85)
-        val allReadings = pre + during + postDrop + postFlat
+        // Post: drops to 80, then spikes to 200, then settles at 150
+        val postDrop = linearReadings(61, 90, 98, 80)
+        val postSpike = linearReadings(91, 120, 82, 200)
+        val postSettle = linearReadings(121, 300, 198, 150)
+        val allReadings = pre + during + postDrop + postSpike + postSettle
 
         val result = analyzer.analyze(
             session = session(startMinutes = 0, endMinutes = 60),
@@ -356,40 +358,12 @@ class ExerciseBGAnalyzerTest {
         assertNotNull(result)
         result!!
 
-        // Should find time to stable somewhere around 20 min after end
-        assertNotNull(result.timeToStable)
-        assertTrue(
-            "timeToStable should be positive",
-            result.timeToStable!!.toMinutes() >= 0
-        )
-    }
-
-    @Test
-    fun `time to stable handles noisy 1-min sensor data`() {
-        val pre = flatReadings(-30, -1, 140)
-        val during = linearReadings(0, 60, 140, 100)
-        // Post: drops for 20 min, then "stable" at ~85 but with +/- 2 mg/dL noise per minute
-        val postDrop = linearReadings(61, 80, 98, 85)
-        val noisy = (81..120).map { min ->
-            // Alternating +2/-2 noise around 85 — consecutive rate = 2-4 mg/dL/min
-            // which would fail the old consecutive-pair check, but regression slope ≈ 0
-            val noise = if (min % 2 == 0) 2 else -2
-            reading(min.toLong(), 85 + noise)
-        }
-        val allReadings = pre + during + postDrop + noisy
-
-        val result = analyzer.analyze(
-            session = session(startMinutes = 0, endMinutes = 60),
-            readings = allReadings,
-            heartRateSamples = emptyList(),
-            bgLowMgdl = 70.0
-        )
-
-        assertNotNull(result)
-        result!!
-
-        // Regression slope over the noisy window is ~0, so timeToStable should be found
-        assertNotNull("Noisy but stable data should still find timeToStable", result.timeToStable)
+        assertEquals(80, result.lowestBG)
+        assertEquals(200, result.highestBG)
+        assertNotNull(result.highestBGTime)
+        // Highest should be at ~120 min mark
+        val minutesAfterEnd = (result.highestBGTime!!.toEpochMilli() - (baseTime + minutes(60))) / 60_000
+        assertTrue("Highest should be around 60 min after end", minutesAfterEnd in 55..65)
     }
 
     @Test
@@ -433,7 +407,8 @@ class ExerciseBGAnalyzerTest {
 
         assertNull(result.lowestBG)
         assertNull(result.lowestBGTime)
-        assertNull(result.timeToStable)
+        assertNull(result.highestBG)
+        assertNull(result.highestBGTime)
         assertFalse(result.postExerciseHypo)
     }
 
