@@ -3,6 +3,7 @@ package com.psjostrom.strimma.network
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
+import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.receiver.DebugLog
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
@@ -13,16 +14,35 @@ import javax.inject.Singleton
 class NightscoutPusher @Inject constructor(
     private val client: NightscoutClient,
     private val dao: ReadingDao,
-    private val settings: SettingsRepository
+    private val settings: SettingsRepository,
+    private val alertManager: AlertManager
 ) {
     companion object {
         private const val MAX_RETRY_ATTEMPTS = 12
         private const val RETRY_BASE_DELAY_MS = 5000L
         private const val MAX_RETRY_DELAY_MS = 60000L
         private const val SECONDS_TO_MS = 1000L
+        private const val PUSH_FAIL_ALERT_MS = 15 * 60 * 1000L // 15 minutes
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    @Volatile
+    private var firstFailureTs: Long = 0L
+
+    private fun onPushSuccess() {
+        firstFailureTs = 0L
+        alertManager.handlePushFailure(firing = false)
+    }
+
+    private fun onPushFailure() {
+        val now = System.currentTimeMillis()
+        if (firstFailureTs == 0L) {
+            firstFailureTs = now
+        } else if (now - firstFailureTs >= PUSH_FAIL_ALERT_MS) {
+            alertManager.handlePushFailure(firing = true)
+        }
+    }
 
     fun pushReading(reading: GlucoseReading) {
         scope.launch {
@@ -40,8 +60,10 @@ class NightscoutPusher @Inject constructor(
                 if (success) {
                     dao.markPushed(listOf(reading.ts))
                     DebugLog.log(message = "Pushed: ${reading.sgv} mg/dL")
+                    onPushSuccess()
                 } else {
                     attempt++
+                    onPushFailure()
                     val delayMs = (attempt * RETRY_BASE_DELAY_MS).coerceAtMost(MAX_RETRY_DELAY_MS)
                     DebugLog.log(message = "Push failed (attempt $attempt), retry in ${delayMs/SECONDS_TO_MS}s")
                     delay(delayMs)
@@ -67,7 +89,9 @@ class NightscoutPusher @Inject constructor(
             if (success) {
                 dao.markPushed(pending.map { it.ts })
                 DebugLog.log(message = "Pushed ${pending.size} pending")
+                onPushSuccess()
             } else {
+                onPushFailure()
                 DebugLog.log(message = "Pending push failed (${pending.size} readings)")
             }
         }

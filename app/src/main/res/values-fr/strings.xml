@@ -219,6 +219,10 @@
     <string name="alert_predicted">Pr\u00E9dit %1$s</string>
     <string name="alert_stale_title">Pas de donn\u00E9es</string>
     <string name="alert_stale_body">Aucune lecture de glyc\u00E9mie depuis 10+ minutes</string>
+    <string name="alert_push_fail_title">\u00C9chec d\u0027envoi</string>
+    <string name="alert_push_fail_body">L\u0027envoi de glyc\u00E9mie \u00E9choue depuis 15+ minutes. V\u00E9rifiez les param\u00E8tres Nightscout.</string>
+    <string name="alert_channel_push_fail">Erreur d\u0027envoi</string>
+    <string name="alert_channel_push_fail_desc">L\u0027envoi de glyc\u00E9mie \u00E9choue pendant une p\u00E9riode prolong\u00E9e</string>
     <string name="alert_snooze">Snooze 30 min</string>
 
     <!-- Foreground Notification -->

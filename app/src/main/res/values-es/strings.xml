@@ -219,6 +219,10 @@
     <string name="alert_predicted">Predicho %1$s</string>
     <string name="alert_stale_title">Sin datos</string>
     <string name="alert_stale_body">Sin lectura de glucosa durante 10+ minutos</string>
+    <string name="alert_push_fail_title">Error de subida</string>
+    <string name="alert_push_fail_body">Las subidas de glucosa han fallado durante 15+ minutos. Revisa la configuraci\u00F3n de Nightscout.</string>
+    <string name="alert_channel_push_fail">Error de subida</string>
+    <string name="alert_channel_push_fail_desc">Las subidas de glucosa fallan durante un per\u00EDodo prolongado</string>
     <string name="alert_snooze">Snooze 30 min</string>
 
     <!-- Foreground Notification -->
