@@ -268,10 +268,12 @@ class StrimmaService : Service() {
     private fun startLluFollower() {
         if (lluFollowerJob != null) return
         lluFollowerJob = libreLinkUpFollower.start(scope) { reading ->
+            pusher.pushReading(reading)
             updateNotification()
             val alertReadings = dao.since(reading.ts - LOOKBACK_MINUTES * MINUTES_TO_MS)
             alertManager.checkReading(reading, alertReadings, predMinutes.value)
             broadcastBgIfEnabled(reading)
+            writeToHealthConnectIfEnabled(reading)
             try {
                 val mgr = GlanceAppWidgetManager(this@StrimmaService)
                 mgr.getGlanceIds(StrimmaWidget::class.java).forEach { id ->

@@ -107,6 +107,7 @@ nav:
     - Companion Mode: data-sources/companion.md
     - xDrip Broadcast: data-sources/xdrip-broadcast.md
     - Nightscout Follower: data-sources/nightscout-follower.md
+    - LibreLinkUp: data-sources/librelinkup.md
     - Supported CGM Apps: data-sources/supported-apps.md
   - Nightscout:
     - What is Nightscout?: nightscout/overview.md

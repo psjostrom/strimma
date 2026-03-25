@@ -137,7 +137,7 @@ fun DataSourceSettings(
             }
         }
 
-        if (glucoseSource != GlucoseSource.NIGHTSCOUT_FOLLOWER && glucoseSource != GlucoseSource.LIBRELINKUP) {
+        if (glucoseSource != GlucoseSource.NIGHTSCOUT_FOLLOWER) {
             SettingsSection(stringResource(R.string.settings_source_nightscout_push)) {
                 var urlText by remember(nightscoutUrl) { mutableStateOf(nightscoutUrl) }
                 OutlinedTextField(

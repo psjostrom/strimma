@@ -229,12 +229,12 @@ class SettingsRepository @Inject constructor(
 
     fun getLluEmail(): String = encryptedPrefs.getString(KEY_LLU_EMAIL, "") ?: ""
     fun setLluEmail(email: String) {
-        encryptedPrefs.edit().putString(KEY_LLU_EMAIL, email).apply()
+        encryptedPrefs.edit { putString(KEY_LLU_EMAIL, email) }
     }
 
     fun getLluPassword(): String = encryptedPrefs.getString(KEY_LLU_PASSWORD, "") ?: ""
     fun setLluPassword(password: String) {
-        encryptedPrefs.edit().putString(KEY_LLU_PASSWORD, password).apply()
+        encryptedPrefs.edit { putString(KEY_LLU_PASSWORD, password) }
     }
 
     val treatmentsSyncEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_TREATMENTS_SYNC_ENABLED] ?: false }

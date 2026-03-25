@@ -84,6 +84,10 @@
     <string name="settings_source_xdrip_desc">Recevoir les diffusions BG compatibles xDrip</string>
     <string name="settings_source_follower_label">Suiveur Nightscout</string>
     <string name="settings_source_follower_desc">Suivre un serveur Nightscout distant</string>
+    <string name="settings_source_llu_desc">Suivre via le partage LibreLinkUp d\u0027Abbott</string>
+    <string name="settings_source_llu_email">E-mail</string>
+    <string name="settings_source_llu_password">Mot de passe</string>
+    <string name="settings_source_llu_hint">Utilisez vos identifiants LibreLinkUp (suiveur). Le partage doit d\u0027abord \u00EAtre activ\u00E9 dans l\u0027application Libre 3.</string>
 
     <!-- Treatments Settings -->
     <string name="settings_treatments_title">Traitements</string>

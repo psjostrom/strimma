@@ -98,6 +98,19 @@ class DataSourceSettingsTest {
     }
 
     @Test
+    fun `librelinkup mode shows nightscout push section`() {
+        render(glucoseSource = GlucoseSource.LIBRELINKUP)
+        composeRule.onNodeWithText("Nightscout URL").assertExists()
+        composeRule.onNodeWithText("API Secret").assertExists()
+    }
+
+    @Test
+    fun `librelinkup mode does not show follower poll interval`() {
+        render(glucoseSource = GlucoseSource.LIBRELINKUP)
+        composeRule.onNodeWithText("Poll Interval: 60s").assertDoesNotExist()
+    }
+
+    @Test
     fun `back button fires callback`() {
         var backPressed = false
         render(onBack = { backPressed = true })
