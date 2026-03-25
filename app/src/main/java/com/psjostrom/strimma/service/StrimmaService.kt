@@ -279,7 +279,12 @@ class StrimmaService : Service() {
                 mgr.getGlanceIds(StrimmaWidget::class.java).forEach { id ->
                     StrimmaWidget().update(this@StrimmaService, id)
                 }
-            } catch (_: Exception) {}
+            } catch (
+                @Suppress("TooGenericExceptionCaught") // Glance SDK can throw various platform exceptions
+                e: Exception
+            ) {
+                DebugLog.log("LLU widget update failed: ${e.message}")
+            }
         }
         DebugLog.log("LibreLinkUp follower started")
     }

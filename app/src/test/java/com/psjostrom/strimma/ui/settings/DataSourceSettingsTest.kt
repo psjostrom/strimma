@@ -98,6 +98,13 @@ class DataSourceSettingsTest {
     }
 
     @Test
+    fun `librelinkup mode shows credential fields`() {
+        render(glucoseSource = GlucoseSource.LIBRELINKUP)
+        composeRule.onNodeWithText("Email").assertExists()
+        composeRule.onNodeWithText("Password").assertExists()
+    }
+
+    @Test
     fun `librelinkup mode shows nightscout push section`() {
         render(glucoseSource = GlucoseSource.LIBRELINKUP)
         composeRule.onNodeWithText("Nightscout URL").assertExists()

@@ -122,8 +122,11 @@ class LibreLinkUpFollower @Inject constructor(
         item: LluGlucoseItem,
         onNewReading: suspend (GlucoseReading) -> Unit
     ): Boolean {
-        if (item.value < MIN_VALID_SGV || item.value > MAX_VALID_SGV) return false
-        val ts = parseLluTimestamp(item.timestamp) ?: return false
+        if (item.value < MIN_VALID_SGV || item.value > MAX_VALID_SGV) {
+            DebugLog.log(message = "LLU: rejected SGV ${item.value} (outside $MIN_VALID_SGV–$MAX_VALID_SGV)")
+            return false
+        }
+        val ts = parseLluTimestamp(item.factoryTimestamp) ?: return false
         val entry = NightscoutEntryResponse(sgv = item.value, date = ts, type = "sgv")
         val reading = processNightscoutEntry(entry, dao, directionComputer, pushed = 0) ?: return false
         onNewReading(reading)
@@ -157,12 +160,12 @@ class LibreLinkUpFollower @Inject constructor(
         private const val MIN_VALID_SGV = 18
         private const val MAX_VALID_SGV = 900
 
-        // LLU returns timestamps in regional formats — try all known variants
+        // FactoryTimestamp is UTC and uses a consistent M/d/yyyy format across all regions,
+        // unlike Timestamp which uses regional formats (EU day-first vs US month-first).
+        // We still support both 12h and 24h variants as observed in the API.
         private val FORMATS = listOf(
-            DateTimeFormatter.ofPattern("M/d/yyyy h:mm:ss a"),  // US (12h with AM/PM)
-            DateTimeFormatter.ofPattern("M/d/yyyy H:mm:ss"),    // US (24h)
-            DateTimeFormatter.ofPattern("d/M/yyyy H:mm:ss"),    // EU (24h, day-first)
-            DateTimeFormatter.ofPattern("d/M/yyyy h:mm:ss a")   // EU (12h, day-first)
+            DateTimeFormatter.ofPattern("M/d/yyyy h:mm:ss a"),  // 12h with AM/PM
+            DateTimeFormatter.ofPattern("M/d/yyyy H:mm:ss")     // 24h
         )
 
         fun parseLluTimestamp(timestamp: String): Long? {
