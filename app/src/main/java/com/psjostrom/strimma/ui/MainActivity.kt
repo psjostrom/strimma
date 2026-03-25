@@ -93,7 +93,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @Suppress("LongMethod") // Compose setContent wiring
+    @Suppress("LongMethod", "CyclomaticComplexMethod") // Compose setContent wiring
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 

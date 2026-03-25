@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+@Suppress("TooManyFunctions") // One getter+setter per setting
 @HiltViewModel
 class SetupViewModel @Inject constructor(
     private val settings: SettingsRepository,
