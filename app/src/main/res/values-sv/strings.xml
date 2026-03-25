@@ -84,6 +84,10 @@
     <string name="settings_source_xdrip_desc">Ta emot xDrip-kompatibla BG-s\u00E4ndningar</string>
     <string name="settings_source_follower_label">Nightscout-f\u00F6ljare</string>
     <string name="settings_source_follower_desc">F\u00F6lj en fj\u00E4rr-Nightscout-server</string>
+    <string name="settings_source_llu_desc">F\u00F6lj via Abbotts LibreLinkUp-delning</string>
+    <string name="settings_source_llu_email">E-post</string>
+    <string name="settings_source_llu_password">L\u00F6senord</string>
+    <string name="settings_source_llu_hint">Anv\u00E4nd dina LibreLinkUp-uppgifter (f\u00F6ljare). Delning m\u00E5ste vara aktiverad i Libre 3-appen f\u00F6rst.</string>
 
     <!-- Treatments Settings -->
     <string name="settings_treatments_title">Behandlingar</string>

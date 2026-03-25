@@ -17,6 +17,7 @@ import com.psjostrom.strimma.data.TreatmentDao
 import com.psjostrom.strimma.data.health.ExerciseDao
 import com.psjostrom.strimma.data.health.ExerciseSyncer
 import com.psjostrom.strimma.data.health.HealthConnectManager
+import com.psjostrom.strimma.network.LibreLinkUpFollower
 import com.psjostrom.strimma.network.NightscoutFollower
 import com.psjostrom.strimma.network.NightscoutPuller
 import com.psjostrom.strimma.network.NightscoutPusher
@@ -73,6 +74,7 @@ class StrimmaService : Service() {
     @Inject lateinit var alertManager: AlertManager
     @Inject lateinit var settings: SettingsRepository
     @Inject lateinit var nightscoutFollower: NightscoutFollower
+    @Inject lateinit var libreLinkUpFollower: LibreLinkUpFollower
     @Inject lateinit var nightscoutPuller: NightscoutPuller
     @Inject lateinit var treatmentSyncer: TreatmentSyncer
     @Inject lateinit var treatmentDao: TreatmentDao
@@ -85,6 +87,7 @@ class StrimmaService : Service() {
     private var pruneJob: Job? = null
     private var xdripReceiver: XdripBroadcastReceiver? = null
     private var followerJob: Job? = null
+    private var lluFollowerJob: Job? = null
     private var treatmentSyncJob: Job? = null
     private var exerciseSyncJob: Job? = null
 
@@ -99,6 +102,7 @@ class StrimmaService : Service() {
     private lateinit var customDIA: StateFlow<Float>
     private lateinit var hcWriteEnabled: StateFlow<Boolean>
 
+    @Suppress("LongMethod") // Service lifecycle setup — all initialization must happen here
     override fun onCreate() {
         super.onCreate()
         notificationHelper.createChannel()
@@ -127,10 +131,12 @@ class StrimmaService : Service() {
             settings.glucoseSource.collect { source ->
                 unregisterXdripReceiver()
                 stopFollower()
+                stopLluFollower()
                 when (source) {
                     GlucoseSource.COMPANION -> { }
                     GlucoseSource.XDRIP_BROADCAST -> registerXdripReceiver()
                     GlucoseSource.NIGHTSCOUT_FOLLOWER -> startFollower()
+                    GlucoseSource.LIBRELINKUP -> startLluFollower()
                 }
             }
         }
@@ -209,6 +215,7 @@ class StrimmaService : Service() {
     override fun onDestroy() {
         unregisterXdripReceiver()
         stopFollower()
+        stopLluFollower()
         treatmentSyncJob?.cancel()
         exerciseSyncJob?.cancel()
         pruneJob?.cancel()
@@ -256,6 +263,37 @@ class StrimmaService : Service() {
         followerJob = null
         nightscoutFollower.stop()
         DebugLog.log("Nightscout follower stopped")
+    }
+
+    private fun startLluFollower() {
+        if (lluFollowerJob != null) return
+        lluFollowerJob = libreLinkUpFollower.start(scope) { reading ->
+            pusher.pushReading(reading)
+            updateNotification()
+            val alertReadings = dao.since(reading.ts - LOOKBACK_MINUTES * MINUTES_TO_MS)
+            alertManager.checkReading(reading, alertReadings, predMinutes.value)
+            broadcastBgIfEnabled(reading)
+            writeToHealthConnectIfEnabled(reading)
+            try {
+                val mgr = GlanceAppWidgetManager(this@StrimmaService)
+                mgr.getGlanceIds(StrimmaWidget::class.java).forEach { id ->
+                    StrimmaWidget().update(this@StrimmaService, id)
+                }
+            } catch (
+                @Suppress("TooGenericExceptionCaught") // Glance SDK can throw various platform exceptions
+                e: Exception
+            ) {
+                DebugLog.log("LLU widget update failed: ${e.message}")
+            }
+        }
+        DebugLog.log("LibreLinkUp follower started")
+    }
+
+    private fun stopLluFollower() {
+        lluFollowerJob?.cancel()
+        lluFollowerJob = null
+        libreLinkUpFollower.stop()
+        DebugLog.log("LibreLinkUp follower stopped")
     }
 
     private suspend fun processReading(mgdl: Double, timestamp: Long) {

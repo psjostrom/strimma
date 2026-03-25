@@ -88,6 +88,13 @@
     <string name="settings_source_xdrip_desc">Receive xDrip-compatible BG broadcasts</string>
     <string name="settings_source_follower_label">Nightscout Follower</string>
     <string name="settings_source_follower_desc">Follow a remote Nightscout server</string>
+    <string name="settings_source_llu_label" translatable="false">LibreLinkUp</string>
+    <string name="settings_source_llu_desc">Follow via Abbott\'s LibreLinkUp sharing</string>
+    <string name="settings_source_llu_section" translatable="false">LibreLinkUp Account</string>
+    <string name="settings_source_llu_email">Email</string>
+    <string name="settings_source_llu_email_placeholder" translatable="false">your@email.com</string>
+    <string name="settings_source_llu_password">Password</string>
+    <string name="settings_source_llu_hint">Use your LibreLinkUp (follower) credentials. Sharing must be enabled in the Libre 3 app first.</string>
 
     <!-- Treatments Settings -->
     <string name="settings_treatments_title">Treatments</string>

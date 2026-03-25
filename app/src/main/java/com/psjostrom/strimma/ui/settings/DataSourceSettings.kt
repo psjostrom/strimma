@@ -22,6 +22,8 @@ fun DataSourceSettings(
     followerUrl: String,
     followerSecret: String,
     followerPollSeconds: Int,
+    lluEmail: String,
+    lluPassword: String,
     isNotificationAccessGranted: Boolean,
     onGlucoseSourceChange: (GlucoseSource) -> Unit,
     onNightscoutUrlChange: (String) -> Unit,
@@ -29,6 +31,8 @@ fun DataSourceSettings(
     onFollowerUrlChange: (String) -> Unit,
     onFollowerSecretChange: (String) -> Unit,
     onFollowerPollSecondsChange: (Int) -> Unit,
+    onLluEmailChange: (String) -> Unit,
+    onLluPasswordChange: (String) -> Unit,
     onOpenNotificationAccess: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -94,6 +98,42 @@ fun DataSourceSettings(
                         )
                     }
                 }
+            }
+        }
+
+        if (glucoseSource == GlucoseSource.LIBRELINKUP) {
+            SettingsSection(stringResource(R.string.settings_source_llu_section)) {
+                var emailText by remember(lluEmail) { mutableStateOf(lluEmail) }
+                OutlinedTextField(
+                    value = emailText,
+                    onValueChange = {
+                        emailText = it
+                        onLluEmailChange(it)
+                    },
+                    label = { Text(stringResource(R.string.settings_source_llu_email)) },
+                    placeholder = { Text(stringResource(R.string.settings_source_llu_email_placeholder)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+
+                var passwordText by remember(lluPassword) { mutableStateOf(lluPassword) }
+                OutlinedTextField(
+                    value = passwordText,
+                    onValueChange = {
+                        passwordText = it
+                        onLluPasswordChange(it)
+                    },
+                    label = { Text(stringResource(R.string.settings_source_llu_password)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation()
+                )
+
+                Text(
+                    stringResource(R.string.settings_source_llu_hint),
+                    color = outline,
+                    fontSize = 12.sp
+                )
             }
         }
 

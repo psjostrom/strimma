@@ -84,6 +84,10 @@
     <string name="settings_source_xdrip_desc">xDrip-kompatible BG-\u00DCbertragungen empfangen</string>
     <string name="settings_source_follower_label">Nightscout-Follower</string>
     <string name="settings_source_follower_desc">Einem entfernten Nightscout-Server folgen</string>
+    <string name="settings_source_llu_desc">\u00DCber Abbotts LibreLinkUp-Freigabe folgen</string>
+    <string name="settings_source_llu_email">E-Mail</string>
+    <string name="settings_source_llu_password">Passwort</string>
+    <string name="settings_source_llu_hint">Verwende deine LibreLinkUp-Zugangsdaten (Follower). Die Freigabe muss zuerst in der Libre 3-App aktiviert werden.</string>
 
     <!-- Treatments Settings -->
     <string name="settings_treatments_title">Behandlungen</string>
