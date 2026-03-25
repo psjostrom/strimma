@@ -21,6 +21,8 @@ xDrip+/Juggluco/AAPS → broadcast → XdripBroadcastReceiver (XDRIP_BROADCAST)
                                     ↓
 Remote Nightscout → polling → NightscoutFollower (NIGHTSCOUT_FOLLOWER)
                                     ↓
+LibreLinkUp (Abbott API) → polling → LibreLinkUpFollower (LIBRELINKUP)
+                                    ↓
   → StrimmaService → Room DB → NightscoutPusher → Nightscout /api/v1/entries
                    → NotificationHelper (graph bitmap)
                    → AlertManager (urgent low/low/high/urgent high/stale)

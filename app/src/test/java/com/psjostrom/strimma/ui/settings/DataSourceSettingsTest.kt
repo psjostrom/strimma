@@ -33,12 +33,16 @@ class DataSourceSettingsTest {
                 followerUrl = "",
                 followerSecret = "",
                 followerPollSeconds = 60,
+                lluEmail = "",
+                lluPassword = "",
                 onGlucoseSourceChange = onGlucoseSourceChange,
                 onNightscoutUrlChange = {},
                 onNightscoutSecretChange = {},
                 onFollowerUrlChange = {},
                 onFollowerSecretChange = {},
                 onFollowerPollSecondsChange = {},
+                onLluEmailChange = {},
+                onLluPasswordChange = {},
                 isNotificationAccessGranted = true,
                 onOpenNotificationAccess = {},
                 onBack = onBack
@@ -56,6 +60,7 @@ class DataSourceSettingsTest {
         composeRule.onNodeWithText("Companion Mode").assertExists()
         composeRule.onNodeWithText("xDrip Broadcast").assertExists()
         composeRule.onNodeWithText("Nightscout Follower").assertExists()
+        composeRule.onNodeWithText("LibreLinkUp").assertExists()
     }
 
     @Test
@@ -90,6 +95,26 @@ class DataSourceSettingsTest {
     fun `follower mode hides nightscout push section`() {
         render(glucoseSource = GlucoseSource.NIGHTSCOUT_FOLLOWER)
         composeRule.onNodeWithText("Base URL only — no /api path").assertDoesNotExist()
+    }
+
+    @Test
+    fun `librelinkup mode shows credential fields`() {
+        render(glucoseSource = GlucoseSource.LIBRELINKUP)
+        composeRule.onNodeWithText("Email").assertExists()
+        composeRule.onNodeWithText("Password").assertExists()
+    }
+
+    @Test
+    fun `librelinkup mode shows nightscout push section`() {
+        render(glucoseSource = GlucoseSource.LIBRELINKUP)
+        composeRule.onNodeWithText("Nightscout URL").assertExists()
+        composeRule.onNodeWithText("API Secret").assertExists()
+    }
+
+    @Test
+    fun `librelinkup mode does not show follower poll interval`() {
+        render(glucoseSource = GlucoseSource.LIBRELINKUP)
+        composeRule.onNodeWithText("Poll Interval: 60s").assertDoesNotExist()
     }
 
     @Test

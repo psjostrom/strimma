@@ -17,6 +17,7 @@ import com.psjostrom.strimma.data.health.StoredExerciseSession
 import com.psjostrom.strimma.data.Treatment
 import com.psjostrom.strimma.data.TreatmentDao
 import com.psjostrom.strimma.network.FollowerStatus
+import com.psjostrom.strimma.network.LibreLinkUpFollower
 import com.psjostrom.strimma.network.NightscoutFollower
 import com.psjostrom.strimma.network.NightscoutPuller
 import com.psjostrom.strimma.notification.AlertManager
@@ -37,6 +38,7 @@ class MainViewModel @Inject constructor(
     val settings: SettingsRepository,
     private val alertManager: AlertManager,
     private val nightscoutFollower: NightscoutFollower,
+    private val libreLinkUpFollower: LibreLinkUpFollower,
     private val nightscoutPuller: NightscoutPuller
 ) : ViewModel() {
 
@@ -165,7 +167,13 @@ class MainViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), GlucoseSource.COMPANION)
     fun setGlucoseSource(source: GlucoseSource) = viewModelScope.launch { settings.setGlucoseSource(source) }
 
-    val followerStatus: StateFlow<FollowerStatus> = nightscoutFollower.status
+    val followerStatus: StateFlow<FollowerStatus> = glucoseSource.flatMapLatest { source ->
+        when (source) {
+            GlucoseSource.NIGHTSCOUT_FOLLOWER -> nightscoutFollower.status
+            GlucoseSource.LIBRELINKUP -> libreLinkUpFollower.status
+            else -> kotlinx.coroutines.flow.flowOf(FollowerStatus.Idle)
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), FollowerStatus.Idle)
 
     val followerUrl: StateFlow<String> = settings.followerUrl
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
@@ -177,6 +185,12 @@ class MainViewModel @Inject constructor(
     val followerPollSeconds: StateFlow<Int> = settings.followerPollSeconds
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 60)
     fun setFollowerPollSeconds(seconds: Int) = viewModelScope.launch { settings.setFollowerPollSeconds(seconds) }
+
+    val lluEmail: String get() = settings.getLluEmail()
+    fun setLluEmail(email: String) = settings.setLluEmail(email)
+
+    val lluPassword: String get() = settings.getLluPassword()
+    fun setLluPassword(password: String) = settings.setLluPassword(password)
 
     suspend fun pullFromNightscout(days: Int): Result<Int> = nightscoutPuller.pullHistory(days)
 
