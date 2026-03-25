@@ -242,6 +242,10 @@
     <string name="alert_predicted">Predicted %1$s</string>
     <string name="alert_stale_title">No Data</string>
     <string name="alert_stale_body">No glucose reading for 10+ minutes</string>
+    <string name="alert_push_fail_title">Upload Failing</string>
+    <string name="alert_push_fail_body">Glucose uploads have failed for 15+ minutes. Check Nightscout settings.</string>
+    <string name="alert_channel_push_fail">Upload Failure Alert</string>
+    <string name="alert_channel_push_fail_desc">Glucose uploads failing for extended period</string>
     <string name="alert_snooze">Snooze 30 min</string>
 
     <!-- Foreground Notification -->

@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
 
+@Suppress("TooManyFunctions") // Alert channels + management methods
 @Singleton
 class AlertManager @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -34,6 +35,7 @@ class AlertManager @Inject constructor(
         const val CHANNEL_HIGH = "strimma_alert_high"
         const val CHANNEL_URGENT_HIGH = "strimma_alert_urgent_high"
         const val CHANNEL_STALE = "strimma_alert_stale"
+        const val CHANNEL_PUSH_FAIL = "strimma_alert_push_fail"
         const val CHANNEL_LOW_SOON = "strimma_alert_low_soon"
         const val CHANNEL_HIGH_SOON = "strimma_alert_high_soon"
 
@@ -45,6 +47,7 @@ class AlertManager @Inject constructor(
         const val ALERT_HIGH_ID = 102
         const val ALERT_URGENT_HIGH_ID = 104
         const val ALERT_STALE_ID = 103
+        const val ALERT_PUSH_FAIL_ID = 107
         const val ALERT_LOW_SOON_ID = 105
         const val ALERT_HIGH_SOON_ID = 106
 
@@ -67,7 +70,7 @@ class AlertManager @Inject constructor(
 
         val ALL_CHANNELS = listOf(
             CHANNEL_URGENT_LOW, CHANNEL_LOW, CHANNEL_HIGH, CHANNEL_URGENT_HIGH,
-            CHANNEL_STALE, CHANNEL_LOW_SOON, CHANNEL_HIGH_SOON
+            CHANNEL_STALE, CHANNEL_PUSH_FAIL, CHANNEL_LOW_SOON, CHANNEL_HIGH_SOON
         )
     }
 
@@ -84,6 +87,7 @@ class AlertManager @Inject constructor(
         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
         .build()
 
+    @Suppress("LongMethod") // Sequential channel registrations — splitting would hurt readability
     fun createChannels() {
         // Remove legacy single channel
         notificationManager.deleteNotificationChannel(LEGACY_CHANNEL)
@@ -127,6 +131,14 @@ class AlertManager @Inject constructor(
             RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
             notifAudioAttrs, bypassDnd = false,
             vibration = longArrayOf(0, VIBRATE_BRIEF, VIBRATE_BRIEF, VIBRATE_BRIEF)
+        )
+        createChannel(
+            CHANNEL_PUSH_FAIL, context.getString(R.string.alert_channel_push_fail),
+            context.getString(R.string.alert_channel_push_fail_desc),
+            NotificationManager.IMPORTANCE_HIGH,
+            RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
+            notifAudioAttrs, bypassDnd = false,
+            vibration = longArrayOf(0, VIBRATE_MEDIUM, VIBRATE_BRIEF, VIBRATE_MEDIUM)
         )
         createChannel(
             CHANNEL_LOW_SOON, context.getString(R.string.alert_channel_low_soon),
@@ -297,6 +309,20 @@ class AlertManager @Inject constructor(
             }
         } else {
             notificationManager.cancel(ALERT_STALE_ID)
+        }
+    }
+
+    fun handlePushFailure(firing: Boolean) {
+        if (firing) {
+            if (!isSnoozed(ALERT_PUSH_FAIL_ID, System.currentTimeMillis())) {
+                fireAlert(
+                    ALERT_PUSH_FAIL_ID, CHANNEL_PUSH_FAIL,
+                    context.getString(R.string.alert_push_fail_title),
+                    context.getString(R.string.alert_push_fail_body)
+                )
+            }
+        } else {
+            notificationManager.cancel(ALERT_PUSH_FAIL_ID)
         }
     }
 
