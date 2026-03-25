@@ -1,6 +1,6 @@
 # LibreLinkUp Mode
 
-LibreLinkUp mode polls Abbott's LibreLinkUp sharing API for glucose readings from Libre 3 sensors. No third-party apps needed — just your LibreLinkUp credentials.
+LibreLinkUp mode polls Abbott's LibreLinkUp sharing API for glucose readings from Libre 3 sensors. No third-party apps beyond the Libre 3 app needed — just your LibreLinkUp credentials.
 
 ---
 
@@ -108,7 +108,7 @@ Configure the Nightscout push URL and API secret in **Settings > Data Source** b
 
 ## Timestamp Handling
 
-LibreLinkUp returns timestamps in regional date formats (US: `M/d/yyyy`, EU: `d/M/yyyy`, 12h/24h variants). Strimma handles all known formats automatically. All timestamps are interpreted as UTC.
+Strimma uses the `FactoryTimestamp` field from the LibreLinkUp API, which is always in UTC with a consistent `M/d/yyyy` format across all regions. This avoids the date ambiguity problem that the regional `Timestamp` field has (where `3/5/2026` could mean March 5 or May 3 depending on region). Both 12-hour (AM/PM) and 24-hour time variants are supported.
 
 ---
 

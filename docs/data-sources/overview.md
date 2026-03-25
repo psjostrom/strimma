@@ -59,7 +59,7 @@ Strimma polls a remote Nightscout server for glucose readings.
 
 Strimma polls Abbott's LibreLinkUp sharing API for glucose readings from Libre 3 sensors.
 
-**How it works:** You enter your LibreLinkUp credentials in Strimma. Strimma polls the LibreLinkUp API every 60 seconds, retrieves glucose readings, and processes them — no third-party apps required.
+**How it works:** You enter your LibreLinkUp credentials in Strimma. Strimma polls the LibreLinkUp API every 60 seconds, retrieves glucose readings, and processes them — no third-party apps beyond the Libre 3 app required.
 
 **Pros:**
 
@@ -76,7 +76,7 @@ Strimma polls Abbott's LibreLinkUp sharing API for glucose readings from Libre 3
 
 | Feature | Companion | xDrip Broadcast | Nightscout Follower | LibreLinkUp |
 |---------|-----------|-----------------|---------------------|-------------|
-| Needs CGM app on phone | Yes | Depends on source app | No | No |
+| Needs CGM app on phone | Yes | Depends on source app | No | Yes (Libre 3) |
 | Needs Nightscout server | No (optional for push) | No (optional for push) | Yes | No (optional for push) |
 | Latency | Near-instant | Near-instant | Poll interval (30s–5m) | ~60s |
 | Push to Nightscout | Yes | Yes | No (already on NS) | Yes |
