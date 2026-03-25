@@ -45,10 +45,15 @@ private object MgdlSettingsMigration : DataMigration<Preferences> {
     override suspend fun cleanUp() { /* Nothing to clean up — one-shot migration */ }
 }
 
-// MUST remain first in produceMigrations — detects existing users by checking
-// if the preferences map is non-empty BEFORE other migrations write to it.
+// Detects existing users by checking for keys that only they would have.
+// Safe regardless of migration ordering — does not depend on map emptiness.
 private object SetupCompletedMigration : DataMigration<Preferences> {
     private val KEY = booleanPreferencesKey("setup_completed")
+    private val EXISTING_USER_KEYS = listOf(
+        stringPreferencesKey("glucose_unit"),
+        stringPreferencesKey("glucose_source"),
+        stringPreferencesKey("nightscout_url")
+    )
 
     override suspend fun shouldMigrate(currentData: Preferences): Boolean {
         return KEY !in currentData.asMap()
@@ -56,8 +61,8 @@ private object SetupCompletedMigration : DataMigration<Preferences> {
 
     override suspend fun migrate(currentData: Preferences): Preferences {
         val mutable = currentData.toMutablePreferences()
-        // Existing users (have any settings) skip wizard; fresh installs see it
-        mutable[KEY] = currentData.asMap().isNotEmpty()
+        // Existing users (have app-specific settings) skip wizard; fresh installs see it
+        mutable[KEY] = EXISTING_USER_KEYS.any { it in currentData.asMap() }
         return mutable.toPreferences()
     }
 

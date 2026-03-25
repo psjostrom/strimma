@@ -81,7 +81,11 @@ fun SetupNightscoutStep(
                         singleLine = true
                     )
 
-                    ConnectionTestButton(testState = connectionTestState, onTest = onTestConnection)
+                    ConnectionTestButton(
+                        testState = connectionTestState,
+                        onTest = onTestConnection,
+                        hasCredentials = urlText.isNotBlank() && secretText.isNotBlank()
+                    )
                 }
             }
         }
@@ -91,12 +95,13 @@ fun SetupNightscoutStep(
 @Composable
 fun ConnectionTestButton(
     testState: ConnectionTestState,
-    onTest: () -> Unit
+    onTest: () -> Unit,
+    hasCredentials: Boolean = true
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Button(
             onClick = onTest,
-            enabled = testState !is ConnectionTestState.Testing
+            enabled = testState !is ConnectionTestState.Testing && hasCredentials
         ) {
             Text(
                 when (testState) {

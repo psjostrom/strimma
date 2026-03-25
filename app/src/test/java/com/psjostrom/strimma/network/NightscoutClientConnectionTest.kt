@@ -11,12 +11,12 @@ class NightscoutClientConnectionTest {
 
     @Test
     fun `parse status response with customTitle`() {
-        val body = """{"status":"ok","name":"nightscout","version":"15.0.0","settings":{"customTitle":"Per's CGM"}}"""
+        val body = """{"status":"ok","name":"nightscout","version":"15.0.0","settings":{"customTitle":"My Nightscout"}}"""
         val name = Json.parseToJsonElement(body)
             .jsonObject["settings"]
             ?.jsonObject?.get("customTitle")
             ?.jsonPrimitive?.contentOrNull
-        assertEquals("Per's CGM", name)
+        assertEquals("My Nightscout", name)
     }
 
     @Test

@@ -19,6 +19,7 @@ import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.GlucoseSource
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.widget.Toast
 import androidx.core.net.toUri
 import androidx.compose.ui.platform.LocalContext
 import com.psjostrom.strimma.ui.theme.InRange
@@ -153,7 +154,9 @@ private fun NotificationAccessGuide(
                     onClick = {
                         try {
                             context.startActivity(Intent(Intent.ACTION_VIEW, learnMoreUrl.toUri()))
-                        } catch (_: ActivityNotFoundException) { /* No browser available */ }
+                        } catch (_: ActivityNotFoundException) {
+                        Toast.makeText(context, R.string.setup_no_browser, Toast.LENGTH_SHORT).show()
+                    }
                     },
                     contentPadding = PaddingValues(0.dp)
                 ) {
@@ -276,7 +279,11 @@ private fun FollowerConfigBlock(
                 singleLine = true
             )
 
-            ConnectionTestButton(testState = testState, onTest = onTestConnection)
+            ConnectionTestButton(
+                testState = testState,
+                onTest = onTestConnection,
+                hasCredentials = urlText.isNotBlank() && secretText.isNotBlank()
+            )
         }
     }
 }

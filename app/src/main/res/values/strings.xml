@@ -323,6 +323,7 @@
     <string name="setup_source_access_granted">Notification access granted</string>
     <string name="setup_source_notif_guide_intro">Android requires a few steps to grant notification access for sideloaded apps. This is normal.</string>
     <string name="setup_source_notif_learn_more">Why is this needed?</string>
+    <string name="setup_no_browser">No browser available</string>
     <string name="setup_source_notif_learn_more_url" translatable="false">https://psjostrom.github.io/Strimma/getting-started/notification-access/</string>
     <string name="setup_source_guide_step1">Open notification settings and try to enable Strimma. Android will block it \u2014 this is expected.</string>
     <string name="setup_source_guide_step1_button">Open notification settings</string>
