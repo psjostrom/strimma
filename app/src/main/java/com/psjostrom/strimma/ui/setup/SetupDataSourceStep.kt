@@ -37,7 +37,12 @@ fun SetupDataSourceStep(
     followerTestState: ConnectionTestState,
     onFollowerUrlChange: (String) -> Unit,
     onFollowerSecretChange: (String) -> Unit,
-    onTestFollowerConnection: () -> Unit
+    onTestFollowerConnection: () -> Unit,
+    // LibreLinkUp fields (inline when LIBRELINKUP selected)
+    lluEmail: String,
+    lluPassword: String,
+    onLluEmailChange: (String) -> Unit,
+    onLluPasswordChange: (String) -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SourceCard(
@@ -58,6 +63,12 @@ fun SetupDataSourceStep(
             selected = selectedSource == GlucoseSource.NIGHTSCOUT_FOLLOWER,
             onClick = { onSourceChange(GlucoseSource.NIGHTSCOUT_FOLLOWER) }
         )
+        SourceCard(
+            label = stringResource(R.string.settings_source_llu_label),
+            description = stringResource(R.string.setup_source_llu_desc),
+            selected = selectedSource == GlucoseSource.LIBRELINKUP,
+            onClick = { onSourceChange(GlucoseSource.LIBRELINKUP) }
+        )
 
         if (selectedSource == GlucoseSource.COMPANION) {
             NotificationAccessGuide(
@@ -75,6 +86,15 @@ fun SetupDataSourceStep(
                 onUrlChange = onFollowerUrlChange,
                 onSecretChange = onFollowerSecretChange,
                 onTestConnection = onTestFollowerConnection
+            )
+        }
+
+        if (selectedSource == GlucoseSource.LIBRELINKUP) {
+            LluConfigBlock(
+                email = lluEmail,
+                password = lluPassword,
+                onEmailChange = onLluEmailChange,
+                onPasswordChange = onLluPasswordChange
             )
         }
     }
@@ -283,6 +303,56 @@ private fun FollowerConfigBlock(
                 testState = testState,
                 onTest = onTestConnection,
                 hasCredentials = urlText.isNotBlank() && secretText.isNotBlank()
+            )
+        }
+    }
+}
+
+@Composable
+private fun LluConfigBlock(
+    email: String,
+    password: String,
+    onEmailChange: (String) -> Unit,
+    onPasswordChange: (String) -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            var emailText by remember(email) { mutableStateOf(email) }
+            OutlinedTextField(
+                value = emailText,
+                onValueChange = {
+                    emailText = it
+                    onEmailChange(it)
+                },
+                label = { Text(stringResource(R.string.settings_source_llu_email)) },
+                placeholder = { Text(stringResource(R.string.settings_source_llu_email_placeholder)) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+
+            var passwordText by remember(password) { mutableStateOf(password) }
+            OutlinedTextField(
+                value = passwordText,
+                onValueChange = {
+                    passwordText = it
+                    onPasswordChange(it)
+                },
+                label = { Text(stringResource(R.string.settings_source_llu_password)) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation()
+            )
+
+            Text(
+                stringResource(R.string.settings_source_llu_hint),
+                color = MaterialTheme.colorScheme.outline,
+                fontSize = 12.sp
             )
         }
     }

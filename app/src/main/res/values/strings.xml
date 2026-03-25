@@ -327,6 +327,7 @@
     <string name="setup_source_companion_desc">Reads glucose from your CGM app\'s notifications. Works with Dexcom, Libre, CamAPS, Juggluco, xDrip+, and 50+ more.</string>
     <string name="setup_source_xdrip_desc">Receives glucose via xDrip-compatible broadcast intent. Use if your CGM app supports xDrip broadcasting.</string>
     <string name="setup_source_follower_desc">Follows a remote Nightscout server. Use to monitor someone else\'s glucose.</string>
+    <string name="setup_source_llu_desc">Reads glucose from Abbott\'s LibreLinkUp cloud. Requires a LibreLinkUp follower account.</string>
     <string name="setup_source_access_granted">Notification access granted</string>
     <string name="setup_source_notif_guide_intro">Android requires a few steps to grant notification access for sideloaded apps. This is normal.</string>
     <string name="setup_source_notif_learn_more">Why is this needed?</string>

@@ -52,6 +52,13 @@ class SetupViewModel @Inject constructor(
     private val _followerTestState = MutableStateFlow<ConnectionTestState>(ConnectionTestState.Idle)
     val followerTestState: StateFlow<ConnectionTestState> = _followerTestState.asStateFlow()
 
+    // LibreLinkUp
+    val lluEmail: String get() = settings.getLluEmail()
+    val lluPassword: String get() = settings.getLluPassword()
+
+    fun setLluEmail(email: String) = settings.setLluEmail(email)
+    fun setLluPassword(password: String) = settings.setLluPassword(password)
+
     // Alert settings
     val alertLowEnabled: StateFlow<Boolean> = settings.alertLowEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
