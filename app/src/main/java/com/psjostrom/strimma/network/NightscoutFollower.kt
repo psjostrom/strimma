@@ -32,7 +32,8 @@ private const val DELTA_ROUNDING_FACTOR = 10.0
 suspend fun processNightscoutEntry(
     entry: NightscoutEntryResponse,
     dao: ReadingDao,
-    directionComputer: DirectionComputer
+    directionComputer: DirectionComputer,
+    pushed: Int = 1
 ): GlucoseReading? {
     val sgv = entry.sgv ?: return null
     val ts = entry.date ?: return null
@@ -43,7 +44,7 @@ suspend fun processNightscoutEntry(
 
     val tempReading = GlucoseReading(
         ts = ts, sgv = sgv,
-        direction = "NONE", delta = null, pushed = 1
+        direction = "NONE", delta = null, pushed = pushed
     )
     val (computedDirection, deltaMgdl) = directionComputer.compute(recentReadings, tempReading)
 

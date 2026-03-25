@@ -132,7 +132,12 @@ class LibreLinkUpClient @Inject constructor() {
     }
 
     @Suppress("ReturnCount") // Auth flow has multiple distinct failure modes
-    suspend fun login(email: String, password: String, baseUrl: String = DEFAULT_BASE_URL): LluSession? {
+    suspend fun login(
+        email: String,
+        password: String,
+        baseUrl: String = DEFAULT_BASE_URL,
+        allowRedirect: Boolean = true
+    ): LluSession? {
         return try {
             val response = client.post("$baseUrl/llu/auth/login") {
                 headers(lluHeaders())
@@ -140,7 +145,7 @@ class LibreLinkUpClient @Inject constructor() {
             }
 
             val loginResponse = response.body<LluLoginResponse>()
-            parseLoginResponse(loginResponse, email, password, baseUrl)
+            parseLoginResponse(loginResponse, email, password, baseUrl, allowRedirect)
         } catch (e: CancellationException) {
             throw e
         } catch (
@@ -156,7 +161,8 @@ class LibreLinkUpClient @Inject constructor() {
         loginResponse: LluLoginResponse,
         email: String,
         password: String,
-        baseUrl: String
+        baseUrl: String,
+        allowRedirect: Boolean
     ): LluSession? {
         if (loginResponse.status == STATUS_BAD_CREDENTIALS) {
             DebugLog.log(message = "LLU: bad credentials")
@@ -168,10 +174,10 @@ class LibreLinkUpClient @Inject constructor() {
         }
 
         val data = loginResponse.data
-        if (data.redirect && data.region.isNotBlank()) {
+        if (data.redirect && data.region.isNotBlank() && allowRedirect) {
             DebugLog.log(message = "LLU: redirecting to region ${data.region}")
             val regionUrl = resolveRegionUrl(baseUrl, data.region)
-            if (regionUrl != null) return login(email, password, regionUrl)
+            if (regionUrl != null) return login(email, password, regionUrl, allowRedirect = false)
             DebugLog.log(message = "LLU: unknown region ${data.region}")
             return null
         }

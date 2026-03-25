@@ -50,7 +50,6 @@ class LibreLinkUpFollower @Inject constructor(
 
             if (!doLogin(email, password)) {
                 _status.value = FollowerStatus.Disconnected(since = System.currentTimeMillis())
-                return@launch
             }
 
             while (isActive) {
@@ -126,7 +125,7 @@ class LibreLinkUpFollower @Inject constructor(
         if (item.value < MIN_VALID_SGV || item.value > MAX_VALID_SGV) return false
         val ts = parseLluTimestamp(item.timestamp) ?: return false
         val entry = NightscoutEntryResponse(sgv = item.value, date = ts, type = "sgv")
-        val reading = processNightscoutEntry(entry, dao, directionComputer) ?: return false
+        val reading = processNightscoutEntry(entry, dao, directionComputer, pushed = 0) ?: return false
         onNewReading(reading)
         return true
     }
