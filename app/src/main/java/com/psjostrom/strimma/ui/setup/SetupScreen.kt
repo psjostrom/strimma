@@ -66,6 +66,7 @@ fun SetupScreen(
             GlucoseSource.COMPANION -> isNotificationAccessGranted
             GlucoseSource.NIGHTSCOUT_FOLLOWER -> followerTestState is ConnectionTestState.Success
             GlucoseSource.XDRIP_BROADCAST -> true
+            GlucoseSource.LIBRELINKUP -> true
         }
         3 -> !pushEnabled || connectionTestState is ConnectionTestState.Success
         else -> true
