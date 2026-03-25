@@ -42,9 +42,12 @@ jobs:
 
       - name: Create GitHub Release
         run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          APK="strimma-${VERSION}.apk"
+          cp app/build/outputs/apk/release/app-release.apk "$APK"
           PREV_TAG=$(git tag --sort=-v:refname | grep '^v' | sed -n '2p')
           gh release create "${{ github.ref_name }}" \
-            app/build/outputs/apk/release/app-release.apk \
+            "$APK" \
             --generate-notes \
             --notes-start-tag "$PREV_TAG"
         env:
