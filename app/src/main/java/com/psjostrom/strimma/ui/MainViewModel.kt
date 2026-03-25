@@ -48,6 +48,13 @@ class MainViewModel @Inject constructor(
         private const val MS_PER_MINUTE = 60_000L
     }
 
+    val setupCompleted: StateFlow<Boolean?> = settings.setupCompleted
+        .map<Boolean, Boolean?> { it }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    val setupStep: StateFlow<Int> = settings.setupStep
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
     val latestReading: StateFlow<GlucoseReading?> = dao.latest()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 

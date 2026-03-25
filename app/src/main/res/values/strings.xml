@@ -304,6 +304,56 @@
     <string name="exercise_history_title">Exercise</string>
     <string name="exercise_history_empty">No exercise sessions yet. Connect Health Connect in Settings to see your workouts here.</string>
 
+    <!-- Setup Wizard -->
+    <string name="setup_welcome_title">Welcome to Strimma</string>
+    <string name="setup_welcome_body">Your CGM companion. Real-time glucose, smart alerts, Nightscout sync. Let\'s get you set up.</string>
+    <string name="setup_welcome_item_source">Choose how Strimma gets your glucose data</string>
+    <string name="setup_welcome_item_nightscout">Connect to Nightscout (optional)</string>
+    <string name="setup_welcome_item_alerts">Set your alert thresholds</string>
+    <string name="setup_welcome_item_permissions">Grant required permissions</string>
+    <string name="setup_units_title">Units</string>
+    <string name="setup_units_mmol">mmol/L</string>
+    <string name="setup_units_mgdl">mg/dL</string>
+    <string name="setup_units_mmol_desc">Used in most of Europe, UK, Canada, Australia</string>
+    <string name="setup_units_mgdl_desc">Used in US, Japan, and many other countries</string>
+    <string name="setup_source_title">Data Source</string>
+    <string name="setup_source_companion_desc">Reads glucose from your CGM app\'s notifications. Works with Dexcom, Libre, CamAPS, Juggluco, xDrip+, and 50+ more.</string>
+    <string name="setup_source_xdrip_desc">Receives glucose via xDrip-compatible broadcast intent. Use if your CGM app supports xDrip broadcasting.</string>
+    <string name="setup_source_follower_desc">Follows a remote Nightscout server. Use to monitor someone else\'s glucose.</string>
+    <string name="setup_source_access_granted">Notification access granted</string>
+    <string name="setup_source_notif_guide_intro">Android requires a few steps to grant notification access for sideloaded apps. This is normal.</string>
+    <string name="setup_source_notif_learn_more">Why is this needed?</string>
+    <string name="setup_no_browser">No browser available</string>
+    <string name="setup_source_notif_learn_more_url" translatable="false">https://psjostrom.github.io/Strimma/getting-started/notification-access/</string>
+    <string name="setup_source_guide_step1">Open notification settings and try to enable Strimma. Android will block it \u2014 this is expected.</string>
+    <string name="setup_source_guide_step1_button">Open notification settings</string>
+    <string name="setup_source_guide_step2">Open Strimma\'s app info, tap the \u22EE menu in the top right, then tap \"Allow restricted settings\".</string>
+    <string name="setup_source_step1_button">Open app info</string>
+    <string name="setup_source_guide_step3">Open notification settings again and enable Strimma. It will work this time.</string>
+    <string name="setup_source_guide_step3_button">Enable notification access</string>
+    <string name="setup_nightscout_title">Nightscout</string>
+    <string name="setup_nightscout_toggle">Push readings to Nightscout</string>
+    <string name="setup_nightscout_test">Test Connection</string>
+    <string name="setup_nightscout_testing">Testing…</string>
+    <string name="setup_nightscout_success">Connected</string>
+    <string name="setup_nightscout_success_name">Connected to %1$s</string>
+    <string name="setup_nightscout_failed">Connection failed: %1$s</string>
+    <string name="setup_alerts_title">Alerts</string>
+    <string name="setup_alerts_footer">You can adjust these anytime in Settings \u203A Alerts</string>
+    <string name="setup_permissions_title">Permissions</string>
+    <string name="setup_permissions_notifications">Notifications</string>
+    <string name="setup_permissions_notifications_desc">Required for glucose display and alerts</string>
+    <string name="setup_permissions_battery">Battery optimization</string>
+    <string name="setup_permissions_battery_desc">Required for reliable background operation</string>
+    <string name="setup_permissions_notif_access">Notification access</string>
+    <string name="setup_permissions_notif_access_desc">Required for reading CGM app notifications</string>
+    <string name="setup_permissions_grant">Grant</string>
+    <string name="setup_permissions_granted">Granted</string>
+    <string name="setup_permissions_battery_warning">Strimma may not work reliably without battery optimization exemption</string>
+    <string name="setup_start">Start Strimma</string>
+    <string name="setup_next">Next</string>
+    <string name="setup_back">Back</string>
+
     <!-- Activity (dialogs, toasts) -->
     <string name="activity_settings_imported">Settings imported</string>
     <string name="activity_import_failed">Import failed: %1$s</string>

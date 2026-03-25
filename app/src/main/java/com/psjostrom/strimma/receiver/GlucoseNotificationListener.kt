@@ -109,10 +109,22 @@ class GlucoseNotificationListener : NotificationListenerService() {
         }
 
         fun openSettings(context: Context) {
-            context.startActivity(
+            val detailIntent = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                // API 34+: deep-link directly to Strimma's notification listener toggle
+                Intent(Settings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS).apply {
+                    putExtra(
+                        Settings.EXTRA_NOTIFICATION_LISTENER_COMPONENT_NAME,
+                        ComponentName(context, GlucoseNotificationListener::class.java).flattenToString()
+                    )
+                }
+            } else null
+
+            val intent = if (detailIntent != null && detailIntent.resolveActivity(context.packageManager) != null) {
+                detailIntent
+            } else {
                 Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            )
+            }
+            context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         }
     }
 

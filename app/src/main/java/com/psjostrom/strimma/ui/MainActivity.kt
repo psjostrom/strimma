@@ -34,6 +34,9 @@ import com.psjostrom.strimma.ui.settings.GeneralSettings
 import com.psjostrom.strimma.ui.settings.DisplaySettings
 import com.psjostrom.strimma.ui.settings.NotificationSettings
 import com.psjostrom.strimma.ui.settings.TreatmentsSettings
+import com.psjostrom.strimma.ui.setup.SetupScreen
+import com.psjostrom.strimma.ui.setup.SetupViewModel
+import com.psjostrom.strimma.ui.setup.defaultUnitForLocale
 import com.psjostrom.strimma.ui.theme.StrimmaTheme
 import com.psjostrom.strimma.ui.theme.ThemeMode
 import dagger.hilt.android.AndroidEntryPoint
@@ -69,39 +72,49 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.RequestPermission()
     ) { /* Service starts regardless */ }
 
-    @Suppress("LongMethod") // Compose setContent wiring
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+    @SuppressLint("BatteryLife") // CGM safety app — acceptable per Android Doze docs
+    private fun startServiceIfSetupDone() {
+        startForegroundService(Intent(this, StrimmaService::class.java))
 
-        // Only prompt permissions once per process, not on every onCreate
+        // Only prompt permissions once per process for existing users
         if (!permissionsChecked) {
             permissionsChecked = true
-
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                 != PackageManager.PERMISSION_GRANTED
             ) {
                 notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
-
             val pm = getSystemService(PowerManager::class.java)
             if (!pm.isIgnoringBatteryOptimizations(packageName)) {
                 startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                    data = Uri.parse("package:$packageName")
+                    data = "package:$packageName".toUri()
                 })
             }
-
         }
+    }
 
-        startForegroundService(Intent(this, StrimmaService::class.java))
+    @Suppress("LongMethod", "CyclomaticComplexMethod") // Compose setContent wiring
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
 
         setContent {
             val viewModel: MainViewModel = hiltViewModel()
             viewModelRef = viewModel
+            val setupCompleted by viewModel.setupCompleted.collectAsState()
             val themeModeStr by viewModel.themeMode.collectAsState()
             val themeMode = try { ThemeMode.valueOf(themeModeStr) } catch (_: Exception) { ThemeMode.System }
 
+            // Wait for DataStore to load before showing anything
+            if (setupCompleted == null) return@setContent
+
+            // Start service once we know setup is done
+            LaunchedEffect(setupCompleted) {
+                if (setupCompleted == true) startServiceIfSetupDone()
+            }
+
             StrimmaTheme(themeMode = themeMode) {
                 val navController = rememberNavController()
+                val startDest = if (setupCompleted == true) "main" else "setup"
 
                 val latestReading by viewModel.latestReading.collectAsState()
                 val readings by viewModel.readings.collectAsState()
@@ -135,7 +148,66 @@ class MainActivity : ComponentActivity() {
                 val treatments by viewModel.treatments.collectAsState()
                 val iob by viewModel.iob.collectAsState()
                 val exerciseSessions by viewModel.exerciseSessions.collectAsState()
-                NavHost(navController, startDestination = "main") {
+                NavHost(navController, startDestination = startDest) {
+                    composable("setup") {
+                        val setupViewModel: SetupViewModel = hiltViewModel()
+                        val setupStep by viewModel.setupStep.collectAsState()
+                        val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+                        val lifecycleState by lifecycleOwner.lifecycle.currentStateFlow.collectAsState()
+                        val isNotifAccessGranted = remember(lifecycleState) {
+                            GlucoseNotificationListener.isEnabled(this@MainActivity)
+                        }
+                        val isNotifPermGranted = remember(lifecycleState) {
+                            ContextCompat.checkSelfPermission(
+                                this@MainActivity, Manifest.permission.POST_NOTIFICATIONS
+                            ) == PackageManager.PERMISSION_GRANTED
+                        }
+                        val isBatteryIgnored = remember(lifecycleState) {
+                            getSystemService(PowerManager::class.java)
+                                .isIgnoringBatteryOptimizations(packageName)
+                        }
+
+                        // Set locale-based default unit only on fresh wizard start
+                        LaunchedEffect(setupStep) {
+                            if (setupStep == 0) {
+                                setupViewModel.setGlucoseUnit(defaultUnitForLocale())
+                            }
+                        }
+
+                        SetupScreen(
+                            viewModel = setupViewModel,
+                            initialStep = setupStep,
+                            isNotificationAccessGranted = isNotifAccessGranted,
+                            isNotificationPermissionGranted = isNotifPermGranted,
+                            isBatteryOptimizationIgnored = isBatteryIgnored,
+                            onRequestNotificationPermission = {
+                                notificationPermissionLauncher.launch(
+                                    Manifest.permission.POST_NOTIFICATIONS
+                                )
+                            },
+                            onRequestBatteryOptimization = {
+                                @SuppressLint("BatteryLife")
+                                val intent = Intent(
+                                    Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+                                ).apply { data = "package:$packageName".toUri() }
+                                startActivity(intent)
+                            },
+                            onOpenNotificationAccess = {
+                                GlucoseNotificationListener.openSettings(this@MainActivity)
+                            },
+                            onOpenAppInfo = {
+                                startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                    data = "package:$packageName".toUri()
+                                })
+                            },
+                            onSetupComplete = {
+                                startServiceIfSetupDone()
+                                navController.navigate("main") {
+                                    popUpTo("setup") { inclusive = true }
+                                }
+                            }
+                        )
+                    }
                     composable("main") {
                         MainScreen(
                             latestReading = latestReading,

@@ -12,6 +12,9 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import java.security.MessageDigest
 import java.time.Instant
 import java.time.ZoneOffset
@@ -74,6 +77,47 @@ class NightscoutClient @Inject constructor() {
     private val isoFormatter: DateTimeFormatter = DateTimeFormatter
         .ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
         .withZone(ZoneOffset.UTC)
+
+    data class ConnectionTestResult(
+        val success: Boolean,
+        val serverName: String? = null,
+        val error: String? = null
+    )
+
+    suspend fun testConnection(baseUrl: String, apiSecret: String): ConnectionTestResult {
+        if (baseUrl.isBlank()) return ConnectionTestResult(false, error = "URL is empty")
+        if (apiSecret.isBlank()) return ConnectionTestResult(false, error = "API secret is empty")
+
+        val hashedSecret = hashSecret(apiSecret)
+        val statusUrl = "${baseUrl.trimEnd('/')}/api/v1/status.json"
+
+        return try {
+            val response = client.get(statusUrl) { header("api-secret", hashedSecret) }
+            if (response.status.isSuccess()) {
+                val body = response.bodyAsText()
+                val name = try {
+                    Json.parseToJsonElement(body)
+                        .jsonObject["settings"]
+                        ?.jsonObject?.get("customTitle")
+                        ?.jsonPrimitive?.contentOrNull
+                } catch (_: kotlinx.serialization.SerializationException) { null }
+                  catch (_: IllegalArgumentException) { null }
+                ConnectionTestResult(true, serverName = name)
+            } else {
+                ConnectionTestResult(false, error = "HTTP ${response.status.value}")
+            }
+        } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+            throw e
+        } catch (
+            @Suppress("TooGenericExceptionCaught") // Network boundary
+            e: Exception
+        ) {
+            com.psjostrom.strimma.receiver.DebugLog.log(
+                message = "Connection test error: ${e.message?.take(MAX_ERROR_LENGTH)}"
+            )
+            ConnectionTestResult(false, error = e.message?.take(MAX_ERROR_LENGTH) ?: "Connection failed")
+        }
+    }
 
     suspend fun pushReadings(
         baseUrl: String,
