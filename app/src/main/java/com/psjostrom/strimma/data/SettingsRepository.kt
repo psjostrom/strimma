@@ -100,6 +100,9 @@ class SettingsRepository @Inject constructor(
         private val KEY_FOLLOWER_POLL_SECONDS = intPreferencesKey("follower_poll_seconds")
         private const val KEY_FOLLOWER_SECRET = "follower_secret"
 
+        private const val KEY_LLU_EMAIL = "llu_email"
+        private const val KEY_LLU_PASSWORD = "llu_password"
+
         private val KEY_TREATMENTS_SYNC_ENABLED = booleanPreferencesKey("treatments_sync_enabled")
         private val KEY_INSULIN_TYPE = stringPreferencesKey("insulin_type")
         private val KEY_CUSTOM_DIA = floatPreferencesKey("custom_dia")
@@ -224,6 +227,16 @@ class SettingsRepository @Inject constructor(
         encryptedPrefs.edit().putString(KEY_FOLLOWER_SECRET, secret).apply()
     }
 
+    fun getLluEmail(): String = encryptedPrefs.getString(KEY_LLU_EMAIL, "") ?: ""
+    fun setLluEmail(email: String) {
+        encryptedPrefs.edit().putString(KEY_LLU_EMAIL, email).apply()
+    }
+
+    fun getLluPassword(): String = encryptedPrefs.getString(KEY_LLU_PASSWORD, "") ?: ""
+    fun setLluPassword(password: String) {
+        encryptedPrefs.edit().putString(KEY_LLU_PASSWORD, password).apply()
+    }
+
     val treatmentsSyncEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_TREATMENTS_SYNC_ENABLED] ?: false }
     suspend fun setTreatmentsSyncEnabled(enabled: Boolean) { dataStore.edit { it[KEY_TREATMENTS_SYNC_ENABLED] = enabled } }
 
@@ -318,6 +331,8 @@ class SettingsRepository @Inject constructor(
             put("nightscout_secret", getNightscoutSecret())
             put("follower_secret", getFollowerSecret())
             put("web_server_secret", getWebServerSecret())
+            put("llu_email", getLluEmail())
+            put("llu_password", getLluPassword())
         }
 
         return JSONObject().apply {
@@ -390,6 +405,8 @@ class SettingsRepository @Inject constructor(
             if (secrets.has("nightscout_secret")) setNightscoutSecret(secrets.getString("nightscout_secret"))
             if (secrets.has("follower_secret")) setFollowerSecret(secrets.getString("follower_secret"))
             if (secrets.has("web_server_secret")) setWebServerSecret(secrets.getString("web_server_secret"))
+            if (secrets.has("llu_email")) setLluEmail(secrets.getString("llu_email"))
+            if (secrets.has("llu_password")) setLluPassword(secrets.getString("llu_password"))
         }
 
         if (root.has("widget")) {

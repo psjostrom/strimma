@@ -16,6 +16,7 @@ import java.security.MessageDigest
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -106,6 +107,8 @@ class NightscoutClient @Inject constructor() {
                 )
             }
             response.status.isSuccess()
+        } catch (e: CancellationException) {
+            throw e
         } catch (
             @Suppress("TooGenericExceptionCaught") // Network boundary — Ktor can throw any exception type
             e: Exception
@@ -141,6 +144,8 @@ class NightscoutClient @Inject constructor() {
             } else {
                 response.body<List<NightscoutEntryResponse>>()
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (
             @Suppress("TooGenericExceptionCaught") // Network boundary — Ktor can throw any exception type
             e: Exception
@@ -200,6 +205,8 @@ class NightscoutClient @Inject constructor() {
                     fetchedAt = now
                 )
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (
             @Suppress("TooGenericExceptionCaught") // Network boundary — Ktor can throw any exception type
             e: Exception

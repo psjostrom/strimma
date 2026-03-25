@@ -33,12 +33,16 @@ class DataSourceSettingsTest {
                 followerUrl = "",
                 followerSecret = "",
                 followerPollSeconds = 60,
+                lluEmail = "",
+                lluPassword = "",
                 onGlucoseSourceChange = onGlucoseSourceChange,
                 onNightscoutUrlChange = {},
                 onNightscoutSecretChange = {},
                 onFollowerUrlChange = {},
                 onFollowerSecretChange = {},
                 onFollowerPollSecondsChange = {},
+                onLluEmailChange = {},
+                onLluPasswordChange = {},
                 isNotificationAccessGranted = true,
                 onOpenNotificationAccess = {},
                 onBack = onBack
@@ -56,6 +60,7 @@ class DataSourceSettingsTest {
         composeRule.onNodeWithText("Companion Mode").assertExists()
         composeRule.onNodeWithText("xDrip Broadcast").assertExists()
         composeRule.onNodeWithText("Nightscout Follower").assertExists()
+        composeRule.onNodeWithText("LibreLinkUp").assertExists()
     }
 
     @Test

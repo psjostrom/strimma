@@ -196,6 +196,8 @@ class MainActivity : ComponentActivity() {
                             followerUrl = followerUrl,
                             followerSecret = viewModel.followerSecret,
                             followerPollSeconds = followerPollSeconds,
+                            lluEmail = viewModel.lluEmail,
+                            lluPassword = viewModel.lluPassword,
                             isNotificationAccessGranted = isNotifAccessGranted,
                             onGlucoseSourceChange = viewModel::setGlucoseSource,
                             onNightscoutUrlChange = viewModel::setNightscoutUrl,
@@ -203,6 +205,8 @@ class MainActivity : ComponentActivity() {
                             onFollowerUrlChange = viewModel::setFollowerUrl,
                             onFollowerSecretChange = viewModel::setFollowerSecret,
                             onFollowerPollSecondsChange = viewModel::setFollowerPollSeconds,
+                            onLluEmailChange = viewModel::setLluEmail,
+                            onLluPasswordChange = viewModel::setLluPassword,
                             onOpenNotificationAccess = {
                                 GlucoseNotificationListener.openSettings(this@MainActivity)
                             },
