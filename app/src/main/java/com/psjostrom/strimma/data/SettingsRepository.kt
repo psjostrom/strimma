@@ -45,9 +45,28 @@ private object MgdlSettingsMigration : DataMigration<Preferences> {
     override suspend fun cleanUp() { /* Nothing to clean up — one-shot migration */ }
 }
 
+// MUST remain first in produceMigrations — detects existing users by checking
+// if the preferences map is non-empty BEFORE other migrations write to it.
+private object SetupCompletedMigration : DataMigration<Preferences> {
+    private val KEY = booleanPreferencesKey("setup_completed")
+
+    override suspend fun shouldMigrate(currentData: Preferences): Boolean {
+        return KEY !in currentData.asMap()
+    }
+
+    override suspend fun migrate(currentData: Preferences): Preferences {
+        val mutable = currentData.toMutablePreferences()
+        // Existing users (have any settings) skip wizard; fresh installs see it
+        mutable[KEY] = currentData.asMap().isNotEmpty()
+        return mutable.toPreferences()
+    }
+
+    override suspend fun cleanUp() { /* One-shot migration */ }
+}
+
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
     name = "settings",
-    produceMigrations = { listOf(MgdlSettingsMigration) }
+    produceMigrations = { listOf(SetupCompletedMigration, MgdlSettingsMigration) }
 )
 
 @Suppress("TooManyFunctions") // One getter+setter per setting
@@ -115,6 +134,9 @@ class SettingsRepository @Inject constructor(
         private val KEY_HC_WRITE_ENABLED = booleanPreferencesKey("hc_write_enabled")
         private val KEY_HC_LAST_SYNC = longPreferencesKey("hc_last_sync")
         private val KEY_HC_CHANGES_TOKEN = stringPreferencesKey("hc_changes_token")
+
+        private val KEY_SETUP_COMPLETED = booleanPreferencesKey("setup_completed")
+        private val KEY_SETUP_STEP = intPreferencesKey("setup_step")
 
         // Settings defaults (mg/dL)
         private const val DEFAULT_GRAPH_WINDOW_HOURS = 4
@@ -270,6 +292,12 @@ class SettingsRepository @Inject constructor(
             else it.remove(KEY_HC_CHANGES_TOKEN)
         }
     }
+
+    val setupCompleted: Flow<Boolean> = dataStore.data.map { it[KEY_SETUP_COMPLETED] ?: false }
+    suspend fun setSetupCompleted(completed: Boolean) { dataStore.edit { it[KEY_SETUP_COMPLETED] = completed } }
+
+    val setupStep: Flow<Int> = dataStore.data.map { it[KEY_SETUP_STEP] ?: 0 }
+    suspend fun setSetupStep(step: Int) { dataStore.edit { it[KEY_SETUP_STEP] = step } }
 
     val hbA1cUnit: Flow<HbA1cUnit> = dataStore.data.map {
         try { HbA1cUnit.valueOf(it[KEY_HBA1C_UNIT] ?: "MMOL_MOL") } catch (_: Exception) { HbA1cUnit.MMOL_MOL }

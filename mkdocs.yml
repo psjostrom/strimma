@@ -91,6 +91,7 @@ nav:
   - Getting Started:
     - Install Strimma: getting-started/install.md
     - Initial Setup: getting-started/setup.md
+    - Notification Access: getting-started/notification-access.md
     - Your First Reading: getting-started/first-reading.md
   - User Guide:
     - Main Screen: guide/main-screen.md
