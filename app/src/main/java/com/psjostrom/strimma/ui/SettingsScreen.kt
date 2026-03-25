@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
@@ -78,6 +79,13 @@ fun SettingsScreen(
                     title = stringResource(R.string.settings_treatments),
                     subtitle = stringResource(R.string.settings_treatments_subtitle),
                     onClick = { onNavigate("settings/treatments") }
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                SettingsMenuItem(
+                    icon = Icons.Default.FitnessCenter,
+                    title = stringResource(R.string.settings_exercise),
+                    subtitle = stringResource(R.string.settings_exercise_subtitle),
+                    onClick = { onNavigate("settings/exercise") }
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 SettingsMenuItem(

@@ -159,6 +159,8 @@ dependencies {
     implementation(libs.glance.appwidget)
     implementation(libs.glance.material3)
 
+    implementation(libs.health.connect)
+
     debugImplementation(libs.leakcanary)
 
     testImplementation(libs.junit)

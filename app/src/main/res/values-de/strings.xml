@@ -65,6 +65,9 @@
     <!-- Data Source Settings -->
     <string name="settings_source_title">Datenquelle</string>
     <string name="settings_source_section">Quelle</string>
+    <string name="settings_source_notification_access">Benachrichtigungszugriff</string>
+    <string name="settings_source_notification_granted">Gewährt</string>
+    <string name="settings_source_notification_not_granted">Nicht gewährt — tippen um Einstellungen zu öffnen</string>
     <string name="settings_source_nightscout_push">Nightscout Push</string>
     <string name="settings_source_nightscout_url">Nightscout-URL</string>
     <string name="settings_source_url_placeholder">https://dein-nightscout.example.com</string>
@@ -230,6 +233,54 @@
     <string name="widget_config_background">Hintergrund</string>
     <string name="widget_config_opacity">%1$d%%</string>
     <string name="widget_config_background_hint">Steuert nur den Hintergrund \u2014 Diagramm und Werte bleiben voll sichtbar</string>
+
+    <!-- Exercise Settings -->
+    <string name="settings_exercise">Training</string>
+    <string name="settings_exercise_subtitle">Health Connect, Trainingshistorie</string>
+    <string name="exercise_settings_title">Training</string>
+    <string name="exercise_hc_status_connected">Verbunden</string>
+    <string name="exercise_hc_status_permissions">Berechtigungen erforderlich</string>
+    <string name="exercise_hc_status_not_installed">Nicht installiert</string>
+    <string name="exercise_hc_status_not_supported">Nicht unterst\u00FCtzt</string>
+    <string name="exercise_hc_status_label">Health Connect</string>
+    <string name="exercise_hc_install_prompt">Aus dem Play Store installieren</string>
+    <string name="exercise_hc_write_toggle">Glukose in Health Connect schreiben</string>
+    <string name="exercise_hc_write_subtitle">Glukosemesswerte mit anderen Gesundheitsapps teilen</string>
+    <string name="exercise_hc_last_sync">Letzte Synchronisierung</string>
+    <string name="exercise_hc_last_sync_never">Nie</string>
+
+    <!-- Exercise types -->
+    <string name="exercise_type_running">Lauf</string>
+    <string name="exercise_type_walking">Gehen</string>
+    <string name="exercise_type_cycling">Radfahren</string>
+    <string name="exercise_type_swimming">Schwimmen</string>
+    <string name="exercise_type_other">Training</string>
+
+    <!-- Exercise Detail -->
+    <string name="exercise_detail_before">VORHER</string>
+    <string name="exercise_detail_during">W\u00C4HREND</string>
+    <string name="exercise_detail_after">NACHHER</string>
+    <string name="exercise_detail_entry_bg">Eingang</string>
+    <string name="exercise_detail_min_bg">Min</string>
+    <string name="exercise_detail_lowest_bg">Tiefster</string>
+    <string name="exercise_detail_max_drop">Max. Abfall</string>
+    <string name="exercise_detail_avg_hr">\u00D8 HF</string>
+    <string name="exercise_detail_max_hr">Max HF</string>
+    <string name="exercise_detail_steps">Schritte</string>
+    <string name="exercise_detail_calories">Kalorien</string>
+    <string name="exercise_detail_time_to_lowest">Zeit bis Tiefstwert</string>
+    <string name="exercise_detail_highest_bg">H\u00F6chster</string>
+    <string name="exercise_detail_time_to_highest">Zeit bis H\u00F6chstwert</string>
+    <string name="exercise_detail_total_drop">Gesamtabfall</string>
+    <string name="exercise_detail_post_hypo">Tief nach Training</string>
+    <string name="exercise_detail_no_data">Nicht gen\u00FCgend Glukosedaten</string>
+    <string name="exercise_detail_no_value">\u2014</string>
+    <string name="exercise_detail_per_10min">pro 10 Min.</string>
+    <string name="exercise_detail_after_duration">%s danach</string>
+    <string name="exercise_history_title">Training</string>
+    <string name="exercise_history_empty">Noch keine Trainingseinheiten. Verbinde Health Connect in den Einstellungen, um deine Workouts hier zu sehen.</string>
+    <string name="hc_rationale_title">Health Connect-Berechtigungen</string>
+    <string name="hc_rationale_body">Strimma nutzt Health Connect, um Trainingseinheiten, Herzfrequenz, Schritte und Kalorien zu lesen und zu zeigen, wie Training den Blutzucker beeinflusst. Optional kann Strimma Glukosewerte schreiben, damit andere Gesundheits-Apps sie sehen k\u00F6nnen.</string>
 
     <!-- Activity (dialogs, toasts) -->
     <string name="activity_settings_imported">Einstellungen importiert</string>

@@ -1,14 +1,28 @@
 package com.psjostrom.strimma.data
 
 import android.content.Context
+import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.psjostrom.strimma.data.health.ExerciseDao
+import com.psjostrom.strimma.data.health.HeartRateSample
+import com.psjostrom.strimma.data.health.StoredExerciseSession
 
-@Database(entities = [GlucoseReading::class, Treatment::class], version = 3)
+@Database(
+    entities = [
+        GlucoseReading::class,
+        Treatment::class,
+        StoredExerciseSession::class,
+        HeartRateSample::class
+    ],
+    version = 4,
+    autoMigrations = [AutoMigration(from = 3, to = 4)]
+)
 abstract class StrimmaDatabase : RoomDatabase() {
     abstract fun readingDao(): ReadingDao
     abstract fun treatmentDao(): TreatmentDao
+    abstract fun exerciseDao(): ExerciseDao
 
     companion object {
         const val DB_NAME = "strimma.db"

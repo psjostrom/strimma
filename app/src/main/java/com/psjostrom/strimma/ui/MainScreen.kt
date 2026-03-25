@@ -9,6 +9,7 @@ import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material3.*
@@ -37,6 +38,9 @@ import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.IOBComputer
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.Treatment
+import com.psjostrom.strimma.data.health.ExerciseBGContext
+import com.psjostrom.strimma.data.health.ExerciseCategory
+import com.psjostrom.strimma.data.health.StoredExerciseSession
 import com.psjostrom.strimma.graph.CRITICAL_HIGH
 import com.psjostrom.strimma.graph.CRITICAL_LOW
 import com.psjostrom.strimma.graph.PredictionComputer
@@ -48,6 +52,7 @@ import com.psjostrom.strimma.ui.theme.AboveHigh
 import com.psjostrom.strimma.ui.theme.BelowLow
 import com.psjostrom.strimma.ui.theme.BolusBlue
 import com.psjostrom.strimma.ui.theme.CarbGreen
+import com.psjostrom.strimma.ui.theme.ExerciseDefault
 import com.psjostrom.strimma.ui.theme.InRange
 import com.psjostrom.strimma.ui.theme.InRangeZone
 import com.psjostrom.strimma.ui.theme.Stale
@@ -74,14 +79,43 @@ fun MainScreen(
     treatments: List<Treatment> = emptyList(),
     iob: Double = 0.0,
     iobTauMinutes: Double = 55.0,
+    exerciseSessions: List<StoredExerciseSession> = emptyList(),
+    onComputeBGContext: (suspend (StoredExerciseSession) -> ExerciseBGContext?)? = null,
     onSettingsClick: () -> Unit,
-    onStatsClick: () -> Unit = {}
+    onStatsClick: () -> Unit = {},
+    onExerciseClick: () -> Unit = {}
 ) {
     val mainWindowMs = graphWindowHours * 3600_000L
 
     val predictionMs = predictionMinutes * 60_000L
     var viewportEnd by remember { mutableLongStateOf(System.currentTimeMillis() + predictionMs) }
     var zoomScale by remember { mutableFloatStateOf(1f) }
+
+    // Exercise detail sheet state
+    var selectedExercise by remember { mutableStateOf<StoredExerciseSession?>(null) }
+    var selectedBGContext by remember { mutableStateOf<ExerciseBGContext?>(null) }
+    var bgContextLoaded by remember { mutableStateOf(false) }
+
+    LaunchedEffect(selectedExercise) {
+        val session = selectedExercise
+        if (session != null && onComputeBGContext != null) {
+            bgContextLoaded = false
+            selectedBGContext = onComputeBGContext(session)
+            bgContextLoaded = true
+        } else {
+            selectedBGContext = null
+            bgContextLoaded = false
+        }
+    }
+
+    if (selectedExercise != null && bgContextLoaded) {
+        ExerciseDetailSheet(
+            session = selectedExercise!!,
+            bgContext = selectedBGContext,
+            glucoseUnit = glucoseUnit,
+            onDismiss = { selectedExercise = null }
+        )
+    }
 
     // Auto-track "now" + prediction space when viewport is near current time
     LaunchedEffect(readings) {
@@ -96,6 +130,13 @@ fun MainScreen(
             TopAppBar(
                 title = { },
                 actions = {
+                    IconButton(onClick = onExerciseClick) {
+                        Icon(
+                            Icons.Default.FitnessCenter,
+                            contentDescription = stringResource(R.string.settings_exercise),
+                            tint = MaterialTheme.colorScheme.outline
+                        )
+                    }
                     IconButton(onClick = onStatsClick) {
                         Icon(
                             Icons.Outlined.BarChart,
@@ -152,6 +193,8 @@ fun MainScreen(
                     predictionMinutes = predictionMinutes,
                     glucoseUnit = glucoseUnit,
                     treatments = treatments,
+                    exerciseSessions = exerciseSessions,
+                    onExerciseTap = { selectedExercise = it },
                     onViewportChange = { viewportEnd = it },
                     onZoomChange = { zoomScale = it },
                     modifier = Modifier.fillMaxSize()
@@ -405,6 +448,8 @@ fun GlucoseGraph(
     predictionMinutes: Int = 15,
     glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
     treatments: List<Treatment> = emptyList(),
+    exerciseSessions: List<StoredExerciseSession> = emptyList(),
+    onExerciseTap: (StoredExerciseSession) -> Unit = {},
     onViewportChange: (Long) -> Unit,
     onZoomChange: (Float) -> Unit,
     modifier: Modifier = Modifier
@@ -437,6 +482,8 @@ fun GlucoseGraph(
     val currentGlucoseUnit by rememberUpdatedState(glucoseUnit)
     val currentWindowMs by rememberUpdatedState(windowMs)
     val currentPredictionMs by rememberUpdatedState(predictionMs)
+    val currentExerciseSessions by rememberUpdatedState(exerciseSessions)
+    val currentOnExerciseTap by rememberUpdatedState(onExerciseTap)
     // Resolve format strings in Composable scope for use inside Canvas drawText
     val bolusLabelFmt = stringResource(R.string.main_bolus_label)
     val carbLabelFmt = stringResource(R.string.main_carb_label)
@@ -446,6 +493,18 @@ fun GlucoseGraph(
             textSize = 28f
             textAlign = android.graphics.Paint.Align.CENTER
             typeface = android.graphics.Typeface.DEFAULT_BOLD
+        }
+    }
+
+    // Resolve exercise category labels in Composable scope (stringResource unavailable in Canvas)
+    val exerciseCategoryLabels = ExerciseCategory.entries.associateWith { stringResource(it.labelRes) }
+
+    val exerciseLabelPaint = remember {
+        android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            textSize = 32f
+            textAlign = android.graphics.Paint.Align.LEFT
+            typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
+            color = ExerciseDefault.toArgb()
         }
     }
 
@@ -478,6 +537,23 @@ fun GlucoseGraph(
                         val event = awaitPointerEvent()
                         if (!event.changes.any { it.pressed }) {
                             selectedReading = null
+                            // Tap detection: if we never moved past touch slop and weren't scrubbing,
+                            // check if the tap landed on an exercise band
+                            if (!pastSlop && !isScrubbing) {
+                                val tapX = down.position.x
+                                val plotW = size.width - mLeft - mRight
+                                for (session in currentExerciseSessions) {
+                                    if (session.endTime < currentVisibleStart || session.startTime > currentViewportEnd) continue
+                                    val xStart = (mLeft + ((session.startTime - currentVisibleStart).toFloat() / currentVisibleMs) * plotW)
+                                        .coerceIn(mLeft, size.width - mRight)
+                                    val xEnd = (mLeft + ((session.endTime - currentVisibleStart).toFloat() / currentVisibleMs) * plotW)
+                                        .coerceIn(mLeft, size.width - mRight)
+                                    if (xEnd > xStart && tapX in xStart..xEnd) {
+                                        currentOnExerciseTap(session)
+                                        break
+                                    }
+                                }
+                            }
                             break
                         }
 
@@ -516,10 +592,12 @@ fun GlucoseGraph(
                                 val timeShift = (-panChange.x * msPerPx).toLong()
                                 val now = System.currentTimeMillis()
                                 val maxEnd = now + currentPredictionMs
-                                val newEnd = (currentViewportEnd + timeShift).coerceIn(
-                                    currentReadings.minOfOrNull { it.ts }?.plus(visMs.toLong()) ?: maxEnd,
+                                val minEnd = currentReadings.minOfOrNull { it.ts }?.plus(visMs.toLong()) ?: maxEnd
+                                val newEnd = if (minEnd <= maxEnd) {
+                                    (currentViewportEnd + timeShift).coerceIn(minEnd, maxEnd)
+                                } else {
                                     maxEnd
-                                )
+                                }
                                 onViewportChange(newEnd)
                                 event.changes.forEach { if (it.positionChanged()) it.consume() }
                             }
@@ -565,6 +643,49 @@ fun GlucoseGraph(
                 end = Offset(size.width - marginRight, y),
                 pathEffect = dashEffect,
                 strokeWidth = 1.5f
+            )
+        }
+
+        // Exercise bands (rendered before BG data so dots/lines draw on top)
+        for (session in exerciseSessions) {
+            // Skip sessions that don't overlap the visible window
+            if (session.endTime < visibleStart || session.startTime > viewportEnd) continue
+
+            val xStart = xFor(session.startTime).coerceIn(marginLeft, size.width - marginRight)
+            val xEnd = xFor(session.endTime).coerceIn(marginLeft, size.width - marginRight)
+            if (xEnd <= xStart) continue
+
+            // Filled band
+            drawRect(
+                color = ExerciseDefault.copy(alpha = 0.15f),
+                topLeft = Offset(xStart, marginTop),
+                size = Size(xEnd - xStart, plotHeight)
+            )
+
+            // Left and right border lines
+            val borderColor = ExerciseDefault.copy(alpha = 0.5f)
+            if (xFor(session.startTime) >= marginLeft) {
+                drawLine(
+                    color = borderColor,
+                    start = Offset(xStart, marginTop),
+                    end = Offset(xStart, marginTop + plotHeight),
+                    strokeWidth = 2f
+                )
+            }
+            if (xFor(session.endTime) <= size.width - marginRight) {
+                drawLine(
+                    color = borderColor,
+                    start = Offset(xEnd, marginTop),
+                    end = Offset(xEnd, marginTop + plotHeight),
+                    strokeWidth = 2f
+                )
+            }
+
+            // Label at top-left of band
+            val category = ExerciseCategory.fromHCType(session.type)
+            val label = "${category.emoji} ${exerciseCategoryLabels[category] ?: ""}"
+            drawContext.canvas.nativeCanvas.drawText(
+                label, xStart + 4f, marginTop + exerciseLabelPaint.fontSpacing, exerciseLabelPaint
             )
         }
 
@@ -682,12 +803,12 @@ fun GlucoseGraph(
             val line2 = if (deltaStr != null) "$timeStr  $deltaStr" else timeStr
 
             val tooltipPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-                this.color = tooltipText.hashCode() or 0xFF000000.toInt()
+                this.color = tooltipText.toArgb()
                 textSize = 44f
                 typeface = android.graphics.Typeface.DEFAULT_BOLD
             }
             val subtextPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-                this.color = tooltipSubtext.hashCode() or 0xFF000000.toInt()
+                this.color = tooltipSubtext.toArgb()
                 textSize = 36f
             }
 
@@ -731,7 +852,7 @@ fun GlucoseGraph(
 
         // Axis labels
         val textPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-            this.color = axisColor.hashCode() or 0xFF000000.toInt()
+            this.color = axisColor.toArgb()
             textSize = 38f
             textAlign = android.graphics.Paint.Align.CENTER
         }
@@ -805,7 +926,10 @@ fun Minimap(
                         val now0 = System.currentTimeMillis()
                         val start0 = now0 - MINIMAP_WINDOW_MS
                         val time = start0 + ((down.position.x / size.width) * MINIMAP_WINDOW_MS).toLong()
-                        onViewportChange((time + visibleMs / 2).coerceIn(start0 + visibleMs, now0))
+                        val rangeMin0 = start0 + visibleMs
+                        if (rangeMin0 <= now0) {
+                            onViewportChange((time + visibleMs / 2).coerceIn(rangeMin0, now0))
+                        }
 
                         while (true) {
                             val event = awaitPointerEvent()
@@ -814,7 +938,10 @@ fun Minimap(
                             val nowD = System.currentTimeMillis()
                             val startD = nowD - MINIMAP_WINDOW_MS
                             val dragTime = startD + ((pos.x.coerceIn(0f, size.width.toFloat()) / size.width) * MINIMAP_WINDOW_MS).toLong()
-                            onViewportChange((dragTime + visibleMs / 2).coerceIn(startD + visibleMs, nowD))
+                            val rangeMinD = startD + visibleMs
+                            if (rangeMinD <= nowD) {
+                                onViewportChange((dragTime + visibleMs / 2).coerceIn(rangeMinD, nowD))
+                            }
                             event.changes.forEach { it.consume() }
                         }
                     }
@@ -867,7 +994,7 @@ fun Minimap(
 
         // Time labels
         val textPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-            this.color = miniAxisColor.hashCode() or 0xFF000000.toInt()
+            this.color = miniAxisColor.toArgb()
             textSize = 28f
             textAlign = android.graphics.Paint.Align.CENTER
         }

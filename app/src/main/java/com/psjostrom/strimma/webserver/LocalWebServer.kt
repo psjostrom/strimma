@@ -43,41 +43,59 @@ class LocalWebServer @Inject constructor(
 
     private var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
 
+    @Suppress("TooGenericExceptionCaught") // Ktor can throw various exceptions during bind
     fun start() {
         if (server != null) return
-        server = embeddedServer(CIO, host = "0.0.0.0", port = PORT) {
-            intercept(ApplicationCallPipeline.Plugins) {
-                call.response.header("Access-Control-Allow-Origin", "*")
-                val remoteHost = call.request.local.remoteHost
-                if (!isLoopback(remoteHost)) {
-                    val secret = settings.getWebServerSecret()
-                    if (secret.isBlank()) {
-                        call.respondText("Authentication required", status = HttpStatusCode.Forbidden)
-                        finish()
-                        return@intercept
-                    }
-                    val apiSecret = call.request.header("api-secret")
-                    if (apiSecret == null || !checkApiSecret(apiSecret, secret)) {
-                        call.respondText("Authentication failed", status = HttpStatusCode.Forbidden)
-                        finish()
-                        return@intercept
+        if (!isPortAvailable()) {
+            DebugLog.log("Web server port $PORT already in use, skipping start")
+            return
+        }
+        try {
+            server = embeddedServer(CIO, host = "0.0.0.0", port = PORT) {
+                intercept(ApplicationCallPipeline.Plugins) {
+                    call.response.header("Access-Control-Allow-Origin", "*")
+                    val remoteHost = call.request.local.remoteHost
+                    if (!isLoopback(remoteHost)) {
+                        val secret = settings.getWebServerSecret()
+                        if (secret.isBlank()) {
+                            call.respondText("Authentication required", status = HttpStatusCode.Forbidden)
+                            finish()
+                            return@intercept
+                        }
+                        val apiSecret = call.request.header("api-secret")
+                        if (apiSecret == null || !checkApiSecret(apiSecret, secret)) {
+                            call.respondText("Authentication failed", status = HttpStatusCode.Forbidden)
+                            finish()
+                            return@intercept
+                        }
                     }
                 }
-            }
-            routing {
-                sgvRoutes(dao, treatmentDao, settings)
-                statusRoutes(settings)
-                treatmentRoutes(treatmentDao)
-                healthRoutes()
-            }
-        }.start(wait = false)
-        DebugLog.log("Web server started on port $PORT")
+                routing {
+                    sgvRoutes(dao, treatmentDao, settings)
+                    statusRoutes(settings)
+                    treatmentRoutes(treatmentDao)
+                    healthRoutes()
+                }
+            }.start(wait = false)
+            DebugLog.log("Web server started on port $PORT")
+        } catch (e: Exception) {
+            DebugLog.log("Web server failed to start: ${e.message}")
+            server = null
+        }
     }
 
     fun stop() {
         server?.stop(STOP_GRACE_MS, STOP_TIMEOUT_MS)
         server = null
         DebugLog.log("Web server stopped")
+    }
+
+    private fun isPortAvailable(): Boolean {
+        return try {
+            java.net.ServerSocket(PORT).use { true }
+        } catch (_: Exception) {
+            false
+        }
     }
 }
 

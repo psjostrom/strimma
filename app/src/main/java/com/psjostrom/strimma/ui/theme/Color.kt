@@ -45,6 +45,9 @@ val VeryHigh = Color(0xFFEF6C00)
 val BolusBlue = Color(0xFF5B8DEF)
 val CarbGreen = Color(0xFF4CAF50)
 
+// --- Exercise marker color ---
+val ExerciseDefault = Color(0xFF8B8BBA)
+
 // Graph tooltip/canvas colors for dark graph surfaces (graphs always render dark)
 val GraphTooltipBg = Color(0xE6181520)
 val GraphAxisText = Color(0xFFA898C0)

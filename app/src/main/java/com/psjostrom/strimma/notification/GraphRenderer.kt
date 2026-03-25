@@ -3,9 +3,11 @@ package com.psjostrom.strimma.notification
 import android.graphics.*
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseUnit
+import com.psjostrom.strimma.data.health.StoredExerciseSession
 import com.psjostrom.strimma.graph.PredictionComputer
 import com.psjostrom.strimma.graph.canvasColorFor
 import com.psjostrom.strimma.graph.computeYRange
+import com.psjostrom.strimma.graph.CANVAS_EXERCISE
 import com.psjostrom.strimma.graph.CANVAS_HIGH
 import com.psjostrom.strimma.graph.CANVAS_LOW
 import com.psjostrom.strimma.graph.CRITICAL_HIGH
@@ -58,6 +60,9 @@ object GraphRenderer {
 
     // Alpha values
     private const val PREDICTION_ALPHA = 128
+    private const val EXERCISE_FILL_ALPHA = 38
+    private const val EXERCISE_BORDER_ALPHA = 127
+    private const val EXERCISE_BORDER_WIDTH = 2f
 
     // Gradient
     private const val GRADIENT_HEIGHT_FRACTION = 0.45f
@@ -72,7 +77,8 @@ object GraphRenderer {
         windowMs: Long,
         compact: Boolean = false,
         predictionMinutes: Int = 10,
-        glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL
+        glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
+        exerciseSessions: List<StoredExerciseSession> = emptyList()
     ): Bitmap {
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
@@ -123,6 +129,35 @@ object GraphRenderer {
         thresholdPaint.pathEffect = null
         canvas.drawLine(marginLeft, yFor(CRITICAL_LOW), width - marginRight, yFor(CRITICAL_LOW), thresholdPaint)
         canvas.drawLine(marginLeft, yFor(CRITICAL_HIGH), width - marginRight, yFor(CRITICAL_HIGH), thresholdPaint)
+
+        // Exercise bands (rendered before dots/lines so BG data draws on top)
+        if (exerciseSessions.isNotEmpty()) {
+            val exercisePaint = Paint().apply {
+                color = CANVAS_EXERCISE
+                alpha = EXERCISE_FILL_ALPHA
+                style = Paint.Style.FILL
+            }
+            val exerciseBorderPaint = Paint().apply {
+                color = CANVAS_EXERCISE
+                alpha = EXERCISE_BORDER_ALPHA
+                strokeWidth = EXERCISE_BORDER_WIDTH
+                style = Paint.Style.STROKE
+            }
+            for (session in exerciseSessions) {
+                if (session.endTime < startTime || session.startTime > endTime) continue
+                val xStart = xFor(session.startTime).coerceIn(marginLeft, width - marginRight)
+                val xEnd = xFor(session.endTime).coerceIn(marginLeft, width - marginRight)
+                if (xEnd <= xStart) continue
+
+                canvas.drawRect(xStart, marginTop, xEnd, marginTop + plotHeight, exercisePaint)
+                if (xFor(session.startTime) >= marginLeft) {
+                    canvas.drawLine(xStart, marginTop, xStart, marginTop + plotHeight, exerciseBorderPaint)
+                }
+                if (xFor(session.endTime) <= width - marginRight) {
+                    canvas.drawLine(xEnd, marginTop, xEnd, marginTop + plotHeight, exerciseBorderPaint)
+                }
+            }
+        }
 
         if (visible.isEmpty()) return bitmap
 

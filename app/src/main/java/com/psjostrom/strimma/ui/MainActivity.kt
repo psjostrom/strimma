@@ -90,9 +90,6 @@ class MainActivity : ComponentActivity() {
                 })
             }
 
-            if (!GlucoseNotificationListener.isEnabled(this)) {
-                GlucoseNotificationListener.openSettings(this)
-            }
         }
 
         startForegroundService(Intent(this, StrimmaService::class.java))
@@ -137,6 +134,7 @@ class MainActivity : ComponentActivity() {
                 val customDIA by viewModel.customDIA.collectAsState()
                 val treatments by viewModel.treatments.collectAsState()
                 val iob by viewModel.iob.collectAsState()
+                val exerciseSessions by viewModel.exerciseSessions.collectAsState()
                 NavHost(navController, startDestination = "main") {
                     composable("main") {
                         MainScreen(
@@ -151,6 +149,8 @@ class MainActivity : ComponentActivity() {
                             treatments = treatments,
                             iob = iob,
                             iobTauMinutes = IOBComputer.tauForInsulinType(insulinType, customDIA),
+                            exerciseSessions = exerciseSessions,
+                            onComputeBGContext = viewModel::computeExerciseBGContext,
                             onSettingsClick = {
                                 navController.navigate("settings") {
                                     launchSingleTop = true
@@ -160,7 +160,17 @@ class MainActivity : ComponentActivity() {
                                 navController.navigate("stats") {
                                     launchSingleTop = true
                                 }
+                            },
+                            onExerciseClick = {
+                                navController.navigate("exercise") {
+                                    launchSingleTop = true
+                                }
                             }
+                        )
+                    }
+                    composable("exercise") {
+                        ExerciseHistoryScreen(
+                            onBack = { navController.popBackStack() }
                         )
                     }
                     composable("settings") {
@@ -174,6 +184,11 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable("settings/data-source") {
+                        val dsLifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+                        val dsLifecycleState by dsLifecycleOwner.lifecycle.currentStateFlow.collectAsState()
+                        val isNotifAccessGranted = remember(dsLifecycleState) {
+                            GlucoseNotificationListener.isEnabled(this@MainActivity)
+                        }
                         DataSourceSettings(
                             glucoseSource = glucoseSource,
                             nightscoutUrl = nightscoutUrl,
@@ -181,12 +196,16 @@ class MainActivity : ComponentActivity() {
                             followerUrl = followerUrl,
                             followerSecret = viewModel.followerSecret,
                             followerPollSeconds = followerPollSeconds,
+                            isNotificationAccessGranted = isNotifAccessGranted,
                             onGlucoseSourceChange = viewModel::setGlucoseSource,
                             onNightscoutUrlChange = viewModel::setNightscoutUrl,
                             onNightscoutSecretChange = viewModel::setNightscoutSecret,
                             onFollowerUrlChange = viewModel::setFollowerUrl,
                             onFollowerSecretChange = viewModel::setFollowerSecret,
                             onFollowerPollSecondsChange = viewModel::setFollowerPollSeconds,
+                            onOpenNotificationAccess = {
+                                GlucoseNotificationListener.openSettings(this@MainActivity)
+                            },
                             onBack = { navController.popBackStack() }
                         )
                     }
@@ -198,6 +217,11 @@ class MainActivity : ComponentActivity() {
                             onTreatmentsSyncEnabledChange = viewModel::setTreatmentsSyncEnabled,
                             onInsulinTypeChange = viewModel::setInsulinType,
                             onCustomDIAChange = viewModel::setCustomDIA,
+                            onBack = { navController.popBackStack() }
+                        )
+                    }
+                    composable("settings/exercise") {
+                        com.psjostrom.strimma.ui.settings.ExerciseSettings(
                             onBack = { navController.popBackStack() }
                         )
                     }

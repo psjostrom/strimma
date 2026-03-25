@@ -14,6 +14,9 @@ import com.psjostrom.strimma.data.InsulinType
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.TreatmentDao
+import com.psjostrom.strimma.data.health.ExerciseDao
+import com.psjostrom.strimma.data.health.ExerciseSyncer
+import com.psjostrom.strimma.data.health.HealthConnectManager
 import com.psjostrom.strimma.network.NightscoutFollower
 import com.psjostrom.strimma.network.NightscoutPuller
 import com.psjostrom.strimma.network.NightscoutPusher
@@ -74,12 +77,16 @@ class StrimmaService : Service() {
     @Inject lateinit var treatmentSyncer: TreatmentSyncer
     @Inject lateinit var treatmentDao: TreatmentDao
     @Inject lateinit var localWebServer: LocalWebServer
+    @Inject lateinit var exerciseDao: ExerciseDao
+    @Inject lateinit var exerciseSyncer: ExerciseSyncer
+    @Inject lateinit var healthConnectManager: HealthConnectManager
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var pruneJob: Job? = null
     private var xdripReceiver: XdripBroadcastReceiver? = null
     private var followerJob: Job? = null
     private var treatmentSyncJob: Job? = null
+    private var exerciseSyncJob: Job? = null
 
     private lateinit var predMinutes: StateFlow<Int>
     private lateinit var notifGraphMinutes: StateFlow<Int>
@@ -90,6 +97,7 @@ class StrimmaService : Service() {
     private lateinit var treatmentsSyncEnabled: StateFlow<Boolean>
     private lateinit var insulinType: StateFlow<InsulinType>
     private lateinit var customDIA: StateFlow<Float>
+    private lateinit var hcWriteEnabled: StateFlow<Boolean>
 
     override fun onCreate() {
         super.onCreate()
@@ -105,6 +113,7 @@ class StrimmaService : Service() {
         treatmentsSyncEnabled = settings.treatmentsSyncEnabled.stateIn(scope, SharingStarted.Eagerly, false)
         insulinType = settings.insulinType.stateIn(scope, SharingStarted.Eagerly, InsulinType.FIASP)
         customDIA = settings.customDIA.stateIn(scope, SharingStarted.Eagerly, DEFAULT_CUSTOM_DIA)
+        hcWriteEnabled = settings.hcWriteEnabled.stateIn(scope, SharingStarted.Eagerly, false)
 
         startForeground(
             NotificationHelper.NOTIFICATION_ID,
@@ -150,6 +159,9 @@ class StrimmaService : Service() {
                 }
             }
         }
+
+        // Exercise sync (HC availability + permissions checked inside syncer)
+        exerciseSyncJob = exerciseSyncer.start(scope)
 
         pusher.pushPending()
         scope.launch { nightscoutPuller.pullIfEmpty() }
@@ -198,6 +210,7 @@ class StrimmaService : Service() {
         unregisterXdripReceiver()
         stopFollower()
         treatmentSyncJob?.cancel()
+        exerciseSyncJob?.cancel()
         pruneJob?.cancel()
         localWebServer.stop()
         scope.cancel()
@@ -275,6 +288,7 @@ class StrimmaService : Service() {
         val alertReadings = dao.since(timestamp - LOOKBACK_MINUTES * MINUTES_TO_MS)
         alertManager.checkReading(reading, alertReadings, predMinutes.value)
         broadcastBgIfEnabled(reading)
+        writeToHealthConnectIfEnabled(reading)
         try {
             val mgr = GlanceAppWidgetManager(this@StrimmaService)
             mgr.getGlanceIds(StrimmaWidget::class.java).forEach { id ->
@@ -283,22 +297,40 @@ class StrimmaService : Service() {
         } catch (_: Exception) {}
     }
 
+    private fun writeToHealthConnectIfEnabled(reading: GlucoseReading) {
+        if (!hcWriteEnabled.value) return
+        scope.launch {
+            try {
+                if (!healthConnectManager.hasPermissions()) return@launch
+                healthConnectManager.writeGlucoseReading(reading)
+            } catch (
+                @Suppress("TooGenericExceptionCaught") // HC SDK can throw various platform exceptions
+                e: Exception
+            ) {
+                DebugLog.log("HC write skipped: ${e.javaClass.simpleName}: ${e.message}")
+            }
+        }
+    }
+
     private suspend fun updateNotification() {
         val latest = dao.latestOnce()?.takeUnless { reading ->
             (System.currentTimeMillis() - reading.ts) > AlertManager.STALE_THRESHOLD_MINUTES * MINUTES_TO_MS
         }
         val graphWindowMs = notifGraphMinutes.value.toLong() * MINUTES_TO_MS
-        val recent = dao.since(System.currentTimeMillis() - graphWindowMs)
+        val now = System.currentTimeMillis()
+        val recent = dao.since(now - graphWindowMs)
 
         val iob = if (treatmentsSyncEnabled.value) {
             val tau = IOBComputer.tauForInsulinType(insulinType.value, customDIA.value)
-            val treatments = treatmentDao.insulinSince(System.currentTimeMillis() - IOBComputer.lookbackMs(tau))
-            IOBComputer.computeIOB(treatments, System.currentTimeMillis(), tau)
+            val treatments = treatmentDao.insulinSince(now - IOBComputer.lookbackMs(tau))
+            IOBComputer.computeIOB(treatments, now, tau)
         } else 0.0
+
+        val exerciseSessions = exerciseDao.getSessionsInRange(now - graphWindowMs, now)
 
         notificationHelper.updateNotification(
             latest, recent, bgLow.value.toDouble(), bgHigh.value.toDouble(),
-            graphWindowMs, predMinutes.value, glucoseUnit.value, iob
+            graphWindowMs, predMinutes.value, glucoseUnit.value, iob, exerciseSessions
         )
     }
 

@@ -65,6 +65,9 @@
     <!-- Data Source Settings -->
     <string name="settings_source_title">Source de donn\u00E9es</string>
     <string name="settings_source_section">Source</string>
+    <string name="settings_source_notification_access">Accès aux notifications</string>
+    <string name="settings_source_notification_granted">Accordé</string>
+    <string name="settings_source_notification_not_granted">Non accordé — appuyez pour ouvrir les paramètres</string>
     <string name="settings_source_nightscout_push">Nightscout Push</string>
     <string name="settings_source_nightscout_url">URL Nightscout</string>
     <string name="settings_source_url_placeholder">https://votre-nightscout.example.com</string>
@@ -230,6 +233,54 @@
     <string name="widget_config_background">Arri\u00E8re-plan</string>
     <string name="widget_config_opacity">%1$d%%</string>
     <string name="widget_config_background_hint">Contr\u00F4le uniquement l\u2019arri\u00E8re-plan \u2014 le graphique et les valeurs restent enti\u00E8rement visibles</string>
+
+    <!-- Exercise Settings -->
+    <string name="settings_exercise">Exercice</string>
+    <string name="settings_exercise_subtitle">Health Connect, historique d\u2019entra\u00EEnement</string>
+    <string name="exercise_settings_title">Exercice</string>
+    <string name="exercise_hc_status_connected">Connect\u00E9</string>
+    <string name="exercise_hc_status_permissions">Autorisations requises</string>
+    <string name="exercise_hc_status_not_installed">Non install\u00E9</string>
+    <string name="exercise_hc_status_not_supported">Non pris en charge</string>
+    <string name="exercise_hc_status_label">Health Connect</string>
+    <string name="exercise_hc_install_prompt">Installer depuis le Play Store</string>
+    <string name="exercise_hc_write_toggle">\u00C9crire le glucose dans Health Connect</string>
+    <string name="exercise_hc_write_subtitle">Partager les lectures de glucose avec d\u2019autres applis sant\u00E9</string>
+    <string name="exercise_hc_last_sync">Derni\u00E8re synchro</string>
+    <string name="exercise_hc_last_sync_never">Jamais</string>
+
+    <!-- Exercise types -->
+    <string name="exercise_type_running">Course</string>
+    <string name="exercise_type_walking">Marche</string>
+    <string name="exercise_type_cycling">V\u00E9lo</string>
+    <string name="exercise_type_swimming">Natation</string>
+    <string name="exercise_type_other">Exercice</string>
+
+    <!-- Exercise Detail -->
+    <string name="exercise_detail_before">AVANT</string>
+    <string name="exercise_detail_during">PENDANT</string>
+    <string name="exercise_detail_after">APR\u00C8S</string>
+    <string name="exercise_detail_entry_bg">Entr\u00E9e</string>
+    <string name="exercise_detail_min_bg">Min</string>
+    <string name="exercise_detail_lowest_bg">Le plus bas</string>
+    <string name="exercise_detail_max_drop">Chute max</string>
+    <string name="exercise_detail_avg_hr">FC moy.</string>
+    <string name="exercise_detail_max_hr">FC max</string>
+    <string name="exercise_detail_steps">Pas</string>
+    <string name="exercise_detail_calories">Calories</string>
+    <string name="exercise_detail_time_to_lowest">Temps au plus bas</string>
+    <string name="exercise_detail_highest_bg">Plus haut</string>
+    <string name="exercise_detail_time_to_highest">Temps au plus haut</string>
+    <string name="exercise_detail_total_drop">Chute totale</string>
+    <string name="exercise_detail_post_hypo">Hypo post-exercice</string>
+    <string name="exercise_detail_no_data">Pas assez de donn\u00E9es de glucose</string>
+    <string name="exercise_detail_no_value">\u2014</string>
+    <string name="exercise_detail_per_10min">par 10 min</string>
+    <string name="exercise_detail_after_duration">%s apr\u00E8s</string>
+    <string name="exercise_history_title">Exercice</string>
+    <string name="exercise_history_empty">Aucune s\u00E9ance d\u2019exercice. Connectez Health Connect dans les param\u00E8tres pour voir vos entra\u00EEnements ici.</string>
+    <string name="hc_rationale_title">Autorisations Health Connect</string>
+    <string name="hc_rationale_body">Strimma utilise Health Connect pour lire vos s\u00E9ances d\u2019exercice, fr\u00E9quence cardiaque, pas et calories afin de montrer comment l\u2019exercice affecte votre glyc\u00E9mie. Optionnellement, Strimma peut \u00E9crire les valeurs de glucose pour que d\u2019autres apps de sant\u00E9 puissent les voir.</string>
 
     <!-- Activity (dialogs, toasts) -->
     <string name="activity_settings_imported">Param\u00E8tres import\u00E9s</string>

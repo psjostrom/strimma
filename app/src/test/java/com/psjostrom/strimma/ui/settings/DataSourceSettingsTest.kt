@@ -39,6 +39,8 @@ class DataSourceSettingsTest {
                 onFollowerUrlChange = {},
                 onFollowerSecretChange = {},
                 onFollowerPollSecondsChange = {},
+                isNotificationAccessGranted = true,
+                onOpenNotificationAccess = {},
                 onBack = onBack
             )
         }

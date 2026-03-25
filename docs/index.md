@@ -18,6 +18,16 @@ Strimma stands on the shoulders of the incredible [xDrip+](https://github.com/Ni
 
 </div>
 
+<div class="grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 1.5rem 0;" markdown>
+
+![Exercise graph](screenshots/exercise-graph.png){ width="100%" }
+
+![Exercise history](screenshots/exercise-history.png){ width="100%" }
+
+![Exercise detail](screenshots/exercise-detail.png){ width="100%" }
+
+</div>
+
 ## What Strimma Does
 
 - **Receives glucose three ways** — reads notifications from 60+ CGM apps (Dexcom, Libre, CamAPS FX, etc.), receives xDrip-compatible broadcasts (from xDrip+, Juggluco, AAPS), or follows a remote Nightscout server. See [Data Sources](data-sources/overview.md).
@@ -28,6 +38,7 @@ Strimma stands on the shoulders of the incredible [xDrip+](https://github.com/Ni
 - **Tracks treatments and IOB** — fetches bolus and carb data from Nightscout, computes insulin on board with your insulin type's curve.
 - **Follows a remote Nightscout** — for caregivers, partners, or parents who need to see someone else's glucose remotely.
 - **Works with watches and other apps** — broadcasts xDrip-compatible intents, runs a local web server, integrates with Garmin watchfaces.
+- **Exercise-BG analysis** — reads exercise sessions from Health Connect (Garmin, Samsung Health, etc.), overlays exercise bands on the glucose graph, and shows before/during/after BG breakdown with post-exercise hypo detection.
 
 ---
 

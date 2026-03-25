@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
 
+@Suppress("TooManyFunctions") // Room DAO — each query is a distinct data access need
 @Dao
 interface ReadingDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -37,4 +38,7 @@ interface ReadingDao {
 
     @Query("DELETE FROM readings WHERE ts < :before")
     suspend fun pruneBefore(before: Long)
+
+    @Query("SELECT * FROM readings WHERE ts >= :start AND ts <= :end ORDER BY ts ASC")
+    suspend fun readingsInRange(start: Long, end: Long): List<GlucoseReading>
 }

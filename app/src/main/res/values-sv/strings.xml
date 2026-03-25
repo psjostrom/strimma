@@ -65,6 +65,9 @@
     <!-- Data Source Settings -->
     <string name="settings_source_title">Datak\u00E4lla</string>
     <string name="settings_source_section">K\u00E4lla</string>
+    <string name="settings_source_notification_access">Notifieringsåtkomst</string>
+    <string name="settings_source_notification_granted">Beviljad</string>
+    <string name="settings_source_notification_not_granted">Ej beviljad — tryck för att öppna inställningar</string>
     <string name="settings_source_nightscout_push">Nightscout Push</string>
     <string name="settings_source_nightscout_url">Nightscout-URL</string>
     <string name="settings_source_url_placeholder">https://din-nightscout.example.com</string>
@@ -230,6 +233,54 @@
     <string name="widget_config_background">Bakgrund</string>
     <string name="widget_config_opacity">%1$d%%</string>
     <string name="widget_config_background_hint">Styr bara bakgrunden \u2014 graf och v\u00E4rden syns alltid fullt</string>
+
+    <!-- Exercise Settings -->
+    <string name="settings_exercise">Tr\u00E4ning</string>
+    <string name="settings_exercise_subtitle">Health Connect, tr\u00E4ningshistorik</string>
+    <string name="exercise_settings_title">Tr\u00E4ning</string>
+    <string name="exercise_hc_status_connected">Ansluten</string>
+    <string name="exercise_hc_status_permissions">Beh\u00F6righeter kr\u00E4vs</string>
+    <string name="exercise_hc_status_not_installed">Inte installerad</string>
+    <string name="exercise_hc_status_not_supported">St\u00F6ds inte</string>
+    <string name="exercise_hc_status_label">Health Connect</string>
+    <string name="exercise_hc_install_prompt">Installera fr\u00E5n Play Butik</string>
+    <string name="exercise_hc_write_toggle">Skriv glukos till Health Connect</string>
+    <string name="exercise_hc_write_subtitle">Dela glukosavl\u00E4sningar med andra h\u00E4lsoappar</string>
+    <string name="exercise_hc_last_sync">Senaste synk</string>
+    <string name="exercise_hc_last_sync_never">Aldrig</string>
+
+    <!-- Exercise types -->
+    <string name="exercise_type_running">L\u00F6pning</string>
+    <string name="exercise_type_walking">Promenad</string>
+    <string name="exercise_type_cycling">Cykling</string>
+    <string name="exercise_type_swimming">Simning</string>
+    <string name="exercise_type_other">Tr\u00E4ning</string>
+
+    <!-- Exercise Detail -->
+    <string name="exercise_detail_before">F\u00D6RE</string>
+    <string name="exercise_detail_during">UNDER</string>
+    <string name="exercise_detail_after">EFTER</string>
+    <string name="exercise_detail_entry_bg">Ing\u00E5ng</string>
+    <string name="exercise_detail_min_bg">Min</string>
+    <string name="exercise_detail_lowest_bg">L\u00E4gsta</string>
+    <string name="exercise_detail_max_drop">Max fall</string>
+    <string name="exercise_detail_avg_hr">Snitt HF</string>
+    <string name="exercise_detail_max_hr">Max HF</string>
+    <string name="exercise_detail_steps">Steg</string>
+    <string name="exercise_detail_calories">Kalorier</string>
+    <string name="exercise_detail_time_to_lowest">Tid till l\u00E4gsta</string>
+    <string name="exercise_detail_highest_bg">H\u00F6gsta</string>
+    <string name="exercise_detail_time_to_highest">Tid till h\u00F6gsta</string>
+    <string name="exercise_detail_total_drop">Totalt fall</string>
+    <string name="exercise_detail_post_hypo">L\u00E5gt efter tr\u00E4ning</string>
+    <string name="exercise_detail_no_data">Inte tillr\u00E4ckligt med glukosdata</string>
+    <string name="exercise_detail_no_value">\u2014</string>
+    <string name="exercise_detail_per_10min">per 10 min</string>
+    <string name="exercise_detail_after_duration">%s efter</string>
+    <string name="exercise_history_title">Tr\u00E4ning</string>
+    <string name="exercise_history_empty">Inga tr\u00E4ningspass \u00E4nnu. Anslut Health Connect i Inst\u00E4llningar f\u00F6r att se dina tr\u00E4ningar h\u00E4r.</string>
+    <string name="hc_rationale_title">Health Connect-beh\u00F6righeter</string>
+    <string name="hc_rationale_body">Strimma anv\u00E4nder Health Connect f\u00F6r att l\u00E4sa dina tr\u00E4ningspass, puls, steg och kalorier f\u00F6r att visa hur tr\u00E4ning p\u00E5verkar ditt blodsocker. Valfritt kan Strimma skriva glukosvärden s\u00E5 att andra h\u00E4lsoappar kan se dem.</string>
 
     <!-- Activity (dialogs, toasts) -->
     <string name="activity_settings_imported">Inst\u00E4llningar importerade</string>

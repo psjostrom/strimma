@@ -68,6 +68,9 @@
     <!-- Data Source Settings -->
     <string name="settings_source_title">Data Source</string>
     <string name="settings_source_section">Source</string>
+    <string name="settings_source_notification_access">Notification access</string>
+    <string name="settings_source_notification_granted">Granted</string>
+    <string name="settings_source_notification_not_granted">Not granted — tap to open settings</string>
     <string name="settings_source_nightscout_push">Nightscout Push</string>
     <string name="settings_source_nightscout_url">Nightscout URL</string>
     <string name="settings_source_url_placeholder">https://your-nightscout.example.com</string>
@@ -250,6 +253,56 @@
     <string name="widget_config_background">Background</string>
     <string name="widget_config_opacity">%1$d%%</string>
     <string name="widget_config_background_hint">Controls background only — graph and values stay fully visible</string>
+
+    <!-- Exercise types -->
+    <string name="exercise_type_running">Run</string>
+    <string name="exercise_type_walking">Walk</string>
+    <string name="exercise_type_cycling">Ride</string>
+    <string name="exercise_type_swimming">Swim</string>
+    <string name="exercise_type_other">Exercise</string>
+
+    <!-- Exercise Settings -->
+    <string name="settings_exercise">Exercise</string>
+    <string name="settings_exercise_subtitle">Health Connect, workout history</string>
+    <string name="exercise_settings_title">Exercise</string>
+    <string name="exercise_hc_status_connected">Connected</string>
+    <string name="exercise_hc_status_permissions">Permissions needed</string>
+    <string name="exercise_hc_status_not_installed">Not installed</string>
+    <string name="exercise_hc_status_not_supported">Not supported</string>
+    <string name="exercise_hc_status_label">Health Connect</string>
+    <string name="exercise_hc_install_prompt">Install from Play Store</string>
+    <string name="exercise_hc_write_toggle">Write glucose to Health Connect</string>
+    <string name="exercise_hc_write_subtitle">Share glucose readings with other health apps</string>
+    <string name="exercise_hc_last_sync">Last sync</string>
+    <string name="exercise_hc_last_sync_never">Never</string>
+
+    <!-- Health Connect -->
+    <string name="hc_rationale_title">Health Connect Permissions</string>
+    <string name="hc_rationale_body">Strimma uses Health Connect to read your exercise sessions, heart rate, steps, and calories to show how exercise affects your glucose. Optionally, Strimma can write glucose readings so other health apps can see them.</string>
+
+    <!-- Exercise Detail -->
+    <string name="exercise_detail_before">BEFORE</string>
+    <string name="exercise_detail_during">DURING</string>
+    <string name="exercise_detail_after">AFTER</string>
+    <string name="exercise_detail_entry_bg">Entry</string>
+    <string name="exercise_detail_min_bg">Min</string>
+    <string name="exercise_detail_lowest_bg">Lowest</string>
+    <string name="exercise_detail_max_drop">Max drop</string>
+    <string name="exercise_detail_avg_hr">Avg HR</string>
+    <string name="exercise_detail_max_hr">Max HR</string>
+    <string name="exercise_detail_steps">Steps</string>
+    <string name="exercise_detail_calories">Calories</string>
+    <string name="exercise_detail_time_to_lowest">Time to lowest</string>
+    <string name="exercise_detail_highest_bg">Highest</string>
+    <string name="exercise_detail_time_to_highest">Time to highest</string>
+    <string name="exercise_detail_total_drop">Total drop</string>
+    <string name="exercise_detail_post_hypo">Post-exercise low</string>
+    <string name="exercise_detail_no_data">Not enough glucose data</string>
+    <string name="exercise_detail_no_value">\u2014</string>
+    <string name="exercise_detail_per_10min">per 10 min</string>
+    <string name="exercise_detail_after_duration">%s after</string>
+    <string name="exercise_history_title">Exercise</string>
+    <string name="exercise_history_empty">No exercise sessions yet. Connect Health Connect in Settings to see your workouts here.</string>
 
     <!-- Activity (dialogs, toasts) -->
     <string name="activity_settings_imported">Settings imported</string>

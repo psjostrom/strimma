@@ -1,6 +1,9 @@
 package com.psjostrom.strimma.ui.settings
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,12 +22,14 @@ fun DataSourceSettings(
     followerUrl: String,
     followerSecret: String,
     followerPollSeconds: Int,
+    isNotificationAccessGranted: Boolean,
     onGlucoseSourceChange: (GlucoseSource) -> Unit,
     onNightscoutUrlChange: (String) -> Unit,
     onNightscoutSecretChange: (String) -> Unit,
     onFollowerUrlChange: (String) -> Unit,
     onFollowerSecretChange: (String) -> Unit,
     onFollowerPollSecondsChange: (Int) -> Unit,
+    onOpenNotificationAccess: () -> Unit,
     onBack: () -> Unit
 ) {
     val onBg = MaterialTheme.colorScheme.onBackground
@@ -46,6 +51,47 @@ fun DataSourceSettings(
                     Column(modifier = Modifier.padding(start = 8.dp)) {
                         Text(stringResource(source.labelRes), color = onBg, fontSize = 14.sp)
                         Text(stringResource(source.descriptionRes), color = outline, fontSize = 12.sp)
+                    }
+                }
+            }
+        }
+
+        if (glucoseSource == GlucoseSource.COMPANION) {
+            SettingsSection(stringResource(R.string.settings_source_notification_access)) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .then(
+                            if (!isNotificationAccessGranted) {
+                                Modifier.clickable(onClick = onOpenNotificationAccess)
+                            } else Modifier
+                        ),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                        Text(
+                            stringResource(R.string.settings_source_notification_access),
+                            color = onBg,
+                            fontSize = 14.sp
+                        )
+                        Text(
+                            if (isNotificationAccessGranted) {
+                                stringResource(R.string.settings_source_notification_granted)
+                            } else {
+                                stringResource(R.string.settings_source_notification_not_granted)
+                            },
+                            color = if (isNotificationAccessGranted) outline else MaterialTheme.colorScheme.error,
+                            fontSize = 12.sp
+                        )
+                    }
+                    if (!isNotificationAccessGranted) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = outline,
+                            modifier = Modifier.size(20.dp)
+                        )
                     }
                 }
             }

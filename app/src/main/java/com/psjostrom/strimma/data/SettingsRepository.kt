@@ -112,6 +112,10 @@ class SettingsRepository @Inject constructor(
         private const val KEY_START_ON_BOOT_SYNC = "start_on_boot"
         private val KEY_LANGUAGE = stringPreferencesKey("language")
 
+        private val KEY_HC_WRITE_ENABLED = booleanPreferencesKey("hc_write_enabled")
+        private val KEY_HC_LAST_SYNC = longPreferencesKey("hc_last_sync")
+        private val KEY_HC_CHANGES_TOKEN = stringPreferencesKey("hc_changes_token")
+
         // Settings defaults (mg/dL)
         private const val DEFAULT_GRAPH_WINDOW_HOURS = 4
         private const val DEFAULT_BG_LOW = 72f
@@ -210,7 +214,7 @@ class SettingsRepository @Inject constructor(
     }
 
     val followerUrl: Flow<String> = dataStore.data.map { it[KEY_FOLLOWER_URL] ?: "" }
-    suspend fun setFollowerUrl(url: String) { dataStore.edit { it[KEY_FOLLOWER_URL] = url } }
+    suspend fun setFollowerUrl(url: String) { dataStore.edit { it[KEY_FOLLOWER_URL] = normalizeUrl(url) } }
 
     val followerPollSeconds: Flow<Int> = dataStore.data.map { it[KEY_FOLLOWER_POLL_SECONDS] ?: DEFAULT_FOLLOWER_POLL_SECONDS }
     suspend fun setFollowerPollSeconds(seconds: Int) { dataStore.edit { it[KEY_FOLLOWER_POLL_SECONDS] = seconds } }
@@ -253,6 +257,20 @@ class SettingsRepository @Inject constructor(
     val language: Flow<String> = dataStore.data.map { it[KEY_LANGUAGE] ?: "" }
     suspend fun setLanguage(tag: String) { dataStore.edit { it[KEY_LANGUAGE] = tag } }
 
+    val hcWriteEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_HC_WRITE_ENABLED] ?: false }
+    suspend fun setHcWriteEnabled(enabled: Boolean) { dataStore.edit { it[KEY_HC_WRITE_ENABLED] = enabled } }
+
+    val hcLastSync: Flow<Long> = dataStore.data.map { it[KEY_HC_LAST_SYNC] ?: 0L }
+    suspend fun setHcLastSync(timestamp: Long) { dataStore.edit { it[KEY_HC_LAST_SYNC] = timestamp } }
+
+    suspend fun getHcChangesToken(): String? = dataStore.data.first()[KEY_HC_CHANGES_TOKEN]
+    suspend fun setHcChangesToken(token: String?) {
+        dataStore.edit {
+            if (token != null) it[KEY_HC_CHANGES_TOKEN] = token
+            else it.remove(KEY_HC_CHANGES_TOKEN)
+        }
+    }
+
     val hbA1cUnit: Flow<HbA1cUnit> = dataStore.data.map {
         try { HbA1cUnit.valueOf(it[KEY_HBA1C_UNIT] ?: "MMOL_MOL") } catch (_: Exception) { HbA1cUnit.MMOL_MOL }
     }
@@ -293,6 +311,7 @@ class SettingsRepository @Inject constructor(
             put("web_server_enabled", prefs[KEY_WEB_SERVER_ENABLED] ?: false)
             put("start_on_boot", prefs[KEY_START_ON_BOOT] ?: true)
             put("language", prefs[KEY_LANGUAGE] ?: "")
+            put("hc_write_enabled", prefs[KEY_HC_WRITE_ENABLED] ?: false)
         }
 
         val secrets = JSONObject().apply {
@@ -354,6 +373,7 @@ class SettingsRepository @Inject constructor(
             if (settings.has("web_server_enabled")) prefs[KEY_WEB_SERVER_ENABLED] = settings.getBoolean("web_server_enabled")
             if (settings.has("start_on_boot")) prefs[KEY_START_ON_BOOT] = settings.getBoolean("start_on_boot")
             if (settings.has("language")) prefs[KEY_LANGUAGE] = settings.getString("language")
+            if (settings.has("hc_write_enabled")) prefs[KEY_HC_WRITE_ENABLED] = settings.getBoolean("hc_write_enabled")
 
             // Sync to SharedPreferences atomically with DataStore edit
             val sourceName = settings.optString("glucose_source", "COMPANION")
