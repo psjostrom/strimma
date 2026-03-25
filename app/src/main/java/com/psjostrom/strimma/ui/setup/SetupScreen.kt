@@ -154,7 +154,11 @@ fun SetupScreen(
                             followerTestState = followerTestState,
                             onFollowerUrlChange = { viewModel.setFollowerUrl(it) },
                             onFollowerSecretChange = { viewModel.setFollowerSecret(it) },
-                            onTestFollowerConnection = { viewModel.testFollowerConnection() }
+                            onTestFollowerConnection = { viewModel.testFollowerConnection() },
+                            lluEmail = viewModel.lluEmail,
+                            lluPassword = viewModel.lluPassword,
+                            onLluEmailChange = { viewModel.setLluEmail(it) },
+                            onLluPasswordChange = { viewModel.setLluPassword(it) }
                         )
                         3 -> SetupNightscoutStep(
                             pushEnabled = pushEnabled,
