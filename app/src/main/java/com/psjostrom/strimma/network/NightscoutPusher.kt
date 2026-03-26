@@ -27,22 +27,10 @@ class NightscoutPusher @Inject constructor(
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    @Volatile
-    private var firstFailureTs: Long = 0L
-
-    private fun onPushSuccess() {
-        firstFailureTs = 0L
-        alertManager.handlePushFailure(firing = false)
-    }
-
-    private fun onPushFailure() {
-        val now = System.currentTimeMillis()
-        if (firstFailureTs == 0L) {
-            firstFailureTs = now
-        } else if (now - firstFailureTs >= PUSH_FAIL_ALERT_MS) {
-            alertManager.handlePushFailure(firing = true)
-        }
-    }
+    private val failureTracker = PushFailureTracker(
+        alertThresholdMs = PUSH_FAIL_ALERT_MS,
+        onAlertChanged = { firing -> alertManager.handlePushFailure(firing = firing) }
+    )
 
     fun pushReading(reading: GlucoseReading) {
         scope.launch {
@@ -60,10 +48,10 @@ class NightscoutPusher @Inject constructor(
                 if (success) {
                     dao.markPushed(listOf(reading.ts))
                     DebugLog.log(message = "Pushed: ${reading.sgv} mg/dL")
-                    onPushSuccess()
+                    failureTracker.onSuccess()
                 } else {
                     attempt++
-                    onPushFailure()
+                    failureTracker.onFailure()
                     val delayMs = (attempt * RETRY_BASE_DELAY_MS).coerceAtMost(MAX_RETRY_DELAY_MS)
                     DebugLog.log(message = "Push failed (attempt $attempt), retry in ${delayMs/SECONDS_TO_MS}s")
                     delay(delayMs)
@@ -89,9 +77,9 @@ class NightscoutPusher @Inject constructor(
             if (success) {
                 dao.markPushed(pending.map { it.ts })
                 DebugLog.log(message = "Pushed ${pending.size} pending")
-                onPushSuccess()
+                failureTracker.onSuccess()
             } else {
-                onPushFailure()
+                failureTracker.onFailure()
                 DebugLog.log(message = "Pending push failed (${pending.size} readings)")
             }
         }
