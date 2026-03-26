@@ -39,14 +39,56 @@ class CalendarReader @Inject constructor(
                     CalendarContract.Calendars.CALENDAR_DISPLAY_NAME
                 )
                 while (cursor.moveToNext()) {
-                    calendars.add(CalendarInfo(cursor.getLong(idIdx), cursor.getString(nameIdx)))
+                    val cal = CalendarInfo(cursor.getLong(idIdx), cursor.getString(nameIdx))
+                    calendars.add(cal)
+                    DebugLog.log("Calendar: id=${cal.id} name=${cal.displayName}")
                 }
             }
         } catch (e: SecurityException) {
             DebugLog.log("Calendar access denied: ${e.message}")
         }
+        DebugLog.log("CalendarReader: found ${calendars.size} calendars")
         calendars
     }
+
+    suspend fun getUpcomingWorkouts(calendarId: Long, lookaheadMs: Long): List<WorkoutEvent> =
+        withContext(Dispatchers.IO) {
+            val events = mutableListOf<WorkoutEvent>()
+            val now = System.currentTimeMillis()
+            val end = now + lookaheadMs
+            val projection = arrayOf(
+                CalendarContract.Events._ID,
+                CalendarContract.Events.TITLE,
+                CalendarContract.Events.DTSTART,
+                CalendarContract.Events.DTEND
+            )
+            val selection = "${CalendarContract.Events.CALENDAR_ID} = ? AND " +
+                "${CalendarContract.Events.DTSTART} > ? AND " +
+                "${CalendarContract.Events.DTSTART} <= ?"
+            val args = arrayOf(calendarId.toString(), now.toString(), end.toString())
+            try {
+                context.contentResolver.query(
+                    CalendarContract.Events.CONTENT_URI,
+                    projection, selection, args,
+                    "${CalendarContract.Events.DTSTART} ASC"
+                )?.use { cursor ->
+                    val titleIdx = cursor.getColumnIndexOrThrow(CalendarContract.Events.TITLE)
+                    val startIdx = cursor.getColumnIndexOrThrow(CalendarContract.Events.DTSTART)
+                    val endIdx = cursor.getColumnIndexOrThrow(CalendarContract.Events.DTEND)
+                    while (cursor.moveToNext()) {
+                        val title = cursor.getString(titleIdx) ?: ""
+                        val startTime = cursor.getLong(startIdx)
+                        val endTime = cursor.getLong(endIdx)
+                        events.add(
+                            WorkoutEvent(title, startTime, endTime, WorkoutCategory.fromTitle(title), calendarId)
+                        )
+                    }
+                }
+            } catch (e: SecurityException) {
+                DebugLog.log("Calendar access denied: ${e.message}")
+            }
+            events
+        }
 
     suspend fun getNextWorkout(calendarId: Long, lookaheadMs: Long): WorkoutEvent? =
         withContext(Dispatchers.IO) {

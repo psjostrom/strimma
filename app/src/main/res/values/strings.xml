@@ -377,6 +377,18 @@
     <string name="activity_pull_success" tools:ignore="PluralsCandidate">Pulled %1$d readings</string>
     <string name="activity_pull_failed">Pull failed: %1$s</string>
 
+    <!-- Exercise tabs -->
+    <string name="exercise_tab_planned">Planned</string>
+    <string name="exercise_tab_completed">Completed</string>
+    <string name="exercise_connect_title">Connect workout calendar</string>
+    <string name="exercise_connect_subtitle">See upcoming workouts and get BG guidance before each session. Strimma reads your calendar to show readiness assessments and carb recommendations.</string>
+    <string name="exercise_connect_button">Connect calendar</string>
+    <string name="exercise_planned_empty">No upcoming workouts found in the connected calendar.</string>
+    <string name="exercise_planned_category">Category</string>
+    <string name="exercise_planned_target">Target BG</string>
+    <string name="exercise_no_calendars">No calendars found on this device.</string>
+    <string name="exercise_calendar_missing_hint">Can\'t find your calendar? Go to Settings → Passwords \u0026 accounts → your Google account → Account sync, and toggle Calendar off then on.</string>
+
     <!-- Pre-activity guidance -->
     <string name="workout_settings_title">Workout Schedule</string>
     <string name="workout_calendar_label">Calendar</string>

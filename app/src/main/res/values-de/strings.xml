@@ -351,6 +351,18 @@
     <string name="setup_next">Weiter</string>
     <string name="setup_back">Zurück</string>
 
+    <!-- Exercise tabs -->
+    <string name="exercise_tab_planned">Geplant</string>
+    <string name="exercise_tab_completed">Abgeschlossen</string>
+    <string name="exercise_connect_title">Trainingskalender verbinden</string>
+    <string name="exercise_connect_subtitle">Sieh kommende Trainings und erhalte BG-Empfehlungen vor jedem Training. Strimma liest deinen Kalender für Bereitschaftsanalysen und Kohlenhydratempfehlungen.</string>
+    <string name="exercise_connect_button">Kalender verbinden</string>
+    <string name="exercise_planned_empty">Keine kommenden Trainings im verbundenen Kalender gefunden.</string>
+    <string name="exercise_planned_category">Kategorie</string>
+    <string name="exercise_planned_target">Ziel-BG</string>
+    <string name="exercise_no_calendars">Keine Kalender auf diesem Gerät gefunden.</string>
+    <string name="exercise_calendar_missing_hint">Kalender nicht gefunden? Gehe zu Einstellungen → Passwörter \u0026 Konten → dein Google-Konto → Kontosynchronisierung und schalte Kalender aus und wieder ein.</string>
+
     <!-- Pre-activity guidance -->
     <string name="workout_settings_title">Trainingsplan</string>
     <string name="workout_calendar_label">Kalender</string>
