@@ -350,4 +350,10 @@
     <string name="setup_start">Iniciar Strimma</string>
     <string name="setup_next">Siguiente</string>
     <string name="setup_back">Atrás</string>
+
+    <!-- Pre-activity guidance -->
+    <string name="workout_settings_title">Horario de entrenamiento</string>
+    <string name="workout_calendar_label">Calendario</string>
+    <string name="workout_calendar_none">(ninguno)</string>
+    <string name="workout_calendar_picker_title">Seleccionar calendario</string>
 </resources>

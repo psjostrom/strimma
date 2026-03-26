@@ -242,6 +242,77 @@ class PredictionComputerTest {
         )
     }
 
+    // --- currentVelocity ---
+
+    @Test
+    fun `currentVelocity returns null for empty readings`() {
+        assertNull(PredictionComputer.currentVelocity(emptyList()))
+    }
+
+    @Test
+    fun `currentVelocity returns null for single reading`() {
+        assertNull(PredictionComputer.currentVelocity(listOf(reading(0, 108))))
+    }
+
+    @Test
+    fun `currentVelocity returns null when readings outside lookback window`() {
+        // Both readings older than 12 minutes from the most recent
+        val readings = listOf(reading(20, 108), reading(0, 126))
+        // The most recent is at 0, so 20-min-ago is outside the 12-min lookback
+        // Only 1 reading within window → null
+        val result = PredictionComputer.currentVelocity(
+            listOf(reading(20, 108))
+        )
+        assertNull(result)
+    }
+
+    @Test
+    fun `currentVelocity returns velocity for stable glucose`() {
+        val readings = (12 downTo 0).map { reading(it, 108) }
+        val velocity = PredictionComputer.currentVelocity(readings)!!
+        assertEquals(0.0, velocity, 0.5)
+    }
+
+    @Test
+    fun `currentVelocity returns positive velocity for rising trend`() {
+        // ~2 mg/dL/min rise
+        val readings = (12 downTo 0).map { reading(it, 108 + (12 - it) * 2) }
+        val velocity = PredictionComputer.currentVelocity(readings)!!
+        assertTrue("Velocity ($velocity) should be positive for rising trend", velocity > 0.0)
+    }
+
+    @Test
+    fun `currentVelocity returns negative velocity for falling trend`() {
+        val readings = (12 downTo 0).map { reading(it, 144 - (12 - it) * 2) }
+        val velocity = PredictionComputer.currentVelocity(readings)!!
+        assertTrue("Velocity ($velocity) should be negative for falling trend", velocity < 0.0)
+    }
+
+    @Test
+    fun `currentVelocity returns null for sensor artifact exceeding MAX_VELOCITY`() {
+        // ~10 mg/dL/min spike exceeds MAX_VELOCITY=9.0
+        val readings = listOf(reading(5, 100), reading(0, 150))
+        assertNull(PredictionComputer.currentVelocity(readings))
+    }
+
+    @Test
+    fun `currentVelocity ignores readings older than 12 minutes`() {
+        // Old readings show steep rise, recent readings are stable
+        val old = listOf(reading(20, 50), reading(15, 80))
+        val recent = (12 downTo 0).map { reading(it, 108) }
+        val velocity = PredictionComputer.currentVelocity(old + recent)!!
+        // Should reflect recent stable trend, not old steep rise
+        assertEquals(0.0, velocity, 0.5)
+    }
+
+    @Test
+    fun `currentVelocity works with 5-minute interval data`() {
+        val readings = listOf(reading(10, 108), reading(5, 117), reading(0, 126))
+        val velocity = PredictionComputer.currentVelocity(readings)!!
+        assertTrue("Velocity ($velocity) should be positive", velocity > 0.0)
+        assertTrue("Velocity ($velocity) should be under MAX_VELOCITY", velocity < 9.0)
+    }
+
     @Test
     fun `prediction values are clamped to valid range`() {
         // Drop ~7 mg/dL/min (under MAX_VELOCITY=9) from 90
