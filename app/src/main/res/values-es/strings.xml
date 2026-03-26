@@ -351,6 +351,17 @@
     <string name="setup_next">Siguiente</string>
     <string name="setup_back">Atrás</string>
 
+    <!-- Exercise tabs -->
+    <string name="exercise_tab_planned">Planificados</string>
+    <string name="exercise_tab_completed">Completados</string>
+    <string name="exercise_connect_title">Conectar calendario de ejercicio</string>
+    <string name="exercise_connect_subtitle">Ver próximos entrenamientos y recibir orientación de BG antes de cada sesión. Strimma lee tu calendario para mostrar evaluaciones de preparación y recomendaciones de carbohidratos.</string>
+    <string name="exercise_connect_button">Conectar calendario</string>
+    <string name="exercise_planned_empty">No se encontraron entrenamientos próximos en el calendario conectado.</string>
+    <string name="exercise_planned_category">Categoría</string>
+    <string name="exercise_planned_target">BG objetivo</string>
+    <string name="exercise_no_calendars">No se encontraron calendarios en este dispositivo.</string>
+
     <!-- Pre-activity guidance -->
     <string name="workout_settings_title">Horario de entrenamiento</string>
     <string name="workout_calendar_label">Calendario</string>

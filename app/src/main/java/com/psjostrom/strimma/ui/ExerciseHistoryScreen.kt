@@ -2,7 +2,10 @@
 
 package com.psjostrom.strimma.ui
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -27,6 +30,9 @@ import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
+import com.psjostrom.strimma.data.calendar.CalendarReader
+import com.psjostrom.strimma.data.calendar.WorkoutCategory
+import com.psjostrom.strimma.data.calendar.WorkoutEvent
 import com.psjostrom.strimma.data.health.ExerciseBGAnalyzer
 import com.psjostrom.strimma.data.health.ExerciseBGContext
 import com.psjostrom.strimma.data.health.ExerciseCategory
@@ -34,25 +40,36 @@ import com.psjostrom.strimma.data.health.ExerciseDao
 import com.psjostrom.strimma.data.health.StoredExerciseSession
 import com.psjostrom.strimma.ui.theme.BelowLow
 import com.psjostrom.strimma.ui.theme.ExerciseDefault
+import com.psjostrom.strimma.ui.theme.InRange
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
 
 private const val MS_PER_MINUTE = 60_000L
+private const val MS_PER_HOUR = 3_600_000L
+private const val MS_PER_DAY = 86_400_000L
 private const val PRE_WINDOW_MS = 30 * MS_PER_MINUTE
 private const val POST_WINDOW_MS = 4 * 60 * MS_PER_MINUTE
+private const val PLANNED_LOOKAHEAD_DAYS = 365
+private const val PLANNED_POLL_MS = 5 * MS_PER_MINUTE
 
 @HiltViewModel
 class ExerciseHistoryViewModel @Inject constructor(
     private val exerciseDao: ExerciseDao,
     private val readingDao: ReadingDao,
     private val exerciseBGAnalyzer: ExerciseBGAnalyzer,
-    private val settings: SettingsRepository
+    private val settings: SettingsRepository,
+    val calendarReader: CalendarReader
 ) : ViewModel() {
 
     val sessions: StateFlow<List<StoredExerciseSession>> = exerciseDao.getAllSessions()
@@ -63,6 +80,41 @@ class ExerciseHistoryViewModel @Inject constructor(
 
     val bgLow: StateFlow<Float> = settings.bgLow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 72f)
+
+    val workoutCalendarId: StateFlow<Long> = settings.workoutCalendarId
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), -1L)
+
+    val workoutCalendarName: StateFlow<String> = settings.workoutCalendarName
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
+
+    private val _upcomingWorkouts = MutableStateFlow<List<WorkoutEvent>>(emptyList())
+    val upcomingWorkouts: StateFlow<List<WorkoutEvent>> = _upcomingWorkouts
+
+    init {
+        viewModelScope.launch {
+            while (currentCoroutineContext().isActive) {
+                refreshUpcoming()
+                delay(PLANNED_POLL_MS)
+            }
+        }
+    }
+
+    private suspend fun refreshUpcoming() {
+        val calId = workoutCalendarId.value
+        _upcomingWorkouts.value = if (calId >= 0) {
+            calendarReader.getUpcomingWorkouts(calId, PLANNED_LOOKAHEAD_DAYS.toLong() * MS_PER_DAY)
+        } else emptyList()
+    }
+
+    fun onCalendarSelected(id: Long, name: String) {
+        viewModelScope.launch {
+            settings.setWorkoutCalendarId(id)
+            settings.setWorkoutCalendarName(name)
+            // Refresh immediately after selection
+            delay(100) // Let DataStore propagate
+            refreshUpcoming()
+        }
+    }
 
     suspend fun computeBGContext(session: StoredExerciseSession): ExerciseBGContext? {
         val preStart = session.startTime - PRE_WINDOW_MS
@@ -88,6 +140,14 @@ fun ExerciseHistoryScreen(
     val sessions by viewModel.sessions.collectAsState()
     val glucoseUnit by viewModel.glucoseUnit.collectAsState()
     val bgLow by viewModel.bgLow.collectAsState()
+    val calendarId by viewModel.workoutCalendarId.collectAsState()
+    val upcomingWorkouts by viewModel.upcomingWorkouts.collectAsState()
+
+    var selectedTab by remember { mutableIntStateOf(0) }
+    val tabs = listOf(
+        stringResource(R.string.exercise_tab_planned),
+        stringResource(R.string.exercise_tab_completed)
+    )
 
     var selectedExercise by remember { mutableStateOf<StoredExerciseSession?>(null) }
     var selectedBGContext by remember { mutableStateOf<ExerciseBGContext?>(null) }
@@ -114,6 +174,14 @@ fun ExerciseHistoryScreen(
         )
     }
 
+    // Calendar permission launcher for connect button
+    var showCalendarPicker by remember { mutableStateOf(false) }
+    val calendarPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) showCalendarPicker = true
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -133,39 +201,272 @@ fun ExerciseHistoryScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        if (sessions.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(32.dp),
-                contentAlignment = Alignment.Center
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+            TabRow(
+                selectedTabIndex = selectedTab,
+                containerColor = MaterialTheme.colorScheme.background,
+                contentColor = MaterialTheme.colorScheme.onBackground
             ) {
-                Text(
-                    text = stringResource(R.string.exercise_history_empty),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 14.sp,
-                    lineHeight = 20.sp
-                )
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(vertical = 8.dp)
-            ) {
-                items(sessions, key = { it.id }) { session ->
-                    ExerciseCard(
-                        session = session,
-                        glucoseUnit = glucoseUnit,
-                        bgLow = bgLow,
-                        viewModel = viewModel,
-                        onClick = { selectedExercise = session }
+                tabs.forEachIndexed { index, title ->
+                    Tab(
+                        selected = selectedTab == index,
+                        onClick = { selectedTab = index },
+                        text = {
+                            Text(
+                                title,
+                                fontWeight = if (selectedTab == index) FontWeight.SemiBold else FontWeight.Normal,
+                                fontSize = 14.sp
+                            )
+                        }
                     )
                 }
+            }
+
+            when (selectedTab) {
+                0 -> PlannedTab(
+                    calendarId = calendarId,
+                    workouts = upcomingWorkouts,
+                    glucoseUnit = glucoseUnit,
+                    calendarReader = viewModel.calendarReader,
+                    onConnectCalendar = {
+                        if (viewModel.calendarReader.hasPermission()) {
+                            showCalendarPicker = true
+                        } else {
+                            calendarPermissionLauncher.launch(android.Manifest.permission.READ_CALENDAR)
+                        }
+                    }
+                )
+                1 -> CompletedTab(
+                    sessions = sessions,
+                    glucoseUnit = glucoseUnit,
+                    bgLow = bgLow,
+                    viewModel = viewModel,
+                    onSessionClick = { selectedExercise = it }
+                )
+            }
+        }
+    }
+
+    if (showCalendarPicker) {
+        CalendarPickerDialog(
+            calendarReader = viewModel.calendarReader,
+            onSelect = { id, name ->
+                viewModel.onCalendarSelected(id, name)
+                showCalendarPicker = false
+            },
+            onDismiss = { showCalendarPicker = false }
+        )
+    }
+}
+
+@Composable
+private fun CalendarPickerDialog(
+    calendarReader: CalendarReader,
+    onSelect: (Long, String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var calendars by remember { mutableStateOf(emptyList<com.psjostrom.strimma.data.calendar.CalendarInfo>()) }
+    LaunchedEffect(Unit) { calendars = calendarReader.getCalendars() }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.workout_calendar_picker_title)) },
+        text = {
+            Column {
+                for (cal in calendars) {
+                    TextButton(onClick = { onSelect(cal.id, cal.displayName) }) {
+                        Text(
+                            cal.displayName,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+                if (calendars.isEmpty()) {
+                    Text(
+                        stringResource(R.string.exercise_no_calendars),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.common_cancel))
+            }
+        }
+    )
+}
+
+@Composable
+private fun PlannedTab(
+    calendarId: Long,
+    workouts: List<WorkoutEvent>,
+    glucoseUnit: GlucoseUnit,
+    calendarReader: CalendarReader,
+    onConnectCalendar: () -> Unit
+) {
+    if (calendarId < 0) {
+        // No calendar connected — show prominent CTA
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(32.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                border = BorderStroke(1.dp, InRange.copy(alpha = 0.3f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = stringResource(R.string.exercise_connect_title),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.exercise_connect_subtitle),
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 18.sp
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    Button(
+                        onClick = onConnectCalendar,
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(stringResource(R.string.exercise_connect_button))
+                    }
+                }
+            }
+        }
+    } else if (workouts.isEmpty()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(32.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = stringResource(R.string.exercise_planned_empty),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 14.sp,
+                lineHeight = 20.sp
+            )
+        }
+    } else {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(vertical = 8.dp)
+        ) {
+            items(workouts, key = { "${it.startTime}_${it.title}" }) { event ->
+                PlannedWorkoutCard(event = event, glucoseUnit = glucoseUnit)
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlannedWorkoutCard(
+    event: WorkoutEvent,
+    glucoseUnit: GlucoseUnit
+) {
+    val dateFmt = remember { SimpleDateFormat("EEE d MMM", Locale.getDefault()) }
+    val timeFmt = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
+    val dateStr = dateFmt.format(Date(event.startTime))
+    val timeRange = "${timeFmt.format(Date(event.startTime))}\u2013${timeFmt.format(Date(event.endTime))}"
+    val durationMin = ((event.endTime - event.startTime) / MS_PER_MINUTE).toInt()
+    val categoryName = event.category.name.lowercase().replaceFirstChar { it.uppercase() }
+    val targetLow = glucoseUnit.format(event.category.defaultTargetLowMgdl.toDouble())
+    val targetHigh = glucoseUnit.format(event.category.defaultTargetHighMgdl.toDouble())
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Text(
+                text = "${event.title} \u00B7 ${durationMin}min",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = "$dateStr \u00B7 $timeRange",
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(6.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                StatChip(
+                    label = stringResource(R.string.exercise_planned_category),
+                    value = categoryName
+                )
+                StatChip(
+                    label = stringResource(R.string.exercise_planned_target),
+                    value = "$targetLow\u2013$targetHigh"
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CompletedTab(
+    sessions: List<StoredExerciseSession>,
+    glucoseUnit: GlucoseUnit,
+    bgLow: Float,
+    viewModel: ExerciseHistoryViewModel,
+    onSessionClick: (StoredExerciseSession) -> Unit
+) {
+    if (sessions.isEmpty()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(32.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = stringResource(R.string.exercise_history_empty),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 14.sp,
+                lineHeight = 20.sp
+            )
+        }
+    } else {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(vertical = 8.dp)
+        ) {
+            items(sessions, key = { it.id }) { session ->
+                ExerciseCard(
+                    session = session,
+                    glucoseUnit = glucoseUnit,
+                    bgLow = bgLow,
+                    viewModel = viewModel,
+                    onClick = { onSessionClick(session) }
+                )
             }
         }
     }

@@ -48,6 +48,45 @@ class CalendarReader @Inject constructor(
         calendars
     }
 
+    suspend fun getUpcomingWorkouts(calendarId: Long, lookaheadMs: Long): List<WorkoutEvent> =
+        withContext(Dispatchers.IO) {
+            val events = mutableListOf<WorkoutEvent>()
+            val now = System.currentTimeMillis()
+            val end = now + lookaheadMs
+            val projection = arrayOf(
+                CalendarContract.Events._ID,
+                CalendarContract.Events.TITLE,
+                CalendarContract.Events.DTSTART,
+                CalendarContract.Events.DTEND
+            )
+            val selection = "${CalendarContract.Events.CALENDAR_ID} = ? AND " +
+                "${CalendarContract.Events.DTSTART} > ? AND " +
+                "${CalendarContract.Events.DTSTART} <= ?"
+            val args = arrayOf(calendarId.toString(), now.toString(), end.toString())
+            try {
+                context.contentResolver.query(
+                    CalendarContract.Events.CONTENT_URI,
+                    projection, selection, args,
+                    "${CalendarContract.Events.DTSTART} ASC"
+                )?.use { cursor ->
+                    val titleIdx = cursor.getColumnIndexOrThrow(CalendarContract.Events.TITLE)
+                    val startIdx = cursor.getColumnIndexOrThrow(CalendarContract.Events.DTSTART)
+                    val endIdx = cursor.getColumnIndexOrThrow(CalendarContract.Events.DTEND)
+                    while (cursor.moveToNext()) {
+                        val title = cursor.getString(titleIdx) ?: ""
+                        val startTime = cursor.getLong(startIdx)
+                        val endTime = cursor.getLong(endIdx)
+                        events.add(
+                            WorkoutEvent(title, startTime, endTime, WorkoutCategory.fromTitle(title), calendarId)
+                        )
+                    }
+                }
+            } catch (e: SecurityException) {
+                DebugLog.log("Calendar access denied: ${e.message}")
+            }
+            events
+        }
+
     suspend fun getNextWorkout(calendarId: Long, lookaheadMs: Long): WorkoutEvent? =
         withContext(Dispatchers.IO) {
             val now = System.currentTimeMillis()
