@@ -10,12 +10,19 @@ import com.psjostrom.strimma.data.IOBComputer
 import com.psjostrom.strimma.data.InsulinType
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
+import com.psjostrom.strimma.receiver.DebugLog
+import com.psjostrom.strimma.data.calendar.CalendarReader
+import com.psjostrom.strimma.data.calendar.GuidanceState
+import com.psjostrom.strimma.data.calendar.PreActivityAssessor
+import com.psjostrom.strimma.data.calendar.WorkoutCategory
+import com.psjostrom.strimma.data.calendar.WorkoutEvent
 import com.psjostrom.strimma.data.health.ExerciseBGAnalyzer
 import com.psjostrom.strimma.data.health.ExerciseBGContext
 import com.psjostrom.strimma.data.health.ExerciseDao
 import com.psjostrom.strimma.data.health.StoredExerciseSession
 import com.psjostrom.strimma.data.Treatment
 import com.psjostrom.strimma.data.TreatmentDao
+import com.psjostrom.strimma.graph.PredictionComputer
 import com.psjostrom.strimma.network.FollowerStatus
 import com.psjostrom.strimma.network.LibreLinkUpFollower
 import com.psjostrom.strimma.network.NightscoutFollower
@@ -23,6 +30,7 @@ import com.psjostrom.strimma.network.NightscoutPuller
 import com.psjostrom.strimma.notification.AlertManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -39,7 +47,8 @@ class MainViewModel @Inject constructor(
     private val alertManager: AlertManager,
     private val nightscoutFollower: NightscoutFollower,
     private val libreLinkUpFollower: LibreLinkUpFollower,
-    private val nightscoutPuller: NightscoutPuller
+    private val nightscoutPuller: NightscoutPuller,
+    private val calendarReader: CalendarReader
 ) : ViewModel() {
 
     companion object {
@@ -48,6 +57,7 @@ class MainViewModel @Inject constructor(
         private const val PRE_WINDOW_MINUTES = 30
         private const val POST_WINDOW_HOURS = 4
         private const val MS_PER_MINUTE = 60_000L
+        private const val FORECAST_HORIZON_MINUTES = 30
     }
 
     val setupCompleted: StateFlow<Boolean?> = settings.setupCompleted
@@ -234,6 +244,97 @@ class MainViewModel @Inject constructor(
             val since = System.currentTimeMillis() - HOURS_PER_DAY * MS_PER_HOUR
             sessions.filter { it.startTime >= since }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val _cachedEvent = MutableStateFlow<WorkoutEvent?>(null)
+
+    val workoutCalendarId: StateFlow<Long> = settings.workoutCalendarId
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), -1L)
+    val workoutCalendarName: StateFlow<String> = settings.workoutCalendarName
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
+    val workoutLookaheadHours: StateFlow<Int> = settings.workoutLookaheadHours
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 3)
+    val workoutTriggerMinutes: StateFlow<Int> = settings.workoutTriggerMinutes
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 120)
+
+    fun setWorkoutCalendar(id: Long, name: String) = viewModelScope.launch {
+        settings.setWorkoutCalendarId(id)
+        settings.setWorkoutCalendarName(name)
+    }
+    fun setWorkoutLookaheadHours(hours: Int) = viewModelScope.launch { settings.setWorkoutLookaheadHours(hours) }
+    fun setWorkoutTriggerMinutes(minutes: Int) = viewModelScope.launch { settings.setWorkoutTriggerMinutes(minutes) }
+    fun setWorkoutTarget(category: WorkoutCategory, low: Float, high: Float) =
+        viewModelScope.launch { settings.setWorkoutTarget(category, low, high) }
+
+    init {
+        viewModelScope.launch {
+            while (true) {
+                try {
+                    val calId = workoutCalendarId.value
+                    _cachedEvent.value = if (calId >= 0) {
+                        val lookaheadMs = workoutLookaheadHours.value.toLong() * MS_PER_HOUR
+                        calendarReader.getNextWorkout(calId, lookaheadMs)
+                    } else null
+                } catch (
+                    @Suppress("TooGenericExceptionCaught")
+                    e: Exception
+                ) {
+                    DebugLog.log("Calendar poll failed: ${e.message}")
+                    _cachedEvent.value = null
+                }
+                delay(MS_PER_MINUTE)
+            }
+        }
+    }
+
+    val guidanceState: StateFlow<GuidanceState> = combine(
+        _cachedEvent,
+        latestReading,
+        readings,
+        iob
+    ) { event, latest, allReadings, iob ->
+        if (event == null || latest == null) return@combine GuidanceState.NoWorkout
+
+        val now = System.currentTimeMillis()
+        val timeToWorkout = event.startTime - now
+        if (timeToWorkout <= 0) return@combine GuidanceState.NoWorkout
+
+        val targetLow = settings.workoutTargetLow(event.category).first()
+        val targetHigh = settings.workoutTargetHigh(event.category).first()
+
+        val velocity = PredictionComputer.currentVelocity(allReadings)
+        val bgLowValue = bgLow.value.toDouble()
+        val bgHighValue = bgHigh.value.toDouble()
+        val prediction = PredictionComputer.compute(allReadings, FORECAST_HORIZON_MINUTES, bgLowValue, bgHighValue)
+        val forecastBg = prediction?.points?.lastOrNull()?.mgdl
+
+        val direction = try {
+            com.psjostrom.strimma.data.Direction.valueOf(latest.direction)
+        } catch (_: Exception) {
+            com.psjostrom.strimma.data.Direction.NONE
+        }
+
+        val result = PreActivityAssessor.assess(
+            currentBgMgdl = latest.sgv,
+            velocityMgdlPerMin = velocity,
+            iob = iob,
+            forecastBgAt30minMgdl = forecastBg,
+            timeToWorkoutMs = timeToWorkout,
+            targetLowMgdl = targetLow,
+            targetHighMgdl = targetHigh
+        )
+
+        GuidanceState.WorkoutApproaching(
+            event = event,
+            readiness = result.readiness,
+            reasons = result.reasons,
+            carbRecommendation = result.carbRecommendation,
+            targetLowMgdl = targetLow,
+            targetHighMgdl = targetHigh,
+            currentBgMgdl = latest.sgv,
+            trendArrow = direction.arrow,
+            iob = iob
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), GuidanceState.NoWorkout)
 
     suspend fun computeExerciseBGContext(session: StoredExerciseSession): ExerciseBGContext? {
         val preStart = session.startTime - PRE_WINDOW_MINUTES * MS_PER_MINUTE

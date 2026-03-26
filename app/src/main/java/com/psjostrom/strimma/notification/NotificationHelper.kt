@@ -65,7 +65,8 @@ class NotificationHelper @Inject constructor(
         predictionMinutes: Int = 10,
         glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
         iob: Double = 0.0,
-        exerciseSessions: List<StoredExerciseSession> = emptyList()
+        exerciseSessions: List<StoredExerciseSession> = emptyList(),
+        workoutText: String? = null
     ): android.app.Notification {
         val contentIntent = PendingIntent.getActivity(
             context, 0,
@@ -102,8 +103,12 @@ class NotificationHelper @Inject constructor(
                 iobText
             ).joinToString(" · ")
 
+            val finalDeltaText = if (workoutText != null) {
+                listOfNotNull(deltaText.ifEmpty { null }, workoutText).joinToString(" · ")
+            } else deltaText
+
             builder.setSmallIcon(createBgIcon(bgText))
-            val notifText = arrayOf(bgText, direction.arrow, deltaText)
+            val notifText = arrayOf(bgText, direction.arrow, finalDeltaText)
             attachGraphViews(
                 builder, recentReadings, bgLow, bgHigh,
                 graphWindowMs, predictionMinutes, notifText, exerciseSessions
@@ -165,11 +170,13 @@ class NotificationHelper @Inject constructor(
         predictionMinutes: Int = 10,
         glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
         iob: Double = 0.0,
-        exerciseSessions: List<StoredExerciseSession> = emptyList()
+        exerciseSessions: List<StoredExerciseSession> = emptyList(),
+        workoutText: String? = null
     ) {
         val notification = buildNotification(
             reading, recentReadings, bgLow, bgHigh,
-            graphWindowMs, predictionMinutes, glucoseUnit, iob, exerciseSessions
+            graphWindowMs, predictionMinutes, glucoseUnit, iob, exerciseSessions,
+            workoutText
         )
         notificationManager.notify(NOTIFICATION_ID, notification)
     }

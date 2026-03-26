@@ -146,6 +146,23 @@ class SettingsRepository @Inject constructor(
         private val KEY_SETUP_COMPLETED = booleanPreferencesKey("setup_completed")
         private val KEY_SETUP_STEP = intPreferencesKey("setup_step")
 
+        // Workout BG targets stored in mg/dL, converted at display time via GlucoseUnit
+        private val KEY_WORKOUT_CALENDAR_ID = longPreferencesKey("workout_calendar_id")
+        private val KEY_WORKOUT_CALENDAR_NAME = stringPreferencesKey("workout_calendar_name")
+        private val KEY_WORKOUT_LOOKAHEAD_HOURS = intPreferencesKey("workout_lookahead_hours")
+        private val KEY_WORKOUT_TRIGGER_MINUTES = intPreferencesKey("workout_trigger_minutes")
+        private val KEY_WORKOUT_EASY_LOW = floatPreferencesKey("workout_easy_low")
+        private val KEY_WORKOUT_EASY_HIGH = floatPreferencesKey("workout_easy_high")
+        private val KEY_WORKOUT_INTERVAL_LOW = floatPreferencesKey("workout_interval_low")
+        private val KEY_WORKOUT_INTERVAL_HIGH = floatPreferencesKey("workout_interval_high")
+        private val KEY_WORKOUT_LONG_LOW = floatPreferencesKey("workout_long_low")
+        private val KEY_WORKOUT_LONG_HIGH = floatPreferencesKey("workout_long_high")
+        private val KEY_WORKOUT_STRENGTH_LOW = floatPreferencesKey("workout_strength_low")
+        private val KEY_WORKOUT_STRENGTH_HIGH = floatPreferencesKey("workout_strength_high")
+
+        private const val DEFAULT_WORKOUT_LOOKAHEAD_HOURS = 3
+        private const val DEFAULT_WORKOUT_TRIGGER_MINUTES = 120
+
         // Settings defaults (mg/dL)
         private const val DEFAULT_GRAPH_WINDOW_HOURS = 4
         private const val DEFAULT_BG_LOW = 72f
@@ -321,6 +338,68 @@ class SettingsRepository @Inject constructor(
         try { HbA1cUnit.valueOf(it[KEY_HBA1C_UNIT] ?: "MMOL_MOL") } catch (_: Exception) { HbA1cUnit.MMOL_MOL }
     }
     suspend fun setHbA1cUnit(unit: HbA1cUnit) { dataStore.edit { it[KEY_HBA1C_UNIT] = unit.name } }
+
+    val workoutCalendarId: Flow<Long> = dataStore.data.map { it[KEY_WORKOUT_CALENDAR_ID] ?: -1L }
+    suspend fun setWorkoutCalendarId(id: Long) { dataStore.edit { it[KEY_WORKOUT_CALENDAR_ID] = id } }
+
+    val workoutCalendarName: Flow<String> = dataStore.data.map { it[KEY_WORKOUT_CALENDAR_NAME] ?: "" }
+    suspend fun setWorkoutCalendarName(name: String) { dataStore.edit { it[KEY_WORKOUT_CALENDAR_NAME] = name } }
+
+    val workoutLookaheadHours: Flow<Int> = dataStore.data.map {
+        it[KEY_WORKOUT_LOOKAHEAD_HOURS] ?: DEFAULT_WORKOUT_LOOKAHEAD_HOURS
+    }
+    suspend fun setWorkoutLookaheadHours(hours: Int) { dataStore.edit { it[KEY_WORKOUT_LOOKAHEAD_HOURS] = hours } }
+
+    val workoutTriggerMinutes: Flow<Int> = dataStore.data.map {
+        it[KEY_WORKOUT_TRIGGER_MINUTES] ?: DEFAULT_WORKOUT_TRIGGER_MINUTES
+    }
+    suspend fun setWorkoutTriggerMinutes(minutes: Int) { dataStore.edit { it[KEY_WORKOUT_TRIGGER_MINUTES] = minutes } }
+
+    fun workoutTargetLow(category: com.psjostrom.strimma.data.calendar.WorkoutCategory): Flow<Float> =
+        dataStore.data.map {
+            when (category) {
+                com.psjostrom.strimma.data.calendar.WorkoutCategory.EASY -> it[KEY_WORKOUT_EASY_LOW]
+                com.psjostrom.strimma.data.calendar.WorkoutCategory.INTERVAL -> it[KEY_WORKOUT_INTERVAL_LOW]
+                com.psjostrom.strimma.data.calendar.WorkoutCategory.LONG -> it[KEY_WORKOUT_LONG_LOW]
+                com.psjostrom.strimma.data.calendar.WorkoutCategory.STRENGTH -> it[KEY_WORKOUT_STRENGTH_LOW]
+                com.psjostrom.strimma.data.calendar.WorkoutCategory.FALLBACK -> null
+            } ?: category.defaultTargetLowMgdl
+        }
+
+    fun workoutTargetHigh(category: com.psjostrom.strimma.data.calendar.WorkoutCategory): Flow<Float> =
+        dataStore.data.map {
+            when (category) {
+                com.psjostrom.strimma.data.calendar.WorkoutCategory.EASY -> it[KEY_WORKOUT_EASY_HIGH]
+                com.psjostrom.strimma.data.calendar.WorkoutCategory.INTERVAL -> it[KEY_WORKOUT_INTERVAL_HIGH]
+                com.psjostrom.strimma.data.calendar.WorkoutCategory.LONG -> it[KEY_WORKOUT_LONG_HIGH]
+                com.psjostrom.strimma.data.calendar.WorkoutCategory.STRENGTH -> it[KEY_WORKOUT_STRENGTH_HIGH]
+                com.psjostrom.strimma.data.calendar.WorkoutCategory.FALLBACK -> null
+            } ?: category.defaultTargetHighMgdl
+        }
+
+    suspend fun setWorkoutTarget(
+        category: com.psjostrom.strimma.data.calendar.WorkoutCategory,
+        low: Float,
+        high: Float
+    ) {
+        dataStore.edit {
+            when (category) {
+                com.psjostrom.strimma.data.calendar.WorkoutCategory.EASY -> {
+                    it[KEY_WORKOUT_EASY_LOW] = low; it[KEY_WORKOUT_EASY_HIGH] = high
+                }
+                com.psjostrom.strimma.data.calendar.WorkoutCategory.INTERVAL -> {
+                    it[KEY_WORKOUT_INTERVAL_LOW] = low; it[KEY_WORKOUT_INTERVAL_HIGH] = high
+                }
+                com.psjostrom.strimma.data.calendar.WorkoutCategory.LONG -> {
+                    it[KEY_WORKOUT_LONG_LOW] = low; it[KEY_WORKOUT_LONG_HIGH] = high
+                }
+                com.psjostrom.strimma.data.calendar.WorkoutCategory.STRENGTH -> {
+                    it[KEY_WORKOUT_STRENGTH_LOW] = low; it[KEY_WORKOUT_STRENGTH_HIGH] = high
+                }
+                com.psjostrom.strimma.data.calendar.WorkoutCategory.FALLBACK -> { }
+            }
+        }
+    }
 
     @Suppress("CyclomaticComplexMethod") // Flat serialization of all settings
     suspend fun exportToJson(): String {

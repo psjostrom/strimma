@@ -376,4 +376,10 @@
     <string name="activity_pull_progress" tools:ignore="PluralsCandidate">Pulling %1$d days from Nightscout…</string>
     <string name="activity_pull_success" tools:ignore="PluralsCandidate">Pulled %1$d readings</string>
     <string name="activity_pull_failed">Pull failed: %1$s</string>
+
+    <!-- Pre-activity guidance -->
+    <string name="workout_settings_title">Workout Schedule</string>
+    <string name="workout_calendar_label">Calendar</string>
+    <string name="workout_calendar_none">(none)</string>
+    <string name="workout_calendar_picker_title">Select calendar</string>
 </resources>

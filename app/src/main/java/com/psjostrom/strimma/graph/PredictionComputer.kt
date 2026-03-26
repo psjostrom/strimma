@@ -76,7 +76,7 @@ object PredictionComputer {
      * Weighted linear regression slope = weighted velocity (mg/dL per minute).
      * Exponential decay weighting emphasizes recent readings.
      */
-    internal fun fitWeightedVelocity(points: List<Pair<Double, Double>>): Double? {
+    fun fitWeightedVelocity(points: List<Pair<Double, Double>>): Double? {
         if (points.size < 2) return null
         val weighted = points.map { (t, y) -> Triple(t, y, weightFor(t)) }
         var sw = 0.0; var swt = 0.0; var swy = 0.0; var swtt = 0.0; var swty = 0.0
@@ -86,6 +86,23 @@ object PredictionComputer {
         val denom = sw * swtt - swt * swt
         if (denom == 0.0) return null
         return (sw * swty - swt * swy) / denom
+    }
+
+    /**
+     * Compute current velocity (mg/dL per minute) from recent readings.
+     * Returns null if fewer than 2 readings in the lookback window.
+     */
+    fun currentVelocity(readings: List<GlucoseReading>): Double? {
+        val now = readings.maxOfOrNull { it.ts } ?: return null
+        val recent = readings.filter { it.ts >= now - LOOKBACK_MS }.sortedBy { it.ts }
+        if (recent.size < 2) return null
+
+        val anchor = recent.last()
+        val points = recent.map {
+            (it.ts - anchor.ts).toDouble() / MS_PER_MINUTE to it.sgv.toDouble()
+        }
+        val velocity = fitWeightedVelocity(points) ?: return null
+        return if (abs(velocity) > MAX_VELOCITY) null else velocity
     }
 
     private fun findCrossing(

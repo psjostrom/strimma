@@ -350,4 +350,10 @@
     <string name="setup_start">Starta Strimma</string>
     <string name="setup_next">Nästa</string>
     <string name="setup_back">Tillbaka</string>
+
+    <!-- Pre-activity guidance -->
+    <string name="workout_settings_title">Träningsschema</string>
+    <string name="workout_calendar_label">Kalender</string>
+    <string name="workout_calendar_none">(ingen)</string>
+    <string name="workout_calendar_picker_title">Välj kalender</string>
 </resources>
