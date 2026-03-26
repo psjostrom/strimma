@@ -30,7 +30,7 @@ Strimma stands on the shoulders of the incredible [xDrip+](https://github.com/Ni
 
 ## What Strimma Does
 
-- **Receives glucose three ways** — reads notifications from 60+ CGM apps (Dexcom, Libre, CamAPS FX, etc.), receives xDrip-compatible broadcasts (from xDrip+, Juggluco, AAPS), or follows a remote Nightscout server. See [Data Sources](data-sources/overview.md).
+- **Receives glucose four ways** — reads notifications from 60+ CGM apps (Dexcom, Libre, CamAPS FX, etc.), receives xDrip-compatible broadcasts (from xDrip+, Juggluco, AAPS), follows a remote Nightscout server, or reads from Abbott's LibreLinkUp cloud. See [Data Sources](data-sources/overview.md).
 - **Shows your BG at a glance** — large, color-coded number with direction arrow, delta, and trend graph in your notification bar.
 - **Configurable alerts** — low, high, urgent low, urgent high, and stale-data alerts, each with its own notification channel. Urgent alerts bypass Do Not Disturb by default; any alert can be configured to bypass DND via Android's notification settings.
 - **Predicts where you're heading** — shows "Low in X min" or "High in X min" warnings before you cross your thresholds.
@@ -44,7 +44,7 @@ Strimma stands on the shoulders of the incredible [xDrip+](https://github.com/Ni
 
 ## How It Works
 
-Strimma supports three data sources. Most users use **Companion mode**, which reads glucose from your CGM app's notification:
+Strimma supports four data sources. Most users use **Companion mode**, which reads glucose from your CGM app's notification:
 
 ```mermaid
 graph LR
@@ -56,7 +56,7 @@ graph LR
     C -->|Broadcast| G[Watches & Apps]
 ```
 
-You can also receive glucose via **xDrip Broadcast** (from xDrip+, Juggluco, AAPS, or GlucoDataHandler) or **Nightscout Follower** mode (for remote monitoring). See [Data Sources](data-sources/overview.md) for all three options.
+You can also receive glucose via **xDrip Broadcast** (from xDrip+, Juggluco, AAPS, or GlucoDataHandler), **Nightscout Follower** mode (for remote monitoring), or **LibreLinkUp** (Abbott's cloud for Libre 3 users). See [Data Sources](data-sources/overview.md) for all options.
 
 ---
 
