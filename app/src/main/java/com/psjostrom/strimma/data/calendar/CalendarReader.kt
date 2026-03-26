@@ -1,6 +1,12 @@
 package com.psjostrom.strimma.data.calendar
 
+import android.accounts.Account
+import android.content.ContentResolver
 import android.content.Context
+import android.database.ContentObserver
+import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.provider.CalendarContract
 import com.psjostrom.strimma.receiver.DebugLog
 import android.Manifest
@@ -8,6 +14,9 @@ import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -131,4 +140,48 @@ class CalendarReader @Inject constructor(
             }
             null
         }
+
+    fun requestCalendarSync() {
+        val projection = arrayOf(
+            CalendarContract.Calendars.ACCOUNT_NAME,
+            CalendarContract.Calendars.ACCOUNT_TYPE
+        )
+        val accounts = mutableSetOf<Account>()
+        try {
+            context.contentResolver.query(
+                CalendarContract.Calendars.CONTENT_URI,
+                projection, null, null, null
+            )?.use { cursor ->
+                val nameIdx = cursor.getColumnIndexOrThrow(CalendarContract.Calendars.ACCOUNT_NAME)
+                val typeIdx = cursor.getColumnIndexOrThrow(CalendarContract.Calendars.ACCOUNT_TYPE)
+                while (cursor.moveToNext()) {
+                    accounts.add(Account(cursor.getString(nameIdx), cursor.getString(typeIdx)))
+                }
+            }
+        } catch (e: SecurityException) {
+            DebugLog.log("Calendar sync request failed: ${e.message}")
+            return
+        }
+
+        for (account in accounts) {
+            val extras = Bundle().apply {
+                putBoolean(ContentResolver.SYNC_EXTRAS_MANUAL, true)
+                putBoolean(ContentResolver.SYNC_EXTRAS_EXPEDITED, true)
+            }
+            ContentResolver.requestSync(account, CalendarContract.AUTHORITY, extras)
+        }
+        DebugLog.log("CalendarReader: requested sync for ${accounts.size} account(s)")
+    }
+
+    fun observeCalendars(): Flow<Unit> = callbackFlow {
+        val observer = object : ContentObserver(Handler(Looper.getMainLooper())) {
+            override fun onChange(selfChange: Boolean) {
+                trySend(Unit)
+            }
+        }
+        context.contentResolver.registerContentObserver(
+            CalendarContract.Calendars.CONTENT_URI, true, observer
+        )
+        awaitClose { context.contentResolver.unregisterContentObserver(observer) }
+    }
 }
