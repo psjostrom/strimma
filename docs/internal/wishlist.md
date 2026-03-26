@@ -1,6 +1,6 @@
 # Strimma — Ideas
 
-**Updated:** 2026-03-24
+**Updated:** 2026-03-25
 
 ---
 
@@ -12,10 +12,6 @@ ADA-endorsed standard for presenting CGM data to clinicians. 14-day composite gl
 
 Strimma already computes TIR, GMI, CV%, and coverage. AGP adds the composite profile chart that clinicians know how to read.
 
-### Health Connect Integration
-
-Read exercise sessions + heart rate from any fitness app (Garmin, Samsung Health, Fitbit, Strava, etc.). Write glucose readings so other health apps can see them. Framework module on Android 14+, needs Health Connect app from Play Store on Android 13. Foundation for exercise-BG features.
-
 ### Exercise-BG Context
 
 For each exercise session from Health Connect, compute the complete BG arc. Inspired by Springa's `runBGContext` analysis, all local.
@@ -26,14 +22,46 @@ For each exercise session from Health Connect, compute the complete BG arc. Insp
 
 Exercise markers on graph (colored bands at activity start/end, tap for detail card). Activity history list with BG context summaries.
 
+### Workout Schedule — Google Calendar Integration
+
+Read upcoming workout events from Google Calendar (OAuth). Source-agnostic — events can come from Intervals.icu, Garmin Connect, or manual entry. Strimma doesn't care about the source, only the time and type.
+
+Used as the trigger for Pre-activity Guidance (see below). A scheduled workout within a configurable lookahead window (e.g. 3 hours) activates the guidance card.
+
+### Pre-activity Guidance
+
+Current BG + trend + time until next scheduled workout → readiness assessment and carbohydrate guidance card.
+
+Surfaced on the main screen and optionally in the persistent notification when a workout is approaching.
+
+Example:
+
+```
+🏃 Run in 2h 15min
+Target BG at start: 8–9 mmol/L
+Current: 7.2 mmol/L ↘
+
+→ Consider 20g carbs ~30 min before start.
+→ Check trend again 1h before.
+```
+
+Logic inputs:
+
+- Current BG and trend (already available)
+- Time until workout (from Google Calendar integration)
+- Workout type if available from event title/description
+
+**Requires:** Workout Schedule (Google Calendar) integration.
+
+**Future with pump API:** proactive basal reduction triggered from this same data. Not in scope for Strimma as an open-source app — but the decision logic is the same.
+
 ---
 
 ## Parked
 
 Deferred until there's demand or hardware.
 
-- **Per-category exercise stats** — group activities by type, show average drop rate / typical nadir by starting BG band and entry slope. Needs enough activity data to be meaningful.
-- **Pre-activity guidance** — current BG + trend → readiness assessment. Needs exercise-BG context first.
+- **Per-category exercise stats** — group activities by type, show average drop rate / typical nadir by starting BG band and entry slope. Needs enough activity data to be meaningful. Requires Exercise-BG Context first.
 - **Direct BLE: Dexcom G7/ONE+** — direct connection without official app. Complex, well-documented protocol.
 - **Direct BLE: Libre 2/2+** — requires out-of-process algorithm (OOP2).
 - **Direct BLE: Libre 3** — most complex, sensor bonds exclusively to one app.
@@ -53,6 +81,7 @@ Deferred until there's demand or hardware.
 
 ## Completed
 
+- Health Connect integration — read exercise sessions + heart rate from any fitness app (Garmin, Samsung Health, Fitbit, Strava, etc.); write glucose readings so other health apps can see them
 - Glucose alerts (urgent low, low, high, urgent high, stale) with per-alarm notification channels
 - Predictive alerts (low soon, high soon) with threshold crossing detection
 - 30-minute prediction (dampened velocity extrapolation)
@@ -77,7 +106,7 @@ Deferred until there's demand or hardware.
 
 ## Rejected
 
-- **Pump integration** (630G/640G/670G) — AAPS handles closed-loop control
+- **Pump integration** - Very interesting, but not possible with the available APIs at the moment
 - **Tizen/Pebble watch support** — low demand
 - **Speech recognition** — niche
 - **QR code settings export** — JSON export is the modern equivalent
