@@ -325,6 +325,11 @@ fun ExerciseSettings(
     if (showCalendarPicker) {
         var calendars by remember { mutableStateOf(emptyList<CalendarInfo>()) }
         LaunchedEffect(Unit) { calendars = viewModel.calendarReader.getCalendars() }
+        LaunchedEffect(Unit) {
+            viewModel.calendarReader.observeCalendars().collect {
+                calendars = viewModel.calendarReader.getCalendars()
+            }
+        }
         AlertDialog(
             onDismissRequest = { showCalendarPicker = false },
             title = { Text(stringResource(R.string.workout_calendar_picker_title)) },
@@ -347,6 +352,16 @@ fun ExerciseSettings(
                             Text(cal.displayName, color = onBg)
                         }
                     }
+                    Spacer(Modifier.height(12.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        stringResource(R.string.exercise_calendar_missing_hint),
+                        color = outline,
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp,
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    )
                 }
             },
             confirmButton = {

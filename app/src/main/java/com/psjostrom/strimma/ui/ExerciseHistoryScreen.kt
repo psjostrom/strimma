@@ -16,6 +16,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.pullToRefresh
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -92,12 +95,24 @@ class ExerciseHistoryViewModel @Inject constructor(
     private val _upcomingWorkouts = MutableStateFlow<List<WorkoutEvent>>(emptyList())
     val upcomingWorkouts: StateFlow<List<WorkoutEvent>> = _upcomingWorkouts
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing
+
     init {
         viewModelScope.launch {
             while (currentCoroutineContext().isActive) {
                 refreshUpcoming()
                 delay(PLANNED_POLL_MS)
             }
+        }
+    }
+
+    fun onPullToRefresh() {
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            calendarReader.requestCalendarSync()
+            refreshUpcoming()
+            _isRefreshing.value = false
         }
     }
 
@@ -233,6 +248,8 @@ fun ExerciseHistoryScreen(
                     calendarId = calendarId,
                     workouts = upcomingWorkouts,
                     glucoseUnit = glucoseUnit,
+                    isRefreshing = viewModel.isRefreshing.collectAsState().value,
+                    onRefresh = viewModel::onPullToRefresh,
                     onConnectCalendar = {
                         if (viewModel.calendarReader.hasPermission()) {
                             showCalendarPicker = true
@@ -272,6 +289,11 @@ private fun CalendarPickerDialog(
 ) {
     var calendars by remember { mutableStateOf(emptyList<com.psjostrom.strimma.data.calendar.CalendarInfo>()) }
     LaunchedEffect(Unit) { calendars = calendarReader.getCalendars() }
+
+    // Auto-refresh when CalendarProvider changes (new calendar synced)
+    LaunchedEffect(Unit) {
+        calendarReader.observeCalendars().collect { calendars = calendarReader.getCalendars() }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -315,11 +337,14 @@ private fun CalendarPickerDialog(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PlannedTab(
     calendarId: Long,
     workouts: List<WorkoutEvent>,
     glucoseUnit: GlucoseUnit,
+    isRefreshing: Boolean,
+    onRefresh: () -> Unit,
     onConnectCalendar: () -> Unit
 ) {
     if (calendarId < 0) {
@@ -363,31 +388,50 @@ private fun PlannedTab(
                 }
             }
         }
-    } else if (workouts.isEmpty()) {
+    } else {
+        val pullToRefreshState = rememberPullToRefreshState()
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(32.dp),
-            contentAlignment = Alignment.Center
+                .pullToRefresh(
+                    isRefreshing = isRefreshing,
+                    state = pullToRefreshState,
+                    onRefresh = onRefresh
+                )
         ) {
-            Text(
-                text = stringResource(R.string.exercise_planned_empty),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 14.sp,
-                lineHeight = 20.sp
-            )
-        }
-    } else {
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(vertical = 8.dp)
-        ) {
-            items(workouts, key = { "${it.startTime}_${it.title}" }) { event ->
-                PlannedWorkoutCard(event = event, glucoseUnit = glucoseUnit)
+            if (workouts.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = stringResource(R.string.exercise_planned_empty),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(vertical = 8.dp)
+                ) {
+                    items(workouts, key = { "${it.startTime}_${it.title}" }) { event ->
+                        PlannedWorkoutCard(event = event, glucoseUnit = glucoseUnit)
+                    }
+                }
             }
+
+            PullToRefreshDefaults.Indicator(
+                state = pullToRefreshState,
+                isRefreshing = isRefreshing,
+                modifier = Modifier.align(Alignment.TopCenter)
+            )
         }
     }
 }
