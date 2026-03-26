@@ -4,6 +4,8 @@ package com.psjostrom.strimma.ui.settings
 
 import android.content.Intent
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -234,26 +236,50 @@ fun ExerciseSettings(
         }
 
         SettingsSection(stringResource(R.string.workout_settings_title)) {
-            // Calendar picker row
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable {
-                        if (viewModel.calendarReader.hasPermission()) {
-                            showCalendarPicker = true
-                        } else {
-                            calendarPermissionLauncher.launch(android.Manifest.permission.READ_CALENDAR)
-                        }
-                    },
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(stringResource(R.string.workout_calendar_label), color = onBg, fontSize = 14.sp)
-                Text(
-                    workoutCalendarName.ifEmpty { stringResource(R.string.workout_calendar_none) },
-                    color = outline,
-                    fontSize = 14.sp
-                )
+            if (workoutCalendarId < 0) {
+                // No calendar connected — prominent CTA
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = stringResource(R.string.exercise_connect_subtitle),
+                        fontSize = 13.sp,
+                        color = outline,
+                        lineHeight = 18.sp
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(
+                        onClick = {
+                            if (viewModel.calendarReader.hasPermission()) {
+                                showCalendarPicker = true
+                            } else {
+                                calendarPermissionLauncher.launch(android.Manifest.permission.READ_CALENDAR)
+                            }
+                        },
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+                    ) {
+                        Text(stringResource(R.string.exercise_connect_button))
+                    }
+                }
+            } else {
+                // Calendar connected — compact row with option to change
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            if (viewModel.calendarReader.hasPermission()) {
+                                showCalendarPicker = true
+                            } else {
+                                calendarPermissionLauncher.launch(android.Manifest.permission.READ_CALENDAR)
+                            }
+                        },
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(stringResource(R.string.workout_calendar_label), color = onBg, fontSize = 14.sp)
+                    Text(workoutCalendarName, color = outline, fontSize = 14.sp)
+                }
             }
 
             // Lookahead slider
@@ -303,7 +329,7 @@ fun ExerciseSettings(
             onDismissRequest = { showCalendarPicker = false },
             title = { Text(stringResource(R.string.workout_calendar_picker_title)) },
             text = {
-                Column {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                     // Option to clear selection
                     if (workoutCalendarId >= 0) {
                         TextButton(onClick = {

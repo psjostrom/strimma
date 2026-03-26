@@ -361,6 +361,7 @@
     <string name="exercise_planned_category">Categoría</string>
     <string name="exercise_planned_target">BG objetivo</string>
     <string name="exercise_no_calendars">No se encontraron calendarios en este dispositivo.</string>
+    <string name="exercise_calendar_missing_hint">¿No encuentras tu calendario? Ve a Ajustes → Contraseñas \u0026 cuentas → tu cuenta de Google → Sincronización de cuenta y desactiva y activa Calendario.</string>
 
     <!-- Pre-activity guidance -->
     <string name="workout_settings_title">Horario de entrenamiento</string>

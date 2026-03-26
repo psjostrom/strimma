@@ -361,6 +361,7 @@
     <string name="exercise_planned_category">Kategori</string>
     <string name="exercise_planned_target">Mål-BG</string>
     <string name="exercise_no_calendars">Inga kalendrar hittades på enheten.</string>
+    <string name="exercise_calendar_missing_hint">Hittar du inte din kalender? Gå till Inställningar → Lösenord \u0026 konton → ditt Google-konto → Kontosynkronisering och stäng av och slå på Kalender.</string>
 
     <!-- Pre-activity guidance -->
     <string name="workout_settings_title">Träningsschema</string>

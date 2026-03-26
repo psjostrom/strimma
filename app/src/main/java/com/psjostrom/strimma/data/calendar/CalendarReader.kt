@@ -39,12 +39,15 @@ class CalendarReader @Inject constructor(
                     CalendarContract.Calendars.CALENDAR_DISPLAY_NAME
                 )
                 while (cursor.moveToNext()) {
-                    calendars.add(CalendarInfo(cursor.getLong(idIdx), cursor.getString(nameIdx)))
+                    val cal = CalendarInfo(cursor.getLong(idIdx), cursor.getString(nameIdx))
+                    calendars.add(cal)
+                    DebugLog.log("Calendar: id=${cal.id} name=${cal.displayName}")
                 }
             }
         } catch (e: SecurityException) {
             DebugLog.log("Calendar access denied: ${e.message}")
         }
+        DebugLog.log("CalendarReader: found ${calendars.size} calendars")
         calendars
     }
 

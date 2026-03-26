@@ -6,6 +6,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -56,12 +58,12 @@ import java.util.Locale
 import javax.inject.Inject
 
 private const val MS_PER_MINUTE = 60_000L
-private const val MS_PER_HOUR = 3_600_000L
 private const val MS_PER_DAY = 86_400_000L
 private const val PRE_WINDOW_MS = 30 * MS_PER_MINUTE
 private const val POST_WINDOW_MS = 4 * 60 * MS_PER_MINUTE
 private const val PLANNED_LOOKAHEAD_DAYS = 365
 private const val PLANNED_POLL_MS = 5 * MS_PER_MINUTE
+private const val DATASTORE_PROPAGATION_MS = 100L
 
 @HiltViewModel
 class ExerciseHistoryViewModel @Inject constructor(
@@ -111,7 +113,7 @@ class ExerciseHistoryViewModel @Inject constructor(
             settings.setWorkoutCalendarId(id)
             settings.setWorkoutCalendarName(name)
             // Refresh immediately after selection
-            delay(100) // Let DataStore propagate
+            delay(DATASTORE_PROPAGATION_MS)
             refreshUpcoming()
         }
     }
@@ -231,7 +233,6 @@ fun ExerciseHistoryScreen(
                     calendarId = calendarId,
                     workouts = upcomingWorkouts,
                     glucoseUnit = glucoseUnit,
-                    calendarReader = viewModel.calendarReader,
                     onConnectCalendar = {
                         if (viewModel.calendarReader.hasPermission()) {
                             showCalendarPicker = true
@@ -276,7 +277,7 @@ private fun CalendarPickerDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.workout_calendar_picker_title)) },
         text = {
-            Column {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 for (cal in calendars) {
                     TextButton(onClick = { onSelect(cal.id, cal.displayName) }) {
                         Text(
@@ -294,6 +295,16 @@ private fun CalendarPickerDialog(
                         modifier = Modifier.padding(16.dp)
                     )
                 }
+                Spacer(Modifier.height(12.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    stringResource(R.string.exercise_calendar_missing_hint),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                )
             }
         },
         confirmButton = {
@@ -309,7 +320,6 @@ private fun PlannedTab(
     calendarId: Long,
     workouts: List<WorkoutEvent>,
     glucoseUnit: GlucoseUnit,
-    calendarReader: CalendarReader,
     onConnectCalendar: () -> Unit
 ) {
     if (calendarId < 0) {

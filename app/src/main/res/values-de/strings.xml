@@ -361,6 +361,7 @@
     <string name="exercise_planned_category">Kategorie</string>
     <string name="exercise_planned_target">Ziel-BG</string>
     <string name="exercise_no_calendars">Keine Kalender auf diesem Gerät gefunden.</string>
+    <string name="exercise_calendar_missing_hint">Kalender nicht gefunden? Gehe zu Einstellungen → Passwörter \u0026 Konten → dein Google-Konto → Kontosynchronisierung und schalte Kalender aus und wieder ein.</string>
 
     <!-- Pre-activity guidance -->
     <string name="workout_settings_title">Trainingsplan</string>
