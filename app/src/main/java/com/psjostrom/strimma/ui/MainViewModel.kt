@@ -30,8 +30,10 @@ import com.psjostrom.strimma.network.NightscoutPuller
 import com.psjostrom.strimma.notification.AlertManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -316,7 +318,7 @@ class MainViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            while (true) {
+            while (currentCoroutineContext().isActive) {
                 try {
                     val calId = workoutCalendarId.value
                     _cachedEvent.value = if (calId >= 0) {
