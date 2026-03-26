@@ -57,7 +57,56 @@ class MainViewModel @Inject constructor(
         private const val PRE_WINDOW_MINUTES = 30
         private const val POST_WINDOW_HOURS = 4
         private const val MS_PER_MINUTE = 60_000L
-        private const val FORECAST_HORIZON_MINUTES = 30
+        internal const val FORECAST_HORIZON_MINUTES = 30
+
+        internal fun computeGuidance(
+            event: WorkoutEvent?,
+            latest: GlucoseReading?,
+            allReadings: List<GlucoseReading>,
+            iob: Double,
+            targetLow: Float,
+            targetHigh: Float,
+            bgLow: Double,
+            bgHigh: Double,
+            nowMs: Long = System.currentTimeMillis()
+        ): GuidanceState {
+            if (event == null || latest == null) return GuidanceState.NoWorkout
+
+            val timeToWorkout = event.startTime - nowMs
+            if (timeToWorkout <= 0) return GuidanceState.NoWorkout
+
+            val velocity = PredictionComputer.currentVelocity(allReadings)
+            val prediction = PredictionComputer.compute(allReadings, FORECAST_HORIZON_MINUTES, bgLow, bgHigh)
+            val forecastBg = prediction?.points?.lastOrNull()?.mgdl
+
+            val direction = try {
+                com.psjostrom.strimma.data.Direction.valueOf(latest.direction)
+            } catch (_: Exception) {
+                com.psjostrom.strimma.data.Direction.NONE
+            }
+
+            val result = PreActivityAssessor.assess(
+                currentBgMgdl = latest.sgv,
+                velocityMgdlPerMin = velocity,
+                iob = iob,
+                forecastBgAt30minMgdl = forecastBg,
+                timeToWorkoutMs = timeToWorkout,
+                targetLowMgdl = targetLow,
+                targetHighMgdl = targetHigh
+            )
+
+            return GuidanceState.WorkoutApproaching(
+                event = event,
+                readiness = result.readiness,
+                reasons = result.reasons,
+                carbRecommendation = result.carbRecommendation,
+                targetLowMgdl = targetLow,
+                targetHighMgdl = targetHigh,
+                currentBgMgdl = latest.sgv,
+                trendArrow = direction.arrow,
+                iob = iob
+            )
+        }
     }
 
     val setupCompleted: StateFlow<Boolean?> = settings.setupCompleted
@@ -292,47 +341,12 @@ class MainViewModel @Inject constructor(
         readings,
         iob
     ) { event, latest, allReadings, iob ->
-        if (event == null || latest == null) return@combine GuidanceState.NoWorkout
-
-        val now = System.currentTimeMillis()
-        val timeToWorkout = event.startTime - now
-        if (timeToWorkout <= 0) return@combine GuidanceState.NoWorkout
-
-        val targetLow = settings.workoutTargetLow(event.category).first()
-        val targetHigh = settings.workoutTargetHigh(event.category).first()
-
-        val velocity = PredictionComputer.currentVelocity(allReadings)
-        val bgLowValue = bgLow.value.toDouble()
-        val bgHighValue = bgHigh.value.toDouble()
-        val prediction = PredictionComputer.compute(allReadings, FORECAST_HORIZON_MINUTES, bgLowValue, bgHighValue)
-        val forecastBg = prediction?.points?.lastOrNull()?.mgdl
-
-        val direction = try {
-            com.psjostrom.strimma.data.Direction.valueOf(latest.direction)
-        } catch (_: Exception) {
-            com.psjostrom.strimma.data.Direction.NONE
-        }
-
-        val result = PreActivityAssessor.assess(
-            currentBgMgdl = latest.sgv,
-            velocityMgdlPerMin = velocity,
-            iob = iob,
-            forecastBgAt30minMgdl = forecastBg,
-            timeToWorkoutMs = timeToWorkout,
-            targetLowMgdl = targetLow,
-            targetHighMgdl = targetHigh
-        )
-
-        GuidanceState.WorkoutApproaching(
-            event = event,
-            readiness = result.readiness,
-            reasons = result.reasons,
-            carbRecommendation = result.carbRecommendation,
-            targetLowMgdl = targetLow,
-            targetHighMgdl = targetHigh,
-            currentBgMgdl = latest.sgv,
-            trendArrow = direction.arrow,
-            iob = iob
+        val targetLow = event?.let { settings.workoutTargetLow(it.category).first() } ?: 0f
+        val targetHigh = event?.let { settings.workoutTargetHigh(it.category).first() } ?: 0f
+        computeGuidance(
+            event, latest, allReadings, iob,
+            targetLow, targetHigh,
+            bgLow.value.toDouble(), bgHigh.value.toDouble()
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), GuidanceState.NoWorkout)
 
