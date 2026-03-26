@@ -36,6 +36,7 @@ import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.Direction
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.IOBComputer
+import com.psjostrom.strimma.data.calendar.GuidanceState
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.Treatment
 import com.psjostrom.strimma.data.health.ExerciseBGContext
@@ -80,6 +81,7 @@ fun MainScreen(
     iob: Double = 0.0,
     iobTauMinutes: Double = 55.0,
     exerciseSessions: List<StoredExerciseSession> = emptyList(),
+    guidanceState: GuidanceState = GuidanceState.NoWorkout,
     onComputeBGContext: (suspend (StoredExerciseSession) -> ExerciseBGContext?)? = null,
     onSettingsClick: () -> Unit,
     onStatsClick: () -> Unit = {},
@@ -171,6 +173,15 @@ fun MainScreen(
             BgHeader(latestReading, bgLow, bgHigh, glucoseUnit, crossing, followerStatus, iob, treatments, iobTauMinutes)
 
             Spacer(modifier = Modifier.height(16.dp))
+
+            val guidance = guidanceState
+            if (guidance is GuidanceState.WorkoutApproaching) {
+                PreActivityCard(
+                    state = guidance,
+                    glucoseUnit = glucoseUnit
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
 
             val cardShape = RoundedCornerShape(12.dp)
             val cardBorder = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)

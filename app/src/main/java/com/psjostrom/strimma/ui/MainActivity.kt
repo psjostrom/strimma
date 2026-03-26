@@ -148,6 +148,7 @@ class MainActivity : ComponentActivity() {
                 val treatments by viewModel.treatments.collectAsState()
                 val iob by viewModel.iob.collectAsState()
                 val exerciseSessions by viewModel.exerciseSessions.collectAsState()
+                val guidanceState by viewModel.guidanceState.collectAsState()
                 NavHost(navController, startDestination = startDest) {
                     composable("setup") {
                         val setupViewModel: SetupViewModel = hiltViewModel()
@@ -222,6 +223,7 @@ class MainActivity : ComponentActivity() {
                             iob = iob,
                             iobTauMinutes = IOBComputer.tauForInsulinType(insulinType, customDIA),
                             exerciseSessions = exerciseSessions,
+                            guidanceState = guidanceState,
                             onComputeBGContext = viewModel::computeExerciseBGContext,
                             onSettingsClick = {
                                 navController.navigate("settings") {

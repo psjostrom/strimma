@@ -27,13 +27,19 @@ import com.psjostrom.strimma.notification.NotificationHelper
 import com.psjostrom.strimma.receiver.DebugLog
 import com.psjostrom.strimma.receiver.GlucoseNotificationListener
 import com.psjostrom.strimma.receiver.XdripBroadcastReceiver
+import com.psjostrom.strimma.data.calendar.CalendarReader
+import com.psjostrom.strimma.data.calendar.WorkoutEvent
+import com.psjostrom.strimma.receiver.WorkoutAlarmReceiver
 import com.psjostrom.strimma.webserver.LocalWebServer
+import android.app.AlarmManager
+import android.app.PendingIntent
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import com.psjostrom.strimma.widget.StrimmaWidget
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
@@ -60,6 +66,12 @@ class StrimmaService : Service() {
         private const val SECONDS_TO_MS = 1000L
         private const val HOURS_PER_DAY = 24
         private const val DELTA_ROUNDING_FACTOR = 10.0
+        private const val MINUTES_PER_HOUR = 60
+        private const val DEFAULT_WORKOUT_LOOKAHEAD_HOURS = 3
+        private const val DEFAULT_WORKOUT_TRIGGER_MINUTES = 120
+        private const val CALENDAR_POLL_INTERVAL_MINUTES = 15
+        private const val WORKOUT_GRACE_MINUTES = 15
+        private const val FORECAST_HORIZON_MINUTES = 30
 
         private const val DELTA_DIVISOR = 5.0
         private const val MGDL_FACTOR = 18.0182
@@ -82,6 +94,7 @@ class StrimmaService : Service() {
     @Inject lateinit var exerciseDao: ExerciseDao
     @Inject lateinit var exerciseSyncer: ExerciseSyncer
     @Inject lateinit var healthConnectManager: HealthConnectManager
+    @Inject lateinit var calendarReader: CalendarReader
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var pruneJob: Job? = null
@@ -90,6 +103,12 @@ class StrimmaService : Service() {
     private var lluFollowerJob: Job? = null
     private var treatmentSyncJob: Job? = null
     private var exerciseSyncJob: Job? = null
+    private var calendarPollJob: Job? = null
+    @Volatile
+    private var cachedWorkoutEvent: WorkoutEvent? = null
+    private lateinit var workoutCalendarId: StateFlow<Long>
+    private lateinit var workoutLookaheadHours: StateFlow<Int>
+    private lateinit var workoutTriggerMinutes: StateFlow<Int>
 
     private lateinit var predMinutes: StateFlow<Int>
     private lateinit var notifGraphMinutes: StateFlow<Int>
@@ -118,6 +137,13 @@ class StrimmaService : Service() {
         insulinType = settings.insulinType.stateIn(scope, SharingStarted.Eagerly, InsulinType.FIASP)
         customDIA = settings.customDIA.stateIn(scope, SharingStarted.Eagerly, DEFAULT_CUSTOM_DIA)
         hcWriteEnabled = settings.hcWriteEnabled.stateIn(scope, SharingStarted.Eagerly, false)
+        workoutCalendarId = settings.workoutCalendarId.stateIn(scope, SharingStarted.Eagerly, -1L)
+        workoutLookaheadHours = settings.workoutLookaheadHours.stateIn(
+            scope, SharingStarted.Eagerly, DEFAULT_WORKOUT_LOOKAHEAD_HOURS
+        )
+        workoutTriggerMinutes = settings.workoutTriggerMinutes.stateIn(
+            scope, SharingStarted.Eagerly, DEFAULT_WORKOUT_TRIGGER_MINUTES
+        )
 
         startForeground(
             NotificationHelper.NOTIFICATION_ID,
@@ -173,6 +199,7 @@ class StrimmaService : Service() {
         scope.launch { nightscoutPuller.pullIfEmpty() }
         scope.launch { updateNotification() }
         startPeriodicJobs()
+        startCalendarPoll()
     }
 
     private fun startPeriodicJobs() {
@@ -195,6 +222,13 @@ class StrimmaService : Service() {
                 val latest = dao.latestOnce()
                 alertManager.checkStale(latest?.ts)
                 updateNotification()
+                cachedWorkoutEvent?.let { event ->
+                    if (System.currentTimeMillis() > event.startTime + WORKOUT_GRACE_MINUTES * MINUTES_TO_MS) {
+                        cachedWorkoutEvent = null
+                        cancelWorkoutAlarm()
+                        WorkoutAlarmReceiver.notificationTriggerFired.set(false)
+                    }
+                }
             }
         }
     }
@@ -218,6 +252,7 @@ class StrimmaService : Service() {
         stopLluFollower()
         treatmentSyncJob?.cancel()
         exerciseSyncJob?.cancel()
+        calendarPollJob?.cancel()
         pruneJob?.cancel()
         localWebServer.stop()
         scope.cancel()
@@ -322,7 +357,7 @@ class StrimmaService : Service() {
         DebugLog.log("Stored: ${reading.sgv} mg/dL ${direction.arrow}")
         pusher.pushReading(reading)
         updateNotification()
-        // PredictionComputer uses 12-min lookback internally; 15 min ensures sufficient history
+        // 15-min lookback covers PredictionComputer (12 min) + DirectionComputer (5 min lookback, 10 min max gap)
         val alertReadings = dao.since(timestamp - LOOKBACK_MINUTES * MINUTES_TO_MS)
         alertManager.checkReading(reading, alertReadings, predMinutes.value)
         broadcastBgIfEnabled(reading)
@@ -366,9 +401,43 @@ class StrimmaService : Service() {
 
         val exerciseSessions = exerciseDao.getSessionsInRange(now - graphWindowMs, now)
 
+        val workoutText = if (WorkoutAlarmReceiver.notificationTriggerFired.get() && latest != null) {
+            cachedWorkoutEvent?.let { event ->
+                val minutesUntil = ((event.startTime - now) / MINUTES_TO_MS).toInt()
+                if (minutesUntil <= 0) return@let null
+                val timeText = if (minutesUntil >= MINUTES_PER_HOUR) {
+                    "${minutesUntil / MINUTES_PER_HOUR}h ${minutesUntil % MINUTES_PER_HOUR}min"
+                } else {
+                    "${minutesUntil}min"
+                }
+                val velocity = com.psjostrom.strimma.graph.PredictionComputer.currentVelocity(recent)
+                val prediction = com.psjostrom.strimma.graph.PredictionComputer.compute(
+                    recent, FORECAST_HORIZON_MINUTES,
+                    bgLow.value.toDouble(), bgHigh.value.toDouble()
+                )
+                val forecastBg = prediction?.points?.lastOrNull()?.mgdl
+                val targetLow = settings.workoutTargetLow(event.category).first()
+                val targetHigh = settings.workoutTargetHigh(event.category).first()
+                val result = com.psjostrom.strimma.data.calendar.PreActivityAssessor.assess(
+                    currentBgMgdl = latest.sgv,
+                    velocityMgdlPerMin = velocity,
+                    iob = iob,
+                    forecastBgAt30minMgdl = forecastBg,
+                    timeToWorkoutMs = (event.startTime - now),
+                    targetLowMgdl = targetLow,
+                    targetHighMgdl = targetHigh
+                )
+                val carbText = result.carbRecommendation?.let {
+                    "consider ${it.totalGrams}g carbs"
+                } ?: "ready"
+                "${event.title} in $timeText -- $carbText"
+            }
+        } else null
+
         notificationHelper.updateNotification(
             latest, recent, bgLow.value.toDouble(), bgHigh.value.toDouble(),
-            graphWindowMs, predMinutes.value, glucoseUnit.value, iob, exerciseSessions
+            graphWindowMs, predMinutes.value, glucoseUnit.value, iob, exerciseSessions,
+            workoutText
         )
     }
 
@@ -390,4 +459,87 @@ class StrimmaService : Service() {
         sendBroadcast(intent)
         DebugLog.log("Broadcast BG: ${reading.sgv} mg/dL")
     }
+
+    private fun startCalendarPoll() {
+        calendarPollJob = scope.launch {
+            while (isActive) {
+                try {
+                    pollCalendar()
+                } catch (
+                    @Suppress("TooGenericExceptionCaught")
+                    e: Exception
+                ) {
+                    DebugLog.log("Calendar poll failed: ${e.message}")
+                }
+                delay(CALENDAR_POLL_INTERVAL_MINUTES * MINUTES_TO_MS)
+            }
+        }
+    }
+
+    private suspend fun pollCalendar() {
+        val calId = workoutCalendarId.value
+        if (calId < 0) {
+            cachedWorkoutEvent = null
+            cancelWorkoutAlarm()
+            WorkoutAlarmReceiver.notificationTriggerFired.set(false)
+            return
+        }
+        val lookaheadMs = workoutLookaheadHours.value.toLong() * HOURS_TO_MS
+        val event = calendarReader.getNextWorkout(calId, lookaheadMs)
+        val previous = cachedWorkoutEvent
+        cachedWorkoutEvent = event
+
+        if (event != null && (previous == null || previous.startTime != event.startTime)) {
+            val triggerMs = workoutTriggerMinutes.value.toLong() * MINUTES_TO_MS
+            val alarmTime = event.startTime - triggerMs
+            if (alarmTime > System.currentTimeMillis()) {
+                WorkoutAlarmReceiver.notificationTriggerFired.set(false)
+            }
+            scheduleWorkoutAlarm(event)
+        } else if (event == null && previous != null) {
+            cancelWorkoutAlarm()
+            WorkoutAlarmReceiver.notificationTriggerFired.set(false)
+            scope.launch { updateNotification() }
+        }
+    }
+
+    private fun scheduleWorkoutAlarm(event: WorkoutEvent) {
+        val triggerMs = workoutTriggerMinutes.value.toLong() * MINUTES_TO_MS
+        val alarmTime = event.startTime - triggerMs
+        if (alarmTime <= System.currentTimeMillis()) {
+            WorkoutAlarmReceiver.notificationTriggerFired.set(true)
+            scope.launch { updateNotification() }
+            return
+        }
+        val alarmManager = getSystemService(AlarmManager::class.java)
+        val intent = Intent(this, WorkoutAlarmReceiver::class.java).apply {
+            action = WorkoutAlarmReceiver.ACTION
+            putExtra(WorkoutAlarmReceiver.EXTRA_EVENT_START_TIME, event.startTime)
+        }
+        val pi = PendingIntent.getBroadcast(
+            this, 0, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        try {
+            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, alarmTime, pi)
+            DebugLog.log("Workout alarm scheduled for ${event.title} at $alarmTime")
+        } catch (e: SecurityException) {
+            alarmManager.set(AlarmManager.RTC_WAKEUP, alarmTime, pi)
+            DebugLog.log("Workout alarm (inexact) scheduled: ${e.message}")
+        }
+    }
+
+    private fun cancelWorkoutAlarm() {
+        val alarmManager = getSystemService(AlarmManager::class.java)
+        val intent = Intent(this, WorkoutAlarmReceiver::class.java).apply {
+            action = WorkoutAlarmReceiver.ACTION
+        }
+        val pi = PendingIntent.getBroadcast(
+            this, 0, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        alarmManager.cancel(pi)
+        WorkoutAlarmReceiver.notificationTriggerFired.set(false)
+    }
+
 }

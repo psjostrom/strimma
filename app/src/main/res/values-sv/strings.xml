@@ -350,4 +350,22 @@
     <string name="setup_start">Starta Strimma</string>
     <string name="setup_next">Nästa</string>
     <string name="setup_back">Tillbaka</string>
+
+    <!-- Exercise tabs -->
+    <string name="exercise_tab_planned">Planerade</string>
+    <string name="exercise_tab_completed">Genomförda</string>
+    <string name="exercise_connect_title">Koppla träningskalender</string>
+    <string name="exercise_connect_subtitle">Se kommande träningspass och få BG-vägledning innan varje pass. Strimma läser din kalender för att visa beredskapsanalys och kolhydratrekommendationer.</string>
+    <string name="exercise_connect_button">Koppla kalender</string>
+    <string name="exercise_planned_empty">Inga kommande träningspass hittades i den kopplade kalendern.</string>
+    <string name="exercise_planned_category">Kategori</string>
+    <string name="exercise_planned_target">Mål-BG</string>
+    <string name="exercise_no_calendars">Inga kalendrar hittades på enheten.</string>
+    <string name="exercise_calendar_missing_hint">Hittar du inte din kalender? Gå till Inställningar → Lösenord \u0026 konton → ditt Google-konto → Kontosynkronisering och stäng av och slå på Kalender.</string>
+
+    <!-- Pre-activity guidance -->
+    <string name="workout_settings_title">Träningsschema</string>
+    <string name="workout_calendar_label">Kalender</string>
+    <string name="workout_calendar_none">(ingen)</string>
+    <string name="workout_calendar_picker_title">Välj kalender</string>
 </resources>
