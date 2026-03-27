@@ -393,6 +393,7 @@
     <string name="exercise_planned_empty">No upcoming workouts found in the connected calendar.</string>
     <string name="exercise_planned_category">Category</string>
     <string name="exercise_planned_target">Target BG</string>
+    <string name="exercise_no_bg_data">No recent BG data available for guidance.</string>
     <string name="exercise_no_calendars">No calendars found on this device.</string>
     <string name="exercise_calendar_missing_hint">Can\'t find your calendar? Go to Settings → Passwords \u0026 accounts → your Google account → Account sync, and toggle Calendar off then on.</string>
 
