@@ -22,7 +22,7 @@ object GraphRenderer {
     private const val ZONE_LOW = 0x20FF4D6A.toInt()
     private const val ZONE_HIGH = 0x20FFB800.toInt()
     private const val ZONE_IN_RANGE = 0x1256CCF2.toInt()
-    private const val COLOR_AXIS_TEXT = 0xFFA898C0.toInt()
+    private const val COLOR_AXIS_TEXT = 0xFF808080.toInt() // Medium gray — visible on both light and dark
 
     // Margins
     private const val MARGIN_COMPACT = 4f
@@ -64,8 +64,7 @@ object GraphRenderer {
     private const val EXERCISE_BORDER_ALPHA = 127
     private const val EXERCISE_BORDER_WIDTH = 2f
 
-    // Gradient
-    private const val GRADIENT_HEIGHT_FRACTION = 0.45f
+
 
     @Suppress("CyclomaticComplexMethod", "LongMethod") // Sequential render pipeline
     fun render(
@@ -190,15 +189,11 @@ object GraphRenderer {
         if (prediction != null) {
             val predPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 style = Paint.Style.FILL
-                color = Color.WHITE
-                alpha = PREDICTION_ALPHA
             }
             val predLinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 strokeWidth = LINE_WIDTH
                 style = Paint.Style.STROKE
                 pathEffect = DashPathEffect(floatArrayOf(DASH_LENGTH, DASH_LENGTH), 0f)
-                color = Color.WHITE
-                alpha = PREDICTION_ALPHA
             }
             var prevPx = xFor(prediction.anchorTs)
             var prevPy = yFor(prediction.anchorMgdl)
@@ -206,12 +201,16 @@ object GraphRenderer {
                 val px = xFor(prediction.anchorTs + pt.minuteOffset * MINUTE_IN_MS)
                 val py = yFor(pt.mgdl)
                 if (px > width - marginRight) break
+                val predColor = canvasColorFor(pt.mgdl, bgLow, bgHigh)
+                predLinePaint.color = predColor
+                predLinePaint.alpha = PREDICTION_ALPHA
+                predPaint.color = predColor
+                predPaint.alpha = PREDICTION_ALPHA
                 canvas.drawLine(prevPx, prevPy, px, py, predLinePaint)
                 canvas.drawCircle(px, py, dotR * COMPACT_DOT_SCALE, predPaint)
                 prevPx = px
                 prevPy = py
             }
-
         }
 
         // Axis labels (skip for compact)
@@ -252,18 +251,6 @@ object GraphRenderer {
                 }
                 yLabel += yStep
             }
-        }
-
-        // Top gradient for widget text readability (compact only)
-        if (compact) {
-            val gradientPaint = Paint().apply {
-                shader = LinearGradient(
-                    0f, 0f, 0f, height * GRADIENT_HEIGHT_FRACTION,
-                    0xE0000000.toInt(), 0x00000000,
-                    Shader.TileMode.CLAMP
-                )
-            }
-            canvas.drawRect(0f, 0f, width.toFloat(), height * GRADIENT_HEIGHT_FRACTION, gradientPaint)
         }
 
         return bitmap
