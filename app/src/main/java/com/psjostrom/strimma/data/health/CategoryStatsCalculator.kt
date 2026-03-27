@@ -39,7 +39,7 @@ object CategoryStatsCalculator {
             .sortedByDescending { it.sessionCount }
     }
 
-    private fun resolveProfile(
+    fun resolveProfile(
         session: StoredExerciseSession,
         context: ExerciseBGContext,
         maxHR: Int?
@@ -72,7 +72,7 @@ object CategoryStatsCalculator {
         val postHighests = contexts.mapNotNull { it.highestBG }
 
         val hypoCount = contexts.count { ctx ->
-            (ctx.minBG != null && ctx.minBG < bgLowMgdl) || ctx.postExerciseHypo
+            ctx.minBG != null && ctx.minBG < bgLowMgdl
         }
         val postHypoCount = contexts.count { it.postExerciseHypo }
 
@@ -89,7 +89,7 @@ object CategoryStatsCalculator {
                     avgMinBG = bc.mapNotNull { it.minBG }.let { if (it.isEmpty()) 0.0 else it.average() },
                     avgDropRate = bc.flatMap { it.dropPer10Min }.let { if (it.isEmpty()) 0.0 else it.average() },
                     hypoRate = bc.count { c ->
-                        (c.minBG != null && c.minBG < bgLowMgdl) || c.postExerciseHypo
+                        c.minBG != null && c.minBG < bgLowMgdl
                     }.toDouble() / bc.size,
                     avgPostNadir = bc.mapNotNull { it.lowestBG }.let { if (it.isEmpty()) null else it.average() }
                 )

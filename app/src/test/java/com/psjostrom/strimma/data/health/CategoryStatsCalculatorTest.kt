@@ -96,6 +96,19 @@ class CategoryStatsCalculatorTest {
     }
 
     @Test
+    fun `post-exercise hypo alone does not count as went low`() {
+        val data = listOf(
+            session(type = 56) to context(minBG = 120, postExerciseHypo = true),
+            session(type = 56) to context(minBG = 130, postExerciseHypo = true),
+            session(type = 56) to context(minBG = 110, postExerciseHypo = false),
+        )
+        val stats = CategoryStatsCalculator.computeByCategory(data, 72.0).first()
+        assertEquals(0, stats.hypoCount)
+        assertEquals(0.0, stats.hypoRate, 0.01)
+        assertEquals(2, stats.postHypoCount)
+    }
+
+    @Test
     fun `groups by entry BG band`() {
         val data = listOf(
             session(type = 56) to context(entryBG = 60),   // LOW (< 72)

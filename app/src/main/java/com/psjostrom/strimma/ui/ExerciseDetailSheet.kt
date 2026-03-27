@@ -94,13 +94,24 @@ fun ExerciseDetailSheet(
                 val timeFmt = SimpleDateFormat("HH:mm", Locale.getDefault())
                 val timeRange = "${timeFmt.format(Date(session.startTime))}\u2013${timeFmt.format(Date(session.endTime))}"
                 val header = "${category.emoji} $typeName \u00B7 $durationMin min \u00B7 $timeRange"
+                val profileName = bgContext?.let { ctx ->
+                    val profile = com.psjostrom.strimma.data.health.CategoryStatsCalculator
+                        .resolveProfile(session, ctx, null)
+                    profile.name.lowercase().replaceFirstChar { it.uppercase() }.replace('_', ' ')
+                } ?: category.defaultMetabolicProfile.name.lowercase()
+                    .replaceFirstChar { it.uppercase() }.replace('_', ' ')
 
                 Text(
                     text = header,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(bottom = 20.dp)
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = profileName,
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 16.dp)
                 )
 
                 if (bgContext == null) {
@@ -134,12 +145,6 @@ fun ExerciseDetailSheet(
                         stringResource(R.string.exercise_detail_min_bg),
                         bgContext.minBG?.let { glucoseUnit.format(it) } ?: noValue
                     )
-                    DetailRow(
-                        stringResource(R.string.exercise_detail_max_drop),
-                        bgContext.maxDropRate?.let {
-                            "${glucoseUnit.format(it)} ${stringResource(R.string.exercise_detail_per_10min)}"
-                        } ?: noValue
-                    )
                     bgContext.avgHR?.let { DetailRow(stringResource(R.string.exercise_detail_avg_hr), "$it bpm") }
                     bgContext.maxHR?.let { DetailRow(stringResource(R.string.exercise_detail_max_hr), "$it bpm") }
                     bgContext.totalSteps?.let { DetailRow(stringResource(R.string.exercise_detail_steps), "$it") }
@@ -152,37 +157,34 @@ fun ExerciseDetailSheet(
                     Spacer(Modifier.height(8.dp))
 
                     val isHypo = bgContext.postExerciseHypo
+
+                    // Lowest BG with time inline
+                    val lowestValue = buildString {
+                        append(bgContext.lowestBG?.let { glucoseUnit.format(it) } ?: noValue)
+                        bgContext.lowestBGTime?.let { lowestTime ->
+                            val minutesAfter = (lowestTime.toEpochMilli() - session.endTime) / MS_PER_MINUTE
+                            if (minutesAfter > 0) append(" \u00B7 after ${formatDuration(minutesAfter)}")
+                        }
+                    }
                     DetailRow(
                         stringResource(R.string.exercise_detail_lowest_bg),
-                        bgContext.lowestBG?.let { glucoseUnit.format(it) } ?: noValue,
+                        lowestValue,
                         valueColor = if (isHypo) BelowLow else null
                     )
 
-                    bgContext.lowestBGTime?.let { lowestTime ->
-                        val minutesAfter = (lowestTime.toEpochMilli() - session.endTime) / MS_PER_MINUTE
-                        if (minutesAfter > 0) {
-                            DetailRow(
-                                stringResource(R.string.exercise_detail_time_to_lowest),
-                                stringResource(R.string.exercise_detail_after_duration, formatDuration(minutesAfter))
-                            )
-                        }
-                    }
-
+                    // Highest BG with time inline
                     bgContext.highestBG?.let { highest ->
+                        val highestValue = buildString {
+                            append(glucoseUnit.format(highest))
+                            bgContext.highestBGTime?.let { highestTime ->
+                                val minutesAfter = (highestTime.toEpochMilli() - session.endTime) / MS_PER_MINUTE
+                                if (minutesAfter > 0) append(" \u00B7 after ${formatDuration(minutesAfter)}")
+                            }
+                        }
                         DetailRow(
                             stringResource(R.string.exercise_detail_highest_bg),
-                            glucoseUnit.format(highest)
+                            highestValue
                         )
-                    }
-
-                    bgContext.highestBGTime?.let { highestTime ->
-                        val minutesAfter = (highestTime.toEpochMilli() - session.endTime) / MS_PER_MINUTE
-                        if (minutesAfter > 0) {
-                            DetailRow(
-                                stringResource(R.string.exercise_detail_time_to_highest),
-                                stringResource(R.string.exercise_detail_after_duration, formatDuration(minutesAfter))
-                            )
-                        }
                     }
 
                     // Total drop: entry BG → overall lowest (during or post)

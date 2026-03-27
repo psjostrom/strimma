@@ -402,12 +402,17 @@
     <string name="exercise_patterns_empty">Keep exercising with Strimma running. After a few sessions of the same type, you\'ll see your personal BG patterns here.</string>
     <string name="exercise_patterns_by_activity">By Activity</string>
     <string name="exercise_patterns_by_profile">By Profile</string>
-    <string name="exercise_patterns_avg_drop">Avg drop</string>
-    <string name="exercise_patterns_typical_low">Typical low</string>
-    <string name="exercise_patterns_hypo_risk">Hypo risk</string>
-    <string name="exercise_patterns_per_10min">per 10 min</string>
-    <string name="exercise_patterns_sessions">sessions</string>
-    <string name="exercise_patterns_by_starting_bg">By starting BG:</string>
+    <string name="exercise_patterns_low_risk">LOW RISK</string>
+    <string name="exercise_patterns_some_risk">SOME RISK</string>
+    <string name="exercise_patterns_high_risk">HIGH RISK</string>
+    <string name="exercise_patterns_drop_summary">BG usually drops about %1$s</string>
+    <string name="exercise_patterns_went_low">Went low %1$d out of %2$d</string>
+    <string name="exercise_patterns_never_low">Never went low</string>
+    <string name="exercise_patterns_starting_high">Starting high?</string>
+    <string name="exercise_patterns_starting_in_range">Starting in range?</string>
+    <string name="exercise_patterns_starting_low">Starting low?</string>
+    <string name="exercise_patterns_went_low_short">went low %1$d%%</string>
+    <string name="exercise_patterns_never_low_short">never went low</string>
 
     <!-- Pre-activity guidance -->
     <string name="workout_settings_title">Workout Schedule</string>
