@@ -31,7 +31,7 @@ import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.calendar.CalendarInfo
 import com.psjostrom.strimma.data.calendar.CalendarReader
-import com.psjostrom.strimma.data.calendar.WorkoutCategory
+import com.psjostrom.strimma.data.health.ExerciseCategory
 import com.psjostrom.strimma.data.health.HealthConnectManager
 import com.psjostrom.strimma.data.health.HealthConnectStatus
 import com.psjostrom.strimma.ui.theme.AboveHigh
@@ -98,11 +98,16 @@ class ExerciseSettingsViewModel @Inject constructor(
     }
     fun setWorkoutLookaheadHours(hours: Int) { viewModelScope.launch { settings.setWorkoutLookaheadHours(hours) } }
     fun setWorkoutTriggerMinutes(minutes: Int) { viewModelScope.launch { settings.setWorkoutTriggerMinutes(minutes) } }
-    fun setWorkoutTarget(category: WorkoutCategory, low: Float, high: Float) {
-        viewModelScope.launch { settings.setWorkoutTarget(category, low, high) }
+    fun setExerciseTarget(category: ExerciseCategory, low: Float, high: Float) {
+        viewModelScope.launch { settings.setExerciseTarget(category, low, high) }
     }
-    fun workoutTargetLow(category: WorkoutCategory) = settings.workoutTargetLow(category)
-    fun workoutTargetHigh(category: WorkoutCategory) = settings.workoutTargetHigh(category)
+    fun exerciseTargetLow(category: ExerciseCategory) = settings.exerciseTargetLow(category)
+    fun exerciseTargetHigh(category: ExerciseCategory) = settings.exerciseTargetHigh(category)
+
+    val maxHeartRate: StateFlow<Int?> = settings.maxHeartRate
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    fun setMaxHeartRate(hr: Int?) { viewModelScope.launch { settings.setMaxHeartRate(hr) } }
 }
 
 @Composable
@@ -305,18 +310,38 @@ fun ExerciseSettings(
             }
 
             // Per-category target ranges
-            val settableCategories = listOf(
-                WorkoutCategory.EASY,
-                WorkoutCategory.INTERVAL,
-                WorkoutCategory.LONG,
-                WorkoutCategory.STRENGTH
-            )
+            val settableCategories = ExerciseCategory.entries.filter { it != ExerciseCategory.OTHER }
             for (category in settableCategories) {
-                WorkoutTargetRow(
+                ExerciseTargetRow(
                     category = category,
                     glucoseUnit = glucoseUnit,
                     viewModel = viewModel,
                     textColor = onBg
+                )
+            }
+
+            // Max HR setting
+            val maxHR by viewModel.maxHeartRate.collectAsState()
+            var maxHRText by remember(maxHR) { mutableStateOf(maxHR?.toString() ?: "") }
+
+            Column {
+                Text("Max heart rate", color = onBg, fontSize = 14.sp)
+                Text("Used for intensity-based exercise stats", color = outline, fontSize = 12.sp)
+                OutlinedTextField(
+                    value = maxHRText,
+                    onValueChange = { v ->
+                        maxHRText = v
+                        val parsed = v.toIntOrNull()
+                        if (parsed != null && parsed in 120..220) {
+                            viewModel.setMaxHeartRate(parsed)
+                        } else if (v.isBlank()) {
+                            viewModel.setMaxHeartRate(null)
+                        }
+                    },
+                    label = { Text("BPM") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
             }
         }
@@ -374,20 +399,25 @@ fun ExerciseSettings(
 }
 
 @Composable
-private fun WorkoutTargetRow(
-    category: WorkoutCategory,
+private fun ExerciseTargetRow(
+    category: ExerciseCategory,
     glucoseUnit: GlucoseUnit,
     viewModel: ExerciseSettingsViewModel,
     textColor: androidx.compose.ui.graphics.Color
 ) {
-    val low by viewModel.workoutTargetLow(category).collectAsState(initial = category.defaultTargetLowMgdl)
-    val high by viewModel.workoutTargetHigh(category).collectAsState(initial = category.defaultTargetHighMgdl)
+    val low by viewModel.exerciseTargetLow(category)
+        .collectAsState(initial = category.defaultMetabolicProfile.defaultTargetLowMgdl)
+    val high by viewModel.exerciseTargetHigh(category)
+        .collectAsState(initial = category.defaultMetabolicProfile.defaultTargetHighMgdl)
 
     var lowText by remember(low, glucoseUnit) { mutableStateOf(glucoseUnit.formatThreshold(low)) }
     var highText by remember(high, glucoseUnit) { mutableStateOf(glucoseUnit.formatThreshold(high)) }
 
     Column {
-        Text(category.name.lowercase().replaceFirstChar { it.uppercase() }, color = textColor, fontSize = 14.sp)
+        Text(
+            "${category.emoji} ${category.name.lowercase().replaceFirstChar { it.uppercase() }}",
+            color = textColor, fontSize = 14.sp
+        )
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -397,7 +427,7 @@ private fun WorkoutTargetRow(
                 onValueChange = { v ->
                     lowText = v
                     glucoseUnit.parseThreshold(v)?.let { parsed ->
-                        if (parsed < high) viewModel.setWorkoutTarget(category, parsed, high)
+                        if (parsed < high) viewModel.setExerciseTarget(category, parsed, high)
                     }
                 },
                 label = { Text("Low (${glucoseUnit.label})") },
@@ -410,7 +440,7 @@ private fun WorkoutTargetRow(
                 onValueChange = { v ->
                     highText = v
                     glucoseUnit.parseThreshold(v)?.let { parsed ->
-                        if (parsed > low) viewModel.setWorkoutTarget(category, low, parsed)
+                        if (parsed > low) viewModel.setExerciseTarget(category, low, parsed)
                     }
                 },
                 label = { Text("High (${glucoseUnit.label})") },

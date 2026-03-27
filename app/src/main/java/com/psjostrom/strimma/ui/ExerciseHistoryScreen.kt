@@ -4,7 +4,7 @@ package com.psjostrom.strimma.ui
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -17,6 +17,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.pullToRefresh
@@ -25,7 +26,6 @@ import androidx.compose.runtime.*
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -44,16 +44,22 @@ import com.psjostrom.strimma.data.TreatmentDao
 import com.psjostrom.strimma.data.fetchCurrentIOB
 import com.psjostrom.strimma.data.calendar.CalendarReader
 import com.psjostrom.strimma.data.calendar.GuidanceState
-import com.psjostrom.strimma.data.calendar.WorkoutCategory
+import com.psjostrom.strimma.data.calendar.ReadinessLevel
 import com.psjostrom.strimma.data.calendar.WorkoutEvent
 import com.psjostrom.strimma.data.health.ExerciseBGAnalyzer
+import com.psjostrom.strimma.data.health.BGBand
+import com.psjostrom.strimma.data.health.CategoryStats
+import com.psjostrom.strimma.data.health.CategoryStatsCalculator
 import com.psjostrom.strimma.data.health.ExerciseBGContext
 import com.psjostrom.strimma.data.health.ExerciseCategory
 import com.psjostrom.strimma.data.health.ExerciseDao
 import com.psjostrom.strimma.data.health.StoredExerciseSession
+import com.psjostrom.strimma.ui.theme.AboveHigh
 import com.psjostrom.strimma.ui.theme.BelowLow
-import com.psjostrom.strimma.ui.theme.ExerciseDefault
 import com.psjostrom.strimma.ui.theme.InRange
+import com.psjostrom.strimma.ui.theme.TintDanger
+import com.psjostrom.strimma.ui.theme.TintInRange
+import com.psjostrom.strimma.ui.theme.TintWarning
 import kotlinx.coroutines.flow.first
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
@@ -95,6 +101,9 @@ class ExerciseHistoryViewModel @Inject constructor(
 
     val bgLow: StateFlow<Float> = settings.bgLow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 72f)
+
+    val maxHeartRate: StateFlow<Int?> = settings.maxHeartRate
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     val workoutCalendarId: StateFlow<Long> = settings.workoutCalendarId
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), -1L)
@@ -161,13 +170,20 @@ class ExerciseHistoryViewModel @Inject constructor(
         return exerciseBGAnalyzer.analyze(session, readings, hrSamples, bgLow.value.toDouble())
     }
 
+    suspend fun computeAllBGContexts(): List<Pair<StoredExerciseSession, ExerciseBGContext>> {
+        val allSessions = exerciseDao.getAllSessionsList()
+        return allSessions.mapNotNull { session ->
+            computeBGContext(session)?.let { ctx -> session to ctx }
+        }
+    }
+
     suspend fun computePlannedGuidance(event: WorkoutEvent): GuidanceState {
         val now = System.currentTimeMillis()
         val readings = readingDao.readingsInRange(now - MS_PER_DAY, now)
         val latest = readings.maxByOrNull { it.ts }
         val iob = fetchCurrentIOB(settings, treatmentDao, now)
-        val targetLow = settings.workoutTargetLow(event.category).first()
-        val targetHigh = settings.workoutTargetHigh(event.category).first()
+        val targetLow = settings.exerciseTargetLow(event.category).first()
+        val targetHigh = settings.exerciseTargetHigh(event.category).first()
 
         return MainViewModel.computeGuidance(
             event, latest, readings, iob,
@@ -197,7 +213,8 @@ fun ExerciseHistoryScreen(
 
     val tabs = listOf(
         stringResource(R.string.exercise_tab_planned),
-        stringResource(R.string.exercise_tab_completed)
+        stringResource(R.string.exercise_tab_completed),
+        stringResource(R.string.exercise_tab_patterns)
     )
     val pagerState = rememberPagerState { tabs.size }
 
@@ -332,6 +349,7 @@ fun ExerciseHistoryScreen(
                         viewModel = viewModel,
                         onSessionClick = { selectedExercise = it }
                     )
+                    2 -> PatternsTab(viewModel = viewModel, glucoseUnit = glucoseUnit)
                 }
             }
         }
@@ -469,18 +487,22 @@ private fun PlannedTab(
                 )
         ) {
             if (workouts.isEmpty()) {
-                Box(
+                Column(
                     modifier = Modifier
                         .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
                         .padding(32.dp),
-                    contentAlignment = Alignment.Center
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    Spacer(Modifier.weight(1f))
                     Text(
                         text = stringResource(R.string.exercise_planned_empty),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 14.sp,
                         lineHeight = 20.sp
                     )
+                    Spacer(Modifier.weight(1f))
                 }
             } else {
                 LazyColumn(
@@ -521,8 +543,8 @@ private fun PlannedWorkoutCard(
     val timeRange = "${timeFmt.format(Date(event.startTime))}\u2013${timeFmt.format(Date(event.endTime))}"
     val durationMin = ((event.endTime - event.startTime) / MS_PER_MINUTE).toInt()
     val categoryName = event.category.name.lowercase().replaceFirstChar { it.uppercase() }
-    val targetLow = glucoseUnit.format(event.category.defaultTargetLowMgdl.toDouble())
-    val targetHigh = glucoseUnit.format(event.category.defaultTargetHighMgdl.toDouble())
+    val targetLow = glucoseUnit.format(event.metabolicProfile.defaultTargetLowMgdl.toDouble())
+    val targetHigh = glucoseUnit.format(event.metabolicProfile.defaultTargetHighMgdl.toDouble())
 
     Surface(
         modifier = Modifier
@@ -545,10 +567,12 @@ private fun PlannedWorkoutCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(Modifier.height(6.dp))
+            val profileName = event.metabolicProfile.name.lowercase()
+                .replaceFirstChar { it.uppercase() }.replace('_', ' ')
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 StatChip(
                     label = stringResource(R.string.exercise_planned_category),
-                    value = categoryName
+                    value = "$categoryName \u00B7 $profileName"
                 )
                 StatChip(
                     label = stringResource(R.string.exercise_planned_target),
@@ -659,9 +683,18 @@ private fun ExerciseCard(
 
             Spacer(Modifier.height(4.dp))
 
-            // Subtitle: date + time range
+            // Subtitle: date + time range + metabolic profile
+            val maxHR by viewModel.maxHeartRate.collectAsState()
+            val profileName = bgContext?.let { ctx ->
+                val profile = CategoryStatsCalculator.resolveProfile(session, ctx, maxHR)
+                profile.name.lowercase().replaceFirstChar { it.uppercase() }.replace('_', ' ')
+            }
+            val subtitle = buildString {
+                append("$dateStr \u00B7 $timeRange")
+                profileName?.let { append(" \u00B7 $it") }
+            }
             Text(
-                text = "$dateStr \u00B7 $timeRange",
+                text = subtitle,
                 fontSize = 13.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -699,33 +732,23 @@ private fun ExerciseCard(
 }
 
 @Composable
-private fun StatChip(
-    label: String,
-    value: String,
-    valueColor: androidx.compose.ui.graphics.Color? = null
-) {
-    Column {
-        Text(
-            text = label,
-            fontSize = 11.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = value,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
-            color = valueColor ?: MaterialTheme.colorScheme.onSurface
-        )
-    }
-}
-
-@Composable
 private fun PlannedWorkoutSheet(
     event: WorkoutEvent,
     guidance: GuidanceState?,
     glucoseUnit: GlucoseUnit,
     onDismiss: () -> Unit
 ) {
+    // Use the guidance card's tinted background when available
+    val (bgColor, borderColor) = if (guidance is GuidanceState.WorkoutApproaching) {
+        when (guidance.readiness) {
+            ReadinessLevel.READY -> TintInRange to MaterialTheme.colorScheme.outlineVariant
+            ReadinessLevel.CAUTION -> TintWarning to MaterialTheme.colorScheme.outlineVariant
+            ReadinessLevel.WAIT -> TintDanger to MaterialTheme.colorScheme.outlineVariant
+        }
+    } else {
+        MaterialTheme.colorScheme.surface to MaterialTheme.colorScheme.outlineVariant
+    }
+
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
@@ -735,8 +758,8 @@ private fun PlannedWorkoutSheet(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 48.dp),
             shape = RoundedCornerShape(20.dp),
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 2.dp
+            color = bgColor,
+            border = BorderStroke(1.dp, borderColor)
         ) {
             Column(
                 modifier = Modifier
@@ -749,7 +772,7 @@ private fun PlannedWorkoutSheet(
                 ) {
                     IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
                         Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
+                            Icons.Default.Close,
                             contentDescription = stringResource(R.string.common_content_desc_back),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(20.dp)
@@ -758,7 +781,57 @@ private fun PlannedWorkoutSheet(
                 }
 
                 if (guidance is GuidanceState.WorkoutApproaching) {
-                    PreActivityCard(state = guidance, glucoseUnit = glucoseUnit)
+                    // Render guidance content directly — no nested card
+                    val (badgeColor, badgeText) = when (guidance.readiness) {
+                        ReadinessLevel.READY -> InRange to "READY"
+                        ReadinessLevel.CAUTION -> AboveHigh to "HEADS UP"
+                        ReadinessLevel.WAIT -> BelowLow to "HOLD ON"
+                    }
+                    val timeText = formatTimeUntil(event.startTime - System.currentTimeMillis())
+                    val targetLow = glucoseUnit.format(guidance.targetLowMgdl.toDouble())
+                    val targetHigh = glucoseUnit.format(guidance.targetHighMgdl.toDouble())
+
+                    Text(
+                        text = "${event.title} in $timeText",
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = badgeText,
+                        color = badgeColor,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 1.sp
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = "Target: $targetLow\u2013$targetHigh ${glucoseUnit.label}",
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontSize = 13.sp
+                    )
+                    val currentLine = buildString {
+                        append("Current: ${glucoseUnit.format(guidance.currentBgMgdl)} ${guidance.trendArrow}")
+                        if (guidance.iob > 0.0) append("  \u00B7  IOB ${"%.1f".format(guidance.iob)}u")
+                    }
+                    Text(currentLine, color = MaterialTheme.colorScheme.onBackground, fontSize = 13.sp)
+
+                    for (reason in guidance.reasons) {
+                        Spacer(Modifier.height(4.dp))
+                        Text(reason.message, color = MaterialTheme.colorScheme.outline, fontSize = 12.sp)
+                    }
+                    if (guidance.suggestions.isNotEmpty()) {
+                        Spacer(Modifier.height(8.dp))
+                        for (suggestion in guidance.suggestions) {
+                            Text(
+                                text = suggestion,
+                                color = MaterialTheme.colorScheme.onBackground,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
                 } else {
                     val dateFmt = remember { SimpleDateFormat("EEE d MMM", Locale.getDefault()) }
                     val timeFmt = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
@@ -766,8 +839,10 @@ private fun PlannedWorkoutSheet(
                     val timeRange = "${timeFmt.format(Date(event.startTime))}\u2013${timeFmt.format(Date(event.endTime))}"
                     val durationMin = ((event.endTime - event.startTime) / MS_PER_MINUTE).toInt()
                     val categoryName = event.category.name.lowercase().replaceFirstChar { it.uppercase() }
-                    val targetLow = glucoseUnit.format(event.category.defaultTargetLowMgdl.toDouble())
-                    val targetHigh = glucoseUnit.format(event.category.defaultTargetHighMgdl.toDouble())
+                    val profileName = event.metabolicProfile.name.lowercase()
+                        .replaceFirstChar { it.uppercase() }.replace('_', ' ')
+                    val targetLow = glucoseUnit.format(event.metabolicProfile.defaultTargetLowMgdl.toDouble())
+                    val targetHigh = glucoseUnit.format(event.metabolicProfile.defaultTargetHighMgdl.toDouble())
 
                     Text(
                         text = event.title,
@@ -783,7 +858,7 @@ private fun PlannedWorkoutSheet(
                     )
                     Spacer(Modifier.height(12.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        StatChip(label = stringResource(R.string.exercise_planned_category), value = categoryName)
+                        StatChip(label = stringResource(R.string.exercise_planned_category), value = "$categoryName \u00B7 $profileName")
                         StatChip(label = stringResource(R.string.exercise_planned_target), value = "$targetLow\u2013$targetHigh")
                     }
                     Spacer(Modifier.height(12.dp))
@@ -798,44 +873,265 @@ private fun PlannedWorkoutSheet(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun BGSparkline(
-    readings: List<GlucoseReading>,
-    modifier: Modifier = Modifier
+private fun PatternsTab(
+    viewModel: ExerciseHistoryViewModel,
+    glucoseUnit: GlucoseUnit
 ) {
-    val sparkColor = ExerciseDefault
-    Canvas(modifier = modifier) {
-        if (readings.size < 2) return@Canvas
+    val bgLow by viewModel.bgLow.collectAsState()
+    val maxHR by viewModel.maxHeartRate.collectAsState()
 
-        val sorted = readings.sortedBy { it.ts }
-        val minTs = sorted.first().ts
-        val maxTs = sorted.last().ts
-        val tsRange = (maxTs - minTs).toFloat()
-        if (tsRange <= 0f) return@Canvas
+    var selectedIndex by remember { mutableIntStateOf(0) }
+    var isLoading by remember { mutableStateOf(true) }
+    var allData by remember {
+        mutableStateOf<List<Pair<StoredExerciseSession, ExerciseBGContext>>>(emptyList())
+    }
 
-        val minSgv = sorted.minOf { it.sgv }.toFloat()
-        val maxSgv = sorted.maxOf { it.sgv }.toFloat()
-        val sgvRange = (maxSgv - minSgv).coerceAtLeast(20f)
+    LaunchedEffect(Unit) {
+        allData = viewModel.computeAllBGContexts()
+        isLoading = false
+    }
 
-        val w = size.width
-        val h = size.height
-        val pad = 2f
+    val categories = remember(allData, bgLow, maxHR, selectedIndex) {
+        if (allData.isEmpty()) emptyList()
+        else if (selectedIndex == 0) {
+            CategoryStatsCalculator.computeByCategory(allData, bgLow.toDouble())
+        } else {
+            CategoryStatsCalculator.computeByProfile(allData, bgLow.toDouble(), maxHR)
+        }
+    }
 
-        var prevX = 0f
-        var prevY = 0f
-        for ((i, r) in sorted.withIndex()) {
-            val x = pad + ((r.ts - minTs) / tsRange) * (w - 2 * pad)
-            val y = pad + ((maxSgv - r.sgv) / sgvRange) * (h - 2 * pad)
-            if (i > 0) {
-                drawLine(
-                    color = sparkColor,
-                    start = Offset(prevX, prevY),
-                    end = Offset(x, y),
-                    strokeWidth = 2f
+    Column(modifier = Modifier.fillMaxSize()) {
+        SingleChoiceSegmentedButtonRow(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        ) {
+            val options = listOf(
+                stringResource(R.string.exercise_patterns_by_activity),
+                stringResource(R.string.exercise_patterns_by_profile)
+            )
+            options.forEachIndexed { index, label ->
+                SegmentedButton(
+                    selected = selectedIndex == index,
+                    onClick = { selectedIndex = index },
+                    shape = SegmentedButtonDefaults.itemShape(
+                        index = index,
+                        count = options.size
+                    )
+                ) {
+                    Text(label, fontSize = 13.sp)
+                }
+            }
+        }
+
+        if (isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        } else if (categories.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(32.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = stringResource(R.string.exercise_patterns_empty),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp
                 )
             }
-            prevX = x
-            prevY = y
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(vertical = 8.dp)
+            ) {
+                items(categories, key = { "${it.category}_${it.metabolicProfile}" }) { stats ->
+                    PatternCard(
+                        stats = stats,
+                        isProfileView = selectedIndex == 1,
+                        glucoseUnit = glucoseUnit
+                    )
+                }
+            }
+        }
+    }
+}
+
+private const val HYPO_SOME_RISK_THRESHOLD = 0.10
+private const val HYPO_HIGH_RISK_THRESHOLD = 0.25
+private const val BAND_HYPO_WARNING_THRESHOLD = 0.20
+
+@Composable
+private fun PatternCard(
+    stats: CategoryStats,
+    isProfileView: Boolean,
+    glucoseUnit: GlucoseUnit
+) {
+    val title = if (isProfileView) {
+        val profile = stats.metabolicProfile
+        profile?.name?.lowercase()?.replaceFirstChar { it.uppercase() }?.replace('_', ' ')
+            ?: "Unknown"
+    } else {
+        "${stats.category.emoji} ${stats.category.name.lowercase().replaceFirstChar { it.uppercase() }}"
+    }
+
+    // Risk badge
+    val (badgeText, badgeColor, badgeBg) = when {
+        stats.hypoRate >= HYPO_HIGH_RISK_THRESHOLD -> Triple(
+            stringResource(R.string.exercise_patterns_high_risk), BelowLow, TintDanger
+        )
+        stats.hypoRate >= HYPO_SOME_RISK_THRESHOLD -> Triple(
+            stringResource(R.string.exercise_patterns_some_risk), AboveHigh, TintWarning
+        )
+        else -> Triple(
+            stringResource(R.string.exercise_patterns_low_risk), InRange, TintInRange
+        )
+    }
+
+    // Total drop: entry BG → lowest during exercise
+    val totalDrop = stats.avgEntryBG - stats.avgMinBG
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            // Header: title + session count + risk badge
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = title,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(Modifier.width(8.dp))
+                Surface(
+                    shape = RoundedCornerShape(100),
+                    color = badgeBg
+                ) {
+                    Text(
+                        text = badgeText,
+                        color = badgeColor,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 0.5.sp,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
+                    )
+                }
+            }
+
+            // Session count
+            Text(
+                text = "${stats.sessionCount} sessions",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(Modifier.height(10.dp))
+
+            // Hero: total drop in plain language
+            if (totalDrop > 0) {
+                Text(
+                    text = stringResource(
+                        R.string.exercise_patterns_drop_summary,
+                        glucoseUnit.format(totalDrop)
+                    ),
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            // Hypo summary in natural frequencies
+            if (stats.hypoCount > 0) {
+                Text(
+                    text = stringResource(
+                        R.string.exercise_patterns_went_low,
+                        stats.hypoCount,
+                        stats.sessionCount
+                    ),
+                    fontSize = 14.sp,
+                    color = if (stats.hypoRate >= HYPO_HIGH_RISK_THRESHOLD) BelowLow
+                        else MaterialTheme.colorScheme.onSurface
+                )
+            } else {
+                Text(
+                    text = stringResource(R.string.exercise_patterns_never_low),
+                    fontSize = 14.sp,
+                    color = InRange
+                )
+            }
+
+            // Entry BG band breakdown
+            if (stats.statsByEntryBand.isNotEmpty()) {
+                Spacer(Modifier.height(10.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                Spacer(Modifier.height(8.dp))
+
+                for ((band, bandStats) in stats.statsByEntryBand.entries.sortedBy { it.key.ordinal }) {
+                    val bandHypoPercent = (bandStats.hypoRate * 100).toInt()
+                    val hasRisk = bandStats.hypoRate >= BAND_HYPO_WARNING_THRESHOLD
+                    val bandColor = when (band) {
+                        BGBand.LOW -> BelowLow
+                        BGBand.LOW_RANGE -> BelowLow.copy(alpha = 0.7f)
+                        BGBand.MID_RANGE -> InRange
+                        BGBand.HIGH -> AboveHigh
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 3.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Colored dot
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .background(bandColor, RoundedCornerShape(100))
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        // Band label + count
+                        Text(
+                            text = "${band.label} (${bandStats.sessionCount})",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f)
+                        )
+                        // Outcome
+                        if (bandHypoPercent > 0) {
+                            Text(
+                                text = "low $bandHypoPercent%",
+                                fontSize = 13.sp,
+                                fontWeight = if (hasRisk) FontWeight.SemiBold else FontWeight.Normal,
+                                color = if (hasRisk) BelowLow else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        } else {
+                            Text(
+                                text = "\u2713",
+                                fontSize = 13.sp,
+                                color = InRange
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }

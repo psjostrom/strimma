@@ -262,6 +262,13 @@
     <string name="exercise_type_walking">Marche</string>
     <string name="exercise_type_cycling">V\u00E9lo</string>
     <string name="exercise_type_swimming">Natation</string>
+    <string name="exercise_type_hiking">Randonn\u00E9e</string>
+    <string name="exercise_type_strength">Musculation</string>
+    <string name="exercise_type_yoga">Yoga</string>
+    <string name="exercise_type_rowing">Aviron</string>
+    <string name="exercise_type_skiing">Ski</string>
+    <string name="exercise_type_climbing">Escalade</string>
+    <string name="exercise_type_martial_arts">Arts martiaux</string>
     <string name="exercise_type_other">Exercice</string>
 
     <!-- Exercise Detail -->
@@ -271,20 +278,15 @@
     <string name="exercise_detail_entry_bg">Entr\u00E9e</string>
     <string name="exercise_detail_min_bg">Min</string>
     <string name="exercise_detail_lowest_bg">Le plus bas</string>
-    <string name="exercise_detail_max_drop">Chute max</string>
     <string name="exercise_detail_avg_hr">FC moy.</string>
     <string name="exercise_detail_max_hr">FC max</string>
     <string name="exercise_detail_steps">Pas</string>
     <string name="exercise_detail_calories">Calories</string>
-    <string name="exercise_detail_time_to_lowest">Temps au plus bas</string>
     <string name="exercise_detail_highest_bg">Plus haut</string>
-    <string name="exercise_detail_time_to_highest">Temps au plus haut</string>
     <string name="exercise_detail_total_drop">Chute totale</string>
     <string name="exercise_detail_post_hypo">Hypo post-exercice</string>
     <string name="exercise_detail_no_data">Pas assez de donn\u00E9es de glucose</string>
     <string name="exercise_detail_no_value">\u2014</string>
-    <string name="exercise_detail_per_10min">par 10 min</string>
-    <string name="exercise_detail_after_duration">%s apr\u00E8s</string>
     <string name="exercise_history_title">Exercice</string>
     <string name="exercise_history_empty">Aucune s\u00E9ance d\u2019exercice. Connectez Health Connect dans les param\u00E8tres pour voir vos entra\u00EEnements ici.</string>
     <string name="hc_rationale_title">Autorisations Health Connect</string>
@@ -363,6 +365,18 @@
     <string name="exercise_no_bg_data">Aucune donnée BG récente disponible pour les recommandations.</string>
     <string name="exercise_no_calendars">Aucun calendrier trouvé sur cet appareil.</string>
     <string name="exercise_calendar_missing_hint">Calendrier introuvable ? Allez dans Paramètres → Mots de passe \u0026 comptes → votre compte Google → Synchronisation du compte et désactivez puis réactivez Calendrier.</string>
+
+    <!-- Patterns tab -->
+    <string name="exercise_tab_patterns">Tendances</string>
+    <string name="exercise_patterns_empty">Continuez à vous entraîner avec Strimma. Après quelques séances du même type, vos tendances glycémiques personnelles apparaîtront ici.</string>
+    <string name="exercise_patterns_by_activity">Par activit\u00E9</string>
+    <string name="exercise_patterns_by_profile">Par profil</string>
+    <string name="exercise_patterns_low_risk">RISQUE FAIBLE</string>
+    <string name="exercise_patterns_some_risk">RISQUE MOD\u00C9R\u00C9</string>
+    <string name="exercise_patterns_high_risk">RISQUE \u00C9LEV\u00C9</string>
+    <string name="exercise_patterns_drop_summary">La glyc\u00E9mie baisse g\u00E9n\u00E9ralement d\'environ %1$s</string>
+    <string name="exercise_patterns_went_low">Hypoglyc\u00E9mie %1$d sur %2$d</string>
+    <string name="exercise_patterns_never_low">Jamais d\'hypoglyc\u00E9mie</string>
 
     <!-- Pre-activity guidance -->
     <string name="workout_settings_title">Programme d\'entraînement</string>

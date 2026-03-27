@@ -418,8 +418,8 @@ class StrimmaService : Service() {
                     bgLow.value.toDouble(), bgHigh.value.toDouble()
                 )
                 val forecastBg = prediction?.points?.lastOrNull()?.mgdl
-                val targetLow = settings.workoutTargetLow(event.category).first()
-                val targetHigh = settings.workoutTargetHigh(event.category).first()
+                val targetLow = settings.exerciseTargetLow(event.category).first()
+                val targetHigh = settings.exerciseTargetHigh(event.category).first()
                 val result = com.psjostrom.strimma.data.calendar.PreActivityAssessor.assess(
                     currentBgMgdl = latest.sgv,
                     velocityMgdlPerMin = velocity,

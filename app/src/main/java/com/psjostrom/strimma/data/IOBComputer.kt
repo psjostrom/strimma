@@ -5,7 +5,7 @@ import kotlin.math.exp
 
 /**
  * One-shot IOB fetch: reads current settings and treatments, returns IOB.
- * Shared by MainViewModel (reactive guidance) and ExerciseHistoryViewModel (on-demand guidance).
+ * Used by ExerciseHistoryViewModel for on-demand guidance.
  */
 suspend fun fetchCurrentIOB(
     settings: SettingsRepository,

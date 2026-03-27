@@ -270,6 +270,13 @@
     <string name="exercise_type_walking">Walk</string>
     <string name="exercise_type_cycling">Ride</string>
     <string name="exercise_type_swimming">Swim</string>
+    <string name="exercise_type_hiking">Hiking</string>
+    <string name="exercise_type_strength">Strength</string>
+    <string name="exercise_type_yoga">Yoga</string>
+    <string name="exercise_type_rowing">Rowing</string>
+    <string name="exercise_type_skiing">Skiing</string>
+    <string name="exercise_type_climbing">Climbing</string>
+    <string name="exercise_type_martial_arts">Martial Arts</string>
     <string name="exercise_type_other">Exercise</string>
 
     <!-- Exercise Settings -->
@@ -298,20 +305,15 @@
     <string name="exercise_detail_entry_bg">Entry</string>
     <string name="exercise_detail_min_bg">Min</string>
     <string name="exercise_detail_lowest_bg">Lowest</string>
-    <string name="exercise_detail_max_drop">Max drop</string>
     <string name="exercise_detail_avg_hr">Avg HR</string>
     <string name="exercise_detail_max_hr">Max HR</string>
     <string name="exercise_detail_steps">Steps</string>
     <string name="exercise_detail_calories">Calories</string>
-    <string name="exercise_detail_time_to_lowest">Time to lowest</string>
     <string name="exercise_detail_highest_bg">Highest</string>
-    <string name="exercise_detail_time_to_highest">Time to highest</string>
     <string name="exercise_detail_total_drop">Total drop</string>
     <string name="exercise_detail_post_hypo">Post-exercise low</string>
     <string name="exercise_detail_no_data">Not enough glucose data</string>
     <string name="exercise_detail_no_value">\u2014</string>
-    <string name="exercise_detail_per_10min">per 10 min</string>
-    <string name="exercise_detail_after_duration">%s after</string>
     <string name="exercise_history_title">Exercise</string>
     <string name="exercise_history_empty">No exercise sessions yet. Connect Health Connect in Settings to see your workouts here.</string>
 
@@ -389,6 +391,18 @@
     <string name="exercise_no_bg_data">No recent BG data available for guidance.</string>
     <string name="exercise_no_calendars">No calendars found on this device.</string>
     <string name="exercise_calendar_missing_hint">Can\'t find your calendar? Go to Settings → Passwords \u0026 accounts → your Google account → Account sync, and toggle Calendar off then on.</string>
+
+    <!-- Patterns tab -->
+    <string name="exercise_tab_patterns">Patterns</string>
+    <string name="exercise_patterns_empty">Keep exercising with Strimma running. After a few sessions of the same type, you\'ll see your personal BG patterns here.</string>
+    <string name="exercise_patterns_by_activity">By Activity</string>
+    <string name="exercise_patterns_by_profile">By Profile</string>
+    <string name="exercise_patterns_low_risk">LOW RISK</string>
+    <string name="exercise_patterns_some_risk">SOME RISK</string>
+    <string name="exercise_patterns_high_risk">HIGH RISK</string>
+    <string name="exercise_patterns_drop_summary">BG usually drops about %1$s</string>
+    <string name="exercise_patterns_went_low" tools:ignore="PluralsCandidate">Went low %1$d out of %2$d</string>
+    <string name="exercise_patterns_never_low">Never went low</string>
 
     <!-- Pre-activity guidance -->
     <string name="workout_settings_title">Workout Schedule</string>

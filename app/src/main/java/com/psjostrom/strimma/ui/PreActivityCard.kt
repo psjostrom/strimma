@@ -99,7 +99,7 @@ fun PreActivityCard(
     }
 }
 
-private fun formatTimeUntil(ms: Long): String {
+internal fun formatTimeUntil(ms: Long): String {
     if (ms <= 0) return "now"
     val totalMinutes = (ms / MS_PER_MINUTE).toInt()
     val hours = totalMinutes / MINUTES_PER_HOUR

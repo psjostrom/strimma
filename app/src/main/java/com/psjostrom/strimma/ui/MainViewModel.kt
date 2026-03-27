@@ -14,8 +14,8 @@ import com.psjostrom.strimma.receiver.DebugLog
 import com.psjostrom.strimma.data.calendar.CalendarReader
 import com.psjostrom.strimma.data.calendar.GuidanceState
 import com.psjostrom.strimma.data.calendar.PreActivityAssessor
-import com.psjostrom.strimma.data.calendar.WorkoutCategory
 import com.psjostrom.strimma.data.calendar.WorkoutEvent
+import com.psjostrom.strimma.data.health.ExerciseCategory
 import com.psjostrom.strimma.data.health.ExerciseBGAnalyzer
 import com.psjostrom.strimma.data.health.ExerciseBGContext
 import com.psjostrom.strimma.data.health.ExerciseDao
@@ -316,8 +316,8 @@ class MainViewModel @Inject constructor(
     }
     fun setWorkoutLookaheadHours(hours: Int) = viewModelScope.launch { settings.setWorkoutLookaheadHours(hours) }
     fun setWorkoutTriggerMinutes(minutes: Int) = viewModelScope.launch { settings.setWorkoutTriggerMinutes(minutes) }
-    fun setWorkoutTarget(category: WorkoutCategory, low: Float, high: Float) =
-        viewModelScope.launch { settings.setWorkoutTarget(category, low, high) }
+    fun setExerciseTarget(category: ExerciseCategory, low: Float, high: Float) =
+        viewModelScope.launch { settings.setExerciseTarget(category, low, high) }
 
     init {
         viewModelScope.launch {
@@ -347,8 +347,8 @@ class MainViewModel @Inject constructor(
         iob,
         glucoseUnit
     ) { event, latest, allReadings, iobVal, unit ->
-        val targetLow = event?.let { settings.workoutTargetLow(it.category).first() } ?: 0f
-        val targetHigh = event?.let { settings.workoutTargetHigh(it.category).first() } ?: 0f
+        val targetLow = event?.let { settings.exerciseTargetLow(it.category).first() } ?: 0f
+        val targetHigh = event?.let { settings.exerciseTargetHigh(it.category).first() } ?: 0f
         computeGuidance(
             event, latest, allReadings, iobVal,
             targetLow, targetHigh,

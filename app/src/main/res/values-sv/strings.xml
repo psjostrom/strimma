@@ -262,6 +262,13 @@
     <string name="exercise_type_walking">Promenad</string>
     <string name="exercise_type_cycling">Cykling</string>
     <string name="exercise_type_swimming">Simning</string>
+    <string name="exercise_type_hiking">Vandring</string>
+    <string name="exercise_type_strength">Styrka</string>
+    <string name="exercise_type_yoga">Yoga</string>
+    <string name="exercise_type_rowing">Rodd</string>
+    <string name="exercise_type_skiing">Skid\u00E5kning</string>
+    <string name="exercise_type_climbing">Kl\u00E4ttring</string>
+    <string name="exercise_type_martial_arts">Kampsport</string>
     <string name="exercise_type_other">Tr\u00E4ning</string>
 
     <!-- Exercise Detail -->
@@ -271,20 +278,15 @@
     <string name="exercise_detail_entry_bg">Ing\u00E5ng</string>
     <string name="exercise_detail_min_bg">Min</string>
     <string name="exercise_detail_lowest_bg">L\u00E4gsta</string>
-    <string name="exercise_detail_max_drop">Max fall</string>
     <string name="exercise_detail_avg_hr">Snitt HF</string>
     <string name="exercise_detail_max_hr">Max HF</string>
     <string name="exercise_detail_steps">Steg</string>
     <string name="exercise_detail_calories">Kalorier</string>
-    <string name="exercise_detail_time_to_lowest">Tid till l\u00E4gsta</string>
     <string name="exercise_detail_highest_bg">H\u00F6gsta</string>
-    <string name="exercise_detail_time_to_highest">Tid till h\u00F6gsta</string>
     <string name="exercise_detail_total_drop">Totalt fall</string>
     <string name="exercise_detail_post_hypo">L\u00E5gt efter tr\u00E4ning</string>
     <string name="exercise_detail_no_data">Inte tillr\u00E4ckligt med glukosdata</string>
     <string name="exercise_detail_no_value">\u2014</string>
-    <string name="exercise_detail_per_10min">per 10 min</string>
-    <string name="exercise_detail_after_duration">%s efter</string>
     <string name="exercise_history_title">Tr\u00E4ning</string>
     <string name="exercise_history_empty">Inga tr\u00E4ningspass \u00E4nnu. Anslut Health Connect i Inst\u00E4llningar f\u00F6r att se dina tr\u00E4ningar h\u00E4r.</string>
     <string name="hc_rationale_title">Health Connect-beh\u00F6righeter</string>
@@ -363,6 +365,18 @@
     <string name="exercise_no_bg_data">Ingen aktuell BG-data tillgänglig för vägledning.</string>
     <string name="exercise_no_calendars">Inga kalendrar hittades på enheten.</string>
     <string name="exercise_calendar_missing_hint">Hittar du inte din kalender? Gå till Inställningar → Lösenord \u0026 konton → ditt Google-konto → Kontosynkronisering och stäng av och slå på Kalender.</string>
+
+    <!-- Patterns tab -->
+    <string name="exercise_tab_patterns">M\u00F6nster</string>
+    <string name="exercise_patterns_empty">Forts\u00E4tt tr\u00E4na med Strimma ig\u00E5ng. Efter n\u00E5gra pass av samma typ ser du dina personliga BG-m\u00F6nster h\u00E4r.</string>
+    <string name="exercise_patterns_by_activity">Per aktivitet</string>
+    <string name="exercise_patterns_by_profile">Per profil</string>
+    <string name="exercise_patterns_low_risk">L\u00C5G RISK</string>
+    <string name="exercise_patterns_some_risk">VISS RISK</string>
+    <string name="exercise_patterns_high_risk">H\u00D6G RISK</string>
+    <string name="exercise_patterns_drop_summary">BG sjunker vanligtvis ungef\u00E4r %1$s</string>
+    <string name="exercise_patterns_went_low">Blev l\u00E5gt %1$d av %2$d</string>
+    <string name="exercise_patterns_never_low">Blev aldrig l\u00E5gt</string>
 
     <!-- Pre-activity guidance -->
     <string name="workout_settings_title">Träningsschema</string>

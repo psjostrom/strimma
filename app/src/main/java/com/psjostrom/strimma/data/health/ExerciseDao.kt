@@ -24,6 +24,9 @@ interface ExerciseDao {
     @Query("SELECT * FROM exercise_sessions ORDER BY startTime DESC")
     fun getAllSessions(): Flow<List<StoredExerciseSession>>
 
+    @Query("SELECT * FROM exercise_sessions ORDER BY startTime DESC")
+    suspend fun getAllSessionsList(): List<StoredExerciseSession>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertSession(session: StoredExerciseSession)
 

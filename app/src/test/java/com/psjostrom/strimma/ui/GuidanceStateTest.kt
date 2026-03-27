@@ -3,8 +3,9 @@ package com.psjostrom.strimma.ui
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.calendar.GuidanceState
 import com.psjostrom.strimma.data.calendar.ReadinessLevel
-import com.psjostrom.strimma.data.calendar.WorkoutCategory
+import com.psjostrom.strimma.data.calendar.MetabolicProfile
 import com.psjostrom.strimma.data.calendar.WorkoutEvent
+import com.psjostrom.strimma.data.health.ExerciseCategory
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -22,8 +23,9 @@ class GuidanceStateTest {
     private fun event(
         title: String = "Easy Run",
         startTime: Long = twoHoursFromNow,
-        category: WorkoutCategory = WorkoutCategory.EASY
-    ) = WorkoutEvent(title, startTime, startTime + 3600_000L, category, 1L)
+        category: ExerciseCategory = ExerciseCategory.RUNNING,
+        profile: MetabolicProfile = MetabolicProfile.AEROBIC
+    ) = WorkoutEvent(title, startTime, startTime + 3600_000L, category, profile, 1L)
 
     private fun reading(sgv: Int = 140, direction: String = "FLAT", minutesAgo: Int = 0) =
         GlucoseReading(
@@ -139,10 +141,14 @@ class GuidanceStateTest {
 
     @Test
     fun `workout category affects readiness thresholds`() {
-        val intervalEvent = event(title = "Tempo Run", category = WorkoutCategory.INTERVAL)
+        val intervalEvent = event(
+            title = "Tempo Run",
+            category = ExerciseCategory.RUNNING,
+            profile = MetabolicProfile.HIGH_INTENSITY
+        )
         val result = MainViewModel.computeGuidance(
             intervalEvent, reading(sgv = 140), listOf(reading(sgv = 140)), 0.0,
-            162f, 198f, bgLow, bgHigh, nowMs = now
+            144f, 216f, bgLow, bgHigh, nowMs = now
         )
         assertTrue(result is GuidanceState.WorkoutApproaching)
         val state = result as GuidanceState.WorkoutApproaching
