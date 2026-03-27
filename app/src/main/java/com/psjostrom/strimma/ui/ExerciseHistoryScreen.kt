@@ -38,11 +38,10 @@ import androidx.lifecycle.viewModelScope
 import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseUnit
-import com.psjostrom.strimma.data.IOBComputer
-import com.psjostrom.strimma.data.InsulinType
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.TreatmentDao
+import com.psjostrom.strimma.data.fetchCurrentIOB
 import com.psjostrom.strimma.data.calendar.CalendarReader
 import com.psjostrom.strimma.data.calendar.GuidanceState
 import com.psjostrom.strimma.data.calendar.WorkoutCategory
@@ -166,16 +165,7 @@ class ExerciseHistoryViewModel @Inject constructor(
         val now = System.currentTimeMillis()
         val readings = readingDao.readingsInRange(now - MS_PER_DAY, now)
         val latest = readings.maxByOrNull { it.ts }
-
-        val treatmentsEnabled = settings.treatmentsSyncEnabled.first()
-        val iob = if (treatmentsEnabled) {
-            val insulinType = settings.insulinType.first()
-            val customDIA = settings.customDIA.first()
-            val tau = IOBComputer.tauForInsulinType(insulinType, customDIA)
-            val treatments = treatmentDao.insulinSince(now - IOBComputer.lookbackMs(tau))
-            IOBComputer.computeIOB(treatments, now, tau)
-        } else 0.0
-
+        val iob = fetchCurrentIOB(settings, treatmentDao, now)
         val targetLow = settings.workoutTargetLow(event.category).first()
         val targetHigh = settings.workoutTargetHigh(event.category).first()
 
@@ -254,20 +244,12 @@ fun ExerciseHistoryScreen(
     }
 
     if (selectedPlannedWorkout != null && plannedGuidanceLoaded) {
-        val guidance = plannedGuidance
-        if (guidance is GuidanceState.WorkoutApproaching) {
-            PlannedWorkoutSheet(
-                state = guidance,
-                glucoseUnit = glucoseUnit,
-                onDismiss = { selectedPlannedWorkout = null }
-            )
-        } else {
-            PlannedWorkoutSheet(
-                event = selectedPlannedWorkout!!,
-                glucoseUnit = glucoseUnit,
-                onDismiss = { selectedPlannedWorkout = null }
-            )
-        }
+        PlannedWorkoutSheet(
+            event = selectedPlannedWorkout!!,
+            guidance = plannedGuidance,
+            glucoseUnit = glucoseUnit,
+            onDismiss = { selectedPlannedWorkout = null }
+        )
     }
 
     // Calendar permission launcher for connect button
@@ -739,62 +721,11 @@ private fun StatChip(
 
 @Composable
 private fun PlannedWorkoutSheet(
-    state: GuidanceState.WorkoutApproaching,
-    glucoseUnit: GlucoseUnit,
-    onDismiss: () -> Unit
-) {
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 48.dp),
-            shape = RoundedCornerShape(20.dp),
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 2.dp
-        ) {
-            Column(
-                modifier = Modifier
-                    .verticalScroll(rememberScrollState())
-                    .padding(20.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.common_content_desc_back),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-
-                PreActivityCard(state = state, glucoseUnit = glucoseUnit)
-            }
-        }
-    }
-}
-
-@Composable
-private fun PlannedWorkoutSheet(
     event: WorkoutEvent,
+    guidance: GuidanceState?,
     glucoseUnit: GlucoseUnit,
     onDismiss: () -> Unit
 ) {
-    val dateFmt = remember { SimpleDateFormat("EEE d MMM", Locale.getDefault()) }
-    val timeFmt = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
-    val dateStr = dateFmt.format(Date(event.startTime))
-    val timeRange = "${timeFmt.format(Date(event.startTime))}\u2013${timeFmt.format(Date(event.endTime))}"
-    val durationMin = ((event.endTime - event.startTime) / MS_PER_MINUTE).toInt()
-    val categoryName = event.category.name.lowercase().replaceFirstChar { it.uppercase() }
-    val targetLow = glucoseUnit.format(event.category.defaultTargetLowMgdl.toDouble())
-    val targetHigh = glucoseUnit.format(event.category.defaultTargetHighMgdl.toDouble())
-
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
@@ -826,29 +757,42 @@ private fun PlannedWorkoutSheet(
                     }
                 }
 
-                Text(
-                    text = event.title,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = "$dateStr \u00B7 $timeRange \u00B7 ${durationMin}min",
-                    fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(Modifier.height(12.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    StatChip(label = stringResource(R.string.exercise_planned_category), value = categoryName)
-                    StatChip(label = stringResource(R.string.exercise_planned_target), value = "$targetLow\u2013$targetHigh")
+                if (guidance is GuidanceState.WorkoutApproaching) {
+                    PreActivityCard(state = guidance, glucoseUnit = glucoseUnit)
+                } else {
+                    val dateFmt = remember { SimpleDateFormat("EEE d MMM", Locale.getDefault()) }
+                    val timeFmt = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
+                    val dateStr = dateFmt.format(Date(event.startTime))
+                    val timeRange = "${timeFmt.format(Date(event.startTime))}\u2013${timeFmt.format(Date(event.endTime))}"
+                    val durationMin = ((event.endTime - event.startTime) / MS_PER_MINUTE).toInt()
+                    val categoryName = event.category.name.lowercase().replaceFirstChar { it.uppercase() }
+                    val targetLow = glucoseUnit.format(event.category.defaultTargetLowMgdl.toDouble())
+                    val targetHigh = glucoseUnit.format(event.category.defaultTargetHighMgdl.toDouble())
+
+                    Text(
+                        text = event.title,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = "$dateStr \u00B7 $timeRange \u00B7 ${durationMin}min",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        StatChip(label = stringResource(R.string.exercise_planned_category), value = categoryName)
+                        StatChip(label = stringResource(R.string.exercise_planned_target), value = "$targetLow\u2013$targetHigh")
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        text = stringResource(R.string.exercise_no_bg_data),
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
-                Spacer(Modifier.height(12.dp))
-                Text(
-                    text = stringResource(R.string.exercise_no_bg_data),
-                    fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
         }
     }
