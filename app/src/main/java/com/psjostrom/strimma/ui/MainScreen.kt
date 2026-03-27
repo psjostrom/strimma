@@ -11,7 +11,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.NotificationsOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -88,7 +87,6 @@ fun MainScreen(
     guidanceState: GuidanceState = GuidanceState.NoWorkout,
     onComputeBGContext: (suspend (StoredExerciseSession) -> ExerciseBGContext?)? = null,
     onSettingsClick: () -> Unit,
-    onStatsClick: () -> Unit = {},
     onExerciseClick: () -> Unit = {},
     pauseLowExpiryMs: Long? = null,
     pauseHighExpiryMs: Long? = null,

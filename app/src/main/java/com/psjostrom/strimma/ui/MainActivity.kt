@@ -236,11 +236,6 @@ class MainActivity : ComponentActivity() {
                                     launchSingleTop = true
                                 }
                             },
-                            onStatsClick = {
-                                navController.navigate("stats") {
-                                    launchSingleTop = true
-                                }
-                            },
                             onExerciseClick = {
                                 navController.navigate("exercise") {
                                     launchSingleTop = true

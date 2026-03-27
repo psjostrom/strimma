@@ -60,6 +60,7 @@ class MainViewModel @Inject constructor(
         private const val PRE_WINDOW_MINUTES = 30
         private const val POST_WINDOW_HOURS = 4
         private const val MS_PER_MINUTE = 60_000L
+        private const val PAUSE_POLL_INTERVAL_MS = 10_000L
         internal const val FORECAST_HORIZON_MINUTES = 30
 
         internal fun computeGuidance(
@@ -368,7 +369,7 @@ class MainViewModel @Inject constructor(
             while (currentCoroutineContext().isActive) {
                 _pauseLowExpiryMs.value = alertManager.alertPauseExpiryMs(AlertCategory.LOW)
                 _pauseHighExpiryMs.value = alertManager.alertPauseExpiryMs(AlertCategory.HIGH)
-                delay(10_000) // Update countdown every 10 seconds
+                delay(PAUSE_POLL_INTERVAL_MS)
             }
         }
     }
