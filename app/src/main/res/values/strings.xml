@@ -270,6 +270,13 @@
     <string name="exercise_type_walking">Walk</string>
     <string name="exercise_type_cycling">Ride</string>
     <string name="exercise_type_swimming">Swim</string>
+    <string name="exercise_type_hiking">Hiking</string>
+    <string name="exercise_type_strength">Strength</string>
+    <string name="exercise_type_yoga">Yoga</string>
+    <string name="exercise_type_rowing">Rowing</string>
+    <string name="exercise_type_skiing">Skiing</string>
+    <string name="exercise_type_climbing">Climbing</string>
+    <string name="exercise_type_martial_arts">Martial Arts</string>
     <string name="exercise_type_other">Exercise</string>
 
     <!-- Exercise Settings -->
