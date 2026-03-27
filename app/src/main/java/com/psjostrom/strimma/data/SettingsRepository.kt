@@ -151,12 +151,9 @@ class SettingsRepository @Inject constructor(
         private val KEY_WORKOUT_CALENDAR_NAME = stringPreferencesKey("workout_calendar_name")
         private val KEY_WORKOUT_LOOKAHEAD_HOURS = intPreferencesKey("workout_lookahead_hours")
         private val KEY_WORKOUT_TRIGGER_MINUTES = intPreferencesKey("workout_trigger_minutes")
+        // Legacy keys — read by migrateLegacyTarget* for backward-compatible fallback
         private val KEY_WORKOUT_EASY_LOW = floatPreferencesKey("workout_easy_low")
         private val KEY_WORKOUT_EASY_HIGH = floatPreferencesKey("workout_easy_high")
-        private val KEY_WORKOUT_INTERVAL_LOW = floatPreferencesKey("workout_interval_low")
-        private val KEY_WORKOUT_INTERVAL_HIGH = floatPreferencesKey("workout_interval_high")
-        private val KEY_WORKOUT_LONG_LOW = floatPreferencesKey("workout_long_low")
-        private val KEY_WORKOUT_LONG_HIGH = floatPreferencesKey("workout_long_high")
         private val KEY_WORKOUT_STRENGTH_LOW = floatPreferencesKey("workout_strength_low")
         private val KEY_WORKOUT_STRENGTH_HIGH = floatPreferencesKey("workout_strength_high")
 

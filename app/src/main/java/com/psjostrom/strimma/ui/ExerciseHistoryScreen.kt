@@ -4,7 +4,6 @@ package com.psjostrom.strimma.ui
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.rememberScrollState
@@ -27,7 +26,6 @@ import androidx.compose.runtime.*
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -58,7 +56,6 @@ import com.psjostrom.strimma.data.health.ExerciseDao
 import com.psjostrom.strimma.data.health.StoredExerciseSession
 import com.psjostrom.strimma.ui.theme.AboveHigh
 import com.psjostrom.strimma.ui.theme.BelowLow
-import com.psjostrom.strimma.ui.theme.ExerciseDefault
 import com.psjostrom.strimma.ui.theme.InRange
 import com.psjostrom.strimma.ui.theme.TintDanger
 import com.psjostrom.strimma.ui.theme.TintInRange
@@ -735,27 +732,6 @@ private fun ExerciseCard(
 }
 
 @Composable
-private fun StatChip(
-    label: String,
-    value: String,
-    valueColor: androidx.compose.ui.graphics.Color? = null
-) {
-    Column {
-        Text(
-            text = label,
-            fontSize = 11.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = value,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
-            color = valueColor ?: MaterialTheme.colorScheme.onSurface
-        )
-    }
-}
-
-@Composable
 private fun PlannedWorkoutSheet(
     event: WorkoutEvent,
     guidance: GuidanceState?,
@@ -893,48 +869,6 @@ private fun PlannedWorkoutSheet(
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun BGSparkline(
-    readings: List<GlucoseReading>,
-    modifier: Modifier = Modifier
-) {
-    val sparkColor = ExerciseDefault
-    Canvas(modifier = modifier) {
-        if (readings.size < 2) return@Canvas
-
-        val sorted = readings.sortedBy { it.ts }
-        val minTs = sorted.first().ts
-        val maxTs = sorted.last().ts
-        val tsRange = (maxTs - minTs).toFloat()
-        if (tsRange <= 0f) return@Canvas
-
-        val minSgv = sorted.minOf { it.sgv }.toFloat()
-        val maxSgv = sorted.maxOf { it.sgv }.toFloat()
-        val sgvRange = (maxSgv - minSgv).coerceAtLeast(20f)
-
-        val w = size.width
-        val h = size.height
-        val pad = 2f
-
-        var prevX = 0f
-        var prevY = 0f
-        for ((i, r) in sorted.withIndex()) {
-            val x = pad + ((r.ts - minTs) / tsRange) * (w - 2 * pad)
-            val y = pad + ((maxSgv - r.sgv) / sgvRange) * (h - 2 * pad)
-            if (i > 0) {
-                drawLine(
-                    color = sparkColor,
-                    start = Offset(prevX, prevY),
-                    end = Offset(x, y),
-                    strokeWidth = 2f
-                )
-            }
-            prevX = x
-            prevY = y
         }
     }
 }

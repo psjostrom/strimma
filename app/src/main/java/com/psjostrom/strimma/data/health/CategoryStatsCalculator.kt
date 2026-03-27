@@ -6,6 +6,7 @@ object CategoryStatsCalculator {
 
     private const val MIN_SESSIONS = 3
     private const val MS_PER_MINUTE = 60_000.0
+    private const val HIGH_INTENSITY_HR_FRACTION = 0.80
 
     fun computeByCategory(
         data: List<Pair<StoredExerciseSession, ExerciseBGContext>>,
@@ -50,7 +51,7 @@ object CategoryStatsCalculator {
         }
         if (maxHR != null && maxHR > 0 && context.avgHR != null && context.avgHR > 0) {
             val fraction = context.avgHR.toDouble() / maxHR
-            if (fraction >= 0.80) return MetabolicProfile.HIGH_INTENSITY
+            if (fraction >= HIGH_INTENSITY_HR_FRACTION) return MetabolicProfile.HIGH_INTENSITY
         }
         return category.defaultMetabolicProfile
     }
@@ -76,24 +77,7 @@ object CategoryStatsCalculator {
         }
         val postHypoCount = contexts.count { it.postExerciseHypo }
 
-        val bandGroups = sessions
-            .filter { it.second.entryBG != null }
-            .groupBy { BGBand.fromBG(it.second.entryBG!!, bgLowMgdl) }
-
-        val statsByBand = bandGroups
-            .filter { it.value.size >= MIN_SESSIONS }
-            .mapValues { (_, bandSessions) ->
-                val bc = bandSessions.map { it.second }
-                BandStats(
-                    sessionCount = bc.size,
-                    avgMinBG = bc.mapNotNull { it.minBG }.let { if (it.isEmpty()) 0.0 else it.average() },
-                    avgDropRate = bc.flatMap { it.dropPer10Min }.let { if (it.isEmpty()) 0.0 else it.average() },
-                    hypoRate = bc.count { c ->
-                        c.minBG != null && c.minBG < bgLowMgdl
-                    }.toDouble() / bc.size,
-                    avgPostNadir = bc.mapNotNull { it.lowestBG }.let { if (it.isEmpty()) null else it.average() }
-                )
-            }
+        val statsByBand = buildBandStats(sessions, bgLowMgdl)
 
         return CategoryStats(
             category = category,
@@ -111,4 +95,24 @@ object CategoryStatsCalculator {
             statsByEntryBand = statsByBand
         )
     }
+
+    private fun buildBandStats(
+        sessions: List<Pair<StoredExerciseSession, ExerciseBGContext>>,
+        bgLowMgdl: Double
+    ): Map<BGBand, BandStats> = sessions
+        .filter { it.second.entryBG != null }
+        .groupBy { BGBand.fromBG(it.second.entryBG!!, bgLowMgdl) }
+        .filter { it.value.size >= MIN_SESSIONS }
+        .mapValues { (_, bandSessions) ->
+            val bc = bandSessions.map { it.second }
+            BandStats(
+                sessionCount = bc.size,
+                avgMinBG = bc.mapNotNull { it.minBG }.let { if (it.isEmpty()) 0.0 else it.average() },
+                avgDropRate = bc.flatMap { it.dropPer10Min }.let { if (it.isEmpty()) 0.0 else it.average() },
+                hypoRate = bc.count { c ->
+                    c.minBG != null && c.minBG < bgLowMgdl
+                }.toDouble() / bc.size,
+                avgPostNadir = bc.mapNotNull { it.lowestBG }.let { if (it.isEmpty()) null else it.average() }
+            )
+        }
 }
