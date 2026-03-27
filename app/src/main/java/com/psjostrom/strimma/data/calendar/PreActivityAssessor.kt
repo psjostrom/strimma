@@ -33,7 +33,7 @@ object PreActivityAssessor {
         val carbRecommendation: CarbRecommendation?
     )
 
-    @Suppress("CyclomaticComplexMethod", "LongParameterList") // Assessment has many independent dimensions by design
+    @Suppress("CyclomaticComplexMethod", "LongParameterList", "LongMethod") // Assessment has many independent dimensions by design
     fun assess(
         currentBgMgdl: Int,
         velocityMgdlPerMin: Double?,

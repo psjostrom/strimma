@@ -346,14 +346,7 @@ class MainViewModel @Inject constructor(
         readings,
         iob,
         glucoseUnit
-    ) { values ->
-        @Suppress("MagicNumber")
-        val event = values[0] as WorkoutEvent?
-        val latest = values[1] as GlucoseReading?
-        @Suppress("UNCHECKED_CAST")
-        val allReadings = values[2] as List<GlucoseReading>
-        val iobVal = values[3] as Double
-        val unit = values[4] as GlucoseUnit
+    ) { event, latest, allReadings, iobVal, unit ->
         val targetLow = event?.let { settings.workoutTargetLow(it.category).first() } ?: 0f
         val targetHigh = event?.let { settings.workoutTargetHigh(it.category).first() } ?: 0f
         computeGuidance(
