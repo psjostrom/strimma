@@ -360,52 +360,6 @@ class SettingsRepository @Inject constructor(
     }
     suspend fun setWorkoutTriggerMinutes(minutes: Int) { dataStore.edit { it[KEY_WORKOUT_TRIGGER_MINUTES] = minutes } }
 
-    fun workoutTargetLow(category: com.psjostrom.strimma.data.calendar.WorkoutCategory): Flow<Float> =
-        dataStore.data.map {
-            when (category) {
-                com.psjostrom.strimma.data.calendar.WorkoutCategory.EASY -> it[KEY_WORKOUT_EASY_LOW]
-                com.psjostrom.strimma.data.calendar.WorkoutCategory.INTERVAL -> it[KEY_WORKOUT_INTERVAL_LOW]
-                com.psjostrom.strimma.data.calendar.WorkoutCategory.LONG -> it[KEY_WORKOUT_LONG_LOW]
-                com.psjostrom.strimma.data.calendar.WorkoutCategory.STRENGTH -> it[KEY_WORKOUT_STRENGTH_LOW]
-                com.psjostrom.strimma.data.calendar.WorkoutCategory.FALLBACK -> null
-            } ?: category.defaultTargetLowMgdl
-        }
-
-    fun workoutTargetHigh(category: com.psjostrom.strimma.data.calendar.WorkoutCategory): Flow<Float> =
-        dataStore.data.map {
-            when (category) {
-                com.psjostrom.strimma.data.calendar.WorkoutCategory.EASY -> it[KEY_WORKOUT_EASY_HIGH]
-                com.psjostrom.strimma.data.calendar.WorkoutCategory.INTERVAL -> it[KEY_WORKOUT_INTERVAL_HIGH]
-                com.psjostrom.strimma.data.calendar.WorkoutCategory.LONG -> it[KEY_WORKOUT_LONG_HIGH]
-                com.psjostrom.strimma.data.calendar.WorkoutCategory.STRENGTH -> it[KEY_WORKOUT_STRENGTH_HIGH]
-                com.psjostrom.strimma.data.calendar.WorkoutCategory.FALLBACK -> null
-            } ?: category.defaultTargetHighMgdl
-        }
-
-    suspend fun setWorkoutTarget(
-        category: com.psjostrom.strimma.data.calendar.WorkoutCategory,
-        low: Float,
-        high: Float
-    ) {
-        dataStore.edit {
-            when (category) {
-                com.psjostrom.strimma.data.calendar.WorkoutCategory.EASY -> {
-                    it[KEY_WORKOUT_EASY_LOW] = low; it[KEY_WORKOUT_EASY_HIGH] = high
-                }
-                com.psjostrom.strimma.data.calendar.WorkoutCategory.INTERVAL -> {
-                    it[KEY_WORKOUT_INTERVAL_LOW] = low; it[KEY_WORKOUT_INTERVAL_HIGH] = high
-                }
-                com.psjostrom.strimma.data.calendar.WorkoutCategory.LONG -> {
-                    it[KEY_WORKOUT_LONG_LOW] = low; it[KEY_WORKOUT_LONG_HIGH] = high
-                }
-                com.psjostrom.strimma.data.calendar.WorkoutCategory.STRENGTH -> {
-                    it[KEY_WORKOUT_STRENGTH_LOW] = low; it[KEY_WORKOUT_STRENGTH_HIGH] = high
-                }
-                com.psjostrom.strimma.data.calendar.WorkoutCategory.FALLBACK -> { }
-            }
-        }
-    }
-
     val maxHeartRate: Flow<Int?> = dataStore.data.map { it[KEY_MAX_HEART_RATE] }
     suspend fun setMaxHeartRate(hr: Int?) {
         dataStore.edit {

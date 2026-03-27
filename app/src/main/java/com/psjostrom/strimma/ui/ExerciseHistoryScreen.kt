@@ -106,6 +106,16 @@ class ExerciseHistoryViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
+            // React to calendar ID changes and poll periodically
+            workoutCalendarId.collect { calId ->
+                _upcomingWorkouts.value = if (calId >= 0) {
+                    calendarReader.getUpcomingWorkouts(calId, PLANNED_LOOKAHEAD_DAYS.toLong() * MS_PER_DAY)
+                } else emptyList()
+            }
+        }
+        viewModelScope.launch {
+            // Periodic refresh (waits for first real value via collect above)
+            delay(PLANNED_POLL_MS)
             while (currentCoroutineContext().isActive) {
                 refreshUpcoming()
                 delay(PLANNED_POLL_MS)
@@ -415,18 +425,22 @@ private fun PlannedTab(
                 )
         ) {
             if (workouts.isEmpty()) {
-                Box(
+                Column(
                     modifier = Modifier
                         .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
                         .padding(32.dp),
-                    contentAlignment = Alignment.Center
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    Spacer(Modifier.weight(1f))
                     Text(
                         text = stringResource(R.string.exercise_planned_empty),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 14.sp,
                         lineHeight = 20.sp
                     )
+                    Spacer(Modifier.weight(1f))
                 }
             } else {
                 LazyColumn(
@@ -878,23 +892,43 @@ private fun PatternCard(
                         BGBand.HIGH -> AboveHigh
                     }
                     val bandHypoPercent = (bandStats.hypoRate * 100).toInt()
+                    val bandHypoColor = if (bandHypoPercent > 25) BelowLow
+                        else MaterialTheme.colorScheme.onSurfaceVariant
 
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 2.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "${band.label} (${bandStats.sessionCount})",
+                            text = band.label,
                             fontSize = 12.sp,
-                            color = bandColor
+                            color = bandColor,
+                            maxLines = 1,
+                            modifier = Modifier.width(72.dp)
                         )
                         Text(
-                            text = "\u2193${glucoseUnit.format(bandStats.avgDropRate)}/10m \u00B7 low ${glucoseUnit.format(bandStats.avgMinBG)} \u00B7 hypo $bandHypoPercent%",
+                            text = "(${bandStats.sessionCount})",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.width(28.dp)
+                        )
+                        Text(
+                            text = "\u2193${glucoseUnit.format(bandStats.avgDropRate)}/10m",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = "low ${glucoseUnit.format(bandStats.avgMinBG)}",
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = " $bandHypoPercent%",
+                            fontSize = 12.sp,
+                            color = bandHypoColor
                         )
                     }
                 }
