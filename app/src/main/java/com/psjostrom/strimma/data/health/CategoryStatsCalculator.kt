@@ -48,7 +48,7 @@ object CategoryStatsCalculator {
         if (category == ExerciseCategory.STRENGTH || category == ExerciseCategory.CLIMBING) {
             return MetabolicProfile.RESISTANCE
         }
-        if (maxHR != null && context.avgHR != null && context.avgHR > 0) {
+        if (maxHR != null && maxHR > 0 && context.avgHR != null && context.avgHR > 0) {
             val fraction = context.avgHR.toDouble() / maxHR
             if (fraction >= 0.80) return MetabolicProfile.HIGH_INTENSITY
         }

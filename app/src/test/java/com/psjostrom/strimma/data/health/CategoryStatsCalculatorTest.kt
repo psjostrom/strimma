@@ -1,6 +1,7 @@
 package com.psjostrom.strimma.data.health
 
 import com.psjostrom.strimma.data.calendar.MetabolicProfile
+import androidx.health.connect.client.records.ExerciseSessionRecord
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -132,6 +133,48 @@ class CategoryStatsCalculatorTest {
         )
         val results = CategoryStatsCalculator.computeByCategory(data, 72.0)
         assertTrue(results.isEmpty())
+    }
+
+    @Test
+    fun `resolveProfile returns RESISTANCE for strength`() {
+        val s = session(type = ExerciseSessionRecord.EXERCISE_TYPE_WEIGHTLIFTING)
+        val c = context()
+        val result = CategoryStatsCalculator.resolveProfile(s, c, 180)
+        assertEquals(MetabolicProfile.RESISTANCE, result)
+    }
+
+    @Test
+    fun `resolveProfile returns HIGH_INTENSITY when HR above 80 percent`() {
+        val s = session(type = 56) // RUNNING
+        val c = context(avgHR = 160)
+        val result = CategoryStatsCalculator.resolveProfile(s, c, 190)
+        // 160/190 = 0.84 >= 0.80
+        assertEquals(MetabolicProfile.HIGH_INTENSITY, result)
+    }
+
+    @Test
+    fun `resolveProfile returns category default when HR below 80 percent`() {
+        val s = session(type = 56) // RUNNING
+        val c = context(avgHR = 120)
+        val result = CategoryStatsCalculator.resolveProfile(s, c, 190)
+        // 120/190 = 0.63 < 0.80
+        assertEquals(MetabolicProfile.AEROBIC, result)
+    }
+
+    @Test
+    fun `resolveProfile falls back to default when maxHR is null`() {
+        val s = session(type = 56)
+        val c = context(avgHR = 170)
+        val result = CategoryStatsCalculator.resolveProfile(s, c, null)
+        assertEquals(MetabolicProfile.AEROBIC, result)
+    }
+
+    @Test
+    fun `resolveProfile handles maxHR zero safely`() {
+        val s = session(type = 56)
+        val c = context(avgHR = 150)
+        val result = CategoryStatsCalculator.resolveProfile(s, c, 0)
+        assertEquals(MetabolicProfile.AEROBIC, result)
     }
 
     @Test

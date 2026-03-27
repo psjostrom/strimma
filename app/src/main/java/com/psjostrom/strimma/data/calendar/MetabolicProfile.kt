@@ -14,7 +14,14 @@ enum class MetabolicProfile(
             "intervall" // Swedish
         )
 
-        /** Detect intensity override from calendar event title. Returns null if no keywords match. */
+        /**
+         * Detect intensity override from calendar event title (planned workouts).
+         * Returns null if no keywords match, so the caller falls back to
+         * [com.psjostrom.strimma.data.health.ExerciseCategory.defaultMetabolicProfile].
+         *
+         * Completed exercises use [CategoryStatsCalculator.resolveProfile] instead,
+         * which has actual HR data for intensity detection.
+         */
         fun fromKeywords(title: String): MetabolicProfile? {
             val lower = title.lowercase()
             if (HIGH_INTENSITY_KEYWORDS.any { lower.contains(it) }) return HIGH_INTENSITY
