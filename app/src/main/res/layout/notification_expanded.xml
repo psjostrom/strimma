@@ -3,7 +3,6 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:background="@android:color/transparent"
     android:padding="12dp">
 
     <LinearLayout
@@ -15,8 +14,8 @@
             android:id="@+id/tv_bg"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:textAppearance="@style/TextAppearance.Compat.Notification.Title"
             android:textSize="32sp"
-            android:textColor="@color/notification_text_primary"
             android:textStyle="bold"
             android:text="--" />
 
@@ -24,8 +23,8 @@
             android:id="@+id/tv_arrow"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:textAppearance="@style/TextAppearance.Compat.Notification.Title"
             android:textSize="32sp"
-            android:textColor="@color/notification_text_primary"
             android:layout_marginStart="6dp"
             android:text="→" />
 
@@ -35,8 +34,8 @@
         android:id="@+id/tv_delta"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:textAppearance="@style/TextAppearance.Compat.Notification.Info"
         android:textSize="16sp"
-        android:textColor="@color/notification_text_secondary"
         android:layout_marginTop="4dp"
         android:text="Δ --" />
 

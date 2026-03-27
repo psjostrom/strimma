@@ -26,25 +26,17 @@
                 android:id="@+id/tv_bg"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.Compat.Notification.Title"
                 android:textSize="20sp"
-                android:textColor="@color/notification_text_primary"
-                android:textStyle="bold"
-                android:shadowColor="#80000000"
-                android:shadowDx="1"
-                android:shadowDy="1"
-                android:shadowRadius="3" />
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/tv_arrow"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.Compat.Notification.Title"
                 android:textSize="18sp"
-                android:textColor="@color/notification_text_primary"
-                android:layout_marginStart="2dp"
-                android:shadowColor="#80000000"
-                android:shadowDx="1"
-                android:shadowDy="1"
-                android:shadowRadius="3" />
+                android:layout_marginStart="2dp" />
 
         </LinearLayout>
 
@@ -54,12 +46,8 @@
             android:layout_height="wrap_content"
             android:maxLines="1"
             android:ellipsize="end"
-            android:textSize="13sp"
-            android:textColor="@color/notification_text_secondary"
-            android:shadowColor="#80000000"
-            android:shadowDx="1"
-            android:shadowDy="1"
-            android:shadowRadius="3" />
+            android:textAppearance="@style/TextAppearance.Compat.Notification.Info"
+            android:textSize="13sp" />
 
     </LinearLayout>
 
