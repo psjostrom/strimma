@@ -21,8 +21,8 @@ class TreatmentSyncer @Inject constructor(
 ) {
     companion object {
         private const val POLL_INTERVAL_MS = 5 * 60 * 1000L
-        private const val LOOKBACK_MS = 6 * 60 * 60 * 1000L
-        private const val PRUNE_MS = 48 * 60 * 60 * 1000L
+        private const val LOOKBACK_MS = 14 * 24 * 60 * 60 * 1000L
+        private const val PRUNE_MS = 14 * 24 * 60 * 60 * 1000L
     }
 
     fun start(scope: CoroutineScope): Job {
