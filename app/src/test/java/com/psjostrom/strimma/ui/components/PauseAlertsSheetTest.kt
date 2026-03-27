@@ -97,4 +97,38 @@ class PauseAlertsSheetTest {
         composeRule.onNodeWithText("Cancel").performClick()
         assertEquals(AlertCategory.LOW, cancelledCategory)
     }
+
+    @Test
+    fun `shows urgent low warning when LOW is not paused`() {
+        composeRule.setContent {
+            StrimmaTheme {
+                PauseAlertsSheetContent(
+                    pauseLowExpiryMs = null,
+                    pauseHighExpiryMs = null,
+                    onPause = { _, _ -> },
+                    onCancel = {}
+                )
+            }
+        }
+        composeRule.onNodeWithText("Includes urgent low alerts").assertExists()
+    }
+
+    @Test
+    fun `shows countdown text when pause is active`() {
+        val futureExpiry = System.currentTimeMillis() + 5_400_000L // 1.5h from now
+
+        composeRule.setContent {
+            StrimmaTheme {
+                PauseAlertsSheetContent(
+                    pauseLowExpiryMs = futureExpiry,
+                    pauseHighExpiryMs = null,
+                    onPause = { _, _ -> },
+                    onCancel = {}
+                )
+            }
+        }
+        composeRule.waitForIdle()
+        // Should show "Paused · 1h Xm" (approximately)
+        composeRule.onNode(hasText("Paused", substring = true)).assertExists()
+    }
 }

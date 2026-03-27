@@ -260,6 +260,10 @@
     <string name="pause_cancel">Cancel</string>
     <string name="pause_low_active">Low alerts paused · %1$s</string>
     <string name="pause_high_active">High alerts paused · %1$s</string>
+    <string name="pause_low_paused">Low alerts paused</string>
+    <string name="pause_high_paused">High alerts paused</string>
+    <string name="pause_countdown">Paused · %1$s</string>
+    <string name="pause_low_warning">Includes urgent low alerts</string>
 
     <!-- Foreground Notification -->
     <string name="notif_channel_name">Glucose Readings</string>

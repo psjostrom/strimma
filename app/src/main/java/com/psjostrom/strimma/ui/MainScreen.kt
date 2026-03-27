@@ -52,6 +52,7 @@ import com.psjostrom.strimma.graph.computeYRange
 import com.psjostrom.strimma.network.FollowerStatus
 import com.psjostrom.strimma.notification.AlertCategory
 import com.psjostrom.strimma.ui.components.PauseAlertsSheet
+import com.psjostrom.strimma.ui.components.rememberCountdownText
 import com.psjostrom.strimma.ui.theme.AboveHigh
 import com.psjostrom.strimma.ui.theme.BelowLow
 import com.psjostrom.strimma.ui.theme.BolusBlue
@@ -393,18 +394,7 @@ private fun BgHeader(
 
         pauseHighExpiryMs?.let { expiry ->
             if (expiry > System.currentTimeMillis()) {
-                var remainingText by remember { mutableStateOf("") }
-                LaunchedEffect(expiry) {
-                    while (true) {
-                        val remaining = expiry - System.currentTimeMillis()
-                        if (remaining <= 0) break
-                        val totalMin = (remaining / 60_000).toInt()
-                        val hours = totalMin / 60
-                        val min = totalMin % 60
-                        remainingText = if (hours > 0) "${hours}h ${min}m" else "${min}m"
-                        delay(10_000)
-                    }
-                }
+                val countdownText = rememberCountdownText(expiry)
                 Spacer(modifier = Modifier.height(8.dp))
                 val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
                 Surface(
@@ -413,7 +403,7 @@ private fun BgHeader(
                     color = if (isDark) TintWarning else LightTintWarning
                 ) {
                     Text(
-                        text = stringResource(R.string.pause_high_active, remainingText),
+                        text = stringResource(R.string.pause_high_active, countdownText),
                         color = AboveHigh,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,
@@ -425,18 +415,7 @@ private fun BgHeader(
 
         pauseLowExpiryMs?.let { expiry ->
             if (expiry > System.currentTimeMillis()) {
-                var remainingText by remember { mutableStateOf("") }
-                LaunchedEffect(expiry) {
-                    while (true) {
-                        val remaining = expiry - System.currentTimeMillis()
-                        if (remaining <= 0) break
-                        val totalMin = (remaining / 60_000).toInt()
-                        val hours = totalMin / 60
-                        val min = totalMin % 60
-                        remainingText = if (hours > 0) "${hours}h ${min}m" else "${min}m"
-                        delay(10_000)
-                    }
-                }
+                val countdownText = rememberCountdownText(expiry)
                 Spacer(modifier = Modifier.height(8.dp))
                 val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
                 Surface(
@@ -445,7 +424,7 @@ private fun BgHeader(
                     color = if (isDark) TintDanger else LightTintDanger
                 ) {
                     Text(
-                        text = stringResource(R.string.pause_low_active, remainingText),
+                        text = stringResource(R.string.pause_low_active, countdownText),
                         color = BelowLow,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,

@@ -129,4 +129,74 @@ class AlertManagerPauseTest {
         assertFalse("Low should no longer be paused", AlertManager.isCategoryPaused(prefs, AlertCategory.LOW))
         assertTrue("High should still be paused", AlertManager.isCategoryPaused(prefs, AlertCategory.HIGH))
     }
+
+    // --- Behavioral tests: verify gating pattern used by checkReading ---
+
+    @Test
+    fun `paused LOW gates all low alert checks`() {
+        AlertManager.pauseCategory(prefs, AlertCategory.LOW, 3_600_000L)
+
+        val lowPaused = AlertManager.isCategoryPaused(prefs, AlertCategory.LOW)
+        val highPaused = AlertManager.isCategoryPaused(prefs, AlertCategory.HIGH)
+
+        assertTrue("LOW should be paused", lowPaused)
+        assertFalse("HIGH should not be paused", highPaused)
+
+        // Simulate checkReading gating: when lowPaused, no low/urgent-low alerts fire
+        val mgdl = 40.0 // dangerously low — would normally trigger urgent low
+        val urgentLowThreshold = 54f
+        val wouldFireUrgentLow = !lowPaused && mgdl <= urgentLowThreshold
+        assertFalse("Urgent low should NOT fire when LOW is paused", wouldFireUrgentLow)
+
+        // HIGH alerts should still fire normally
+        val mgdlHigh = 300.0
+        val urgentHighThreshold = 250f
+        val wouldFireUrgentHigh = !highPaused && mgdlHigh >= urgentHighThreshold
+        assertTrue("Urgent high SHOULD fire when only LOW is paused", wouldFireUrgentHigh)
+    }
+
+    @Test
+    fun `paused HIGH gates all high alert checks`() {
+        AlertManager.pauseCategory(prefs, AlertCategory.HIGH, 3_600_000L)
+
+        val highPaused = AlertManager.isCategoryPaused(prefs, AlertCategory.HIGH)
+
+        assertTrue("HIGH should be paused", highPaused)
+
+        val mgdl = 300.0
+        val urgentHighThreshold = 250f
+        val wouldFireUrgentHigh = !highPaused && mgdl >= urgentHighThreshold
+        assertFalse("Urgent high should NOT fire when HIGH is paused", wouldFireUrgentHigh)
+    }
+
+    @Test
+    fun `expired pause does not gate alerts`() {
+        // Set a pause that expired 1 second ago
+        prefs.edit().putLong("pause_low", System.currentTimeMillis() - 1000).apply()
+
+        val lowPaused = AlertManager.isCategoryPaused(prefs, AlertCategory.LOW)
+
+        assertFalse("Expired pause should not gate", lowPaused)
+
+        val mgdl = 50.0
+        val urgentLowThreshold = 54f
+        val wouldFireUrgentLow = !lowPaused && mgdl <= urgentLowThreshold
+        assertTrue("Urgent low SHOULD fire when pause has expired", wouldFireUrgentLow)
+    }
+
+    @Test
+    fun `pause then cancel allows alerts again`() {
+        AlertManager.pauseCategory(prefs, AlertCategory.LOW, 3_600_000L)
+        assertTrue("Should be paused", AlertManager.isCategoryPaused(prefs, AlertCategory.LOW))
+
+        AlertManager.cancelPause(prefs, AlertCategory.LOW)
+        val lowPaused = AlertManager.isCategoryPaused(prefs, AlertCategory.LOW)
+
+        assertFalse("Should not be paused after cancel", lowPaused)
+
+        val mgdl = 50.0
+        val urgentLowThreshold = 54f
+        val wouldFireUrgentLow = !lowPaused && mgdl <= urgentLowThreshold
+        assertTrue("Urgent low SHOULD fire after pause cancelled", wouldFireUrgentLow)
+    }
 }

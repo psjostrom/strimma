@@ -198,9 +198,10 @@ class MainViewModel @Inject constructor(
 
     fun pauseAlerts(category: AlertCategory, durationMs: Long) {
         alertManager.pauseAlertCategory(category, durationMs)
+        val expiryMs = System.currentTimeMillis() + durationMs
         when (category) {
-            AlertCategory.LOW -> _pauseLowExpiryMs.value = alertManager.alertPauseExpiryMs(AlertCategory.LOW)
-            AlertCategory.HIGH -> _pauseHighExpiryMs.value = alertManager.alertPauseExpiryMs(AlertCategory.HIGH)
+            AlertCategory.LOW -> _pauseLowExpiryMs.value = expiryMs
+            AlertCategory.HIGH -> _pauseHighExpiryMs.value = expiryMs
         }
     }
 

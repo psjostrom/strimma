@@ -57,8 +57,7 @@ fun AlertsSettings(
     var showPauseSheet by remember { mutableStateOf(false) }
 
     SettingsScaffold(title = stringResource(R.string.settings_alerts_title), onBack = onBack) {
-        val hasActivePause = (pauseLowExpiryMs != null && pauseLowExpiryMs > System.currentTimeMillis()) ||
-            (pauseHighExpiryMs != null && pauseHighExpiryMs > System.currentTimeMillis())
+        val hasActivePause = pauseLowExpiryMs != null || pauseHighExpiryMs != null
 
         if (hasActivePause) {
             Surface(
@@ -74,31 +73,27 @@ fun AlertsSettings(
                         letterSpacing = 1.5.sp
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    pauseHighExpiryMs?.let { expiry ->
-                        if (expiry > System.currentTimeMillis()) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text("High alerts paused", color = AboveHigh, fontSize = 14.sp)
-                                TextButton(onClick = { onCancelPause(AlertCategory.HIGH) }) {
-                                    Text(stringResource(R.string.pause_cancel))
-                                }
+                    if (pauseHighExpiryMs != null) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(stringResource(R.string.pause_high_paused), color = AboveHigh, fontSize = 14.sp)
+                            TextButton(onClick = { onCancelPause(AlertCategory.HIGH) }) {
+                                Text(stringResource(R.string.pause_cancel))
                             }
                         }
                     }
-                    pauseLowExpiryMs?.let { expiry ->
-                        if (expiry > System.currentTimeMillis()) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text("Low alerts paused", color = BelowLow, fontSize = 14.sp)
-                                TextButton(onClick = { onCancelPause(AlertCategory.LOW) }) {
-                                    Text(stringResource(R.string.pause_cancel))
-                                }
+                    if (pauseLowExpiryMs != null) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(stringResource(R.string.pause_low_paused), color = BelowLow, fontSize = 14.sp)
+                            TextButton(onClick = { onCancelPause(AlertCategory.LOW) }) {
+                                Text(stringResource(R.string.pause_cancel))
                             }
                         }
                     }

@@ -24,6 +24,29 @@ private val DURATIONS = listOf(
     10_800_000L to R.string.pause_duration_3h
 )
 
+@Composable
+fun rememberCountdownText(expiryMs: Long): String {
+    var text by remember(expiryMs) {
+        val remaining = expiryMs - System.currentTimeMillis()
+        val totalMin = (remaining / 60_000).toInt().coerceAtLeast(0)
+        val hours = totalMin / 60
+        val min = totalMin % 60
+        mutableStateOf(if (hours > 0) "${hours}h ${min}m" else "${min}m")
+    }
+    LaunchedEffect(expiryMs) {
+        while (true) {
+            delay(10_000)
+            val remaining = expiryMs - System.currentTimeMillis()
+            if (remaining <= 0) break
+            val totalMin = (remaining / 60_000).toInt()
+            val hours = totalMin / 60
+            val min = totalMin % 60
+            text = if (hours > 0) "${hours}h ${min}m" else "${min}m"
+        }
+    }
+    return text
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PauseAlertsSheet(
@@ -75,7 +98,8 @@ fun PauseAlertsSheetContent(
             expiryMs = pauseLowExpiryMs,
             category = AlertCategory.LOW,
             onPause = onPause,
-            onCancel = onCancel
+            onCancel = onCancel,
+            warning = stringResource(R.string.pause_low_warning)
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -98,7 +122,8 @@ private fun PauseCategoryRow(
     expiryMs: Long?,
     category: AlertCategory,
     onPause: (AlertCategory, Long) -> Unit,
-    onCancel: (AlertCategory) -> Unit
+    onCancel: (AlertCategory) -> Unit,
+    warning: String? = null
 ) {
     Column {
         Text(
@@ -106,8 +131,17 @@ private fun PauseCategoryRow(
             color = color,
             fontSize = 14.sp,
             fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(bottom = 8.dp)
+            modifier = Modifier.padding(bottom = if (warning != null && expiryMs == null) 2.dp else 8.dp)
         )
+
+        if (warning != null && (expiryMs == null || expiryMs <= System.currentTimeMillis())) {
+            Text(
+                text = warning,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+        }
 
         if (expiryMs != null && expiryMs > System.currentTimeMillis()) {
             // Active pause — show countdown + cancel
@@ -115,20 +149,9 @@ private fun PauseCategoryRow(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                var remainingText by remember { mutableStateOf("") }
-                LaunchedEffect(expiryMs) {
-                    while (true) {
-                        val remaining = expiryMs - System.currentTimeMillis()
-                        if (remaining <= 0) break
-                        val totalMin = (remaining / 60_000).toInt()
-                        val hours = totalMin / 60
-                        val min = totalMin % 60
-                        remainingText = if (hours > 0) "${hours}h ${min}m left" else "${min}m left"
-                        delay(10_000)
-                    }
-                }
+                val countdownText = rememberCountdownText(expiryMs)
                 Text(
-                    text = "Paused · $remainingText",
+                    text = stringResource(R.string.pause_countdown, countdownText),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 14.sp,
                     modifier = Modifier.weight(1f)
