@@ -41,7 +41,7 @@ class GuidanceStateTest {
         iob: Double = 0.0
     ) = MainViewModel.computeGuidance(
         event, latest, allReadings, iob,
-        targetLow, targetHigh, bgLow, bgHigh, now
+        targetLow, targetHigh, bgLow, bgHigh, nowMs = now
     )
 
     // --- Null guards ---
@@ -142,7 +142,7 @@ class GuidanceStateTest {
         val intervalEvent = event(title = "Tempo Run", category = WorkoutCategory.INTERVAL)
         val result = MainViewModel.computeGuidance(
             intervalEvent, reading(sgv = 140), listOf(reading(sgv = 140)), 0.0,
-            162f, 198f, bgLow, bgHigh, now
+            162f, 198f, bgLow, bgHigh, nowMs = now
         )
         assertTrue(result is GuidanceState.WorkoutApproaching)
         val state = result as GuidanceState.WorkoutApproaching

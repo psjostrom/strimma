@@ -1,5 +1,7 @@
 package com.psjostrom.strimma.data.calendar
 
+import com.psjostrom.strimma.data.GlucoseUnit
+
 object PreActivityAssessor {
 
     private const val HYPO_THRESHOLD = 81       // 4.5 mmol/L
@@ -22,14 +24,16 @@ object PreActivityAssessor {
 
     private const val TIMING_SOON_MS = 45 * 60_000L
     private const val TIMING_IMMINENT_MS = 15 * 60_000L
+    private const val RECHECK_THRESHOLD_MS = 60 * 60_000L
 
     data class AssessmentResult(
         val readiness: ReadinessLevel,
         val reasons: List<AssessmentReason>,
+        val suggestions: List<String>,
         val carbRecommendation: CarbRecommendation?
     )
 
-    @Suppress("CyclomaticComplexMethod", "LongParameterList") // Assessment has many independent dimensions by design
+    @Suppress("CyclomaticComplexMethod", "LongParameterList", "LongMethod") // Assessment has many independent dimensions by design
     fun assess(
         currentBgMgdl: Int,
         velocityMgdlPerMin: Double?,
@@ -37,10 +41,13 @@ object PreActivityAssessor {
         forecastBgAt30minMgdl: Double?,
         timeToWorkoutMs: Long,
         targetLowMgdl: Float,
-        @Suppress("UNUSED_PARAMETER") targetHighMgdl: Float
+        @Suppress("UNUSED_PARAMETER") targetHighMgdl: Float,
+        glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL
     ): AssessmentResult {
         val reasons = mutableListOf<AssessmentReason>()
+        val suggestions = mutableListOf<String>()
         var baseCarbs = 0
+        var waitForTrend = false
 
         val isCompound = currentBgMgdl < COMPOUND_BG &&
             velocityMgdlPerMin != null && velocityMgdlPerMin < SLOPE_FALLING
@@ -48,11 +55,13 @@ object PreActivityAssessor {
         if (isCompound) {
             reasons.add(AssessmentReason(ReadinessLevel.WAIT, "BG below 8 and falling -- high hypo risk"))
             baseCarbs = BASE_CARBS_COMPOUND
+            waitForTrend = true
         } else {
             when {
                 currentBgMgdl < HYPO_THRESHOLD -> {
                     reasons.add(AssessmentReason(ReadinessLevel.WAIT, "BG too low to start"))
                     baseCarbs = BASE_CARBS_HYPO
+                    waitForTrend = true
                 }
                 currentBgMgdl < targetLowMgdl -> {
                     reasons.add(AssessmentReason(ReadinessLevel.CAUTION, "BG below target"))
@@ -67,6 +76,7 @@ object PreActivityAssessor {
                 when {
                     velocityMgdlPerMin < SLOPE_FAST_FALLING -> {
                         reasons.add(AssessmentReason(ReadinessLevel.WAIT, "BG dropping fast"))
+                        suggestions.add("Hold off until the trend levels out")
                     }
                     velocityMgdlPerMin < SLOPE_FALLING -> {
                         reasons.add(AssessmentReason(ReadinessLevel.CAUTION, "BG trending down"))
@@ -97,13 +107,41 @@ object PreActivityAssessor {
             CarbRecommendation(totalCarbs, timing)
         } else null
 
+        // Build carb suggestion text (inserted at front of suggestions list)
+        if (totalCarbs > 0) {
+            val factors = mutableListOf<String>()
+            if (isCompound) factors.add("low + falling")
+            else if (currentBgMgdl < HYPO_THRESHOLD) factors.add("hypo")
+            else if (baseCarbs > 0) factors.add("low BG")
+            if (iobCarbs > 0) factors.add("${"%.1f".format(iob)}u IOB")
+            val factorStr = if (factors.isNotEmpty()) " (${factors.joinToString(" + ")})" else ""
+
+            val carbText = if (waitForTrend) {
+                "Eat ${totalCarbs}g carbs$factorStr and wait for upward trend"
+            } else {
+                "Have ${totalCarbs}g carbs$factorStr before starting"
+            }
+            suggestions.add(0, carbText)
+        }
+
+        // Forecast suggestion
+        if (forecastBgAt30minMgdl != null && forecastBgAt30minMgdl < FORECAST_LOW) {
+            val formatted = glucoseUnit.format(forecastBgAt30minMgdl)
+            suggestions.add("Forecast: $formatted in 30 min")
+        }
+
+        // Re-check suggestion when workout is far away
+        if (timeToWorkoutMs > RECHECK_THRESHOLD_MS) {
+            suggestions.add("Re-check trend closer to start")
+        }
+
         val readiness = when {
             reasons.any { it.level == ReadinessLevel.WAIT } -> ReadinessLevel.WAIT
             reasons.any { it.level == ReadinessLevel.CAUTION } -> ReadinessLevel.CAUTION
             else -> ReadinessLevel.READY
         }
 
-        return AssessmentResult(readiness, reasons, carbRecommendation)
+        return AssessmentResult(readiness, reasons, suggestions, carbRecommendation)
     }
 
     private fun roundToNearest(value: Double, step: Int): Int {
