@@ -360,6 +360,7 @@
     <string name="exercise_planned_empty">Keine kommenden Trainings im verbundenen Kalender gefunden.</string>
     <string name="exercise_planned_category">Kategorie</string>
     <string name="exercise_planned_target">Ziel-BG</string>
+    <string name="exercise_no_bg_data">Keine aktuellen BG-Daten für Empfehlungen verfügbar.</string>
     <string name="exercise_no_calendars">Keine Kalender auf diesem Gerät gefunden.</string>
     <string name="exercise_calendar_missing_hint">Kalender nicht gefunden? Gehe zu Einstellungen → Passwörter \u0026 Konten → dein Google-Konto → Kontosynchronisierung und schalte Kalender aus und wieder ein.</string>
 

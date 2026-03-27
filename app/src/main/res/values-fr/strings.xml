@@ -360,6 +360,7 @@
     <string name="exercise_planned_empty">Aucun entraînement à venir trouvé dans le calendrier connecté.</string>
     <string name="exercise_planned_category">Catégorie</string>
     <string name="exercise_planned_target">BG cible</string>
+    <string name="exercise_no_bg_data">Aucune donnée BG récente disponible pour les recommandations.</string>
     <string name="exercise_no_calendars">Aucun calendrier trouvé sur cet appareil.</string>
     <string name="exercise_calendar_missing_hint">Calendrier introuvable ? Allez dans Paramètres → Mots de passe \u0026 comptes → votre compte Google → Synchronisation du compte et désactivez puis réactivez Calendrier.</string>
 
