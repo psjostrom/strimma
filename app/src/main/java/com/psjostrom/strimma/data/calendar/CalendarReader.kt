@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.CalendarContract
+import com.psjostrom.strimma.data.health.ExerciseCategory
 import com.psjostrom.strimma.receiver.DebugLog
 import android.Manifest
 import android.content.pm.PackageManager
@@ -88,8 +89,10 @@ class CalendarReader @Inject constructor(
                         val title = cursor.getString(titleIdx) ?: ""
                         val startTime = cursor.getLong(startIdx)
                         val endTime = cursor.getLong(endIdx)
+                        val category = ExerciseCategory.fromTitle(title)
+                        val profile = MetabolicProfile.fromKeywords(title) ?: category.defaultMetabolicProfile
                         events.add(
-                            WorkoutEvent(title, startTime, endTime, WorkoutCategory.fromTitle(title), calendarId)
+                            WorkoutEvent(title, startTime, endTime, category, profile, calendarId)
                         )
                     }
                 }
@@ -129,9 +132,10 @@ class CalendarReader @Inject constructor(
                         val endTime = cursor.getLong(
                             cursor.getColumnIndexOrThrow(CalendarContract.Events.DTEND)
                         )
+                        val category = ExerciseCategory.fromTitle(title)
+                        val profile = MetabolicProfile.fromKeywords(title) ?: category.defaultMetabolicProfile
                         return@withContext WorkoutEvent(
-                            title, startTime, endTime,
-                            WorkoutCategory.fromTitle(title), calendarId
+                            title, startTime, endTime, category, profile, calendarId
                         )
                     }
                 }
