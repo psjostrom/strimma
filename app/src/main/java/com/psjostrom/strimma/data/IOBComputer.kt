@@ -1,6 +1,24 @@
 package com.psjostrom.strimma.data
 
+import kotlinx.coroutines.flow.first
 import kotlin.math.exp
+
+/**
+ * One-shot IOB fetch: reads current settings and treatments, returns IOB.
+ * Shared by MainViewModel (reactive guidance) and ExerciseHistoryViewModel (on-demand guidance).
+ */
+suspend fun fetchCurrentIOB(
+    settings: SettingsRepository,
+    treatmentDao: TreatmentDao,
+    now: Long = System.currentTimeMillis()
+): Double {
+    if (!settings.treatmentsSyncEnabled.first()) return 0.0
+    val insulinType = settings.insulinType.first()
+    val customDIA = settings.customDIA.first()
+    val tau = IOBComputer.tauForInsulinType(insulinType, customDIA)
+    val treatments = treatmentDao.insulinSince(now - IOBComputer.lookbackMs(tau))
+    return IOBComputer.computeIOB(treatments, now, tau)
+}
 
 object IOBComputer {
 

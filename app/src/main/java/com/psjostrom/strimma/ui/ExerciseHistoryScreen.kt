@@ -12,6 +12,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -20,6 +22,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.pullToRefresh
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -27,6 +30,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -35,7 +40,10 @@ import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
+import com.psjostrom.strimma.data.TreatmentDao
+import com.psjostrom.strimma.data.fetchCurrentIOB
 import com.psjostrom.strimma.data.calendar.CalendarReader
+import com.psjostrom.strimma.data.calendar.GuidanceState
 import com.psjostrom.strimma.data.calendar.WorkoutCategory
 import com.psjostrom.strimma.data.calendar.WorkoutEvent
 import com.psjostrom.strimma.data.health.ExerciseBGAnalyzer
@@ -46,6 +54,7 @@ import com.psjostrom.strimma.data.health.StoredExerciseSession
 import com.psjostrom.strimma.ui.theme.BelowLow
 import com.psjostrom.strimma.ui.theme.ExerciseDefault
 import com.psjostrom.strimma.ui.theme.InRange
+import kotlinx.coroutines.flow.first
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -72,6 +81,7 @@ private const val DATASTORE_PROPAGATION_MS = 100L
 class ExerciseHistoryViewModel @Inject constructor(
     private val exerciseDao: ExerciseDao,
     private val readingDao: ReadingDao,
+    private val treatmentDao: TreatmentDao,
     private val exerciseBGAnalyzer: ExerciseBGAnalyzer,
     private val settings: SettingsRepository,
     val calendarReader: CalendarReader
@@ -99,10 +109,20 @@ class ExerciseHistoryViewModel @Inject constructor(
     val isRefreshing: StateFlow<Boolean> = _isRefreshing
 
     init {
+        // React to calendarId changes from DataStore — fixes race where
+        // the init poll runs before DataStore emits the real value
+        viewModelScope.launch {
+            workoutCalendarId.collect { calId ->
+                _upcomingWorkouts.value = if (calId >= 0) {
+                    calendarReader.getUpcomingWorkouts(calId, PLANNED_LOOKAHEAD_DAYS.toLong() * MS_PER_DAY)
+                } else emptyList()
+            }
+        }
+        // Background poll for calendar changes (events added/removed externally)
         viewModelScope.launch {
             while (currentCoroutineContext().isActive) {
-                refreshUpcoming()
                 delay(PLANNED_POLL_MS)
+                refreshUpcoming()
             }
         }
     }
@@ -141,6 +161,21 @@ class ExerciseHistoryViewModel @Inject constructor(
         return exerciseBGAnalyzer.analyze(session, readings, hrSamples, bgLow.value.toDouble())
     }
 
+    suspend fun computePlannedGuidance(event: WorkoutEvent): GuidanceState {
+        val now = System.currentTimeMillis()
+        val readings = readingDao.readingsInRange(now - MS_PER_DAY, now)
+        val latest = readings.maxByOrNull { it.ts }
+        val iob = fetchCurrentIOB(settings, treatmentDao, now)
+        val targetLow = settings.workoutTargetLow(event.category).first()
+        val targetHigh = settings.workoutTargetHigh(event.category).first()
+
+        return MainViewModel.computeGuidance(
+            event, latest, readings, iob,
+            targetLow, targetHigh,
+            bgLow.value.toDouble(), settings.bgHigh.first().toDouble()
+        )
+    }
+
     suspend fun getSparklineReadings(session: StoredExerciseSession): List<GlucoseReading> {
         val preStart = session.startTime - PRE_WINDOW_MS
         val postEnd = session.endTime + POST_WINDOW_MS
@@ -160,11 +195,11 @@ fun ExerciseHistoryScreen(
     val calendarId by viewModel.workoutCalendarId.collectAsState()
     val upcomingWorkouts by viewModel.upcomingWorkouts.collectAsState()
 
-    var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf(
         stringResource(R.string.exercise_tab_planned),
         stringResource(R.string.exercise_tab_completed)
     )
+    val pagerState = rememberPagerState { tabs.size }
 
     var selectedExercise by remember { mutableStateOf<StoredExerciseSession?>(null) }
     var selectedBGContext by remember { mutableStateOf<ExerciseBGContext?>(null) }
@@ -188,6 +223,32 @@ fun ExerciseHistoryScreen(
             bgContext = selectedBGContext,
             glucoseUnit = glucoseUnit,
             onDismiss = { selectedExercise = null }
+        )
+    }
+
+    // Planned workout detail sheet
+    var selectedPlannedWorkout by remember { mutableStateOf<WorkoutEvent?>(null) }
+    var plannedGuidance by remember { mutableStateOf<GuidanceState?>(null) }
+    var plannedGuidanceLoaded by remember { mutableStateOf(false) }
+
+    LaunchedEffect(selectedPlannedWorkout) {
+        val event = selectedPlannedWorkout
+        if (event != null) {
+            plannedGuidanceLoaded = false
+            plannedGuidance = viewModel.computePlannedGuidance(event)
+            plannedGuidanceLoaded = true
+        } else {
+            plannedGuidance = null
+            plannedGuidanceLoaded = false
+        }
+    }
+
+    if (selectedPlannedWorkout != null && plannedGuidanceLoaded) {
+        PlannedWorkoutSheet(
+            event = selectedPlannedWorkout!!,
+            guidance = plannedGuidance,
+            glucoseUnit = glucoseUnit,
+            onDismiss = { selectedPlannedWorkout = null }
         )
     }
 
@@ -223,19 +284,20 @@ fun ExerciseHistoryScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
+            val coroutineScope = rememberCoroutineScope()
             TabRow(
-                selectedTabIndex = selectedTab,
+                selectedTabIndex = pagerState.currentPage,
                 containerColor = MaterialTheme.colorScheme.background,
                 contentColor = MaterialTheme.colorScheme.onBackground
             ) {
                 tabs.forEachIndexed { index, title ->
                     Tab(
-                        selected = selectedTab == index,
-                        onClick = { selectedTab = index },
+                        selected = pagerState.currentPage == index,
+                        onClick = { coroutineScope.launch { pagerState.animateScrollToPage(index) } },
                         text = {
                             Text(
                                 title,
-                                fontWeight = if (selectedTab == index) FontWeight.SemiBold else FontWeight.Normal,
+                                fontWeight = if (pagerState.currentPage == index) FontWeight.SemiBold else FontWeight.Normal,
                                 fontSize = 14.sp
                             )
                         }
@@ -243,28 +305,34 @@ fun ExerciseHistoryScreen(
                 }
             }
 
-            when (selectedTab) {
-                0 -> PlannedTab(
-                    calendarId = calendarId,
-                    workouts = upcomingWorkouts,
-                    glucoseUnit = glucoseUnit,
-                    isRefreshing = viewModel.isRefreshing.collectAsState().value,
-                    onRefresh = viewModel::onPullToRefresh,
-                    onConnectCalendar = {
-                        if (viewModel.calendarReader.hasPermission()) {
-                            showCalendarPicker = true
-                        } else {
-                            calendarPermissionLauncher.launch(android.Manifest.permission.READ_CALENDAR)
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize()
+            ) { page ->
+                when (page) {
+                    0 -> PlannedTab(
+                        calendarId = calendarId,
+                        workouts = upcomingWorkouts,
+                        glucoseUnit = glucoseUnit,
+                        isRefreshing = viewModel.isRefreshing.collectAsState().value,
+                        onRefresh = viewModel::onPullToRefresh,
+                        onWorkoutClick = { selectedPlannedWorkout = it },
+                        onConnectCalendar = {
+                            if (viewModel.calendarReader.hasPermission()) {
+                                showCalendarPicker = true
+                            } else {
+                                calendarPermissionLauncher.launch(android.Manifest.permission.READ_CALENDAR)
+                            }
                         }
-                    }
-                )
-                1 -> CompletedTab(
-                    sessions = sessions,
-                    glucoseUnit = glucoseUnit,
-                    bgLow = bgLow,
-                    viewModel = viewModel,
-                    onSessionClick = { selectedExercise = it }
-                )
+                    )
+                    1 -> CompletedTab(
+                        sessions = sessions,
+                        glucoseUnit = glucoseUnit,
+                        bgLow = bgLow,
+                        viewModel = viewModel,
+                        onSessionClick = { selectedExercise = it }
+                    )
+                }
             }
         }
     }
@@ -345,6 +413,7 @@ private fun PlannedTab(
     glucoseUnit: GlucoseUnit,
     isRefreshing: Boolean,
     onRefresh: () -> Unit,
+    onWorkoutClick: (WorkoutEvent) -> Unit,
     onConnectCalendar: () -> Unit
 ) {
     if (calendarId < 0) {
@@ -422,7 +491,11 @@ private fun PlannedTab(
                     contentPadding = PaddingValues(vertical = 8.dp)
                 ) {
                     items(workouts, key = { "${it.startTime}_${it.title}" }) { event ->
-                        PlannedWorkoutCard(event = event, glucoseUnit = glucoseUnit)
+                        PlannedWorkoutCard(
+                            event = event,
+                            glucoseUnit = glucoseUnit,
+                            onClick = { onWorkoutClick(event) }
+                        )
                     }
                 }
             }
@@ -439,7 +512,8 @@ private fun PlannedTab(
 @Composable
 private fun PlannedWorkoutCard(
     event: WorkoutEvent,
-    glucoseUnit: GlucoseUnit
+    glucoseUnit: GlucoseUnit,
+    onClick: () -> Unit
 ) {
     val dateFmt = remember { SimpleDateFormat("EEE d MMM", Locale.getDefault()) }
     val timeFmt = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
@@ -451,7 +525,9 @@ private fun PlannedWorkoutCard(
     val targetHigh = glucoseUnit.format(event.category.defaultTargetHighMgdl.toDouble())
 
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.surfaceVariant
     ) {
@@ -640,6 +716,85 @@ private fun StatChip(
             fontWeight = FontWeight.Medium,
             color = valueColor ?: MaterialTheme.colorScheme.onSurface
         )
+    }
+}
+
+@Composable
+private fun PlannedWorkoutSheet(
+    event: WorkoutEvent,
+    guidance: GuidanceState?,
+    glucoseUnit: GlucoseUnit,
+    onDismiss: () -> Unit
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 48.dp),
+            shape = RoundedCornerShape(20.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 2.dp
+        ) {
+            Column(
+                modifier = Modifier
+                    .verticalScroll(rememberScrollState())
+                    .padding(20.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.common_content_desc_back),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+
+                if (guidance is GuidanceState.WorkoutApproaching) {
+                    PreActivityCard(state = guidance, glucoseUnit = glucoseUnit)
+                } else {
+                    val dateFmt = remember { SimpleDateFormat("EEE d MMM", Locale.getDefault()) }
+                    val timeFmt = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
+                    val dateStr = dateFmt.format(Date(event.startTime))
+                    val timeRange = "${timeFmt.format(Date(event.startTime))}\u2013${timeFmt.format(Date(event.endTime))}"
+                    val durationMin = ((event.endTime - event.startTime) / MS_PER_MINUTE).toInt()
+                    val categoryName = event.category.name.lowercase().replaceFirstChar { it.uppercase() }
+                    val targetLow = glucoseUnit.format(event.category.defaultTargetLowMgdl.toDouble())
+                    val targetHigh = glucoseUnit.format(event.category.defaultTargetHighMgdl.toDouble())
+
+                    Text(
+                        text = event.title,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = "$dateStr \u00B7 $timeRange \u00B7 ${durationMin}min",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        StatChip(label = stringResource(R.string.exercise_planned_category), value = categoryName)
+                        StatChip(label = stringResource(R.string.exercise_planned_target), value = "$targetLow\u2013$targetHigh")
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        text = stringResource(R.string.exercise_no_bg_data),
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
     }
 }
 

@@ -70,6 +70,7 @@ class MainViewModel @Inject constructor(
             targetHigh: Float,
             bgLow: Double,
             bgHigh: Double,
+            glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
             nowMs: Long = System.currentTimeMillis()
         ): GuidanceState {
             if (event == null || latest == null) return GuidanceState.NoWorkout
@@ -94,13 +95,15 @@ class MainViewModel @Inject constructor(
                 forecastBgAt30minMgdl = forecastBg,
                 timeToWorkoutMs = timeToWorkout,
                 targetLowMgdl = targetLow,
-                targetHighMgdl = targetHigh
+                targetHighMgdl = targetHigh,
+                glucoseUnit = glucoseUnit
             )
 
             return GuidanceState.WorkoutApproaching(
                 event = event,
                 readiness = result.readiness,
                 reasons = result.reasons,
+                suggestions = result.suggestions,
                 carbRecommendation = result.carbRecommendation,
                 targetLowMgdl = targetLow,
                 targetHighMgdl = targetHigh,
@@ -341,14 +344,16 @@ class MainViewModel @Inject constructor(
         _cachedEvent,
         latestReading,
         readings,
-        iob
-    ) { event, latest, allReadings, iob ->
+        iob,
+        glucoseUnit
+    ) { event, latest, allReadings, iobVal, unit ->
         val targetLow = event?.let { settings.workoutTargetLow(it.category).first() } ?: 0f
         val targetHigh = event?.let { settings.workoutTargetHigh(it.category).first() } ?: 0f
         computeGuidance(
-            event, latest, allReadings, iob,
+            event, latest, allReadings, iobVal,
             targetLow, targetHigh,
-            bgLow.value.toDouble(), bgHigh.value.toDouble()
+            bgLow.value.toDouble(), bgHigh.value.toDouble(),
+            unit
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), GuidanceState.NoWorkout)
 
