@@ -101,6 +101,7 @@ class MainViewModel @Inject constructor(
                 event = event,
                 readiness = result.readiness,
                 reasons = result.reasons,
+                suggestions = result.suggestions,
                 carbRecommendation = result.carbRecommendation,
                 targetLowMgdl = targetLow,
                 targetHighMgdl = targetHigh,

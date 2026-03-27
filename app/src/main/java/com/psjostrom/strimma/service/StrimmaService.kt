@@ -406,9 +406,11 @@ class StrimmaService : Service() {
                 val minutesUntil = ((event.startTime - now) / MINUTES_TO_MS).toInt()
                 if (minutesUntil <= 0) return@let null
                 val timeText = if (minutesUntil >= MINUTES_PER_HOUR) {
-                    "${minutesUntil / MINUTES_PER_HOUR}h ${minutesUntil % MINUTES_PER_HOUR}min"
+                    val h = minutesUntil / MINUTES_PER_HOUR
+                    val m = minutesUntil % MINUTES_PER_HOUR
+                    if (m > 0) "${h}h${m}m" else "${h}h"
                 } else {
-                    "${minutesUntil}min"
+                    "${minutesUntil}m"
                 }
                 val velocity = com.psjostrom.strimma.graph.PredictionComputer.currentVelocity(recent)
                 val prediction = com.psjostrom.strimma.graph.PredictionComputer.compute(
@@ -427,10 +429,15 @@ class StrimmaService : Service() {
                     targetLowMgdl = targetLow,
                     targetHighMgdl = targetHigh
                 )
-                val carbText = result.carbRecommendation?.let {
-                    "consider ${it.totalGrams}g carbs"
-                } ?: "ready"
-                "${event.title} in $timeText -- $carbText"
+                val actionText = when {
+                    result.carbRecommendation != null -> "eat ${result.carbRecommendation.totalGrams}g"
+                    result.readiness == com.psjostrom.strimma.data.calendar.ReadinessLevel.WAIT ->
+                        "hold off"
+                    result.readiness == com.psjostrom.strimma.data.calendar.ReadinessLevel.CAUTION ->
+                        "monitor"
+                    else -> "ready"
+                }
+                "\uD83C\uDFC3 $timeText $actionText"
             }
         } else null
 
@@ -461,8 +468,24 @@ class StrimmaService : Service() {
     }
 
     private fun startCalendarPoll() {
+        // React immediately when calendarId loads from DataStore
+        // (avoids the race where first poll sees -1 and cancels the alarm)
+        scope.launch {
+            workoutCalendarId.collect {
+                try {
+                    pollCalendar()
+                } catch (
+                    @Suppress("TooGenericExceptionCaught")
+                    e: Exception
+                ) {
+                    DebugLog.log("Calendar poll (reactive) failed: ${e.message}")
+                }
+            }
+        }
+        // Background poll for calendar changes (events added/removed externally)
         calendarPollJob = scope.launch {
             while (isActive) {
+                delay(CALENDAR_POLL_INTERVAL_MINUTES * MINUTES_TO_MS)
                 try {
                     pollCalendar()
                 } catch (
@@ -471,7 +494,6 @@ class StrimmaService : Service() {
                 ) {
                     DebugLog.log("Calendar poll failed: ${e.message}")
                 }
-                delay(CALENDAR_POLL_INTERVAL_MINUTES * MINUTES_TO_MS)
             }
         }
     }

@@ -12,6 +12,7 @@ sealed class GuidanceState {
         val event: WorkoutEvent,
         val readiness: ReadinessLevel,
         val reasons: List<AssessmentReason>,
+        val suggestions: List<String>,
         val carbRecommendation: CarbRecommendation?,
         val targetLowMgdl: Float,
         val targetHighMgdl: Float,

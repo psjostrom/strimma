@@ -202,6 +202,69 @@ class PreActivityAssessorTest {
         assertEquals(ReadinessLevel.CAUTION, result.readiness)
     }
 
+    // --- Suggestions ---
+
+    @Test
+    fun `fast falling slope suggests hold off`() {
+        val result = assess(150, velocityMgdlPerMin = -1.0)
+        assertTrue(result.suggestions.any { it.contains("Hold off") })
+    }
+
+    @Test
+    fun `compound rule suggests eat carbs and wait for upward trend`() {
+        val result = assess(130, velocityMgdlPerMin = -0.6)
+        assertTrue(result.suggestions.any { it.contains("Eat") && it.contains("wait for upward trend") })
+    }
+
+    @Test
+    fun `hypo suggests eat carbs and wait for upward trend`() {
+        val result = assess(75)
+        assertTrue(result.suggestions.any { it.contains("Eat") && it.contains("wait for upward trend") })
+    }
+
+    @Test
+    fun `low bg suggests have carbs before starting`() {
+        val result = assess(110)
+        assertTrue(result.suggestions.any { it.contains("Have") && it.contains("before starting") })
+    }
+
+    @Test
+    fun `iob included in carb suggestion factor text`() {
+        val result = assess(110, iob = 1.0)
+        assertTrue(result.suggestions.any { it.contains("IOB") })
+    }
+
+    @Test
+    fun `forecast below 5_5 adds forecast suggestion`() {
+        val result = assess(140, forecastBgAt30min = 90.0)
+        assertTrue(result.suggestions.any { it.contains("Forecast") && it.contains("30 min") })
+    }
+
+    @Test
+    fun `workout more than 1h away adds recheck suggestion`() {
+        val result = assess(140, timeToWorkoutMs = 2 * 3600_000L)
+        assertTrue(result.suggestions.any { it.contains("Re-check") })
+    }
+
+    @Test
+    fun `workout less than 1h away has no recheck suggestion`() {
+        val result = assess(140, timeToWorkoutMs = 30 * 60_000L)
+        assertFalse(result.suggestions.any { it.contains("Re-check") })
+    }
+
+    @Test
+    fun `in-range stable bg has no suggestions except recheck`() {
+        val result = assess(140)
+        assertTrue(result.suggestions.all { it.contains("Re-check") })
+    }
+
+    @Test
+    fun `dropping fast in range gives suggestion but no carbs`() {
+        val result = assess(150, velocityMgdlPerMin = -1.0)
+        assertNull(result.carbRecommendation)
+        assertTrue(result.suggestions.any { it.contains("Hold off") })
+    }
+
     // --- Boundary and edge cases ---
 
     @Test

@@ -77,19 +77,23 @@ fun PreActivityCard(
             }
             Text(currentLine, color = MaterialTheme.colorScheme.onBackground, fontSize = 13.sp)
 
-            for (reason in state.reasons) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(reason.message, color = MaterialTheme.colorScheme.outline, fontSize = 12.sp)
+            if (state.reasons.isNotEmpty()) {
+                for (reason in state.reasons) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(reason.message, color = MaterialTheme.colorScheme.outline, fontSize = 12.sp)
+                }
             }
 
-            state.carbRecommendation?.let { rec ->
+            if (state.suggestions.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Consider ${rec.totalGrams}g carbs ${rec.timingSuggestion}",
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium
-                )
+                for (suggestion in state.suggestions) {
+                    Text(
+                        text = suggestion,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
         }
     }
