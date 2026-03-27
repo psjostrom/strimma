@@ -166,13 +166,6 @@ fun MainScreen(
                             tint = MaterialTheme.colorScheme.outline
                         )
                     }
-                    IconButton(onClick = onStatsClick) {
-                        Icon(
-                            Icons.Outlined.BarChart,
-                            contentDescription = stringResource(R.string.common_content_desc_statistics),
-                            tint = MaterialTheme.colorScheme.outline
-                        )
-                    }
                     IconButton(onClick = onSettingsClick) {
                         Icon(
                             Icons.Default.Settings,

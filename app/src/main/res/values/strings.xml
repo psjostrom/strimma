@@ -252,9 +252,11 @@
     <string name="pause_alerts">Pause alerts</string>
     <string name="pause_low_alerts">Low alerts</string>
     <string name="pause_high_alerts">High alerts</string>
+    <string name="pause_duration_30m">30m</string>
     <string name="pause_duration_1h">1h</string>
     <string name="pause_duration_1_5h">1.5h</string>
     <string name="pause_duration_2h">2h</string>
+    <string name="pause_duration_3h">3h</string>
     <string name="pause_cancel">Cancel</string>
     <string name="pause_low_active">Low alerts paused · %1$s</string>
     <string name="pause_high_active">High alerts paused · %1$s</string>

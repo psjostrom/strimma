@@ -17,9 +17,11 @@ import com.psjostrom.strimma.ui.theme.BelowLow
 import kotlinx.coroutines.delay
 
 private val DURATIONS = listOf(
+    1_800_000L to R.string.pause_duration_30m,
     3_600_000L to R.string.pause_duration_1h,
     5_400_000L to R.string.pause_duration_1_5h,
-    7_200_000L to R.string.pause_duration_2h
+    7_200_000L to R.string.pause_duration_2h,
+    10_800_000L to R.string.pause_duration_3h
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -138,15 +140,16 @@ private fun PauseCategoryRow(
         } else {
             // Not paused — show duration chips
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 DURATIONS.forEach { (durationMs, labelRes) ->
                     FilledTonalButton(
                         onClick = { onPause(category, durationMs) },
                         shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                        modifier = Modifier.height(36.dp)
                     ) {
-                        Text(stringResource(labelRes), fontSize = 14.sp)
+                        Text(stringResource(labelRes), fontSize = 13.sp)
                     }
                 }
             }
