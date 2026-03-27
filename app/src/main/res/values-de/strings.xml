@@ -383,4 +383,5 @@
     <string name="workout_calendar_label">Kalender</string>
     <string name="workout_calendar_none">(keine)</string>
     <string name="workout_calendar_picker_title">Kalender auswählen</string>
+    <string name="stats_tab_meals">Mahlzeiten</string>
 </resources>
