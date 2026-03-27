@@ -1,6 +1,7 @@
 package com.psjostrom.strimma.ui.settings
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -10,7 +11,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.GlucoseUnit
+import com.psjostrom.strimma.notification.AlertCategory
 import com.psjostrom.strimma.notification.AlertManager
+import com.psjostrom.strimma.ui.components.PauseAlertsSheet
+import com.psjostrom.strimma.ui.theme.AboveHigh
+import com.psjostrom.strimma.ui.theme.BelowLow
 import com.psjostrom.strimma.ui.theme.InRange
 
 @Composable
@@ -27,6 +32,10 @@ fun AlertsSettings(
     alertStaleEnabled: Boolean,
     alertLowSoonEnabled: Boolean,
     alertHighSoonEnabled: Boolean,
+    pauseLowExpiryMs: Long? = null,
+    pauseHighExpiryMs: Long? = null,
+    onPauseAlerts: (AlertCategory, Long) -> Unit = { _, _ -> },
+    onCancelPause: (AlertCategory) -> Unit = {},
     onAlertLowEnabledChange: (Boolean) -> Unit,
     onAlertHighEnabledChange: (Boolean) -> Unit,
     onAlertUrgentLowEnabledChange: (Boolean) -> Unit,
@@ -45,7 +54,77 @@ fun AlertsSettings(
     val outline = MaterialTheme.colorScheme.outline
     val outlineVar = MaterialTheme.colorScheme.outlineVariant
 
+    var showPauseSheet by remember { mutableStateOf(false) }
+
     SettingsScaffold(title = stringResource(R.string.settings_alerts_title), onBack = onBack) {
+        val hasActivePause = (pauseLowExpiryMs != null && pauseLowExpiryMs > System.currentTimeMillis()) ||
+            (pauseHighExpiryMs != null && pauseHighExpiryMs > System.currentTimeMillis())
+
+        if (hasActivePause) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        stringResource(R.string.pause_alerts),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = outline,
+                        letterSpacing = 1.5.sp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    pauseHighExpiryMs?.let { expiry ->
+                        if (expiry > System.currentTimeMillis()) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("High alerts paused", color = AboveHigh, fontSize = 14.sp)
+                                TextButton(onClick = { onCancelPause(AlertCategory.HIGH) }) {
+                                    Text(stringResource(R.string.pause_cancel))
+                                }
+                            }
+                        }
+                    }
+                    pauseLowExpiryMs?.let { expiry ->
+                        if (expiry > System.currentTimeMillis()) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Low alerts paused", color = BelowLow, fontSize = 14.sp)
+                                TextButton(onClick = { onCancelPause(AlertCategory.LOW) }) {
+                                    Text(stringResource(R.string.pause_cancel))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+        } else {
+            OutlinedButton(
+                onClick = { showPauseSheet = true },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(stringResource(R.string.pause_alerts))
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+
+        if (showPauseSheet) {
+            PauseAlertsSheet(
+                pauseLowExpiryMs = pauseLowExpiryMs,
+                pauseHighExpiryMs = pauseHighExpiryMs,
+                onPause = onPauseAlerts,
+                onCancel = onCancelPause,
+                onDismiss = { showPauseSheet = false }
+            )
+        }
+
         SettingsSection(stringResource(R.string.settings_alerts_section)) {
             Text(
                 stringResource(R.string.settings_alerts_tap_sound),

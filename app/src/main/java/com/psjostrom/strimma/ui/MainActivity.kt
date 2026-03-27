@@ -149,6 +149,8 @@ class MainActivity : ComponentActivity() {
                 val iob by viewModel.iob.collectAsState()
                 val exerciseSessions by viewModel.exerciseSessions.collectAsState()
                 val guidanceState by viewModel.guidanceState.collectAsState()
+                val pauseLowExpiryMs by viewModel.pauseLowExpiryMs.collectAsState()
+                val pauseHighExpiryMs by viewModel.pauseHighExpiryMs.collectAsState()
                 NavHost(navController, startDestination = startDest) {
                     composable("setup") {
                         val setupViewModel: SetupViewModel = hiltViewModel()
@@ -224,6 +226,10 @@ class MainActivity : ComponentActivity() {
                             iobTauMinutes = IOBComputer.tauForInsulinType(insulinType, customDIA),
                             exerciseSessions = exerciseSessions,
                             guidanceState = guidanceState,
+                            pauseLowExpiryMs = pauseLowExpiryMs,
+                            pauseHighExpiryMs = pauseHighExpiryMs,
+                            onPauseAlerts = viewModel::pauseAlerts,
+                            onCancelPause = viewModel::cancelAlertPause,
                             onComputeBGContext = viewModel::computeExerciseBGContext,
                             onSettingsClick = {
                                 navController.navigate("settings") {
@@ -343,6 +349,10 @@ class MainActivity : ComponentActivity() {
                             alertStaleEnabled = alertStaleEnabled,
                             alertLowSoonEnabled = alertLowSoonEnabled,
                             alertHighSoonEnabled = alertHighSoonEnabled,
+                            pauseLowExpiryMs = pauseLowExpiryMs,
+                            pauseHighExpiryMs = pauseHighExpiryMs,
+                            onPauseAlerts = viewModel::pauseAlerts,
+                            onCancelPause = viewModel::cancelAlertPause,
                             onAlertLowEnabledChange = viewModel::setAlertLowEnabled,
                             onAlertHighEnabledChange = viewModel::setAlertHighEnabled,
                             onAlertUrgentLowEnabledChange = viewModel::setAlertUrgentLowEnabled,
