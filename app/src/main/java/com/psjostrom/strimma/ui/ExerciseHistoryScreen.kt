@@ -38,10 +38,14 @@ import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.calendar.CalendarReader
 import com.psjostrom.strimma.data.calendar.WorkoutEvent
 import com.psjostrom.strimma.data.health.ExerciseBGAnalyzer
+import com.psjostrom.strimma.data.health.BGBand
+import com.psjostrom.strimma.data.health.CategoryStats
+import com.psjostrom.strimma.data.health.CategoryStatsCalculator
 import com.psjostrom.strimma.data.health.ExerciseBGContext
 import com.psjostrom.strimma.data.health.ExerciseCategory
 import com.psjostrom.strimma.data.health.ExerciseDao
 import com.psjostrom.strimma.data.health.StoredExerciseSession
+import com.psjostrom.strimma.ui.theme.AboveHigh
 import com.psjostrom.strimma.ui.theme.BelowLow
 import com.psjostrom.strimma.ui.theme.ExerciseDefault
 import com.psjostrom.strimma.ui.theme.InRange
@@ -84,6 +88,9 @@ class ExerciseHistoryViewModel @Inject constructor(
 
     val bgLow: StateFlow<Float> = settings.bgLow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 72f)
+
+    val maxHeartRate: StateFlow<Int?> = settings.maxHeartRate
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     val workoutCalendarId: StateFlow<Long> = settings.workoutCalendarId
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), -1L)
@@ -140,6 +147,13 @@ class ExerciseHistoryViewModel @Inject constructor(
         return exerciseBGAnalyzer.analyze(session, readings, hrSamples, bgLow.value.toDouble())
     }
 
+    suspend fun computeAllBGContexts(): List<Pair<StoredExerciseSession, ExerciseBGContext>> {
+        val allSessions = exerciseDao.getAllSessionsList()
+        return allSessions.mapNotNull { session ->
+            computeBGContext(session)?.let { ctx -> session to ctx }
+        }
+    }
+
     suspend fun getSparklineReadings(session: StoredExerciseSession): List<GlucoseReading> {
         val preStart = session.startTime - PRE_WINDOW_MS
         val postEnd = session.endTime + POST_WINDOW_MS
@@ -162,7 +176,8 @@ fun ExerciseHistoryScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf(
         stringResource(R.string.exercise_tab_planned),
-        stringResource(R.string.exercise_tab_completed)
+        stringResource(R.string.exercise_tab_completed),
+        stringResource(R.string.exercise_tab_patterns)
     )
 
     var selectedExercise by remember { mutableStateOf<StoredExerciseSession?>(null) }
@@ -264,6 +279,7 @@ fun ExerciseHistoryScreen(
                     viewModel = viewModel,
                     onSessionClick = { selectedExercise = it }
                 )
+                2 -> PatternsTab(viewModel = viewModel, glucoseUnit = glucoseUnit)
             }
         }
     }
@@ -680,6 +696,209 @@ private fun BGSparkline(
             }
             prevX = x
             prevY = y
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PatternsTab(
+    viewModel: ExerciseHistoryViewModel,
+    glucoseUnit: GlucoseUnit
+) {
+    val bgLow by viewModel.bgLow.collectAsState()
+    val maxHR by viewModel.maxHeartRate.collectAsState()
+
+    var selectedIndex by remember { mutableIntStateOf(0) }
+    var isLoading by remember { mutableStateOf(true) }
+    var allData by remember {
+        mutableStateOf<List<Pair<StoredExerciseSession, ExerciseBGContext>>>(emptyList())
+    }
+
+    LaunchedEffect(Unit) {
+        allData = viewModel.computeAllBGContexts()
+        isLoading = false
+    }
+
+    val categories = remember(allData, bgLow, maxHR, selectedIndex) {
+        if (allData.isEmpty()) emptyList()
+        else if (selectedIndex == 0) {
+            CategoryStatsCalculator.computeByCategory(allData, bgLow.toDouble())
+        } else {
+            CategoryStatsCalculator.computeByProfile(allData, bgLow.toDouble(), maxHR)
+        }
+    }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        SingleChoiceSegmentedButtonRow(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        ) {
+            val options = listOf(
+                stringResource(R.string.exercise_patterns_by_activity),
+                stringResource(R.string.exercise_patterns_by_profile)
+            )
+            options.forEachIndexed { index, label ->
+                SegmentedButton(
+                    selected = selectedIndex == index,
+                    onClick = { selectedIndex = index },
+                    shape = SegmentedButtonDefaults.itemShape(
+                        index = index,
+                        count = options.size
+                    )
+                ) {
+                    Text(label, fontSize = 13.sp)
+                }
+            }
+        }
+
+        if (isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        } else if (categories.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(32.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = stringResource(R.string.exercise_patterns_empty),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp
+                )
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(vertical = 8.dp)
+            ) {
+                items(categories, key = { "${it.category}_${it.metabolicProfile}" }) { stats ->
+                    PatternCard(
+                        stats = stats,
+                        isProfileView = selectedIndex == 1,
+                        glucoseUnit = glucoseUnit
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PatternCard(
+    stats: CategoryStats,
+    isProfileView: Boolean,
+    glucoseUnit: GlucoseUnit
+) {
+    val title = if (isProfileView) {
+        val profile = stats.metabolicProfile
+        profile?.name?.lowercase()?.replaceFirstChar { it.uppercase() }?.replace('_', ' ')
+            ?: "Unknown"
+    } else {
+        "${stats.category.emoji} ${stats.category.name.lowercase().replaceFirstChar { it.uppercase() }}"
+    }
+
+    val hypoPercent = (stats.hypoRate * 100).toInt()
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            // Header: title + session count
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = title,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "${stats.sessionCount} ${stringResource(R.string.exercise_patterns_sessions)}",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            // Stats row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                StatChip(
+                    label = stringResource(R.string.exercise_patterns_avg_drop),
+                    value = "${glucoseUnit.format(stats.avgDropRate)} ${stringResource(R.string.exercise_patterns_per_10min)}"
+                )
+                StatChip(
+                    label = stringResource(R.string.exercise_patterns_typical_low),
+                    value = glucoseUnit.format(stats.avgMinBG)
+                )
+                StatChip(
+                    label = stringResource(R.string.exercise_patterns_hypo_risk),
+                    value = "$hypoPercent% (${stats.hypoCount})",
+                    valueColor = if (hypoPercent > 25) BelowLow else null
+                )
+            }
+
+            // Entry BG band breakdown
+            if (stats.statsByEntryBand.isNotEmpty()) {
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    text = stringResource(R.string.exercise_patterns_by_starting_bg),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 1.5.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(4.dp))
+
+                for ((band, bandStats) in stats.statsByEntryBand.entries.sortedBy { it.key.ordinal }) {
+                    val bandColor = when (band) {
+                        BGBand.LOW -> BelowLow
+                        BGBand.LOW_RANGE -> BelowLow.copy(alpha = 0.7f)
+                        BGBand.MID_RANGE -> InRange
+                        BGBand.HIGH -> AboveHigh
+                    }
+                    val bandHypoPercent = (bandStats.hypoRate * 100).toInt()
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 2.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "${band.label} (${bandStats.sessionCount})",
+                            fontSize = 12.sp,
+                            color = bandColor
+                        )
+                        Text(
+                            text = "\u2193${glucoseUnit.format(bandStats.avgDropRate)}/10m \u00B7 low ${glucoseUnit.format(bandStats.avgMinBG)} \u00B7 hypo $bandHypoPercent%",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
         }
     }
 }
