@@ -22,6 +22,11 @@ import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
 
+enum class AlertCategory(val prefsKey: String) {
+    LOW("pause_low"),
+    HIGH("pause_high")
+}
+
 @Suppress("TooManyFunctions") // Alert channels + management methods
 @Singleton
 class AlertManager @Inject constructor(
@@ -72,6 +77,44 @@ class AlertManager @Inject constructor(
             CHANNEL_URGENT_LOW, CHANNEL_LOW, CHANNEL_HIGH, CHANNEL_URGENT_HIGH,
             CHANNEL_STALE, CHANNEL_PUSH_FAIL, CHANNEL_LOW_SOON, CHANNEL_HIGH_SOON
         )
+
+        // --- Category-level pause (static methods for testability) ---
+
+        fun pauseCategory(prefs: android.content.SharedPreferences, category: AlertCategory, durationMs: Long) {
+            val expiryMs = System.currentTimeMillis() + durationMs
+            prefs.edit().putLong(category.prefsKey, expiryMs).apply()
+            DebugLog.log("Category ${category.name} paused until ${expiryMs}")
+        }
+
+        fun cancelPause(prefs: android.content.SharedPreferences, category: AlertCategory) {
+            prefs.edit().remove(category.prefsKey).apply()
+        }
+
+        fun isCategoryPaused(prefs: android.content.SharedPreferences, category: AlertCategory): Boolean {
+            val expiryMs = prefs.getLong(category.prefsKey, 0L)
+            if (expiryMs == 0L) return false
+
+            val now = System.currentTimeMillis()
+            if (now >= expiryMs) {
+                // Expired — clear it
+                prefs.edit().remove(category.prefsKey).apply()
+                return false
+            }
+            return true
+        }
+
+        fun pauseExpiryMs(prefs: android.content.SharedPreferences, category: AlertCategory): Long? {
+            val expiryMs = prefs.getLong(category.prefsKey, 0L)
+            if (expiryMs == 0L) return null
+
+            val now = System.currentTimeMillis()
+            if (now >= expiryMs) {
+                // Expired — clear it
+                prefs.edit().remove(category.prefsKey).apply()
+                return null
+            }
+            return expiryMs
+        }
     }
 
     private val notificationManager = context.getSystemService(NotificationManager::class.java)
