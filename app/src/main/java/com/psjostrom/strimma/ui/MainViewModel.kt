@@ -384,4 +384,16 @@ class MainViewModel @Inject constructor(
             }
         }
     }
+
+    suspend fun carbTreatmentsInRange(start: Long, end: Long): List<Treatment> {
+        return treatmentDao.carbsInRange(start, end)
+    }
+
+    suspend fun allTreatmentsSince(start: Long): List<Treatment> {
+        return treatmentDao.allSince(start)
+    }
+
+    fun currentTauMinutes(): Double {
+        return IOBComputer.tauForInsulinType(insulinType.value, customDIA.value)
+    }
 }

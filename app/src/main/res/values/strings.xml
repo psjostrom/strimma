@@ -197,6 +197,7 @@
     <!-- Stats Tabs -->
     <string name="stats_tab_metrics">Metrics</string>
     <string name="stats_tab_agp" translatable="false">AGP</string>
+    <string name="stats_tab_meals">Meals</string>
 
     <!-- AGP -->
     <string name="agp_title">Ambulatory Glucose Profile</string>

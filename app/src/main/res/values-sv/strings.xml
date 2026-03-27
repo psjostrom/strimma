@@ -175,6 +175,7 @@
 
     <!-- Stats Tabs -->
     <string name="stats_tab_metrics">M\u00E4tv\u00E4rden</string>
+    <string name="stats_tab_meals">M\u00E5ltider</string>
 
     <!-- AGP -->
     <string name="agp_title">Ambulatorisk glukosprofil</string>

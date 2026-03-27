@@ -477,6 +477,9 @@ class MainActivity : ComponentActivity() {
                             glucoseUnit = glucoseUnit,
                             hbA1cUnit = hbA1cUnit,
                             onLoadReadings = viewModel::readingsForPeriod,
+                            onLoadCarbTreatments = viewModel::carbTreatmentsInRange,
+                            onLoadAllTreatments = viewModel::allTreatmentsSince,
+                            tauMinutes = viewModel.currentTauMinutes(),
                             onExportCsv = viewModel::exportCsv,
                             onBack = { navController.popBackStack() }
                         )
