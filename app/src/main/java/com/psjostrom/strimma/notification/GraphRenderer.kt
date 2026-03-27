@@ -22,7 +22,9 @@ object GraphRenderer {
     private const val ZONE_LOW = 0x20FF4D6A.toInt()
     private const val ZONE_HIGH = 0x20FFB800.toInt()
     private const val ZONE_IN_RANGE = 0x1256CCF2.toInt()
-    private const val COLOR_AXIS_TEXT = 0xFF808080.toInt() // Medium gray — visible on both light and dark
+    // Medium gray — notification graph bitmap is transparent (BG_COLOR), so it sits on the
+    // system notification surface which can be light or dark. Lavender was invisible on light.
+    private const val COLOR_AXIS_TEXT = 0xFF808080.toInt()
 
     // Margins
     private const val MARGIN_COMPACT = 4f
@@ -63,7 +65,6 @@ object GraphRenderer {
     private const val EXERCISE_FILL_ALPHA = 38
     private const val EXERCISE_BORDER_ALPHA = 127
     private const val EXERCISE_BORDER_WIDTH = 2f
-
 
 
     @Suppress("CyclomaticComplexMethod", "LongMethod") // Sequential render pipeline
