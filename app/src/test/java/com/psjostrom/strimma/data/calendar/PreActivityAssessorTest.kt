@@ -1,5 +1,6 @@
 package com.psjostrom.strimma.data.calendar
 
+import com.psjostrom.strimma.data.GlucoseUnit
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -235,9 +236,24 @@ class PreActivityAssessorTest {
     }
 
     @Test
-    fun `forecast below 5_5 adds forecast suggestion`() {
+    fun `forecast below 5_5 adds forecast suggestion in mmol`() {
         val result = assess(140, forecastBgAt30min = 90.0)
-        assertTrue(result.suggestions.any { it.contains("Forecast") && it.contains("30 min") })
+        assertTrue(result.suggestions.any { it.contains("Forecast") && it.contains("5.0") && it.contains("30 min") })
+    }
+
+    @Test
+    fun `forecast suggestion respects mgdl unit`() {
+        val result = PreActivityAssessor.assess(
+            currentBgMgdl = 140,
+            velocityMgdlPerMin = 0.0,
+            iob = 0.0,
+            forecastBgAt30minMgdl = 90.0,
+            timeToWorkoutMs = workoutInMs,
+            targetLowMgdl = targetLow,
+            targetHighMgdl = targetHigh,
+            glucoseUnit = GlucoseUnit.MGDL
+        )
+        assertTrue(result.suggestions.any { it.contains("Forecast") && it.contains("90") && it.contains("30 min") })
     }
 
     @Test

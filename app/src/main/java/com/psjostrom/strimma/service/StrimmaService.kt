@@ -427,7 +427,8 @@ class StrimmaService : Service() {
                     forecastBgAt30minMgdl = forecastBg,
                     timeToWorkoutMs = (event.startTime - now),
                     targetLowMgdl = targetLow,
-                    targetHighMgdl = targetHigh
+                    targetHighMgdl = targetHigh,
+                    glucoseUnit = glucoseUnit.value
                 )
                 val actionText = when {
                     result.carbRecommendation != null -> "eat ${result.carbRecommendation.totalGrams}g"

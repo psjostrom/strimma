@@ -1,5 +1,7 @@
 package com.psjostrom.strimma.data.calendar
 
+import com.psjostrom.strimma.data.GlucoseUnit
+
 object PreActivityAssessor {
 
     private const val HYPO_THRESHOLD = 81       // 4.5 mmol/L
@@ -24,8 +26,6 @@ object PreActivityAssessor {
     private const val TIMING_IMMINENT_MS = 15 * 60_000L
     private const val RECHECK_THRESHOLD_MS = 60 * 60_000L
 
-    private const val MMOL_FORMAT_FACTOR = 18.0182
-
     data class AssessmentResult(
         val readiness: ReadinessLevel,
         val reasons: List<AssessmentReason>,
@@ -41,7 +41,8 @@ object PreActivityAssessor {
         forecastBgAt30minMgdl: Double?,
         timeToWorkoutMs: Long,
         targetLowMgdl: Float,
-        @Suppress("UNUSED_PARAMETER") targetHighMgdl: Float
+        @Suppress("UNUSED_PARAMETER") targetHighMgdl: Float,
+        glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL
     ): AssessmentResult {
         val reasons = mutableListOf<AssessmentReason>()
         val suggestions = mutableListOf<String>()
@@ -125,8 +126,8 @@ object PreActivityAssessor {
 
         // Forecast suggestion
         if (forecastBgAt30minMgdl != null && forecastBgAt30minMgdl < FORECAST_LOW) {
-            val mmol = "%.1f".format(forecastBgAt30minMgdl / MMOL_FORMAT_FACTOR)
-            suggestions.add("Forecast: $mmol in 30 min")
+            val formatted = glucoseUnit.format(forecastBgAt30minMgdl)
+            suggestions.add("Forecast: $formatted in 30 min")
         }
 
         // Re-check suggestion when workout is far away
