@@ -1,6 +1,7 @@
 package com.psjostrom.strimma.notification
 
 import android.app.NotificationChannel
+import androidx.core.content.edit
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
@@ -82,12 +83,12 @@ class AlertManager @Inject constructor(
 
         fun pauseCategory(prefs: android.content.SharedPreferences, category: AlertCategory, durationMs: Long) {
             val expiryMs = System.currentTimeMillis() + durationMs
-            prefs.edit().putLong(category.prefsKey, expiryMs).apply()
+            prefs.edit { putLong(category.prefsKey, expiryMs) }
             DebugLog.log("Category ${category.name} paused until ${expiryMs}")
         }
 
         fun cancelPause(prefs: android.content.SharedPreferences, category: AlertCategory) {
-            prefs.edit().remove(category.prefsKey).apply()
+            prefs.edit { remove(category.prefsKey) }
         }
 
         fun isCategoryPaused(prefs: android.content.SharedPreferences, category: AlertCategory): Boolean {
@@ -97,7 +98,7 @@ class AlertManager @Inject constructor(
             val now = System.currentTimeMillis()
             if (now >= expiryMs) {
                 // Expired — clear it
-                prefs.edit().remove(category.prefsKey).apply()
+                prefs.edit { remove(category.prefsKey) }
                 return false
             }
             return true
@@ -110,7 +111,7 @@ class AlertManager @Inject constructor(
             val now = System.currentTimeMillis()
             if (now >= expiryMs) {
                 // Expired — clear it
-                prefs.edit().remove(category.prefsKey).apply()
+                prefs.edit { remove(category.prefsKey) }
                 return null
             }
             return expiryMs
