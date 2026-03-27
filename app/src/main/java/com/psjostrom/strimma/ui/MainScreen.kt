@@ -11,7 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.outlined.BarChart
+import androidx.compose.material.icons.outlined.NotificationsOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.rememberUpdatedState
@@ -49,6 +49,9 @@ import com.psjostrom.strimma.graph.ThresholdCrossing
 import com.psjostrom.strimma.graph.CrossingType
 import com.psjostrom.strimma.graph.computeYRange
 import com.psjostrom.strimma.network.FollowerStatus
+import com.psjostrom.strimma.notification.AlertCategory
+import com.psjostrom.strimma.ui.components.PauseAlertsSheet
+import com.psjostrom.strimma.ui.components.rememberCountdownText
 import com.psjostrom.strimma.ui.theme.AboveHigh
 import com.psjostrom.strimma.ui.theme.BelowLow
 import com.psjostrom.strimma.ui.theme.BolusBlue
@@ -84,14 +87,19 @@ fun MainScreen(
     guidanceState: GuidanceState = GuidanceState.NoWorkout,
     onComputeBGContext: (suspend (StoredExerciseSession) -> ExerciseBGContext?)? = null,
     onSettingsClick: () -> Unit,
-    onStatsClick: () -> Unit = {},
-    onExerciseClick: () -> Unit = {}
+    onExerciseClick: () -> Unit = {},
+    pauseLowExpiryMs: Long? = null,
+    pauseHighExpiryMs: Long? = null,
+    onPauseAlerts: (AlertCategory, Long) -> Unit = { _, _ -> },
+    onCancelPause: (AlertCategory) -> Unit = {}
 ) {
     val mainWindowMs = graphWindowHours * 3600_000L
 
     val predictionMs = predictionMinutes * 60_000L
     var viewportEnd by remember { mutableLongStateOf(System.currentTimeMillis() + predictionMs) }
     var zoomScale by remember { mutableFloatStateOf(1f) }
+
+    var showPauseSheet by remember { mutableStateOf(false) }
 
     // Exercise detail sheet state
     var selectedExercise by remember { mutableStateOf<StoredExerciseSession?>(null) }
@@ -119,6 +127,16 @@ fun MainScreen(
         )
     }
 
+    if (showPauseSheet) {
+        PauseAlertsSheet(
+            pauseLowExpiryMs = pauseLowExpiryMs,
+            pauseHighExpiryMs = pauseHighExpiryMs,
+            onPause = onPauseAlerts,
+            onCancel = onCancelPause,
+            onDismiss = { showPauseSheet = false }
+        )
+    }
+
     // Auto-track "now" + prediction space when viewport is near current time
     LaunchedEffect(readings) {
         val now = System.currentTimeMillis()
@@ -132,17 +150,18 @@ fun MainScreen(
             TopAppBar(
                 title = { },
                 actions = {
+                    IconButton(onClick = { showPauseSheet = true }) {
+                        Icon(
+                            Icons.Outlined.NotificationsOff,
+                            contentDescription = stringResource(R.string.pause_alerts),
+                            tint = if (pauseLowExpiryMs != null || pauseHighExpiryMs != null)
+                                InRange else MaterialTheme.colorScheme.outline
+                        )
+                    }
                     IconButton(onClick = onExerciseClick) {
                         Icon(
                             Icons.Default.FitnessCenter,
                             contentDescription = stringResource(R.string.settings_exercise),
-                            tint = MaterialTheme.colorScheme.outline
-                        )
-                    }
-                    IconButton(onClick = onStatsClick) {
-                        Icon(
-                            Icons.Outlined.BarChart,
-                            contentDescription = stringResource(R.string.common_content_desc_statistics),
                             tint = MaterialTheme.colorScheme.outline
                         )
                     }
@@ -170,7 +189,12 @@ fun MainScreen(
             val crossing = remember(readings, bgLow, bgHigh, predictionMinutes) {
                 PredictionComputer.compute(readings, predictionMinutes, bgLow.toDouble(), bgHigh.toDouble())?.crossing
             }
-            BgHeader(latestReading, bgLow, bgHigh, glucoseUnit, crossing, followerStatus, iob, treatments, iobTauMinutes)
+            BgHeader(
+                latestReading, bgLow, bgHigh, glucoseUnit, crossing, followerStatus, iob, treatments, iobTauMinutes,
+                pauseLowExpiryMs = pauseLowExpiryMs,
+                pauseHighExpiryMs = pauseHighExpiryMs,
+                onPausePillClick = { showPauseSheet = true }
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -245,7 +269,10 @@ private fun BgHeader(
     glucoseUnit: GlucoseUnit, crossing: ThresholdCrossing? = null,
     followerStatus: FollowerStatus, iob: Double = 0.0,
     treatments: List<Treatment> = emptyList(),
-    iobTauMinutes: Double = 55.0
+    iobTauMinutes: Double = 55.0,
+    pauseLowExpiryMs: Long? = null,
+    pauseHighExpiryMs: Long? = null,
+    onPausePillClick: () -> Unit = {}
 ) {
     var minutesAgo by remember { mutableIntStateOf(0) }
 
@@ -360,6 +387,48 @@ private fun BgHeader(
             }
             if (showIobDetail) {
                 IobDetailDialog(treatments, iobTauMinutes, onDismiss = { showIobDetail = false })
+            }
+        }
+
+        pauseHighExpiryMs?.let { expiry ->
+            if (expiry > System.currentTimeMillis()) {
+                val countdownText = rememberCountdownText(expiry)
+                Spacer(modifier = Modifier.height(8.dp))
+                val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+                Surface(
+                    onClick = onPausePillClick,
+                    shape = RoundedCornerShape(100),
+                    color = if (isDark) TintWarning else LightTintWarning
+                ) {
+                    Text(
+                        text = stringResource(R.string.pause_high_active, countdownText),
+                        color = AboveHigh,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
+                    )
+                }
+            }
+        }
+
+        pauseLowExpiryMs?.let { expiry ->
+            if (expiry > System.currentTimeMillis()) {
+                val countdownText = rememberCountdownText(expiry)
+                Spacer(modifier = Modifier.height(8.dp))
+                val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+                Surface(
+                    onClick = onPausePillClick,
+                    shape = RoundedCornerShape(100),
+                    color = if (isDark) TintDanger else LightTintDanger
+                ) {
+                    Text(
+                        text = stringResource(R.string.pause_low_active, countdownText),
+                        color = BelowLow,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
+                    )
+                }
             }
         }
 

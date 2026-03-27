@@ -7,7 +7,7 @@
     <string name="common_export">Exportieren</string>
     <string name="common_sound">Ton</string>
     <string name="common_no_data">Keine Daten</string>
-    <string name="common_content_desc_statistics">Statistik</string>
+
     <string name="common_content_desc_settings">Einstellungen</string>
     <string name="common_content_desc_back">Zur\u00FCck</string>
     <string name="common_content_desc_export">Exportieren</string>
@@ -383,4 +383,21 @@
     <string name="workout_calendar_label">Kalender</string>
     <string name="workout_calendar_none">(keine)</string>
     <string name="workout_calendar_picker_title">Kalender auswählen</string>
+
+    <!-- Alert pause -->
+    <string name="pause_alerts">Alarme pausieren</string>
+    <string name="pause_low_alerts">Tief-Alarme</string>
+    <string name="pause_high_alerts">Hoch-Alarme</string>
+    <string name="pause_duration_30m">30m</string>
+    <string name="pause_duration_1h">1h</string>
+    <string name="pause_duration_1_5h">1,5h</string>
+    <string name="pause_duration_2h">2h</string>
+    <string name="pause_duration_3h">3h</string>
+    <string name="pause_cancel">Abbrechen</string>
+    <string name="pause_low_active">Tief-Alarme pausiert · %1$s</string>
+    <string name="pause_high_active">Hoch-Alarme pausiert · %1$s</string>
+    <string name="pause_low_paused">Tief-Alarme pausiert</string>
+    <string name="pause_high_paused">Hoch-Alarme pausiert</string>
+    <string name="pause_countdown">Pausiert · %1$s</string>
+    <string name="pause_low_warning">Einschließlich Akut-tief-Alarm</string>
 </resources>

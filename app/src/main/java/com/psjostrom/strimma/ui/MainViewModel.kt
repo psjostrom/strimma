@@ -27,6 +27,7 @@ import com.psjostrom.strimma.network.FollowerStatus
 import com.psjostrom.strimma.network.LibreLinkUpFollower
 import com.psjostrom.strimma.network.NightscoutFollower
 import com.psjostrom.strimma.network.NightscoutPuller
+import com.psjostrom.strimma.notification.AlertCategory
 import com.psjostrom.strimma.notification.AlertManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -59,6 +60,7 @@ class MainViewModel @Inject constructor(
         private const val PRE_WINDOW_MINUTES = 30
         private const val POST_WINDOW_HOURS = 4
         private const val MS_PER_MINUTE = 60_000L
+        private const val PAUSE_POLL_INTERVAL_MS = 10_000L
         internal const val FORECAST_HORIZON_MINUTES = 30
 
         internal fun computeGuidance(
@@ -168,6 +170,13 @@ class MainViewModel @Inject constructor(
     val alertHighSoonEnabled: StateFlow<Boolean> = settings.alertHighSoonEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
+    // Alert pause state
+    private val _pauseLowExpiryMs = MutableStateFlow<Long?>(null)
+    val pauseLowExpiryMs: StateFlow<Long?> = _pauseLowExpiryMs
+
+    private val _pauseHighExpiryMs = MutableStateFlow<Long?>(null)
+    val pauseHighExpiryMs: StateFlow<Long?> = _pauseHighExpiryMs
+
     fun setNightscoutUrl(url: String) = viewModelScope.launch { settings.setNightscoutUrl(url) }
     fun setNightscoutSecret(secret: String) = settings.setNightscoutSecret(secret)
     fun setGraphWindowHours(hours: Int) = viewModelScope.launch { settings.setGraphWindowHours(hours) }
@@ -187,6 +196,23 @@ class MainViewModel @Inject constructor(
     fun setAlertLowSoonEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertLowSoonEnabled(enabled) }
     fun setAlertHighSoonEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertHighSoonEnabled(enabled) }
     fun openAlertChannelSettings(channelId: String) = alertManager.openChannelSettings(channelId)
+
+    fun pauseAlerts(category: AlertCategory, durationMs: Long) {
+        alertManager.pauseAlertCategory(category, durationMs)
+        val expiryMs = System.currentTimeMillis() + durationMs
+        when (category) {
+            AlertCategory.LOW -> _pauseLowExpiryMs.value = expiryMs
+            AlertCategory.HIGH -> _pauseHighExpiryMs.value = expiryMs
+        }
+    }
+
+    fun cancelAlertPause(category: AlertCategory) {
+        alertManager.cancelAlertPause(category)
+        when (category) {
+            AlertCategory.LOW -> _pauseLowExpiryMs.value = null
+            AlertCategory.HIGH -> _pauseHighExpiryMs.value = null
+        }
+    }
 
     val themeMode: StateFlow<String> = settings.themeMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "System")
@@ -336,6 +362,14 @@ class MainViewModel @Inject constructor(
                     _cachedEvent.value = null
                 }
                 delay(MS_PER_MINUTE)
+            }
+        }
+
+        viewModelScope.launch {
+            while (currentCoroutineContext().isActive) {
+                _pauseLowExpiryMs.value = alertManager.alertPauseExpiryMs(AlertCategory.LOW)
+                _pauseHighExpiryMs.value = alertManager.alertPauseExpiryMs(AlertCategory.HIGH)
+                delay(PAUSE_POLL_INTERVAL_MS)
             }
         }
     }
