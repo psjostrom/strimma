@@ -36,7 +36,6 @@ import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.calendar.CalendarReader
-import com.psjostrom.strimma.data.calendar.WorkoutCategory
 import com.psjostrom.strimma.data.calendar.WorkoutEvent
 import com.psjostrom.strimma.data.health.ExerciseBGAnalyzer
 import com.psjostrom.strimma.data.health.ExerciseBGContext
@@ -447,8 +446,8 @@ private fun PlannedWorkoutCard(
     val timeRange = "${timeFmt.format(Date(event.startTime))}\u2013${timeFmt.format(Date(event.endTime))}"
     val durationMin = ((event.endTime - event.startTime) / MS_PER_MINUTE).toInt()
     val categoryName = event.category.name.lowercase().replaceFirstChar { it.uppercase() }
-    val targetLow = glucoseUnit.format(event.category.defaultTargetLowMgdl.toDouble())
-    val targetHigh = glucoseUnit.format(event.category.defaultTargetHighMgdl.toDouble())
+    val targetLow = glucoseUnit.format(event.metabolicProfile.defaultTargetLowMgdl.toDouble())
+    val targetHigh = glucoseUnit.format(event.metabolicProfile.defaultTargetHighMgdl.toDouble())
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
