@@ -160,6 +160,11 @@ class SettingsRepository @Inject constructor(
         private val KEY_WORKOUT_STRENGTH_LOW = floatPreferencesKey("workout_strength_low")
         private val KEY_WORKOUT_STRENGTH_HIGH = floatPreferencesKey("workout_strength_high")
 
+        // Exercise target keys (keyed by ExerciseCategory.name)
+        private fun exerciseTargetLowKey(name: String) = floatPreferencesKey("exercise_target_low_$name")
+        private fun exerciseTargetHighKey(name: String) = floatPreferencesKey("exercise_target_high_$name")
+        private val KEY_MAX_HEART_RATE = intPreferencesKey("max_heart_rate")
+
         private const val DEFAULT_WORKOUT_LOOKAHEAD_HOURS = 3
         private const val DEFAULT_WORKOUT_TRIGGER_MINUTES = 120
 
@@ -399,6 +404,61 @@ class SettingsRepository @Inject constructor(
                 com.psjostrom.strimma.data.calendar.WorkoutCategory.FALLBACK -> { }
             }
         }
+    }
+
+    val maxHeartRate: Flow<Int?> = dataStore.data.map { it[KEY_MAX_HEART_RATE] }
+    suspend fun setMaxHeartRate(hr: Int?) {
+        dataStore.edit {
+            if (hr != null) it[KEY_MAX_HEART_RATE] = hr
+            else it.remove(KEY_MAX_HEART_RATE)
+        }
+    }
+
+    fun exerciseTargetLow(category: com.psjostrom.strimma.data.health.ExerciseCategory): Flow<Float> =
+        dataStore.data.map { prefs ->
+            prefs[exerciseTargetLowKey(category.name)]
+                ?: migrateLegacyTargetLow(prefs, category)
+                ?: category.defaultMetabolicProfile.defaultTargetLowMgdl
+        }
+
+    fun exerciseTargetHigh(category: com.psjostrom.strimma.data.health.ExerciseCategory): Flow<Float> =
+        dataStore.data.map { prefs ->
+            prefs[exerciseTargetHighKey(category.name)]
+                ?: migrateLegacyTargetHigh(prefs, category)
+                ?: category.defaultMetabolicProfile.defaultTargetHighMgdl
+        }
+
+    suspend fun setExerciseTarget(
+        category: com.psjostrom.strimma.data.health.ExerciseCategory,
+        low: Float,
+        high: Float
+    ) {
+        dataStore.edit {
+            it[exerciseTargetLowKey(category.name)] = low
+            it[exerciseTargetHighKey(category.name)] = high
+        }
+    }
+
+    private fun migrateLegacyTargetLow(
+        prefs: androidx.datastore.preferences.core.Preferences,
+        category: com.psjostrom.strimma.data.health.ExerciseCategory
+    ): Float? = when (category) {
+        com.psjostrom.strimma.data.health.ExerciseCategory.RUNNING ->
+            prefs[KEY_WORKOUT_EASY_LOW]
+        com.psjostrom.strimma.data.health.ExerciseCategory.STRENGTH ->
+            prefs[KEY_WORKOUT_STRENGTH_LOW]
+        else -> null
+    }
+
+    private fun migrateLegacyTargetHigh(
+        prefs: androidx.datastore.preferences.core.Preferences,
+        category: com.psjostrom.strimma.data.health.ExerciseCategory
+    ): Float? = when (category) {
+        com.psjostrom.strimma.data.health.ExerciseCategory.RUNNING ->
+            prefs[KEY_WORKOUT_EASY_HIGH]
+        com.psjostrom.strimma.data.health.ExerciseCategory.STRENGTH ->
+            prefs[KEY_WORKOUT_STRENGTH_HIGH]
+        else -> null
     }
 
     @Suppress("CyclomaticComplexMethod") // Flat serialization of all settings
