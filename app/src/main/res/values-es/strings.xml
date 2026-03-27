@@ -262,6 +262,13 @@
     <string name="exercise_type_walking">Caminata</string>
     <string name="exercise_type_cycling">Ciclismo</string>
     <string name="exercise_type_swimming">Nataci\u00F3n</string>
+    <string name="exercise_type_hiking">Senderismo</string>
+    <string name="exercise_type_strength">Fuerza</string>
+    <string name="exercise_type_yoga">Yoga</string>
+    <string name="exercise_type_rowing">Remo</string>
+    <string name="exercise_type_skiing">Esqu\u00ED</string>
+    <string name="exercise_type_climbing">Escalada</string>
+    <string name="exercise_type_martial_arts">Artes marciales</string>
     <string name="exercise_type_other">Ejercicio</string>
 
     <!-- Exercise Detail -->
@@ -271,20 +278,15 @@
     <string name="exercise_detail_entry_bg">Entrada</string>
     <string name="exercise_detail_min_bg">M\u00EDn</string>
     <string name="exercise_detail_lowest_bg">M\u00E1s bajo</string>
-    <string name="exercise_detail_max_drop">Ca\u00EDda m\u00E1x</string>
     <string name="exercise_detail_avg_hr">FC prom</string>
     <string name="exercise_detail_max_hr">FC m\u00E1x</string>
     <string name="exercise_detail_steps">Pasos</string>
     <string name="exercise_detail_calories">Calor\u00EDas</string>
-    <string name="exercise_detail_time_to_lowest">Tiempo al m\u00E1s bajo</string>
     <string name="exercise_detail_highest_bg">M\u00E1s alto</string>
-    <string name="exercise_detail_time_to_highest">Tiempo al m\u00E1s alto</string>
     <string name="exercise_detail_total_drop">Ca\u00EDda total</string>
     <string name="exercise_detail_post_hypo">Bajo post-ejercicio</string>
     <string name="exercise_detail_no_data">Datos de glucosa insuficientes</string>
     <string name="exercise_detail_no_value">\u2014</string>
-    <string name="exercise_detail_per_10min">por 10 min</string>
-    <string name="exercise_detail_after_duration">%s despu\u00E9s</string>
     <string name="exercise_history_title">Ejercicio</string>
     <string name="exercise_history_empty">No hay sesiones de ejercicio. Conecta Health Connect en Ajustes para ver tus entrenamientos aqu\u00ED.</string>
     <string name="hc_rationale_title">Permisos de Health Connect</string>
@@ -363,6 +365,18 @@
     <string name="exercise_no_bg_data">No hay datos de BG recientes disponibles para la orientación.</string>
     <string name="exercise_no_calendars">No se encontraron calendarios en este dispositivo.</string>
     <string name="exercise_calendar_missing_hint">¿No encuentras tu calendario? Ve a Ajustes → Contraseñas \u0026 cuentas → tu cuenta de Google → Sincronización de cuenta y desactiva y activa Calendario.</string>
+
+    <!-- Patterns tab -->
+    <string name="exercise_tab_patterns">Patrones</string>
+    <string name="exercise_patterns_empty">Sigue entrenando con Strimma. Despu\u00E9s de algunas sesiones del mismo tipo, ver\u00E1s tus patrones de glucemia personales aqu\u00ED.</string>
+    <string name="exercise_patterns_by_activity">Por actividad</string>
+    <string name="exercise_patterns_by_profile">Por perfil</string>
+    <string name="exercise_patterns_low_risk">RIESGO BAJO</string>
+    <string name="exercise_patterns_some_risk">ALGO DE RIESGO</string>
+    <string name="exercise_patterns_high_risk">RIESGO ALTO</string>
+    <string name="exercise_patterns_drop_summary">La glucemia suele bajar aproximadamente %1$s</string>
+    <string name="exercise_patterns_went_low">Hipoglucemia %1$d de %2$d</string>
+    <string name="exercise_patterns_never_low">Nunca tuvo hipoglucemia</string>
 
     <!-- Pre-activity guidance -->
     <string name="workout_settings_title">Horario de entrenamiento</string>
