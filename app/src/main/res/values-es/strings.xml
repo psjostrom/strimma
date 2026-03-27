@@ -383,4 +383,21 @@
     <string name="workout_calendar_label">Calendario</string>
     <string name="workout_calendar_none">(ninguno)</string>
     <string name="workout_calendar_picker_title">Seleccionar calendario</string>
+
+    <!-- Alert pause -->
+    <string name="pause_alerts">Pausar alertas</string>
+    <string name="pause_low_alerts">Alertas de bajo</string>
+    <string name="pause_high_alerts">Alertas de alto</string>
+    <string name="pause_duration_30m">30m</string>
+    <string name="pause_duration_1h">1h</string>
+    <string name="pause_duration_1_5h">1,5h</string>
+    <string name="pause_duration_2h">2h</string>
+    <string name="pause_duration_3h">3h</string>
+    <string name="pause_cancel">Cancelar</string>
+    <string name="pause_low_active">Alertas de bajo pausadas · %1$s</string>
+    <string name="pause_high_active">Alertas de alto pausadas · %1$s</string>
+    <string name="pause_low_paused">Alertas de bajo pausadas</string>
+    <string name="pause_high_paused">Alertas de alto pausadas</string>
+    <string name="pause_countdown">Pausado · %1$s</string>
+    <string name="pause_low_warning">Incluye alerta de bajo urgente</string>
 </resources>

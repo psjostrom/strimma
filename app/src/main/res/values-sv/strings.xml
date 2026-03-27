@@ -383,4 +383,21 @@
     <string name="workout_calendar_label">Kalender</string>
     <string name="workout_calendar_none">(ingen)</string>
     <string name="workout_calendar_picker_title">Välj kalender</string>
+
+    <!-- Alert pause -->
+    <string name="pause_alerts">Pausa larm</string>
+    <string name="pause_low_alerts">Låga larm</string>
+    <string name="pause_high_alerts">Höga larm</string>
+    <string name="pause_duration_30m">30m</string>
+    <string name="pause_duration_1h">1h</string>
+    <string name="pause_duration_1_5h">1,5h</string>
+    <string name="pause_duration_2h">2h</string>
+    <string name="pause_duration_3h">3h</string>
+    <string name="pause_cancel">Avbryt</string>
+    <string name="pause_low_active">Låga larm pausade · %1$s</string>
+    <string name="pause_high_active">Höga larm pausade · %1$s</string>
+    <string name="pause_low_paused">Låga larm pausade</string>
+    <string name="pause_high_paused">Höga larm pausade</string>
+    <string name="pause_countdown">Pausad · %1$s</string>
+    <string name="pause_low_warning">Inkluderar akut lågt-larm</string>
 </resources>
