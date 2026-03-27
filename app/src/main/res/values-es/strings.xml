@@ -360,6 +360,7 @@
     <string name="exercise_planned_empty">No se encontraron entrenamientos próximos en el calendario conectado.</string>
     <string name="exercise_planned_category">Categoría</string>
     <string name="exercise_planned_target">BG objetivo</string>
+    <string name="exercise_no_bg_data">No hay datos de BG recientes disponibles para la orientación.</string>
     <string name="exercise_no_calendars">No se encontraron calendarios en este dispositivo.</string>
     <string name="exercise_calendar_missing_hint">¿No encuentras tu calendario? Ve a Ajustes → Contraseñas \u0026 cuentas → tu cuenta de Google → Sincronización de cuenta y desactiva y activa Calendario.</string>
 

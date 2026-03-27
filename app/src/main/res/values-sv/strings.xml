@@ -360,6 +360,7 @@
     <string name="exercise_planned_empty">Inga kommande träningspass hittades i den kopplade kalendern.</string>
     <string name="exercise_planned_category">Kategori</string>
     <string name="exercise_planned_target">Mål-BG</string>
+    <string name="exercise_no_bg_data">Ingen aktuell BG-data tillgänglig för vägledning.</string>
     <string name="exercise_no_calendars">Inga kalendrar hittades på enheten.</string>
     <string name="exercise_calendar_missing_hint">Hittar du inte din kalender? Gå till Inställningar → Lösenord \u0026 konton → ditt Google-konto → Kontosynkronisering och stäng av och slå på Kalender.</string>
 
