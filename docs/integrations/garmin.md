@@ -16,7 +16,7 @@ graph LR
 
 ### Setup
 
-1. In Strimma: **Settings > Data > Integration > Local Web Server** — toggle on
+1. In Strimma: **Settings > Sharing > Local Web Server** — toggle on
 2. On your Garmin watch: install a watchface that reads from `http://127.0.0.1:17580/sgv.json` (e.g., [SugarWave](https://github.com/psjostrom/SugarWave))
 3. Done — the watchface polls for glucose data over the phone's local connection
 
@@ -42,7 +42,7 @@ graph LR
 
 ### Setup
 
-1. In Strimma: **Settings > Data > Integration > BG Broadcast** — toggle on
+1. In Strimma: **Settings > Sharing > BG Broadcast** — toggle on
 2. Install [GlucoDataHandler](https://github.com/pachi81/GlucoDataHandler) on your phone
 3. In GDH: enable xDrip+ broadcast as a data source, configure your Garmin watch as a target
 4. Install a compatible Garmin watchface or datafield (e.g., SugarField, AAPS Widget)
@@ -70,7 +70,7 @@ graph LR
 ## Troubleshooting
 
 !!! question "Data not appearing on watch"
-    **Web server path:** Verify the web server is on (Settings > Data > Integration), and that your watchface is configured to read from `127.0.0.1:17580`.
+    **Web server path:** Verify the web server is on (Settings > Sharing), and that your watchface is configured to read from `127.0.0.1:17580`.
 
     **GDH path:** Verify BG Broadcast is on, GDH shows "xDrip+ broadcast" as connected, and the Garmin watch is connected to GDH.
 

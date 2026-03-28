@@ -14,7 +14,7 @@ This is the **output** direction — Strimma sends data out. For the **input** d
 
 ## Setup
 
-1. Go to **Settings > Data > Integration**
+1. Go to **Settings > Sharing**
 2. Toggle **BG Broadcast** on
 
 That's it. Strimma will start broadcasting immediately.

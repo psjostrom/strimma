@@ -31,6 +31,8 @@ import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.HbA1cUnit
 import com.psjostrom.strimma.data.StatsCalculator
 import com.psjostrom.strimma.data.Treatment
+import com.psjostrom.strimma.data.meal.MealAnalyzer
+import com.psjostrom.strimma.data.meal.MealTimeSlotConfig
 import com.psjostrom.strimma.ui.theme.AboveHigh
 import com.psjostrom.strimma.ui.theme.BelowLow
 import com.psjostrom.strimma.ui.theme.InRange
@@ -68,6 +70,8 @@ fun StatsScreen(
     onLoadAllTreatments: suspend (Long) -> List<Treatment>,
     treatmentsSyncEnabled: Boolean = false,
     tauMinutes: Double,
+    mealAnalyzer: MealAnalyzer,
+    mealTimeSlotConfig: MealTimeSlotConfig,
     onExportCsv: suspend (Int) -> String,
     onBack: () -> Unit
 ) {
@@ -196,7 +200,9 @@ fun StatsScreen(
                     bgLow = bgLow,
                     bgHigh = bgHigh,
                     glucoseUnit = glucoseUnit,
-                    tauMinutes = tauMinutes
+                    tauMinutes = tauMinutes,
+                    analyzer = mealAnalyzer,
+                    timeSlotConfig = mealTimeSlotConfig
                 )
             }
 

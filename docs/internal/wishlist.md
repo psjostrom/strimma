@@ -12,6 +12,26 @@ Aggregate BG patterns across exercise sessions grouped by activity type and opti
 
 ---
 
+### Insulin Sensitivity & I:C Ratio Analysis
+
+Strimma has per-meal carbs, insulin dose, and resulting BG curve — enough to infer insulin-to-carb ratios and insulin sensitivity from historical data. Currently not computed. Could enable:
+- **I:C ratio estimation** — observe actual BG response per gram of carb given the insulin dose. Identify meals where the ratio was off.
+- **Insulin sensitivity factor (ISF)** — how much 1U of insulin drops BG, derived from correction boluses.
+- **Expected vs actual excursion** — compare predicted BG rise (from carbs/insulin/ISF) against observed. Flag outliers.
+
+Note: Strimma doesn't do insulin dosing — these would be observational insights, not recommendations. Useful for the user to bring to their endo or adjust pump settings.
+
+### Basal IOB & Temp Basal Utilization
+
+Strimma already fetches and stores temp basal treatments from Nightscout (CamAPS FX generates ~288/day). Currently unused — IOB is bolus-only. Could use temp basals for:
+- **Accurate IOB** — integrate basal rate deviations (actual vs profile) into IOB model. Current bolus-only IOB underestimates insulin on board for pump users.
+- **Insulin stats** — TDD split (basal vs bolus), insulin-to-carb ratios in meal analysis.
+- **Basal visualization** — rate changes on main graph or meal sparklines.
+
+Requires a reference "profile basal" rate to compute deviations, or treating each temp basal as absolute delivery.
+
+---
+
 ## Parked
 
 Deferred until there's demand or hardware.

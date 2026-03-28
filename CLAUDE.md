@@ -34,6 +34,7 @@ Single-module app. Hilt DI. All async via Coroutines/Flow.
 ## Project Structure
 
 - `data/` — Room entities, DAO, settings, direction computation, unit conversion, data source selection, statistics
+- `data/meal/` — Per-meal postprandial analysis: MealAnalyzer, MealStatsCalculator, MealAgpCalculator, time slot config, carb size bucketing
 - `graph/` — Shared graph logic (colors, Y-range computation, critical thresholds) + weighted least-squares prediction with endpoint anchoring
 - `network/` — Nightscout HTTP client, push logic (Ktor, `/api/v1/entries`), and follower mode (polling)
 - `notification/` — Foreground notification (collapsed/expanded with graph bitmap), alert manager

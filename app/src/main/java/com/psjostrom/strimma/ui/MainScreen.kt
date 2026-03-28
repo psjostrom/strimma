@@ -11,7 +11,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.rememberUpdatedState
@@ -84,7 +83,6 @@ fun MainScreen(
     guidanceState: GuidanceState = GuidanceState.NoWorkout,
     onComputeBGContext: (suspend (StoredExerciseSession) -> ExerciseBGContext?)? = null,
     onSettingsClick: () -> Unit,
-    onStatsClick: () -> Unit = {},
     onExerciseClick: () -> Unit = {}
 ) {
     val mainWindowMs = graphWindowHours * 3600_000L
@@ -136,13 +134,6 @@ fun MainScreen(
                         Icon(
                             Icons.Default.FitnessCenter,
                             contentDescription = stringResource(R.string.settings_exercise),
-                            tint = MaterialTheme.colorScheme.outline
-                        )
-                    }
-                    IconButton(onClick = onStatsClick) {
-                        Icon(
-                            Icons.Outlined.BarChart,
-                            contentDescription = stringResource(R.string.common_content_desc_statistics),
                             tint = MaterialTheme.colorScheme.outline
                         )
                     }

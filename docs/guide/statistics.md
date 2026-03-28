@@ -8,10 +8,7 @@ Strimma computes standard diabetes metrics from your glucose data.
 
 ## Viewing Statistics
 
-Open statistics from:
-
-- The **bar chart icon** in the main screen top bar
-- **Settings > Data > Statistics**
+Open statistics from **Settings > Statistics**.
 
 ---
 
@@ -97,6 +94,38 @@ Tap the **share icon** in the top bar to export your glucose data as a CSV file.
 | `delta_mgdl` | Change since previous reading in mg/dL |
 
 The CSV covers the currently selected time period. You can share it via email, messaging, or save it to files.
+
+---
+
+## Meals Tab
+
+The **Meals** tab analyzes your postprandial (after-meal) glucose response using carb treatments from Nightscout. Requires treatment sync to be enabled.
+
+### Aggregate View
+
+- **Meal Summary** — average TIR, peak excursion, and recovery time across all meals in the period
+- **By Carb Size** — meal count breakdown by Small (<20g), Medium (20–50g), Large (>50g)
+- **Postprandial Profile** — AGP-style chart showing percentile bands (5th–95th, 25th–75th) of glucose response aligned to meal time. X-axis is minutes after meal, Y-axis is glucose.
+
+### Filters
+
+Filter by time slot: **Breakfast**, **Lunch**, **Dinner**, **Snack**. Tap a chip to filter, tap again to show all. The postprandial profile updates to show only the selected slot.
+
+Time slot boundaries are configurable in **Settings > Treatments > Meal time slots**.
+
+### Per-Meal Cards
+
+Each meal shows:
+
+- **Collapsed** — carb amount, time slot, carb size, timestamp, TIR pill (green ≥80%, amber 50–79%, red <50%)
+- **Expanded** (tap to reveal) — sparkline graph, peak excursion, time to peak, recovery time, IOB at meal
+
+### Data Requirements
+
+- Treatment sync must be enabled
+- Treatments are retained for 30 days
+- Each meal needs ≥3 pre-meal readings (15-min window) and ≥5 postprandial readings to be analyzed
+- The postprandial window is 3 hours by default, extending to 4 hours if glucose hasn't recovered
 
 ---
 

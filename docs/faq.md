@@ -56,15 +56,15 @@ Glucose readings are stored in a local database on your phone (Room database). I
 
 ### How long does Strimma keep my data?
 
-Locally: 30 days of glucose readings, 48 hours of treatments, 7 days of debug logs. Older data is automatically pruned. Nightscout retains data according to your server's configuration.
+Locally: 30 days of glucose readings, 30 days of treatments, 7 days of debug logs. Older data is automatically pruned. Nightscout retains data according to your server's configuration.
 
 ### Can I export my data?
 
-Yes. Go to Settings > Data > Statistics, then tap the share icon to export a CSV file. You can export 24 hours, 7 days, 14 days, or 30 days of data.
+Yes. Go to Settings > Statistics, then tap the share icon to export a CSV file. You can export 24 hours, 7 days, 14 days, or 30 days of data.
 
 ### Can I back up my settings?
 
-Yes. Settings > Data > Export Settings creates a JSON backup of all your settings. Import it on another device or after reinstalling.
+Yes. Settings > Sharing > Export Settings creates a JSON backup of all your settings. Import it on another device or after reinstalling.
 
 ---
 

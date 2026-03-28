@@ -43,8 +43,6 @@
     <string name="settings_alerts_subtitle">Alertes bas, haut, donn\u00E9es obsol\u00E8tes</string>
     <string name="settings_general">G\u00E9n\u00E9ral</string>
     <string name="settings_general_subtitle">D\u00E9marrage, langue, batterie, \u00E0 propos</string>
-    <string name="settings_data">Donn\u00E9es</string>
-    <string name="settings_data_subtitle">Statistiques, export, t\u00E9l\u00E9chargement Nightscout</string>
     <string name="settings_debug_log">Journal de d\u00E9bogage</string>
 
     <!-- General Settings -->
@@ -143,8 +141,6 @@
 
     <!-- Data Settings -->
     <string name="settings_data_title">Donn\u00E9es</string>
-    <string name="settings_data_views">Vues</string>
-    <string name="settings_data_statistics">Statistiques</string>
     <string name="settings_data_nightscout">Nightscout</string>
     <string name="settings_data_pull">T\u00E9l\u00E9charger depuis Nightscout</string>
     <string name="settings_data_pull_desc">T\u00E9l\u00E9charger l\u2019historique de glyc\u00E9mie depuis votre serveur Nightscout</string>

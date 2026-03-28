@@ -21,10 +21,13 @@ class TreatmentSyncer @Inject constructor(
 ) {
     companion object {
         private const val POLL_INTERVAL_MS = 5 * 60 * 1000L
-        private const val LOOKBACK_MS = 14 * 24 * 60 * 60 * 1000L
-        private const val PRUNE_MS = 14 * 24 * 60 * 60 * 1000L
+        private const val LOOKBACK_MS = 30 * 24 * 60 * 60 * 1000L
+        private const val PRUNE_MS = 30 * 24 * 60 * 60 * 1000L
         private const val MS_PER_DAY = 24 * 60 * 60 * 1000L
         private const val MAX_ERROR_LENGTH = 80
+        // Looping systems (CamAPS, AndroidAPS, Loop) generate temp basals every 5 min
+        // (~288/day) plus boluses/carbs (~10-20/day). 500/day covers aggressive configurations.
+        private const val TREATMENTS_PER_DAY = 500
     }
 
     fun start(scope: CoroutineScope): Job {
@@ -43,8 +46,9 @@ class TreatmentSyncer @Inject constructor(
         }
 
         val since = System.currentTimeMillis() - days.toLong() * MS_PER_DAY
+        val count = days * TREATMENTS_PER_DAY
         return try {
-            val treatments = client.fetchTreatments(url, secret, since)
+            val treatments = client.fetchTreatments(url, secret, since, count)
             if (treatments.isNotEmpty()) {
                 dao.upsert(treatments)
             }
@@ -72,7 +76,8 @@ class TreatmentSyncer @Inject constructor(
         if (url.isBlank() || secret.isBlank()) return
 
         val since = System.currentTimeMillis() - LOOKBACK_MS
-        val treatments = client.fetchTreatments(url, secret, since)
+        val syncCount = 30 * TREATMENTS_PER_DAY
+        val treatments = client.fetchTreatments(url, secret, since, syncCount)
 
         if (treatments.isEmpty()) return
 

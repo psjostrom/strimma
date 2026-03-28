@@ -45,6 +45,7 @@ class DataSourceSettingsTest {
                 onLluPasswordChange = {},
                 isNotificationAccessGranted = true,
                 onOpenNotificationAccess = {},
+                onPullFromNightscout = {},
                 onBack = onBack
             )
         }

@@ -62,6 +62,7 @@ class NightscoutClient @Inject constructor() {
     companion object {
         private const val HTTP_NOT_FOUND = 404
         private const val MAX_ERROR_LENGTH = 80
+        private const val DEFAULT_TREATMENT_COUNT = 100
 
         fun buildFetchUrl(baseUrl: String, since: Long, count: Int, before: Long? = null): String {
             val base = "${baseUrl.trimEnd('/')}/api/v1/entries.json?find[date][\$gt]=$since&count=$count"
@@ -204,15 +205,14 @@ class NightscoutClient @Inject constructor() {
     suspend fun fetchTreatments(
         baseUrl: String,
         secret: String,
-        since: Long
+        since: Long,
+        count: Int = DEFAULT_TREATMENT_COUNT
     ): List<Treatment> {
         if (baseUrl.isBlank() || secret.isBlank()) return emptyList()
 
         val hashedSecret = hashSecret(secret)
         val sinceIso = isoFormatter.format(Instant.ofEpochMilli(since))
-        // count=100 is sufficient for bolus/carb events in 6h. Aggressive looping systems
-        // may generate more temp basals, but those aren't rendered on the graph.
-        val fullUrl = "${baseUrl.trimEnd('/')}/api/v1/treatments.json?find[created_at][\$gte]=$sinceIso&count=100"
+        val fullUrl = "${baseUrl.trimEnd('/')}/api/v1/treatments.json?find[created_at][\$gte]=$sinceIso&count=$count"
 
         return try {
             val response = client.get(fullUrl) {

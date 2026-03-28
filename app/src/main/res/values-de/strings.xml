@@ -43,8 +43,6 @@
     <string name="settings_alerts_subtitle">Tief-, Hoch- und veraltete Daten-Alarme</string>
     <string name="settings_general">Allgemein</string>
     <string name="settings_general_subtitle">Autostart, Sprache, Akku, \u00DCber</string>
-    <string name="settings_data">Daten</string>
-    <string name="settings_data_subtitle">Statistik, Export, Nightscout-Abruf</string>
     <string name="settings_debug_log">Fehlerprotokoll</string>
 
     <!-- General Settings -->
@@ -143,8 +141,6 @@
 
     <!-- Data Settings -->
     <string name="settings_data_title">Daten</string>
-    <string name="settings_data_views">Ansichten</string>
-    <string name="settings_data_statistics">Statistik</string>
     <string name="settings_data_nightscout">Nightscout</string>
     <string name="settings_data_pull">Von Nightscout abrufen</string>
     <string name="settings_data_pull_desc">Glukoseverlauf von deinem Nightscout-Server herunterladen</string>

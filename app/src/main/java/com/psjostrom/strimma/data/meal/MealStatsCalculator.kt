@@ -13,9 +13,10 @@ object MealStatsCalculator {
 
     fun groupByTimeSlot(
         results: List<MealPostprandialResult>,
-        zone: ZoneId
+        zone: ZoneId,
+        config: MealTimeSlotConfig = MealTimeSlotConfig()
     ): Map<MealTimeSlot, List<MealPostprandialResult>> =
-        results.groupBy { MealTimeSlot.fromTimestamp(it.mealTime, zone) }
+        results.groupBy { MealTimeSlot.fromTimestamp(it.mealTime, zone, config) }
 
     fun groupByCarbSize(
         results: List<MealPostprandialResult>

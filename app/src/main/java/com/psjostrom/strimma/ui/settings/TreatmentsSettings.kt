@@ -6,12 +6,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.InsulinType
+import com.psjostrom.strimma.data.meal.MealTimeSlotConfig
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -22,6 +24,9 @@ fun TreatmentsSettings(
     onTreatmentsSyncEnabledChange: (Boolean) -> Unit,
     onInsulinTypeChange: (InsulinType) -> Unit,
     onCustomDIAChange: (Float) -> Unit,
+    onPullTreatments: (Int) -> Unit,
+    mealTimeSlotConfig: MealTimeSlotConfig,
+    onMealSlotChange: (String, Int) -> Unit,
     onBack: () -> Unit
 ) {
     val onBg = MaterialTheme.colorScheme.onBackground
@@ -92,5 +97,128 @@ fun TreatmentsSettings(
                 }
             }
         }
+
+        if (treatmentsSyncEnabled) {
+            PullDataSection(
+                title = stringResource(R.string.settings_data_pull_treatments),
+                description = stringResource(R.string.settings_data_pull_treatments_desc),
+                onPull = onPullTreatments
+            )
+
+            MealTimeSlotsSection(
+                config = mealTimeSlotConfig,
+                onSlotChange = onMealSlotChange
+            )
+        }
     }
+}
+
+@Composable
+private fun MealTimeSlotsSection(
+    config: MealTimeSlotConfig,
+    onSlotChange: (String, Int) -> Unit
+) {
+    val onBg = MaterialTheme.colorScheme.onBackground
+    val outline = MaterialTheme.colorScheme.outline
+
+    SettingsSection(stringResource(R.string.settings_meal_slots_title)) {
+        Text(
+            stringResource(R.string.settings_meal_slots_desc),
+            color = outline,
+            fontSize = 12.sp
+        )
+        MealSlotRow(stringResource(R.string.meal_slot_breakfast), "breakfast", config.breakfastStart, config.breakfastEnd, onBg, outline, onSlotChange)
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        MealSlotRow(stringResource(R.string.meal_slot_lunch), "lunch", config.lunchStart, config.lunchEnd, onBg, outline, onSlotChange)
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        MealSlotRow(stringResource(R.string.meal_slot_dinner), "dinner", config.dinnerStart, config.dinnerEnd, onBg, outline, onSlotChange)
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MealSlotRow(
+    label: String,
+    key: String,
+    startMinutes: Int,
+    endMinutes: Int,
+    textColor: androidx.compose.ui.graphics.Color,
+    subtitleColor: androidx.compose.ui.graphics.Color,
+    onSlotChange: (String, Int) -> Unit
+) {
+    var showStartPicker by remember { mutableStateOf(false) }
+    var showEndPicker by remember { mutableStateOf(false) }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(label, color = textColor, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            TextButton(onClick = { showStartPicker = true }) {
+                Text(formatMinutes(startMinutes), fontSize = 14.sp)
+            }
+            Text("–", color = subtitleColor, modifier = Modifier.align(Alignment.CenterVertically))
+            TextButton(onClick = { showEndPicker = true }) {
+                Text(formatMinutes(endMinutes), fontSize = 14.sp)
+            }
+        }
+    }
+
+    if (showStartPicker) {
+        TimePickerDialog(
+            initialMinutes = startMinutes,
+            onConfirm = { minutes ->
+                onSlotChange("${key}_start", minutes)
+                showStartPicker = false
+            },
+            onDismiss = { showStartPicker = false }
+        )
+    }
+    if (showEndPicker) {
+        TimePickerDialog(
+            initialMinutes = endMinutes,
+            onConfirm = { minutes ->
+                onSlotChange("${key}_end", minutes)
+                showEndPicker = false
+            },
+            onDismiss = { showEndPicker = false }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TimePickerDialog(
+    initialMinutes: Int,
+    onConfirm: (Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val state = rememberTimePickerState(
+        initialHour = initialMinutes / 60,
+        initialMinute = initialMinutes % 60,
+        is24Hour = true
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = { onConfirm(state.hour * 60 + state.minute) }) {
+                Text(stringResource(R.string.common_ok))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.common_cancel))
+            }
+        },
+        text = { TimePicker(state = state) }
+    )
+}
+
+private fun formatMinutes(minutes: Int): String {
+    val h = minutes / 60
+    val m = minutes % 60
+    return "%02d:%02d".format(h, m)
 }

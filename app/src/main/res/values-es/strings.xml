@@ -43,8 +43,6 @@
     <string name="settings_alerts_subtitle">Alertas de bajo, alto y datos obsoletos</string>
     <string name="settings_general">General</string>
     <string name="settings_general_subtitle">Inicio, idioma, bater\u00EDa, acerca de</string>
-    <string name="settings_data">Datos</string>
-    <string name="settings_data_subtitle">Estad\u00EDsticas, exportar, descarga de Nightscout</string>
     <string name="settings_debug_log">Registro de depuraci\u00F3n</string>
 
     <!-- General Settings -->
@@ -143,8 +141,6 @@
 
     <!-- Data Settings -->
     <string name="settings_data_title">Datos</string>
-    <string name="settings_data_views">Vistas</string>
-    <string name="settings_data_statistics">Estad\u00EDsticas</string>
     <string name="settings_data_nightscout">Nightscout</string>
     <string name="settings_data_pull">Descargar de Nightscout</string>
     <string name="settings_data_pull_desc">Descargar historial de glucosa desde tu servidor Nightscout</string>

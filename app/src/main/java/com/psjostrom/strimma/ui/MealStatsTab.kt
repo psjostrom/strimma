@@ -8,7 +8,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -20,6 +22,8 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Fill
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -31,15 +35,12 @@ import com.psjostrom.strimma.data.Treatment
 import com.psjostrom.strimma.data.meal.*
 import com.psjostrom.strimma.ui.theme.AboveHigh
 import com.psjostrom.strimma.ui.theme.BelowLow
+import com.psjostrom.strimma.ui.theme.GraphAxisText
 import com.psjostrom.strimma.ui.theme.InRange
+import com.psjostrom.strimma.ui.theme.Stale
 import java.time.ZoneId
 import kotlin.math.max
 import kotlin.math.min
-
-private val analyzer = MealAnalyzer()
-
-private fun MealPostprandialResult.slot(): MealTimeSlot =
-    MealTimeSlot.fromTimestamp(mealTime, ZoneId.systemDefault())
 
 private fun MealPostprandialResult.carbSize(): CarbSizeBucket =
     CarbSizeBucket.fromGrams(carbGrams)
@@ -57,7 +58,9 @@ fun MealStatsTab(
     bgLow: Float,
     bgHigh: Float,
     glucoseUnit: GlucoseUnit,
-    tauMinutes: Double
+    tauMinutes: Double,
+    analyzer: MealAnalyzer,
+    timeSlotConfig: MealTimeSlotConfig
 ) {
     val onSurfaceVar = MaterialTheme.colorScheme.onSurfaceVariant
     val surfVar = MaterialTheme.colorScheme.surfaceVariant
@@ -97,7 +100,7 @@ fun MealStatsTab(
     }
 
     val filteredResults = if (selectedSlot != null) {
-        results.filter { it.slot() == selectedSlot }
+        results.filter { MealTimeSlot.fromTimestamp(it.mealTime, ZoneId.systemDefault(), timeSlotConfig) == selectedSlot }
     } else results
 
     Column(
@@ -117,23 +120,21 @@ fun MealStatsTab(
             }
         }
 
-        // Time slot filter chips
-        Row(
+        // Time slot filter chips — tap to filter, tap again to show all
+        FlowRow(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            FilterChip(
-                selected = selectedSlot == null,
-                onClick = { selectedSlot = null },
-                label = { Text("All", maxLines = 1) },
-                modifier = Modifier.weight(1f)
-            )
             MealTimeSlot.entries.forEach { slot ->
+                val isSelected = selectedSlot == slot
                 FilterChip(
-                    selected = selectedSlot == slot,
-                    onClick = { selectedSlot = if (selectedSlot == slot) null else slot },
-                    label = { Text(slot.label, maxLines = 1) },
-                    modifier = Modifier.weight(1f)
+                    selected = isSelected,
+                    onClick = { selectedSlot = if (isSelected) null else slot },
+                    label = { Text(slot.label) },
+                    leadingIcon = if (isSelected) {
+                        { Icon(Icons.Default.Done, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                    } else null
                 )
             }
         }
@@ -151,9 +152,39 @@ fun MealStatsTab(
             // Aggregate header
             MealAggregateHeader(filteredResults, bgLow, bgHigh, glucoseUnit)
 
+            // Aggregate postprandial curve
+            val mealAgp = remember(filteredResults) {
+                MealAgpCalculator.compute(filteredResults)
+            }
+            if (mealAgp != null) {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            "POSTPRANDIAL PROFILE",
+                            color = onSurfaceVar,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            letterSpacing = 1.5.sp,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        MealAgpChart(
+                            buckets = mealAgp.buckets,
+                            maxWindowMinutes = mealAgp.maxWindowMinutes,
+                            bgLow = bgLow,
+                            bgHigh = bgHigh,
+                            glucoseUnit = glucoseUnit
+                        )
+                    }
+                }
+            }
+
             // Meal cards
             filteredResults.forEach { result ->
-                MealCard(result, bgLow, bgHigh, glucoseUnit)
+                val slotLabel = MealTimeSlot.fromTimestamp(result.mealTime, ZoneId.systemDefault(), timeSlotConfig).label
+                MealCard(result, bgLow, bgHigh, glucoseUnit, slotLabel)
             }
         }
     }
@@ -251,7 +282,8 @@ private fun MealCard(
     result: MealPostprandialResult,
     bgLow: Float,
     bgHigh: Float,
-    glucoseUnit: GlucoseUnit
+    glucoseUnit: GlucoseUnit,
+    slotLabel: String
 ) {
     var expanded by remember { mutableStateOf(false) }
     val surfVar = MaterialTheme.colorScheme.surfaceVariant
@@ -281,7 +313,7 @@ private fun MealCard(
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold
                         )
-                        Text(result.slot().label, color = onSurfaceVar, fontSize = 14.sp)
+                        Text(slotLabel, color = onSurfaceVar, fontSize = 14.sp)
                         Text(result.carbSize().label, color = onSurfaceVar, fontSize = 12.sp)
                     }
                     Text(
@@ -372,20 +404,26 @@ private fun MealSparkline(
     val yMax = max(maxMgdl, bgHigh.toDouble()) + 10
 
     val zoneFill = InRange.copy(alpha = 0.08f)
-    val thresholdColor = Color(0xFF6A5F80)
+    val thresholdColor = Stale
     val excursionFill = AboveHigh.copy(alpha = 0.15f)
-    val baselineColor = Color(0xFF6A5F80)
+    val baselineColor = Stale
     val curveColor = InRange
+
+    val axisColor = GraphAxisText
+    val axisTextSize = 20f
+    val bottomMargin = 24f
 
     Canvas(
         modifier = Modifier
             .fillMaxWidth()
-            .height(80.dp)
+            .height(100.dp)
     ) {
         val w = size.width
         val h = size.height
         val padding = 8f
+        val chartBottom = h - bottomMargin
 
+        val mealTime = result.mealTime
         val firstTs = points.first().ts
         val lastTs = points.last().ts
         val duration = (lastTs - firstTs).toDouble()
@@ -398,7 +436,7 @@ private fun MealSparkline(
 
         fun yFor(mgdl: Double): Float {
             val frac = (mgdl - yMin) / (yMax - yMin)
-            return (h - padding - frac * (h - 2 * padding)).toFloat()
+            return (chartBottom - padding - frac * (chartBottom - 2 * padding)).toFloat()
         }
 
         // Layer 1: Zone band
@@ -453,6 +491,23 @@ private fun MealSparkline(
             }
         }
         drawPath(bgPath, color = curveColor, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2f))
+
+        // Layer 6: X-axis labels (minutes from meal)
+        val paint = android.graphics.Paint().apply {
+            color = axisColor.toArgb()
+            textSize = axisTextSize
+            textAlign = android.graphics.Paint.Align.CENTER
+            isAntiAlias = true
+        }
+        val durationMinutes = ((lastTs - firstTs) / 60_000L).toInt()
+        var minute = 0
+        while (minute <= durationMinutes) {
+            val ts = firstTs + minute * 60_000L
+            val x = xFor(ts)
+            val label = if (minute == 0) "0m" else "${minute / 60}h"
+            drawContext.canvas.nativeCanvas.drawText(label, x, h - 2f, paint)
+            minute += 60
+        }
     }
 }
 

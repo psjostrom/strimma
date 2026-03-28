@@ -249,11 +249,6 @@ class MainActivity : ComponentActivity() {
                                     launchSingleTop = true
                                 }
                             },
-                            onStatsClick = {
-                                navController.navigate("stats") {
-                                    launchSingleTop = true
-                                }
-                            },
                             onExerciseClick = {
                                 navController.navigate("exercise") {
                                     launchSingleTop = true
@@ -303,6 +298,15 @@ class MainActivity : ComponentActivity() {
                             onOpenNotificationAccess = {
                                 GlucoseNotificationListener.openSettings(this@MainActivity)
                             },
+                            onPullFromNightscout = { days ->
+                                pullWithToast(
+                                    days,
+                                    R.string.activity_pull_progress,
+                                    R.string.activity_pull_success,
+                                    R.string.activity_pull_failed,
+                                    viewModel::pullFromNightscout
+                                )
+                            },
                             onBack = { navController.popBackStack() }
                         )
                     }
@@ -314,6 +318,19 @@ class MainActivity : ComponentActivity() {
                             onTreatmentsSyncEnabledChange = viewModel::setTreatmentsSyncEnabled,
                             onInsulinTypeChange = viewModel::setInsulinType,
                             onCustomDIAChange = viewModel::setCustomDIA,
+                            onPullTreatments = { days ->
+                                pullWithToast(
+                                    days,
+                                    R.string.activity_pull_treatments_progress,
+                                    R.string.activity_pull_treatments_success,
+                                    R.string.activity_pull_treatments_failed,
+                                    viewModel::pullTreatments
+                                )
+                            },
+                            mealTimeSlotConfig = viewModel.mealTimeSlotConfig.collectAsState().value,
+                            onMealSlotChange = { key, minutes ->
+                                lifecycleScope.launch { viewModel.setMealSlotBoundary(key, minutes) }
+                            },
                             onBack = { navController.popBackStack() }
                         )
                     }
@@ -424,11 +441,6 @@ class MainActivity : ComponentActivity() {
                             webServerSecret = viewModel.webServerSecret,
                             onWebServerEnabledChange = viewModel::setWebServerEnabled,
                             onWebServerSecretChange = viewModel::setWebServerSecret,
-                            onStats = {
-                                navController.navigate("stats") {
-                                    launchSingleTop = true
-                                }
-                            },
                             onExportSettings = {
                                 AlertDialog.Builder(this@MainActivity)
                                     .setTitle(getString(R.string.activity_export_dialog_title))
@@ -472,25 +484,6 @@ class MainActivity : ComponentActivity() {
                             onImportSettings = {
                                 importSettingsLauncher.launch("*/*")
                             },
-                            onPullFromNightscout = { days ->
-                                pullWithToast(
-                                    days,
-                                    R.string.activity_pull_progress,
-                                    R.string.activity_pull_success,
-                                    R.string.activity_pull_failed,
-                                    viewModel::pullFromNightscout
-                                )
-                            },
-                            onPullTreatments = { days ->
-                                pullWithToast(
-                                    days,
-                                    R.string.activity_pull_treatments_progress,
-                                    R.string.activity_pull_treatments_success,
-                                    R.string.activity_pull_treatments_failed,
-                                    viewModel::pullTreatments
-                                )
-                            },
-                            treatmentsSyncEnabled = treatmentsSyncEnabled,
                             onBack = { navController.popBackStack() }
                         )
                     }
@@ -505,6 +498,8 @@ class MainActivity : ComponentActivity() {
                             onLoadAllTreatments = viewModel::allTreatmentsSince,
                             treatmentsSyncEnabled = treatmentsSyncEnabled,
                             tauMinutes = viewModel.currentTauMinutes(),
+                            mealAnalyzer = viewModel.mealAnalyzer,
+                            mealTimeSlotConfig = viewModel.mealTimeSlotConfig.collectAsState().value,
                             onExportCsv = viewModel::exportCsv,
                             onBack = { navController.popBackStack() }
                         )

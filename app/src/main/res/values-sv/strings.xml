@@ -43,8 +43,6 @@
     <string name="settings_alerts_subtitle">L\u00E5gt, h\u00F6gt, gammal data-larm</string>
     <string name="settings_general">Allm\u00E4nt</string>
     <string name="settings_general_subtitle">Uppstart, spr\u00E5k, batteri, om</string>
-    <string name="settings_data">Data</string>
-    <string name="settings_data_subtitle">Statistik, export, Nightscout-h\u00E4mtning</string>
     <string name="settings_debug_log">Fels\u00F6kningslogg</string>
 
     <!-- General Settings -->
@@ -143,8 +141,6 @@
 
     <!-- Data Settings -->
     <string name="settings_data_title">Data</string>
-    <string name="settings_data_views">Vyer</string>
-    <string name="settings_data_statistics">Statistik</string>
     <string name="settings_data_nightscout">Nightscout</string>
     <string name="settings_data_pull">H\u00E4mta fr\u00E5n Nightscout</string>
     <string name="settings_data_pull_desc">Ladda ner glukoshistorik fr\u00E5n din Nightscout-server</string>
