@@ -7,7 +7,7 @@
     <string name="common_export">Exporter</string>
     <string name="common_sound">Son</string>
     <string name="common_no_data">Pas de donn\u00E9es</string>
-    <string name="common_content_desc_statistics">Statistiques</string>
+
     <string name="common_content_desc_settings">Param\u00E8tres</string>
     <string name="common_content_desc_back">Retour</string>
     <string name="common_content_desc_export">Exporter</string>
@@ -381,4 +381,22 @@
     <string name="workout_calendar_picker_title">Sélectionner le calendrier</string>
     <string name="stats_tab_meals">Repas</string>
     <string name="stats_meals_treatments_disabled">L\u0027analyse des repas n\u00E9cessite la synchronisation des traitements. Activez-la dans Param\u00E8tres \u2192 Traitements pour voir comment vos repas affectent votre glyc\u00E9mie.</string>
+
+    <!-- Alert pause -->
+    <string name="pause_alerts">Suspendre les alertes</string>
+    <string name="pause_low_alerts">Alertes basses</string>
+    <string name="pause_high_alerts">Alertes hautes</string>
+    <string name="pause_duration_30m">30m</string>
+    <string name="pause_duration_1h">1h</string>
+    <string name="pause_duration_1_5h">1,5h</string>
+    <string name="pause_duration_2h">2h</string>
+    <string name="pause_duration_3h">3h</string>
+    <string name="pause_cancel">Annuler</string>
+    <string name="pause_low_active">Alertes basses suspendues · %1$s</string>
+    <string name="pause_high_active">Alertes hautes suspendues · %1$s</string>
+    <string name="pause_low_paused">Alertes basses suspendues</string>
+    <string name="pause_high_paused">Alertes hautes suspendues</string>
+    <string name="pause_countdown">Suspendu · %1$s</string>
+    <string name="pause_low_warning">Inclut l\u0027alerte bas urgent</string>
+
 </resources>

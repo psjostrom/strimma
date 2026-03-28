@@ -16,15 +16,15 @@ Yes. Strimma is free, open-source software licensed under GPLv3. No ads, no subs
 
 ### Is Strimma on Google Play?
 
-Not yet. Strimma is distributed as APKs from [GitHub Releases](https://github.com/psjostrom/Strimma/releases).
+No. Strimma is distributed as APKs from [GitHub Releases](https://github.com/psjostrom/Strimma/releases).
 
 ### Does Strimma replace my CGM app?
 
-No. Strimma works **alongside** your CGM app — it reads data from your CGM app's notification. You must keep your CGM app installed and running.
+No. In Companion mode (the default), Strimma works **alongside** your CGM app — it reads data from your CGM app's notification. Other data sources (Nightscout Follower, LibreLinkUp) don't require a CGM app on the same phone.
 
 ### Does Strimma connect to my CGM sensor?
 
-No. Strimma never connects to your sensor via Bluetooth. It reads the glucose value from your CGM app's notification. This means it can't interfere with your sensor or your closed-loop system.
+No. Strimma never connects to your sensor via Bluetooth. It receives glucose data from other apps or servers, not directly from the sensor. This means it can't interfere with your sensor or your closed-loop system.
 
 ---
 
@@ -72,7 +72,7 @@ Yes. Settings > Sharing > Export Settings creates a JSON backup of all your sett
 
 ### Do I need Nightscout?
 
-No. Strimma works completely offline — it displays glucose from your CGM app's notification without any server. Nightscout is optional for cloud backup, remote monitoring, and treatment data.
+No. Strimma works completely offline — it can display glucose from your CGM app's notification or xDrip broadcasts without any server. Nightscout is optional for cloud backup, remote monitoring, and treatment data. (Nightscout Follower mode does require a Nightscout server, since that's where it reads data from.)
 
 ### What Nightscout servers does Strimma work with?
 
@@ -104,7 +104,7 @@ Yes. In Settings > Alerts, each alert type has a **Sound** button that opens the
 
 ### How much battery does Strimma use?
 
-Very little. Strimma passively listens for notifications and briefly processes each reading. The foreground service is lightweight — it does not use Bluetooth, GPS, or continuous network connections.
+Very little. Strimma's foreground service is lightweight — it does not use Bluetooth or GPS. In Companion mode, it passively listens for notifications. In Follower or LibreLinkUp mode, it polls at configurable intervals. Network usage is minimal.
 
 ### Why does Android say Strimma uses a lot of battery?
 

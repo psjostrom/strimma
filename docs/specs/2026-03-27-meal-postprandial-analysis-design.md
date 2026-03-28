@@ -10,9 +10,9 @@ No consumer CGM app does this well. Undermyfork is the closest (2h fixed window,
 
 ## Data Pipeline
 
-### Retention Change
+### Retention
 
-Treatment retention extended from 48h → 14 days in `TreatmentSyncer.PRUNE_MS`. BG readings already kept 30 days. No backfill mechanism needed.
+Treatment retention is already 30 days in `TreatmentSyncer.PRUNE_MS`, which exceeds the 14-day analysis window. BG readings also kept 30 days. No changes needed.
 
 ### Analysis Flow
 

@@ -8,23 +8,28 @@ Common issues and how to fix them.
 
 ### Strimma shows "No data"
 
-1. **Check notification access:**
-   Android Settings > Apps > Special app access > Notification access > Strimma must be **enabled**
+1. **Check the data source:**
+   Settings > Data Source — make sure the correct mode is selected. Then follow the steps for your mode:
 
-2. **Check your CGM app:**
-   Open your CGM app and make sure it's showing glucose and posting notifications. Some apps allow disabling notifications.
+2. **Companion mode:**
+    - Check notification access: Android Settings > Apps > Special app access > Notification access > Strimma must be **enabled**
+    - Check your CGM app is running and posting notifications (some apps let you disable them)
+    - Check the debug log (Settings > Debug Log) for messages about received or rejected notifications
+    - Check your CGM app is in the [Supported Apps](data-sources/supported-apps.md) list
 
-3. **Check the data source:**
-   Settings > Data Source — make sure the correct mode is selected (Companion for most users)
+3. **xDrip Broadcast mode:**
+    - Check that the source app (xDrip+, Juggluco, AAPS) is configured to broadcast glucose values
+    - Check the debug log for broadcast messages
 
-4. **Check the debug log:**
-   Settings > Debug Log — look for messages about received or rejected notifications. Common messages:
-    - `"Received notification from [package]"` — Strimma saw the notification
-    - `"Parsed glucose: X mg/dL"` — successfully extracted a value
-    - `"No glucose found in notification"` — the notification text couldn't be parsed
+4. **Nightscout Follower mode:**
+    - Check your Nightscout URL and API secret in Settings > Data Source
+    - Check that the Nightscout server is reachable (open the URL in a browser)
+    - Check the debug log for connection errors
 
-5. **Check your CGM app is supported:**
-   See [Supported CGM Apps](data-sources/supported-apps.md). If your app isn't listed, [open an issue](https://github.com/psjostrom/Strimma/issues).
+5. **LibreLinkUp mode:**
+    - Check your LibreLinkUp email and password in Settings > Data Source
+    - Make sure LibreLinkUp sharing is enabled in the Libre 3 app
+    - Check the debug log for API errors
 
 ---
 

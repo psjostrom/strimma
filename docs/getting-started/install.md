@@ -20,7 +20,7 @@ Strimma is distributed as an APK from GitHub Releases. It is not on Google Play.
     Every release APK is signed with the Strimma release key. If you want to verify the signature, you can run this on a computer with Android SDK tools installed:
 
     ```bash
-    apksigner verify --print-certs strimma-<version>-release.apk
+    apksigner verify --print-certs strimma-<version>.apk
     ```
 
     Most users can skip this — the APK is built and signed automatically by GitHub Actions from the public source code.

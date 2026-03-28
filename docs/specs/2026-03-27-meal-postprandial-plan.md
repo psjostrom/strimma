@@ -32,7 +32,7 @@
 
 | File | Change |
 |------|--------|
-| `network/TreatmentSyncer.kt` | `PRUNE_MS` 48h → 14d, `LOOKBACK_MS` 6h → 14d |
+| `network/TreatmentSyncer.kt` | `PRUNE_MS` and `LOOKBACK_MS` already 30d — no change needed |
 | `data/TreatmentDao.kt` | Add `carbsInRange()` query |
 | `ui/StatsScreen.kt` | Add TAB_MEALS, third SegmentedButton, wire MealStatsTab |
 
@@ -44,15 +44,15 @@
 - Modify: `app/src/main/java/com/psjostrom/strimma/network/TreatmentSyncer.kt:25`
 - Modify: `app/src/main/java/com/psjostrom/strimma/data/TreatmentDao.kt`
 
-- [ ] **Step 1: Extend treatment retention from 48h to 14 days**
+- [ ] **Step 1: Verify treatment retention is sufficient**
 
-In `TreatmentSyncer.kt`, change the two constants:
+`TreatmentSyncer.kt` already has `PRUNE_MS` and `LOOKBACK_MS` set to 30 days, which exceeds the 14-day requirement for meal analysis. No change needed — verify the current values:
 
 ```kotlin
 companion object {
     private const val POLL_INTERVAL_MS = 5 * 60 * 1000L
-    private const val LOOKBACK_MS = 14 * 24 * 60 * 60 * 1000L
-    private const val PRUNE_MS = 14 * 24 * 60 * 60 * 1000L
+    private const val LOOKBACK_MS = 30 * 24 * 60 * 60 * 1000L
+    private const val PRUNE_MS = 30 * 24 * 60 * 60 * 1000L
 }
 ```
 

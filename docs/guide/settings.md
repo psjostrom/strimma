@@ -8,7 +8,7 @@ Complete reference for every Strimma setting.
 
 ## Settings Menu
 
-The settings screen has two sections, separated by a divider:
+The settings screen has three groups:
 
 - **Configuration:** Data Source, Treatments, Exercise, Display, Notifications, Alerts
 - **Analysis:** Statistics
@@ -123,9 +123,34 @@ See [Alerts](alerts.md) for full details.
 
 ---
 
+## Exercise
+
+Configure Health Connect integration for exercise-BG analysis.
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| **Health Connect sync** | Read exercise sessions from Health Connect | Off |
+
+See [Exercise](exercise.md) for details.
+
+---
+
 ## Statistics
 
 Opens the [Statistics](statistics.md) screen with Metrics, AGP, and Meals tabs.
+
+---
+
+## General
+
+Startup behavior, language, battery, and version info.
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| **Start on boot** | Automatically start Strimma when the phone restarts | On |
+| **Battery optimization** | Shows whether Strimma is exempt from battery optimization | — |
+| **Language** | App language — System, English, Svenska, Deutsch, Español, Français | System |
+| **Version** | Current app version | — |
 
 ---
 

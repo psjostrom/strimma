@@ -1,6 +1,6 @@
 # Your First Reading
 
-Once Strimma is set up, here's what happens when your CGM app posts a glucose notification.
+Once Strimma is set up, here's what happens when it receives a glucose reading from your data source.
 
 ---
 
@@ -35,15 +35,15 @@ Open Strimma to see the full display:
 
 ## If Nothing Appears
 
-If Strimma doesn't show a reading after your CGM app posts a notification:
+If Strimma doesn't show a reading:
 
-1. **Check notification access** — go to Android Settings > Apps > Special app access > Notification access and make sure Strimma is enabled
-2. **Check your CGM app** — make sure it's posting notifications (some apps let you disable them)
-3. **Check the data source** — in Strimma Settings > Data Source, make sure **Companion** is selected
-4. **Check the debug log** — in Strimma Settings > Debug Log, look for messages about received or rejected notifications
+1. **Check the data source** — in Strimma Settings > Data Source, make sure the correct mode is selected
+2. **For Companion mode:** check that notification access is granted (Android Settings > Apps > Special app access > Notification access > Strimma) and that your CGM app is posting notifications
+3. **For other modes:** check that the source is configured correctly (see [Troubleshooting](../troubleshooting.md))
+4. **Check the debug log** — in Strimma Settings > Debug Log, look for messages about received or rejected data
 
 !!! tip "Force a reading"
-    Open your CGM app and wait for its next reading cycle. Most CGMs report every 1 minute (Libre 3) or every 5 minutes (Dexcom). Strimma processes the notification within seconds.
+    In Companion mode, open your CGM app and wait for its next reading cycle. Most CGMs report every 1 minute (Libre 3) or every 5 minutes (Dexcom). Strimma processes the notification within seconds.
 
 ---
 
