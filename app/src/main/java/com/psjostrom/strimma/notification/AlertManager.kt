@@ -1,6 +1,7 @@
 package com.psjostrom.strimma.notification
 
 import android.app.NotificationChannel
+import androidx.core.content.edit
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
@@ -21,6 +22,11 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
+
+enum class AlertCategory(val prefsKey: String) {
+    LOW("pause_low"),
+    HIGH("pause_high")
+}
 
 @Suppress("TooManyFunctions") // Alert channels + management methods
 @Singleton
@@ -72,6 +78,44 @@ class AlertManager @Inject constructor(
             CHANNEL_URGENT_LOW, CHANNEL_LOW, CHANNEL_HIGH, CHANNEL_URGENT_HIGH,
             CHANNEL_STALE, CHANNEL_PUSH_FAIL, CHANNEL_LOW_SOON, CHANNEL_HIGH_SOON
         )
+
+        // --- Category-level pause (static methods for testability) ---
+
+        fun pauseCategory(prefs: android.content.SharedPreferences, category: AlertCategory, durationMs: Long) {
+            val expiryMs = System.currentTimeMillis() + durationMs
+            prefs.edit { putLong(category.prefsKey, expiryMs) }
+            DebugLog.log("Category ${category.name} paused until ${expiryMs}")
+        }
+
+        fun cancelPause(prefs: android.content.SharedPreferences, category: AlertCategory) {
+            prefs.edit { remove(category.prefsKey) }
+        }
+
+        fun isCategoryPaused(prefs: android.content.SharedPreferences, category: AlertCategory): Boolean {
+            val expiryMs = prefs.getLong(category.prefsKey, 0L)
+            if (expiryMs == 0L) return false
+
+            val now = System.currentTimeMillis()
+            if (now >= expiryMs) {
+                // Expired — clear it
+                prefs.edit { remove(category.prefsKey) }
+                return false
+            }
+            return true
+        }
+
+        fun pauseExpiryMs(prefs: android.content.SharedPreferences, category: AlertCategory): Long? {
+            val expiryMs = prefs.getLong(category.prefsKey, 0L)
+            if (expiryMs == 0L) return null
+
+            val now = System.currentTimeMillis()
+            if (now >= expiryMs) {
+                // Expired — clear it
+                prefs.edit { remove(category.prefsKey) }
+                return null
+            }
+            return expiryMs
+        }
     }
 
     private val notificationManager = context.getSystemService(NotificationManager::class.java)
@@ -189,64 +233,89 @@ class AlertManager @Inject constructor(
         val mgdl = reading.sgv.toDouble()
         val unit = settings.glucoseUnit.first()
 
+        val lowThreshold = settings.alertLow.first()
+        val highThreshold = settings.alertHigh.first()
+
+        val alreadyLow = checkLowAlerts(mgdl, unit, now)
+        val alreadyHigh = checkHighAlerts(mgdl, unit, now)
+
+        checkPredictive(recentReadings, predictionMinutes, lowThreshold.toDouble(),
+            highThreshold.toDouble(), alreadyLow, alreadyHigh, unit, now)
+    }
+
+    private suspend fun checkLowAlerts(mgdl: Double, unit: GlucoseUnit, now: Long): Boolean {
         val urgentLowEnabled = settings.alertUrgentLowEnabled.first()
         val urgentLowThreshold = settings.alertUrgentLow.first()
         val lowEnabled = settings.alertLowEnabled.first()
         val lowThreshold = settings.alertLow.first()
-        val highEnabled = settings.alertHighEnabled.first()
-        val highThreshold = settings.alertHigh.first()
-        val urgentHighEnabled = settings.alertUrgentHighEnabled.first()
-        val urgentHighThreshold = settings.alertUrgentHigh.first()
 
-        var alreadyLow = false
-        var alreadyHigh = false
+        val lowPaused = isCategoryPaused(snoozePrefs, AlertCategory.LOW)
+        if (lowPaused) {
+            notificationManager.cancel(ALERT_URGENT_LOW_ID)
+            notificationManager.cancel(ALERT_LOW_ID)
+            return false
+        }
 
-        // --- Lows (urgent takes priority) ---
         if (urgentLowEnabled && mgdl <= urgentLowThreshold) {
-            alreadyLow = true
             if (!isSnoozed(ALERT_URGENT_LOW_ID, now)) {
                 val title = context.getString(R.string.alert_urgent_low_title)
                 fireAlert(ALERT_URGENT_LOW_ID, CHANNEL_URGENT_LOW, title, unit.formatWithUnit(mgdl))
                 notificationManager.cancel(ALERT_LOW_ID)
             }
-        } else if (lowEnabled && mgdl < lowThreshold) {
-            alreadyLow = true
+            return true
+        }
+
+        if (lowEnabled && mgdl < lowThreshold) {
             if (!isSnoozed(ALERT_LOW_ID, now)) {
                 fireAlert(ALERT_LOW_ID, CHANNEL_LOW, context.getString(R.string.alert_low_title), unit.formatWithUnit(mgdl))
             }
             notificationManager.cancel(ALERT_URGENT_LOW_ID)
             clearSnooze(ALERT_URGENT_LOW_ID)
-        } else {
-            notificationManager.cancel(ALERT_LOW_ID)
-            notificationManager.cancel(ALERT_URGENT_LOW_ID)
+            return true
         }
 
-        // --- Highs (urgent takes priority) ---
+        notificationManager.cancel(ALERT_LOW_ID)
+        notificationManager.cancel(ALERT_URGENT_LOW_ID)
+        return false
+    }
+
+    private suspend fun checkHighAlerts(mgdl: Double, unit: GlucoseUnit, now: Long): Boolean {
+        val urgentHighEnabled = settings.alertUrgentHighEnabled.first()
+        val urgentHighThreshold = settings.alertUrgentHigh.first()
+        val highEnabled = settings.alertHighEnabled.first()
+        val highThreshold = settings.alertHigh.first()
+
+        val highPaused = isCategoryPaused(snoozePrefs, AlertCategory.HIGH)
+        if (highPaused) {
+            notificationManager.cancel(ALERT_URGENT_HIGH_ID)
+            notificationManager.cancel(ALERT_HIGH_ID)
+            return false
+        }
+
         if (urgentHighEnabled && mgdl >= urgentHighThreshold) {
-            alreadyHigh = true
             if (!isSnoozed(ALERT_URGENT_HIGH_ID, now)) {
                 val title = context.getString(R.string.alert_urgent_high_title)
                 fireAlert(ALERT_URGENT_HIGH_ID, CHANNEL_URGENT_HIGH, title, unit.formatWithUnit(mgdl))
                 notificationManager.cancel(ALERT_HIGH_ID)
             }
-        } else if (highEnabled && mgdl > highThreshold) {
-            alreadyHigh = true
+            return true
+        }
+
+        if (highEnabled && mgdl > highThreshold) {
             if (!isSnoozed(ALERT_HIGH_ID, now)) {
                 fireAlert(ALERT_HIGH_ID, CHANNEL_HIGH, context.getString(R.string.alert_high_title), unit.formatWithUnit(mgdl))
             }
             notificationManager.cancel(ALERT_URGENT_HIGH_ID)
             clearSnooze(ALERT_URGENT_HIGH_ID)
-        } else {
-            notificationManager.cancel(ALERT_HIGH_ID)
-            notificationManager.cancel(ALERT_URGENT_HIGH_ID)
+            return true
         }
 
-        // --- Predictive alerts (only when currently in range) ---
-        checkPredictive(recentReadings, predictionMinutes, lowThreshold.toDouble(),
-            highThreshold.toDouble(), alreadyLow, alreadyHigh, unit, now)
+        notificationManager.cancel(ALERT_HIGH_ID)
+        notificationManager.cancel(ALERT_URGENT_HIGH_ID)
+        return false
     }
 
-    @Suppress("CyclomaticComplexMethod", "LongParameterList") // Two symmetric low/high blocks
+    @Suppress("CyclomaticComplexMethod", "LongParameterList") // Symmetric low/high blocks
     private suspend fun checkPredictive(
         recentReadings: List<GlucoseReading>,
         predictionMinutes: Int,
@@ -260,6 +329,11 @@ class AlertManager @Inject constructor(
         val lowSoonEnabled = settings.alertLowSoonEnabled.first()
         val highSoonEnabled = settings.alertHighSoonEnabled.first()
 
+        val lowPaused = isCategoryPaused(snoozePrefs, AlertCategory.LOW)
+        val highPaused = isCategoryPaused(snoozePrefs, AlertCategory.HIGH)
+        if (lowPaused) notificationManager.cancel(ALERT_LOW_SOON_ID)
+        if (highPaused) notificationManager.cancel(ALERT_HIGH_SOON_ID)
+
         if (predictionMinutes == 0 || (!lowSoonEnabled && !highSoonEnabled)) {
             notificationManager.cancel(ALERT_LOW_SOON_ID)
             notificationManager.cancel(ALERT_HIGH_SOON_ID)
@@ -270,11 +344,12 @@ class AlertManager @Inject constructor(
         val crossing = prediction?.crossing
 
         // Low soon
-        if (lowSoonEnabled && !alreadyLow && crossing?.type == CrossingType.LOW
-            && crossing.minutesUntil >= MIN_CROSSING_MINUTES) {
+        val shouldFireLowSoon = lowSoonEnabled && !lowPaused && !alreadyLow
+            && crossing?.type == CrossingType.LOW && crossing.minutesUntil >= MIN_CROSSING_MINUTES
+        if (shouldFireLowSoon) {
             if (!isSnoozed(ALERT_LOW_SOON_ID, now)) {
                 fireAlert(ALERT_LOW_SOON_ID, CHANNEL_LOW_SOON,
-                    context.getString(R.string.alert_low_in, crossing.minutesUntil),
+                    context.getString(R.string.alert_low_in, crossing!!.minutesUntil),
                     context.getString(R.string.alert_predicted, unit.formatWithUnit(crossing.mgdlAtCrossing)))
             }
         } else {
@@ -283,11 +358,12 @@ class AlertManager @Inject constructor(
         }
 
         // High soon
-        if (highSoonEnabled && !alreadyHigh && crossing?.type == CrossingType.HIGH
-            && crossing.minutesUntil >= MIN_CROSSING_MINUTES) {
+        val shouldFireHighSoon = highSoonEnabled && !highPaused && !alreadyHigh
+            && crossing?.type == CrossingType.HIGH && crossing.minutesUntil >= MIN_CROSSING_MINUTES
+        if (shouldFireHighSoon) {
             if (!isSnoozed(ALERT_HIGH_SOON_ID, now)) {
                 fireAlert(ALERT_HIGH_SOON_ID, CHANNEL_HIGH_SOON,
-                    context.getString(R.string.alert_high_in, crossing.minutesUntil),
+                    context.getString(R.string.alert_high_in, crossing!!.minutesUntil),
                     context.getString(R.string.alert_predicted, unit.formatWithUnit(crossing.mgdlAtCrossing)))
             }
         } else {
@@ -331,6 +407,33 @@ class AlertManager @Inject constructor(
         notificationManager.cancel(alertId)
         DebugLog.log("Alert $alertId snoozed for 30 min")
     }
+
+    fun pauseAlertCategory(category: AlertCategory, durationMs: Long) {
+        pauseCategory(snoozePrefs, category, durationMs)
+        // Cancel any active notifications in this category
+        when (category) {
+            AlertCategory.LOW -> {
+                notificationManager.cancel(ALERT_URGENT_LOW_ID)
+                notificationManager.cancel(ALERT_LOW_ID)
+                notificationManager.cancel(ALERT_LOW_SOON_ID)
+            }
+            AlertCategory.HIGH -> {
+                notificationManager.cancel(ALERT_URGENT_HIGH_ID)
+                notificationManager.cancel(ALERT_HIGH_ID)
+                notificationManager.cancel(ALERT_HIGH_SOON_ID)
+            }
+        }
+    }
+
+    fun cancelAlertPause(category: AlertCategory) {
+        cancelPause(snoozePrefs, category)
+    }
+
+    fun isAlertCategoryPaused(category: AlertCategory): Boolean =
+        isCategoryPaused(snoozePrefs, category)
+
+    fun alertPauseExpiryMs(category: AlertCategory): Long? =
+        pauseExpiryMs(snoozePrefs, category)
 
     private fun clearSnooze(alertId: Int) {
         snoozePrefs.edit().remove(alertId.toString()).apply()

@@ -53,15 +53,25 @@ object DebugLog {
     // Keep for backward compat — callers that pass context
     fun log(@Suppress("UNUSED_PARAMETER") context: android.content.Context? = null, message: String) = log(message)
 
+    private const val MAX_FILE_ENTRIES = 500
+
     fun readLogFiles(): List<String> {
         val dir = logsDir ?: return emptyList()
-        return dir.listFiles()
+        val result = mutableListOf<String>()
+        val files = dir.listFiles()
             ?.filter { it.name.startsWith("strimma-") && it.name.endsWith(".log") }
             ?.sortedByDescending { it.name }
-            ?.flatMap { file ->
-                listOf("--- ${file.name} ---") + file.readLines().reversed()
+            ?: return emptyList()
+
+        for (file in files) {
+            val lines = file.readLines()
+            result.add("--- ${file.name} ---")
+            for (line in lines.asReversed()) {
+                result.add(line)
+                if (result.size >= MAX_FILE_ENTRIES) return result
             }
-            ?: emptyList()
+        }
+        return result
     }
 
     fun currentLogFile(): File? {

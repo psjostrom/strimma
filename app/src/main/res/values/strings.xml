@@ -9,7 +9,7 @@
     <string name="common_export">Export</string>
     <string name="common_sound">Sound</string>
     <string name="common_no_data">No data</string>
-    <string name="common_content_desc_statistics">Statistics</string>
+
     <string name="common_content_desc_settings">Settings</string>
     <string name="common_content_desc_back">Back</string>
     <string name="common_content_desc_export">Export</string>
@@ -247,6 +247,23 @@
     <string name="alert_channel_push_fail">Upload Failure Alert</string>
     <string name="alert_channel_push_fail_desc">Glucose uploads failing for extended period</string>
     <string name="alert_snooze">Snooze 30 min</string>
+
+    <!-- Alert pause -->
+    <string name="pause_alerts">Pause alerts</string>
+    <string name="pause_low_alerts">Low alerts</string>
+    <string name="pause_high_alerts">High alerts</string>
+    <string name="pause_duration_30m">30m</string>
+    <string name="pause_duration_1h">1h</string>
+    <string name="pause_duration_1_5h">1.5h</string>
+    <string name="pause_duration_2h">2h</string>
+    <string name="pause_duration_3h">3h</string>
+    <string name="pause_cancel">Cancel</string>
+    <string name="pause_low_active">Low alerts paused · %1$s</string>
+    <string name="pause_high_active">High alerts paused · %1$s</string>
+    <string name="pause_low_paused">Low alerts paused</string>
+    <string name="pause_high_paused">High alerts paused</string>
+    <string name="pause_countdown">Paused · %1$s</string>
+    <string name="pause_low_warning">Includes urgent low alerts</string>
 
     <!-- Foreground Notification -->
     <string name="notif_channel_name">Glucose Readings</string>
