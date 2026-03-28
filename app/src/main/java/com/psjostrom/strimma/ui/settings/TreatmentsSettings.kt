@@ -127,7 +127,15 @@ private fun MealTimeSlotsSection(
             color = outline,
             fontSize = 12.sp
         )
-        MealSlotRow(stringResource(R.string.meal_slot_breakfast), "breakfast", config.breakfastStart, config.breakfastEnd, onBg, outline, onSlotChange)
+        MealSlotRow(
+            stringResource(R.string.meal_slot_breakfast),
+            "breakfast",
+            config.breakfastStart,
+            config.breakfastEnd,
+            onBg,
+            outline,
+            onSlotChange
+        )
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         MealSlotRow(stringResource(R.string.meal_slot_lunch), "lunch", config.lunchStart, config.lunchEnd, onBg, outline, onSlotChange)
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -196,15 +204,15 @@ private fun TimePickerDialog(
     onDismiss: () -> Unit
 ) {
     val state = rememberTimePickerState(
-        initialHour = initialMinutes / 60,
-        initialMinute = initialMinutes % 60,
+        initialHour = initialMinutes / MINUTES_PER_HOUR,
+        initialMinute = initialMinutes % MINUTES_PER_HOUR,
         is24Hour = true
     )
 
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            TextButton(onClick = { onConfirm(state.hour * 60 + state.minute) }) {
+            TextButton(onClick = { onConfirm(state.hour * MINUTES_PER_HOUR + state.minute) }) {
                 Text(stringResource(R.string.common_ok))
             }
         },
@@ -217,8 +225,10 @@ private fun TimePickerDialog(
     )
 }
 
+private const val MINUTES_PER_HOUR = 60
+
 private fun formatMinutes(minutes: Int): String {
-    val h = minutes / 60
-    val m = minutes % 60
+    val h = minutes / MINUTES_PER_HOUR
+    val m = minutes % MINUTES_PER_HOUR
     return "%02d:%02d".format(h, m)
 }

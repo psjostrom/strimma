@@ -43,11 +43,11 @@ private const val Y_STEP_MGDL = 50.0
 private const val Y_STEP_MMOL = 2.0
 private const val X_LABEL_SPACING = 2f
 private const val MINUTES_STEP = 60
+private const val MINUTES_PER_HOUR = 60
 
 @Composable
 fun MealAgpChart(
     buckets: List<MealAgpBucket>,
-    maxWindowMinutes: Int,
     bgLow: Float,
     bgHigh: Float,
     glucoseUnit: GlucoseUnit,
@@ -86,12 +86,11 @@ fun MealAgpChart(
         )
 
         // 5th-95th band
-        drawBand(buckets, { it.p5 }, { it.p95 }, InRange.copy(alpha = OUTER_BAND_ALPHA),
-            left, bottom, chartWidth, chartHeight, maxMinutes, yRange.yMin, yRange.range)
+        val bandParams = BandParams(left, bottom, chartWidth, chartHeight, maxMinutes, yRange.yMin, yRange.range)
+        drawBand(buckets, { it.p5 }, { it.p95 }, InRange.copy(alpha = OUTER_BAND_ALPHA), bandParams)
 
         // 25th-75th band
-        drawBand(buckets, { it.p25 }, { it.p75 }, InRange.copy(alpha = INNER_BAND_ALPHA),
-            left, bottom, chartWidth, chartHeight, maxMinutes, yRange.yMin, yRange.range)
+        drawBand(buckets, { it.p25 }, { it.p75 }, InRange.copy(alpha = INNER_BAND_ALPHA), bandParams)
 
         // Threshold lines
         drawLine(
@@ -124,18 +123,27 @@ fun MealAgpChart(
     }
 }
 
+private data class BandParams(
+    val left: Float,
+    val bottom: Float,
+    val chartWidth: Float,
+    val chartHeight: Float,
+    val maxMinutes: Float,
+    val yMin: Double,
+    val yRange: Double
+)
+
 private fun DrawScope.drawBand(
     buckets: List<MealAgpBucket>,
     lowerFn: (MealAgpBucket) -> Double,
     upperFn: (MealAgpBucket) -> Double,
     color: Color,
-    left: Float, bottom: Float, chartWidth: Float, chartHeight: Float,
-    maxMinutes: Float, yMin: Double, yRange: Double
+    params: BandParams
 ) {
     if (buckets.isEmpty()) return
 
-    fun xFor(minute: Int) = left + (minute / maxMinutes) * chartWidth
-    fun yFor(mgdl: Double) = bottom - ((mgdl - yMin) / yRange * chartHeight).toFloat()
+    fun xFor(minute: Int) = params.left + (minute / params.maxMinutes) * params.chartWidth
+    fun yFor(mgdl: Double) = params.bottom - ((mgdl - params.yMin) / params.yRange * params.chartHeight).toFloat()
 
     val path = Path()
     buckets.forEachIndexed { i, b ->
@@ -196,7 +204,7 @@ private fun DrawScope.drawMealXAxis(
     var minute = 0
     while (minute <= maxWindowMinutes) {
         val x = left + (minute / maxMinutes) * chartWidth
-        val label = if (minute < 60) "${minute}m" else "${minute / 60}h"
+        val label = if (minute < MINUTES_PER_HOUR) "${minute}m" else "${minute / MINUTES_PER_HOUR}h"
         drawContext.canvas.nativeCanvas.drawText(
             label, x, bottom + AXIS_LABEL_SIZE + X_LABEL_SPACING, paint
         )

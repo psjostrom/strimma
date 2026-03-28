@@ -32,7 +32,12 @@ import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.Treatment
-import com.psjostrom.strimma.data.meal.*
+import com.psjostrom.strimma.data.meal.CarbSizeBucket
+import com.psjostrom.strimma.data.meal.MealAgpCalculator
+import com.psjostrom.strimma.data.meal.MealAnalyzer
+import com.psjostrom.strimma.data.meal.MealPostprandialResult
+import com.psjostrom.strimma.data.meal.MealTimeSlot
+import com.psjostrom.strimma.data.meal.MealTimeSlotConfig
 import com.psjostrom.strimma.ui.theme.AboveHigh
 import com.psjostrom.strimma.ui.theme.BelowLow
 import com.psjostrom.strimma.ui.theme.GraphAxisText
@@ -41,6 +46,9 @@ import com.psjostrom.strimma.ui.theme.Stale
 import java.time.ZoneId
 import kotlin.math.max
 import kotlin.math.min
+
+private const val MINUTES_PER_HOUR = 60
+private const val MS_PER_MINUTE = 60_000L
 
 private fun MealPostprandialResult.carbSize(): CarbSizeBucket =
     CarbSizeBucket.fromGrams(carbGrams)
@@ -150,7 +158,7 @@ fun MealStatsTab(
             }
         } else {
             // Aggregate header
-            MealAggregateHeader(filteredResults, bgLow, bgHigh, glucoseUnit)
+            MealAggregateHeader(filteredResults, glucoseUnit)
 
             // Aggregate postprandial curve
             val mealAgp = remember(filteredResults) {
@@ -172,7 +180,6 @@ fun MealStatsTab(
                         )
                         MealAgpChart(
                             buckets = mealAgp.buckets,
-                            maxWindowMinutes = mealAgp.maxWindowMinutes,
                             bgLow = bgLow,
                             bgHigh = bgHigh,
                             glucoseUnit = glucoseUnit
@@ -193,8 +200,6 @@ fun MealStatsTab(
 @Composable
 private fun MealAggregateHeader(
     results: List<MealPostprandialResult>,
-    bgLow: Float,
-    bgHigh: Float,
     glucoseUnit: GlucoseUnit
 ) {
     val surfVar = MaterialTheme.colorScheme.surfaceVariant
@@ -323,11 +328,20 @@ private fun MealCard(
                     )
                 }
 
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
                     // TIR pill
                     Surface(
                         shape = RoundedCornerShape(100),
-                        color = if (result.tirPercent >= 80) Color(0xFF1A3A2A) else if (result.tirPercent >= 50) Color(0xFF35280E) else Color(0xFF351525)
+                        color = if (result.tirPercent >= 80) {
+                            Color(0xFF1A3A2A)
+                        } else if (result.tirPercent >= 50) {
+                            Color(0xFF35280E)
+                        } else {
+                            Color(0xFF351525)
+                        }
                     ) {
                         Text(
                             "%.0f%% TIR".format(result.tirPercent),
@@ -349,7 +363,7 @@ private fun MealCard(
 
             AnimatedVisibility(visible = expanded) {
                 Column(modifier = Modifier.padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    MealSparkline(result, bgLow, bgHigh, glucoseUnit)
+                    MealSparkline(result, bgLow, bgHigh)
 
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
@@ -382,8 +396,7 @@ private fun MealCard(
 private fun MealSparkline(
     result: MealPostprandialResult,
     bgLow: Float,
-    bgHigh: Float,
-    glucoseUnit: GlucoseUnit
+    bgHigh: Float
 ) {
     val points = result.readings
     if (points.isEmpty()) {
@@ -499,14 +512,14 @@ private fun MealSparkline(
             textAlign = android.graphics.Paint.Align.CENTER
             isAntiAlias = true
         }
-        val durationMinutes = ((lastTs - firstTs) / 60_000L).toInt()
+        val durationMinutes = ((lastTs - firstTs) / MS_PER_MINUTE).toInt()
         var minute = 0
         while (minute <= durationMinutes) {
-            val ts = firstTs + minute * 60_000L
+            val ts = firstTs + minute * MS_PER_MINUTE
             val x = xFor(ts)
-            val label = if (minute == 0) "0m" else "${minute / 60}h"
+            val label = if (minute == 0) "0m" else "${minute / MINUTES_PER_HOUR}h"
             drawContext.canvas.nativeCanvas.drawText(label, x, h - 2f, paint)
-            minute += 60
+            minute += MINUTES_PER_HOUR
         }
     }
 }
