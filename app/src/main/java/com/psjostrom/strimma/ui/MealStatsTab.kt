@@ -34,6 +34,7 @@ import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.Treatment
 import com.psjostrom.strimma.data.meal.CarbSizeBucket
 import com.psjostrom.strimma.data.meal.MealAgpCalculator
+import com.psjostrom.strimma.data.meal.MealAnalysisParams
 import com.psjostrom.strimma.data.meal.MealAnalyzer
 import com.psjostrom.strimma.data.meal.MealPostprandialResult
 import com.psjostrom.strimma.data.meal.MealTimeSlot
@@ -102,8 +103,10 @@ fun MealStatsTab(
         val allTreatments = onLoadAllTreatments(start)
         value = carbTreatments.mapIndexedNotNull { i, meal ->
             val nextMealTime = carbTreatments.getOrNull(i + 1)?.createdAt
-            analyzer.analyze(meal, readings, bgLow.toDouble(), bgHigh.toDouble(),
-                nextMealTime, allTreatments, tauMinutes)
+            analyzer.analyze(meal, readings, MealAnalysisParams(
+                bgLow = bgLow.toDouble(), bgHigh = bgHigh.toDouble(),
+                nextMealTime = nextMealTime, allTreatments = allTreatments,
+                tauMinutes = tauMinutes))
         }
     }
 

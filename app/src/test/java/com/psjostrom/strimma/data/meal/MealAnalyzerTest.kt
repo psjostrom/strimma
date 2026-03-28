@@ -72,11 +72,10 @@ class MealAnalyzerTest {
         val result = analyzer.analyze(
             meal = meal(50.0),
             readings = allReadings,
-            bgLow = 72.0,
-            bgHigh = 180.0,
-            nextMealTime = null,
-            allTreatments = emptyList(),
-            tauMinutes = 55.0
+            params = MealAnalysisParams(
+                bgLow = 72.0, bgHigh = 180.0,
+                nextMealTime = null, allTreatments = emptyList(),
+                tauMinutes = 55.0)
         )
 
         assertNotNull(result)
@@ -93,11 +92,10 @@ class MealAnalyzerTest {
         val result = analyzer.analyze(
             meal = meal(50.0),
             readings = readings,
-            bgLow = 72.0,
-            bgHigh = 180.0,
-            nextMealTime = null,
-            allTreatments = emptyList(),
-            tauMinutes = 55.0
+            params = MealAnalysisParams(
+                bgLow = 72.0, bgHigh = 180.0,
+                nextMealTime = null, allTreatments = emptyList(),
+                tauMinutes = 55.0)
         )
 
         assertNotNull(result)
@@ -116,11 +114,10 @@ class MealAnalyzerTest {
         val result = analyzer.analyze(
             meal = meal(50.0),
             readings = readings,
-            bgLow = 72.0,
-            bgHigh = 180.0,
-            nextMealTime = null,
-            allTreatments = emptyList(),
-            tauMinutes = 55.0
+            params = MealAnalysisParams(
+                bgLow = 72.0, bgHigh = 180.0,
+                nextMealTime = null, allTreatments = emptyList(),
+                tauMinutes = 55.0)
         )
 
         assertNotNull(result)
@@ -137,11 +134,10 @@ class MealAnalyzerTest {
         val result = analyzer.analyze(
             meal = meal(50.0),
             readings = readings,
-            bgLow = 72.0,
-            bgHigh = 180.0,
-            nextMealTime = null,
-            allTreatments = emptyList(),
-            tauMinutes = 55.0
+            params = MealAnalysisParams(
+                bgLow = 72.0, bgHigh = 180.0,
+                nextMealTime = null, allTreatments = emptyList(),
+                tauMinutes = 55.0)
         )
 
         assertNotNull(result)
@@ -161,11 +157,10 @@ class MealAnalyzerTest {
         val result = analyzer.analyze(
             meal = meal(50.0),
             readings = allReadings,
-            bgLow = 72.0,
-            bgHigh = 180.0,
-            nextMealTime = null,
-            allTreatments = emptyList(),
-            tauMinutes = 55.0
+            params = MealAnalysisParams(
+                bgLow = 72.0, bgHigh = 180.0,
+                nextMealTime = null, allTreatments = emptyList(),
+                tauMinutes = 55.0)
         )
 
         assertNotNull(result)
@@ -183,11 +178,10 @@ class MealAnalyzerTest {
         val result = analyzer.analyze(
             meal = meal(50.0),
             readings = readings,
-            bgLow = 72.0,
-            bgHigh = 180.0,
-            nextMealTime = nextMealTime,
-            allTreatments = emptyList(),
-            tauMinutes = 55.0
+            params = MealAnalysisParams(
+                bgLow = 72.0, bgHigh = 180.0,
+                nextMealTime = nextMealTime, allTreatments = emptyList(),
+                tauMinutes = 55.0)
         )
 
         assertNotNull(result)
@@ -203,11 +197,10 @@ class MealAnalyzerTest {
         val result = analyzer.analyze(
             meal = meal(50.0),
             readings = readings,
-            bgLow = 72.0,
-            bgHigh = 180.0,
-            nextMealTime = null,
-            allTreatments = emptyList(),
-            tauMinutes = 55.0
+            params = MealAnalysisParams(
+                bgLow = 72.0, bgHigh = 180.0,
+                nextMealTime = null, allTreatments = emptyList(),
+                tauMinutes = 55.0)
         )
 
         assertNotNull(result)
@@ -227,11 +220,10 @@ class MealAnalyzerTest {
         val result = analyzer.analyze(
             meal = meal(50.0),
             readings = allReadings,
-            bgLow = 72.0,
-            bgHigh = 180.0,
-            nextMealTime = null,
-            allTreatments = emptyList(),
-            tauMinutes = 55.0
+            params = MealAnalysisParams(
+                bgLow = 72.0, bgHigh = 180.0,
+                nextMealTime = null, allTreatments = emptyList(),
+                tauMinutes = 55.0)
         )
 
         assertNotNull(result)
@@ -248,11 +240,10 @@ class MealAnalyzerTest {
         val result = analyzer.analyze(
             meal = meal(50.0),
             readings = readings,
-            bgLow = 72.0,
-            bgHigh = 180.0,
-            nextMealTime = null,
-            allTreatments = emptyList(),
-            tauMinutes = 55.0
+            params = MealAnalysisParams(
+                bgLow = 72.0, bgHigh = 180.0,
+                nextMealTime = null, allTreatments = emptyList(),
+                tauMinutes = 55.0)
         )
 
         assertNotNull(result)
@@ -269,11 +260,10 @@ class MealAnalyzerTest {
         val result = analyzer.analyze(
             meal = meal(50.0),
             readings = readings,
-            bgLow = 72.0,
-            bgHigh = 180.0,
-            nextMealTime = null,
-            allTreatments = emptyList(),
-            tauMinutes = 55.0
+            params = MealAnalysisParams(
+                bgLow = 72.0, bgHigh = 180.0,
+                nextMealTime = null, allTreatments = emptyList(),
+                tauMinutes = 55.0)
         )
 
         assertNotNull(result)
@@ -292,11 +282,10 @@ class MealAnalyzerTest {
         val result = analyzer.analyze(
             meal = meal(50.0),
             readings = allReadings,
-            bgLow = 72.0,
-            bgHigh = 180.0,
-            nextMealTime = null,
-            allTreatments = emptyList(),
-            tauMinutes = 55.0
+            params = MealAnalysisParams(
+                bgLow = 72.0, bgHigh = 180.0,
+                nextMealTime = null, allTreatments = emptyList(),
+                tauMinutes = 55.0)
         )
 
         // Only 1 reading in postprandial window, need at least 5
@@ -323,11 +312,10 @@ class MealAnalyzerTest {
         val result = analyzer.analyze(
             meal = meal(50.0),
             readings = readings,
-            bgLow = 72.0,
-            bgHigh = 180.0,
-            nextMealTime = null,
-            allTreatments = listOf(previousBolus),
-            tauMinutes = 55.0
+            params = MealAnalysisParams(
+                bgLow = 72.0, bgHigh = 180.0,
+                nextMealTime = null, allTreatments = listOf(previousBolus),
+                tauMinutes = 55.0)
         )
 
         assertNotNull(result)
@@ -347,11 +335,10 @@ class MealAnalyzerTest {
         val result = analyzer.analyze(
             meal = meal(50.0),
             readings = allReadings,
-            bgLow = 72.0,
-            bgHigh = 180.0,
-            nextMealTime = null,
-            allTreatments = emptyList(),
-            tauMinutes = 55.0
+            params = MealAnalysisParams(
+                bgLow = 72.0, bgHigh = 180.0,
+                nextMealTime = null, allTreatments = emptyList(),
+                tauMinutes = 55.0)
         )
 
         assertNotNull(result)
@@ -368,11 +355,10 @@ class MealAnalyzerTest {
         val result = analyzer.analyze(
             meal = meal(50.0),
             readings = postMeal,
-            bgLow = 72.0,
-            bgHigh = 180.0,
-            nextMealTime = null,
-            allTreatments = emptyList(),
-            tauMinutes = 55.0
+            params = MealAnalysisParams(
+                bgLow = 72.0, bgHigh = 180.0,
+                nextMealTime = null, allTreatments = emptyList(),
+                tauMinutes = 55.0)
         )
 
         // No baseline = can't analyze

@@ -8,6 +8,14 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.max
 
+data class MealAnalysisParams(
+    val bgLow: Double,
+    val bgHigh: Double,
+    val nextMealTime: Long?,
+    val allTreatments: List<Treatment>,
+    val tauMinutes: Double
+)
+
 @Singleton
 class MealAnalyzer @Inject constructor() {
 
@@ -18,6 +26,7 @@ class MealAnalyzer @Inject constructor() {
         private const val BASELINE_TOLERANCE_MGDL = 5.0
         private const val MIN_BASELINE_READINGS = 3
         private const val MIN_POSTPRANDIAL_READINGS = 5
+        private const val RECOVERY_CHECK_WINDOW_MINUTES = 5L
         private const val MS_PER_MINUTE = 60_000L
         private const val PERCENT = 100.0
     }
@@ -37,11 +46,7 @@ class MealAnalyzer @Inject constructor() {
     fun analyze(
         meal: Treatment,
         readings: List<GlucoseReading>,
-        bgLow: Double,
-        bgHigh: Double,
-        nextMealTime: Long?,
-        allTreatments: List<Treatment>,
-        tauMinutes: Double
+        params: MealAnalysisParams
     ): MealPostprandialResult? {
         val mealTime = meal.createdAt
         val carbGrams = meal.carbs ?: return null
@@ -50,7 +55,7 @@ class MealAnalyzer @Inject constructor() {
         val baseline = computeBaseline(readings, mealTime) ?: return null
 
         // 2. Determine postprandial window
-        val windowMinutes = determineWindow(readings, mealTime, baseline, nextMealTime)
+        val windowMinutes = determineWindow(readings, mealTime, baseline, params.nextMealTime)
 
         // 3. Extract postprandial readings
         val windowEnd = mealTime + Duration.ofMinutes(windowMinutes).toMillis()
@@ -68,11 +73,11 @@ class MealAnalyzer @Inject constructor() {
 
         val recoveryMinutes = computeRecovery(postprandialReadings, mealTime, baseline)
 
-        val tirPercent = computeTIR(postprandialReadings, bgLow, bgHigh)
+        val tirPercent = computeTIR(postprandialReadings, params.bgLow, params.bgHigh)
 
-        val iAucMgdlMin = computeIAUC(postprandialReadings, mealTime, baseline)
+        val iAucMgdlMin = computeIAUC(postprandialReadings, baseline)
 
-        val iobAtMeal = IOBComputer.computeIOB(allTreatments, mealTime, tauMinutes)
+        val iobAtMeal = IOBComputer.computeIOB(params.allTreatments, mealTime, params.tauMinutes)
 
         return MealPostprandialResult(
             mealTime = mealTime,
@@ -130,7 +135,7 @@ class MealAnalyzer @Inject constructor() {
 
         // Check if BG has returned to baseline at the default window end
         val bgAtDefaultEnd = readings
-            .filter { it.ts in (effectiveEnd - MS_PER_MINUTE * 5)..effectiveEnd }
+            .filter { it.ts in (effectiveEnd - MS_PER_MINUTE * RECOVERY_CHECK_WINDOW_MINUTES)..effectiveEnd }
             .lastOrNull()
 
         // Extend to 4h if BG hasn't recovered at 3h (and no next meal cutoff)
@@ -177,7 +182,6 @@ class MealAnalyzer @Inject constructor() {
 
     private fun computeIAUC(
         readings: List<GlucoseReading>,
-        mealTime: Long,
         baseline: Double
     ): Double {
         if (readings.size < 2) return 0.0

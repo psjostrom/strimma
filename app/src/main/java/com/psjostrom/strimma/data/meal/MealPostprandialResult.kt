@@ -19,8 +19,11 @@ data class MealPostprandialResult(
 
 enum class TirRating { GOOD, MODERATE, POOR }
 
+private const val TIR_GOOD_THRESHOLD = 80.0
+private const val TIR_MODERATE_THRESHOLD = 50.0
+
 fun MealPostprandialResult.tirRating(): TirRating = when {
-    tirPercent >= 80.0 -> TirRating.GOOD
-    tirPercent >= 50.0 -> TirRating.MODERATE
+    tirPercent >= TIR_GOOD_THRESHOLD -> TirRating.GOOD
+    tirPercent >= TIR_MODERATE_THRESHOLD -> TirRating.MODERATE
     else -> TirRating.POOR
 }
