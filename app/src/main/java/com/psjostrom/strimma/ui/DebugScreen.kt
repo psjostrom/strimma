@@ -2,8 +2,8 @@ package com.psjostrom.strimma.ui
 
 import android.content.Intent
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Share
@@ -17,12 +17,17 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import com.psjostrom.strimma.R
 import com.psjostrom.strimma.receiver.DebugLog
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DebugScreen(onBack: () -> Unit) {
     val liveEntries by DebugLog.entries.collectAsState()
-    val fileEntries = remember { DebugLog.readLogFiles() }
+    var fileEntries by remember { mutableStateOf<List<String>>(emptyList()) }
+    LaunchedEffect(Unit) {
+        fileEntries = withContext(Dispatchers.IO) { DebugLog.readLogFiles() }
+    }
     val context = LocalContext.current
     val shareChooserTitle = stringResource(R.string.debug_share_chooser)
 
@@ -59,22 +64,28 @@ fun DebugScreen(onBack: () -> Unit) {
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 12.dp)
-                .verticalScroll(rememberScrollState())
-        ) {
-            val entries = if (liveEntries.isNotEmpty()) {
-                listOf(stringResource(R.string.debug_live_marker)) + liveEntries.reversed()
-            } else emptyList()
-            val allEntries = entries + fileEntries
+        val entries = if (liveEntries.isNotEmpty()) {
+            listOf(stringResource(R.string.debug_live_marker)) + liveEntries.reversed()
+        } else emptyList()
+        val allEntries = entries + fileEntries
 
-            if (allEntries.isEmpty()) {
+        if (allEntries.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(horizontal = 12.dp)
+            ) {
                 Text(stringResource(R.string.debug_empty), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
-            } else {
-                allEntries.forEach { entry ->
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(horizontal = 12.dp)
+            ) {
+                items(allEntries) { entry ->
                     Text(
                         text = entry,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
