@@ -30,9 +30,9 @@ Strimma stands on the shoulders of the incredible [xDrip+](https://github.com/Ni
 
 ## What Strimma Does
 
-- **Receives glucose four ways** — reads notifications from 60+ CGM apps (Dexcom, Libre, CamAPS FX, etc.), receives xDrip-compatible broadcasts (from xDrip+, Juggluco, AAPS), follows a remote Nightscout server, or reads from Abbott's LibreLinkUp cloud. See [Data Sources](data-sources/overview.md).
+- **Receives glucose four ways** — reads notifications from 50+ CGM app variants (Dexcom, Libre, CamAPS FX, etc.), receives xDrip-compatible broadcasts (from xDrip+, Juggluco, AAPS), follows a remote Nightscout server, or reads from Abbott's LibreLinkUp cloud. See [Data Sources](data-sources/overview.md).
 - **Shows your BG at a glance** — large, color-coded number with direction arrow, delta, and trend graph in your notification bar.
-- **Configurable alerts** — low, high, urgent low, urgent high, and stale-data alerts, each with its own notification channel. Urgent alerts bypass Do Not Disturb by default; any alert can be configured to bypass DND via Android's notification settings.
+- **Configurable alerts** — eight alert types (urgent low, low, high, urgent high, low soon, high soon, stale data, push failed), each with its own notification channel. Urgent alerts bypass Do Not Disturb by default; any alert can be configured to bypass DND via Android's notification settings.
 - **Predicts where you're heading** — shows "Low in X min" or "High in X min" warnings before you cross your thresholds.
 - **Pushes to Nightscout** — automatic, immediate upload to any Nightscout-compatible server. Offline-resilient — readings queue and retry.
 - **Tracks treatments and IOB** — fetches bolus and carb data from Nightscout, computes insulin on board with your insulin type's curve.
@@ -72,15 +72,19 @@ You can also receive glucose via **xDrip Broadcast** (from xDrip+, Juggluco, AAP
 ## Quick Start
 
 1. **[Install Strimma](getting-started/install.md)** — download from GitHub Releases
-2. **[Set up permissions](getting-started/setup.md)** — grant notification access and battery optimization exemption
-3. **[See your first reading](getting-started/first-reading.md)** — open your CGM app and watch the data flow
+2. **[Set up permissions](getting-started/setup.md)** — choose your data source and grant required permissions
+3. **[See your first reading](getting-started/first-reading.md)** — watch the data flow
 
 ---
 
 ## Requirements
 
 - Android 13 or newer (API 33+)
-- A CGM app that shows glucose in notifications (see [Supported Apps](data-sources/supported-apps.md))
+- A glucose data source — one of:
+    - A CGM app that shows glucose in notifications (see [Supported Apps](data-sources/supported-apps.md))
+    - An app that sends xDrip-compatible broadcasts (xDrip+, Juggluco, AAPS)
+    - A remote Nightscout server to follow
+    - A LibreLinkUp account (for Libre 3 users)
 - For Nightscout push: a Nightscout server URL and API secret
 
 ---

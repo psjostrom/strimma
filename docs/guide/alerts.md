@@ -6,7 +6,7 @@ Strimma can alert you with sound and vibration when your glucose crosses configu
 
 ## Alert Types
 
-Strimma has **seven** alert types, each with its own Android notification channel so you can customize the sound and vibration for each one independently.
+Strimma has **eight** alert types, each with its own Android notification channel so you can customize the sound and vibration for each one independently.
 
 ### Glucose Threshold Alerts
 
@@ -24,11 +24,12 @@ Strimma has **seven** alert types, each with its own Android notification channe
 | **Low Soon** | Predicted to cross low threshold within prediction window | No | Gentle |
 | **High Soon** | Predicted to cross high threshold within prediction window | No | Gentle |
 
-### Data Freshness Alert
+### System Alerts
 
 | Alert | Trigger | Bypasses DND | Vibration |
 |-------|---------|-------------|-----------|
 | **Stale Data** | No reading received for 10+ minutes | No | Gentle |
+| **Push Failed** | Nightscout push failed after retries | No | Gentle |
 
 ---
 
