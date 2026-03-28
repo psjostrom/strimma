@@ -162,8 +162,10 @@
     <string name="settings_data_views">Views</string>
     <string name="settings_data_statistics">Statistics</string>
     <string name="settings_data_nightscout">Nightscout</string>
-    <string name="settings_data_pull">Pull from Nightscout</string>
+    <string name="settings_data_pull">Pull readings</string>
     <string name="settings_data_pull_desc">Download glucose history from your Nightscout server</string>
+    <string name="settings_data_pull_treatments">Pull treatments</string>
+    <string name="settings_data_pull_treatments_desc">Download bolus, carb, and basal history from Nightscout</string>
     <string name="settings_data_pull_7d">7 days</string>
     <string name="settings_data_pull_14d">14 days</string>
     <string name="settings_data_pull_30d">30 days</string>
@@ -198,6 +200,7 @@
     <string name="stats_tab_metrics">Metrics</string>
     <string name="stats_tab_agp" translatable="false">AGP</string>
     <string name="stats_tab_meals">Meals</string>
+    <string name="stats_meals_treatments_disabled">Meal analysis requires treatment sync. Enable it in Settings → Treatments to see how your meals affect your glucose.</string>
 
     <!-- AGP -->
     <string name="agp_title">Ambulatory Glucose Profile</string>
@@ -379,6 +382,9 @@
     <string name="activity_pull_progress" tools:ignore="PluralsCandidate">Pulling %1$d days from Nightscout…</string>
     <string name="activity_pull_success" tools:ignore="PluralsCandidate">Pulled %1$d readings</string>
     <string name="activity_pull_failed">Pull failed: %1$s</string>
+    <string name="activity_pull_treatments_progress" tools:ignore="PluralsCandidate">Pulling %1$d days of treatments…</string>
+    <string name="activity_pull_treatments_success" tools:ignore="PluralsCandidate">Pulled %1$d treatments</string>
+    <string name="activity_pull_treatments_failed">Treatment pull failed: %1$s</string>
 
     <!-- Exercise tabs -->
     <string name="exercise_tab_planned">Planned</string>

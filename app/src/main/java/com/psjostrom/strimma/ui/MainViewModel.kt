@@ -27,6 +27,7 @@ import com.psjostrom.strimma.network.FollowerStatus
 import com.psjostrom.strimma.network.LibreLinkUpFollower
 import com.psjostrom.strimma.network.NightscoutFollower
 import com.psjostrom.strimma.network.NightscoutPuller
+import com.psjostrom.strimma.network.TreatmentSyncer
 import com.psjostrom.strimma.notification.AlertManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -50,6 +51,7 @@ class MainViewModel @Inject constructor(
     private val nightscoutFollower: NightscoutFollower,
     private val libreLinkUpFollower: LibreLinkUpFollower,
     private val nightscoutPuller: NightscoutPuller,
+    private val treatmentSyncer: TreatmentSyncer,
     private val calendarReader: CalendarReader
 ) : ViewModel() {
 
@@ -257,6 +259,7 @@ class MainViewModel @Inject constructor(
     fun setLluPassword(password: String) = settings.setLluPassword(password)
 
     suspend fun pullFromNightscout(days: Int): Result<Int> = nightscoutPuller.pullHistory(days)
+    suspend fun pullTreatments(days: Int): Result<Int> = treatmentSyncer.pullHistory(days)
 
     // Treatments
     val treatmentsSyncEnabled: StateFlow<Boolean> = settings.treatmentsSyncEnabled

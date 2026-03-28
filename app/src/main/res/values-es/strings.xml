@@ -384,4 +384,5 @@
     <string name="workout_calendar_none">(ninguno)</string>
     <string name="workout_calendar_picker_title">Seleccionar calendario</string>
     <string name="stats_tab_meals">Comidas</string>
+    <string name="stats_meals_treatments_disabled">El an\u00E1lisis de comidas requiere sincronizaci\u00F3n de tratamientos. Act\u00EDvala en Ajustes \u2192 Tratamientos para ver c\u00F3mo tus comidas afectan tu glucosa.</string>
 </resources>

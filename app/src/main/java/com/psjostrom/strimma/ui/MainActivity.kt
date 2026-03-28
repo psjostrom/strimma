@@ -49,6 +49,25 @@ class MainActivity : ComponentActivity() {
     private var permissionsChecked = false
     private var viewModelRef: MainViewModel? = null
 
+    private fun pullWithToast(
+        days: Int,
+        progressResId: Int,
+        successResId: Int,
+        failureResId: Int,
+        operation: suspend (Int) -> Result<Int>
+    ) {
+        lifecycleScope.launch {
+            Toast.makeText(this@MainActivity, getString(progressResId, days), Toast.LENGTH_SHORT).show()
+            operation(days)
+                .onSuccess { count ->
+                    Toast.makeText(this@MainActivity, getString(successResId, count), Toast.LENGTH_SHORT).show()
+                }
+                .onFailure { e ->
+                    Toast.makeText(this@MainActivity, getString(failureResId, e.message ?: ""), Toast.LENGTH_LONG).show()
+                }
+        }
+    }
+
     private val importSettingsLauncher = registerForActivityResult(
         ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -454,19 +473,24 @@ class MainActivity : ComponentActivity() {
                                 importSettingsLauncher.launch("*/*")
                             },
                             onPullFromNightscout = { days ->
-                                lifecycleScope.launch {
-                                    val msg = getString(R.string.activity_pull_progress, days)
-                                    Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
-                                    val result = viewModel.pullFromNightscout(days)
-                                    result.onSuccess { count ->
-                                        val ok = getString(R.string.activity_pull_success, count)
-                                        Toast.makeText(this@MainActivity, ok, Toast.LENGTH_SHORT).show()
-                                    }.onFailure { e ->
-                                        val err = getString(R.string.activity_pull_failed, e.message ?: "")
-                                        Toast.makeText(this@MainActivity, err, Toast.LENGTH_LONG).show()
-                                    }
-                                }
+                                pullWithToast(
+                                    days,
+                                    R.string.activity_pull_progress,
+                                    R.string.activity_pull_success,
+                                    R.string.activity_pull_failed,
+                                    viewModel::pullFromNightscout
+                                )
                             },
+                            onPullTreatments = { days ->
+                                pullWithToast(
+                                    days,
+                                    R.string.activity_pull_treatments_progress,
+                                    R.string.activity_pull_treatments_success,
+                                    R.string.activity_pull_treatments_failed,
+                                    viewModel::pullTreatments
+                                )
+                            },
+                            treatmentsSyncEnabled = treatmentsSyncEnabled,
                             onBack = { navController.popBackStack() }
                         )
                     }
@@ -479,6 +503,7 @@ class MainActivity : ComponentActivity() {
                             onLoadReadings = viewModel::readingsForPeriod,
                             onLoadCarbTreatments = viewModel::carbTreatmentsInRange,
                             onLoadAllTreatments = viewModel::allTreatmentsSince,
+                            treatmentsSyncEnabled = treatmentsSyncEnabled,
                             tauMinutes = viewModel.currentTauMinutes(),
                             onExportCsv = viewModel::exportCsv,
                             onBack = { navController.popBackStack() }

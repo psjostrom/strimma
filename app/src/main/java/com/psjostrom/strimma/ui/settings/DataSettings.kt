@@ -26,6 +26,8 @@ fun DataSettings(
     onExportSettings: () -> Unit,
     onImportSettings: () -> Unit,
     onPullFromNightscout: (Int) -> Unit,
+    onPullTreatments: (Int) -> Unit,
+    treatmentsSyncEnabled: Boolean,
     onBack: () -> Unit
 ) {
     val onBg = MaterialTheme.colorScheme.onBackground
@@ -43,31 +45,18 @@ fun DataSettings(
             }
         }
 
-        SettingsSection(stringResource(R.string.settings_data_nightscout)) {
-            Text(stringResource(R.string.settings_data_pull), color = onBg, fontSize = 14.sp)
-            Text(
-                stringResource(R.string.settings_data_pull_desc),
-                color = outline,
-                fontSize = 12.sp
+        PullDataSection(
+            title = stringResource(R.string.settings_data_pull),
+            description = stringResource(R.string.settings_data_pull_desc),
+            onPull = onPullFromNightscout
+        )
+
+        if (treatmentsSyncEnabled) {
+            PullDataSection(
+                title = stringResource(R.string.settings_data_pull_treatments),
+                description = stringResource(R.string.settings_data_pull_treatments_desc),
+                onPull = onPullTreatments
             )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                listOf(
-                    7 to stringResource(R.string.settings_data_pull_7d),
-                    14 to stringResource(R.string.settings_data_pull_14d),
-                    30 to stringResource(R.string.settings_data_pull_30d)
-                ).forEach { (days, label) ->
-                    OutlinedButton(
-                        onClick = { onPullFromNightscout(days) },
-                        modifier = Modifier.weight(1f),
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
-                    ) {
-                        Text(label, fontSize = 13.sp, maxLines = 1)
-                    }
-                }
-            }
         }
 
         SettingsSection(stringResource(R.string.settings_data_integration)) {
@@ -132,6 +121,39 @@ fun DataSettings(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(stringResource(R.string.settings_data_import_settings))
+            }
+        }
+    }
+}
+
+@Composable
+private fun PullDataSection(
+    title: String,
+    description: String,
+    onPull: (Int) -> Unit
+) {
+    val onBg = MaterialTheme.colorScheme.onBackground
+    val outline = MaterialTheme.colorScheme.outline
+
+    SettingsSection(stringResource(R.string.settings_data_nightscout)) {
+        Text(title, color = onBg, fontSize = 14.sp)
+        Text(description, color = outline, fontSize = 12.sp)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            listOf(
+                7 to stringResource(R.string.settings_data_pull_7d),
+                14 to stringResource(R.string.settings_data_pull_14d),
+                30 to stringResource(R.string.settings_data_pull_30d)
+            ).forEach { (days, label) ->
+                OutlinedButton(
+                    onClick = { onPull(days) },
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
+                ) {
+                    Text(label, fontSize = 13.sp, maxLines = 1)
+                }
             }
         }
     }

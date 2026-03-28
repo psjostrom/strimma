@@ -384,4 +384,5 @@
     <string name="workout_calendar_none">(aucun)</string>
     <string name="workout_calendar_picker_title">Sélectionner le calendrier</string>
     <string name="stats_tab_meals">Repas</string>
+    <string name="stats_meals_treatments_disabled">L\u0027analyse des repas n\u00E9cessite la synchronisation des traitements. Activez-la dans Param\u00E8tres \u2192 Traitements pour voir comment vos repas affectent votre glyc\u00E9mie.</string>
 </resources>

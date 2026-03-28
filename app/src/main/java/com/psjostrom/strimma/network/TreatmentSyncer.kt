@@ -23,6 +23,8 @@ class TreatmentSyncer @Inject constructor(
         private const val POLL_INTERVAL_MS = 5 * 60 * 1000L
         private const val LOOKBACK_MS = 14 * 24 * 60 * 60 * 1000L
         private const val PRUNE_MS = 14 * 24 * 60 * 60 * 1000L
+        private const val MS_PER_DAY = 24 * 60 * 60 * 1000L
+        private const val MAX_ERROR_LENGTH = 80
     }
 
     fun start(scope: CoroutineScope): Job {
@@ -34,13 +36,39 @@ class TreatmentSyncer @Inject constructor(
         }
     }
 
-    private suspend fun sync() {
-        val source = settings.glucoseSource.first()
-        val (url, secret) = if (source == GlucoseSource.NIGHTSCOUT_FOLLOWER) {
+    suspend fun pullHistory(days: Int): Result<Int> {
+        val (url, secret) = resolveUrlAndSecret()
+        if (url.isBlank() || secret.isBlank()) {
+            return Result.failure(IllegalStateException("Nightscout URL or secret not configured"))
+        }
+
+        val since = System.currentTimeMillis() - days.toLong() * MS_PER_DAY
+        return try {
+            val treatments = client.fetchTreatments(url, secret, since)
+            if (treatments.isNotEmpty()) {
+                dao.upsert(treatments)
+            }
+            DebugLog.log(message = "Treatment pull: ${treatments.size} treatments for $days days")
+            Result.success(treatments.size)
+        } catch (
+            @Suppress("TooGenericExceptionCaught")
+            e: Exception
+        ) {
+            DebugLog.log(message = "Treatment pull error: ${e.message?.take(MAX_ERROR_LENGTH)}")
+            Result.failure(e)
+        }
+    }
+
+    private suspend fun resolveUrlAndSecret(): Pair<String, String> {
+        return if (settings.glucoseSource.first() == GlucoseSource.NIGHTSCOUT_FOLLOWER) {
             settings.followerUrl.first() to settings.getFollowerSecret()
         } else {
             settings.nightscoutUrl.first() to settings.getNightscoutSecret()
         }
+    }
+
+    private suspend fun sync() {
+        val (url, secret) = resolveUrlAndSecret()
         if (url.isBlank() || secret.isBlank()) return
 
         val since = System.currentTimeMillis() - LOOKBACK_MS

@@ -384,4 +384,5 @@
     <string name="workout_calendar_none">(keine)</string>
     <string name="workout_calendar_picker_title">Kalender auswählen</string>
     <string name="stats_tab_meals">Mahlzeiten</string>
+    <string name="stats_meals_treatments_disabled">Die Mahlzeitenanalyse erfordert die Behandlungssynchronisation. Aktivieren Sie diese unter Einstellungen \u2192 Behandlungen, um zu sehen, wie Ihre Mahlzeiten Ihren Blutzucker beeinflussen.</string>
 </resources>

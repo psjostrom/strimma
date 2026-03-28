@@ -66,6 +66,7 @@ fun StatsScreen(
     onLoadReadings: suspend (Int) -> List<GlucoseReading>,
     onLoadCarbTreatments: suspend (Long, Long) -> List<Treatment>,
     onLoadAllTreatments: suspend (Long) -> List<Treatment>,
+    treatmentsSyncEnabled: Boolean = false,
     tauMinutes: Double,
     onExportCsv: suspend (Int) -> String,
     onBack: () -> Unit
@@ -188,6 +189,7 @@ fun StatsScreen(
                     onLoadReadings = onLoadReadings,
                     onLoadCarbTreatments = onLoadCarbTreatments,
                     onLoadAllTreatments = onLoadAllTreatments,
+                    treatmentsSyncEnabled = treatmentsSyncEnabled,
                     periods = periods,
                     selectedPeriod = selectedPeriod,
                     onPeriodChange = { selectedPeriod = it },

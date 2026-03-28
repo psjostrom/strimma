@@ -23,6 +23,8 @@ import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.Treatment
@@ -48,6 +50,7 @@ fun MealStatsTab(
     onLoadReadings: suspend (Int) -> List<GlucoseReading>,
     onLoadCarbTreatments: suspend (Long, Long) -> List<Treatment>,
     onLoadAllTreatments: suspend (Long) -> List<Treatment>,
+    treatmentsSyncEnabled: Boolean,
     periods: List<Pair<Int, String>>,
     selectedPeriod: Int,
     onPeriodChange: (Int) -> Unit,
@@ -56,9 +59,26 @@ fun MealStatsTab(
     glucoseUnit: GlucoseUnit,
     tauMinutes: Double
 ) {
-    val onBg = MaterialTheme.colorScheme.onBackground
     val onSurfaceVar = MaterialTheme.colorScheme.onSurfaceVariant
     val surfVar = MaterialTheme.colorScheme.surfaceVariant
+
+    if (!treatmentsSyncEnabled) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                stringResource(R.string.stats_meals_treatments_disabled),
+                color = onSurfaceVar,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+        }
+        return
+    }
+
+    val onBg = MaterialTheme.colorScheme.onBackground
 
     var selectedSlot by remember { mutableStateOf<MealTimeSlot?>(null) }
 
@@ -105,13 +125,15 @@ fun MealStatsTab(
             FilterChip(
                 selected = selectedSlot == null,
                 onClick = { selectedSlot = null },
-                label = { Text("All") }
+                label = { Text("All", maxLines = 1) },
+                modifier = Modifier.weight(1f)
             )
             MealTimeSlot.entries.forEach { slot ->
                 FilterChip(
                     selected = selectedSlot == slot,
                     onClick = { selectedSlot = if (selectedSlot == slot) null else slot },
-                    label = { Text(slot.label) }
+                    label = { Text(slot.label, maxLines = 1) },
+                    modifier = Modifier.weight(1f)
                 )
             }
         }
