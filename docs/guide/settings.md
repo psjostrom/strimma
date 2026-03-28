@@ -8,9 +8,10 @@ Complete reference for every Strimma setting.
 
 ## Settings Menu
 
-The settings screen has two groups:
+The settings screen has three groups:
 
 - **Configuration:** Data Source, Treatments, Exercise, Display, Notifications, Alerts
+- **Statistics:** View glucose metrics and trends
 - **Tools:** General, Data, Debug Log
 
 ---

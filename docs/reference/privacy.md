@@ -23,7 +23,7 @@ Strimma takes your medical data seriously. Here's exactly what it does with your
 | Debug logs | Plain text files (7-day retention) | Android filesystem encryption |
 
 - Glucose readings are retained locally for **30 days**, then automatically pruned
-- Treatment data is retained for **48 hours**, then pruned
+- Treatment data is retained for **30 days**, then pruned
 - Debug logs are retained for **7 days**, then deleted
 
 ### On Your Nightscout Server
