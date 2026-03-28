@@ -8,7 +8,10 @@ Android 13 introduced "restricted settings" for apps installed outside the Play 
 
 ## Why does Strimma need notification access?
 
-Strimma reads glucose values from your CGM app's notifications. This is the same approach used by xDrip+, Juggluco, and other CGM companion apps. Without notification access, Strimma can't see any glucose data.
+In **Companion mode** (the default), Strimma reads glucose values from your CGM app's notifications. This is the same approach used by xDrip+, Juggluco, and other CGM companion apps.
+
+!!! info "Other data sources don't need this"
+    Notification access is only required for **Companion mode**. If you use xDrip Broadcast, Nightscout Follower, or LibreLinkUp mode, you can skip this page entirely. See [Data Sources](../data-sources/overview.md) for details.
 
 Android's notification access is all-or-nothing — there's no way to grant access to only specific apps' notifications. Strimma only reads notifications from known CGM apps and ignores everything else.
 
@@ -41,12 +44,6 @@ This is expected. Move on to step 2.
 3. Android will show a warning dialog — read it and tap **Allow**
 
 That's it. Strimma can now read glucose notifications.
-
----
-
-## Play Store installs
-
-If Strimma is installed from the Google Play Store, Android does not apply the restricted settings restriction. You can skip step 2 — step 1 will work directly.
 
 ---
 

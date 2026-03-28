@@ -8,10 +8,10 @@ Complete reference for every Strimma setting.
 
 ## Settings Menu
 
-The settings screen has two sections, separated by a divider:
+The settings screen has two groups:
 
-- **Configuration:** Data Source, Treatments, Display, Notifications, Alerts
-- **Tools:** Data, Debug Log
+- **Configuration:** Data Source, Treatments, Exercise, Display, Notifications, Alerts
+- **Tools:** General, Data, Debug Log
 
 ---
 
@@ -88,6 +88,31 @@ Configure glucose alerts. Each alert has an enable toggle and a threshold value.
 Each alert also has a **Sound** button that opens the Android notification channel settings for customization.
 
 See [Alerts](alerts.md) for full details.
+
+---
+
+## Exercise
+
+Configure Health Connect integration for exercise-BG analysis.
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| **Health Connect sync** | Read exercise sessions from Health Connect | Off |
+
+See [Exercise](exercise.md) for details.
+
+---
+
+## General
+
+Startup behavior, language, battery, and version info.
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| **Start on boot** | Automatically start Strimma when the phone restarts | On |
+| **Battery optimization** | Shows whether Strimma is exempt from battery optimization | — |
+| **Language** | App language — System, English, Svenska, Deutsch, Español, Français | System |
+| **Version** | Current app version | — |
 
 ---
 
