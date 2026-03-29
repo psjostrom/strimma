@@ -53,6 +53,24 @@ Each alert has a **30-minute snooze**. When an alert fires, the notification inc
 
 ---
 
+## Pause by Category
+
+You can pause entire alert categories for a custom duration — useful during exercise or known post-meal spikes.
+
+| Category | Pauses These Alerts |
+|----------|-------------------|
+| **Low** | Urgent Low, Low, Low Soon |
+| **High** | Urgent High, High, High Soon |
+
+- Set a custom duration when pausing
+- The pause auto-clears when the duration expires
+- Pause state survives app restarts
+
+!!! note "Snooze vs Pause"
+    **Snooze** silences a single alert type for 30 minutes. **Pause** silences an entire category (all low alerts or all high alerts) for a duration you choose.
+
+---
+
 ## Configuring Alerts
 
 Go to **Settings > Alerts** to configure each alert:
