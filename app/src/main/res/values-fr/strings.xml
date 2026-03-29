@@ -154,6 +154,7 @@
     <string name="settings_data_web_server_desc">Servir les donn\u00E9es BG sur le port 17580 pour cadrans et applications</string>
     <string name="settings_data_api_secret">Secret API</string>
     <string name="settings_data_backup">Sauvegarde</string>
+    <string name="settings_data_export_readings">Exporter les lectures (CSV)</string>
     <string name="settings_data_export_settings">Exporter les param\u00E8tres</string>
     <string name="settings_data_import_settings">Importer les param\u00E8tres</string>
 

@@ -154,6 +154,7 @@
     <string name="settings_data_web_server_desc">BG-Daten auf Port 17580 f\u00FCr Zifferbl\u00E4tter und Apps bereitstellen</string>
     <string name="settings_data_api_secret">API-Geheimnis</string>
     <string name="settings_data_backup">Sicherung</string>
+    <string name="settings_data_export_readings">Messwerte exportieren (CSV)</string>
     <string name="settings_data_export_settings">Einstellungen exportieren</string>
     <string name="settings_data_import_settings">Einstellungen importieren</string>
 

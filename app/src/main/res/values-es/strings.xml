@@ -154,6 +154,7 @@
     <string name="settings_data_web_server_desc">Servir datos BG en el puerto 17580 para esferas y aplicaciones</string>
     <string name="settings_data_api_secret">Secreto API</string>
     <string name="settings_data_backup">Copia de seguridad</string>
+    <string name="settings_data_export_readings">Exportar lecturas (CSV)</string>
     <string name="settings_data_export_settings">Exportar ajustes</string>
     <string name="settings_data_import_settings">Importar ajustes</string>
 

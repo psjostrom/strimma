@@ -154,6 +154,7 @@
     <string name="settings_data_web_server_desc">Servera BG-data p\u00E5 port 17580 f\u00F6r urtavlor och appar</string>
     <string name="settings_data_api_secret">API-hemlighet</string>
     <string name="settings_data_backup">S\u00E4kerhetskopia</string>
+    <string name="settings_data_export_readings">Exportera avl\u00E4sningar (CSV)</string>
     <string name="settings_data_export_settings">Exportera inst\u00E4llningar</string>
     <string name="settings_data_import_settings">Importera inst\u00E4llningar</string>
 
