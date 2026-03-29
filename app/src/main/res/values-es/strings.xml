@@ -154,6 +154,7 @@
     <string name="settings_data_web_server_desc">Servir datos BG en el puerto 17580 para esferas y aplicaciones</string>
     <string name="settings_data_api_secret">Secreto API</string>
     <string name="settings_data_backup">Copia de seguridad</string>
+    <string name="settings_data_export_readings">Exportar lecturas (CSV)</string>
     <string name="settings_data_export_settings">Exportar ajustes</string>
     <string name="settings_data_import_settings">Importar ajustes</string>
 
@@ -293,6 +294,7 @@
     <string name="activity_import_failed">Importaci\u00F3n fallida: %1$s</string>
     <string name="activity_export_dialog_title">Exportar ajustes</string>
     <string name="activity_export_dialog_message">El archivo de exportaci\u00F3n contiene tus secretos de Nightscout en texto plano. Solo comp\u00E1rtelo con aplicaciones de confianza.</string>
+    <string name="activity_export_readings_chooser">Exportar lecturas</string>
     <string name="activity_export_chooser">Exportar ajustes</string>
     <string name="activity_export_failed">Exportaci\u00F3n fallida: %1$s</string>
     <string name="activity_pull_progress">Descargando %1$d d\u00EDas de Nightscout\u2026</string>
