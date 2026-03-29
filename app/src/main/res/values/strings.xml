@@ -17,6 +17,7 @@
 
 
     <!-- Main Screen -->
+    <string name="main_waiting_for_reading">Waiting for first glucose reading…</string>
     <string name="main_just_now">Just now</string>
     <string name="main_min_ago">%1$d min ago</string>
     <string name="main_prediction_low">Low in %1$d min</string>

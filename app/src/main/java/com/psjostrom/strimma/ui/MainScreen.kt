@@ -323,7 +323,7 @@ private fun BgHeader(
 
         // Delta + timestamp on one line
         val timeText = when {
-            minutesAgo < 0 -> stringResource(R.string.common_no_data)
+            minutesAgo < 0 -> stringResource(R.string.main_waiting_for_reading)
             minutesAgo == 0 -> stringResource(R.string.main_just_now)
             else -> stringResource(R.string.main_min_ago, minutesAgo)
         }
