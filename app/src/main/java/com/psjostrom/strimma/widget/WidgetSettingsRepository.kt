@@ -16,12 +16,16 @@ class WidgetSettingsRepository @Inject constructor(
     fun getOpacity(): Float = prefs.getFloat(KEY_OPACITY, DEFAULT_OPACITY)
     fun getGraphMinutes(): Int = prefs.getInt(KEY_GRAPH_MINUTES, DEFAULT_GRAPH_MINUTES)
     fun getShowPrediction(): Boolean = prefs.getBoolean(KEY_SHOW_PREDICTION, DEFAULT_SHOW_PREDICTION)
+    fun getLightMode(): Boolean = prefs.getBoolean(KEY_LIGHT_MODE, DEFAULT_LIGHT_MODE)
+    fun getColorCoded(): Boolean = prefs.getBoolean(KEY_COLOR_CODED, DEFAULT_COLOR_CODED)
 
-    fun save(opacity: Float, graphMinutes: Int, showPrediction: Boolean) {
+    fun save(opacity: Float, graphMinutes: Int, showPrediction: Boolean, lightMode: Boolean, colorCoded: Boolean) {
         prefs.edit {
             putFloat(KEY_OPACITY, opacity)
             putInt(KEY_GRAPH_MINUTES, graphMinutes)
             putBoolean(KEY_SHOW_PREDICTION, showPrediction)
+            putBoolean(KEY_LIGHT_MODE, lightMode)
+            putBoolean(KEY_COLOR_CODED, colorCoded)
         }
     }
 
@@ -29,6 +33,8 @@ class WidgetSettingsRepository @Inject constructor(
         put(KEY_OPACITY, getOpacity().toDouble())
         put(KEY_GRAPH_MINUTES, getGraphMinutes())
         put(KEY_SHOW_PREDICTION, getShowPrediction())
+        put(KEY_LIGHT_MODE, getLightMode())
+        put(KEY_COLOR_CODED, getColorCoded())
     }
 
     fun importFromJson(widget: JSONObject) {
@@ -41,6 +47,10 @@ class WidgetSettingsRepository @Inject constructor(
             }
             if (widget.has(KEY_SHOW_PREDICTION))
                 putBoolean(KEY_SHOW_PREDICTION, widget.getBoolean(KEY_SHOW_PREDICTION))
+            if (widget.has(KEY_LIGHT_MODE))
+                putBoolean(KEY_LIGHT_MODE, widget.getBoolean(KEY_LIGHT_MODE))
+            if (widget.has(KEY_COLOR_CODED))
+                putBoolean(KEY_COLOR_CODED, widget.getBoolean(KEY_COLOR_CODED))
             apply()
         }
     }
@@ -50,10 +60,14 @@ class WidgetSettingsRepository @Inject constructor(
         private const val KEY_OPACITY = "opacity"
         private const val KEY_GRAPH_MINUTES = "graph_minutes"
         private const val KEY_SHOW_PREDICTION = "show_prediction"
+        private const val KEY_LIGHT_MODE = "light_mode"
+        private const val KEY_COLOR_CODED = "color_coded"
 
         const val DEFAULT_OPACITY = 0.85f
         const val DEFAULT_GRAPH_MINUTES = 60
         const val DEFAULT_SHOW_PREDICTION = false
+        const val DEFAULT_LIGHT_MODE = false
+        const val DEFAULT_COLOR_CODED = false
 
         private val VALID_GRAPH_MINUTES = setOf(30, 60, 120, 180)
     }

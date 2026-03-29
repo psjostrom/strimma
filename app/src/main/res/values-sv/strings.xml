@@ -238,6 +238,8 @@
     <string name="widget_config_title">Widgetinst\u00E4llningar</string>
     <string name="widget_config_graph_range">Grafintervall</string>
     <string name="widget_config_show_prediction">Visa prediktion</string>
+    <string name="widget_config_light_mode">Ljus bakgrund</string>
+    <string name="widget_config_color_coded">F\u00E4rgkodad BG</string>
     <string name="widget_config_background">Bakgrund</string>
     <string name="widget_config_opacity">%1$d%%</string>
     <string name="widget_config_background_hint">Styr bara bakgrunden \u2014 graf och v\u00E4rden syns alltid fullt</string>

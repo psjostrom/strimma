@@ -291,6 +291,8 @@
     <string name="widget_config_title">Widget Settings</string>
     <string name="widget_config_graph_range">Graph Range</string>
     <string name="widget_config_show_prediction">Show Prediction</string>
+    <string name="widget_config_light_mode">Light Background</string>
+    <string name="widget_config_color_coded">Color-Coded BG</string>
     <string name="widget_config_background">Background</string>
     <string name="widget_config_opacity">%1$d%%</string>
     <string name="widget_config_background_hint">Controls background only — graph and values stay fully visible</string>

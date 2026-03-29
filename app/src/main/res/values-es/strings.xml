@@ -236,6 +236,8 @@
     <string name="widget_config_title">Ajustes del widget</string>
     <string name="widget_config_graph_range">Rango del gr\u00E1fico</string>
     <string name="widget_config_show_prediction">Mostrar predicci\u00F3n</string>
+    <string name="widget_config_light_mode">Fondo claro</string>
+    <string name="widget_config_color_coded">BG con color</string>
     <string name="widget_config_background">Fondo</string>
     <string name="widget_config_opacity">%1$d%%</string>
     <string name="widget_config_background_hint">Controla solo el fondo \u2014 el gr\u00E1fico y los valores permanecen totalmente visibles</string>
