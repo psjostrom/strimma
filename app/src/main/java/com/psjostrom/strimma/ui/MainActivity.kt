@@ -159,7 +159,6 @@ class MainActivity : ComponentActivity() {
                 val bgBroadcastEnabled by viewModel.bgBroadcastEnabled.collectAsState()
                 val glucoseSource by viewModel.glucoseSource.collectAsState()
                 val followerStatus by viewModel.followerStatus.collectAsState()
-                val followerUrl by viewModel.followerUrl.collectAsState()
                 val followerPollSeconds by viewModel.followerPollSeconds.collectAsState()
                 val treatmentsSyncEnabled by viewModel.treatmentsSyncEnabled.collectAsState()
                 val insulinType by viewModel.insulinType.collectAsState()
@@ -287,8 +286,6 @@ class MainActivity : ComponentActivity() {
                             glucoseSource = glucoseSource,
                             nightscoutUrl = nightscoutUrl,
                             nightscoutSecret = viewModel.nightscoutSecret,
-                            followerUrl = followerUrl,
-                            followerSecret = viewModel.followerSecret,
                             followerPollSeconds = followerPollSeconds,
                             lluEmail = viewModel.lluEmail,
                             lluPassword = viewModel.lluPassword,
@@ -296,8 +293,6 @@ class MainActivity : ComponentActivity() {
                             onGlucoseSourceChange = viewModel::setGlucoseSource,
                             onNightscoutUrlChange = viewModel::setNightscoutUrl,
                             onNightscoutSecretChange = viewModel::setNightscoutSecret,
-                            onFollowerUrlChange = viewModel::setFollowerUrl,
-                            onFollowerSecretChange = viewModel::setFollowerSecret,
                             onFollowerPollSecondsChange = viewModel::setFollowerPollSeconds,
                             onLluEmailChange = viewModel::setLluEmail,
                             onLluPasswordChange = viewModel::setLluPassword,

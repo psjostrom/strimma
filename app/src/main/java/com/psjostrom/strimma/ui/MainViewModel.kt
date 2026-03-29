@@ -270,13 +270,6 @@ class MainViewModel @Inject constructor(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), FollowerStatus.Idle)
 
-    val followerUrl: StateFlow<String> = settings.followerUrl
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
-    fun setFollowerUrl(url: String) = viewModelScope.launch { settings.setFollowerUrl(url) }
-
-    val followerSecret: String get() = settings.getFollowerSecret()
-    fun setFollowerSecret(secret: String) = settings.setFollowerSecret(secret)
-
     val followerPollSeconds: StateFlow<Int> = settings.followerPollSeconds
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 60)
     fun setFollowerPollSeconds(seconds: Int) = viewModelScope.launch { settings.setFollowerPollSeconds(seconds) }
