@@ -27,8 +27,12 @@ val AboveHigh = Color(0xFFFFB800)
 val BelowLow = Color(0xFFFF4D6A)
 val Stale = Color(0xFF6A5F80)
 
+// --- TIR rating color ---
+val TirGood = Color(0xFF4ADE80)
+
 // --- Semantic tinted backgrounds (dark) ---
 val TintInRange = Color(0xFF152535)
+val TintGood = Color(0xFF1A3A2A)
 val TintWarning = Color(0xFF35280E)
 val TintDanger = Color(0xFF351525)
 

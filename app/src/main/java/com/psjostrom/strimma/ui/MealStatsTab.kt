@@ -44,6 +44,8 @@ import com.psjostrom.strimma.ui.theme.BelowLow
 import com.psjostrom.strimma.ui.theme.GraphAxisText
 import com.psjostrom.strimma.ui.theme.InRange
 import com.psjostrom.strimma.ui.theme.Stale
+import com.psjostrom.strimma.ui.theme.TintGood
+import com.psjostrom.strimma.ui.theme.TirGood
 import java.time.ZoneId
 import kotlin.math.max
 import kotlin.math.min
@@ -279,7 +281,7 @@ private fun MealAggregateHeader(
 @Composable
 private fun getTirColor(tir: Double): Color {
     return when {
-        tir >= 80 -> Color(0xFF4ADE80)
+        tir >= 80 -> TirGood
         tir >= 50 -> AboveHigh
         else -> BelowLow
     }
@@ -339,7 +341,7 @@ private fun MealCard(
                     Surface(
                         shape = RoundedCornerShape(100),
                         color = if (result.tirPercent >= 80) {
-                            Color(0xFF1A3A2A)
+                            TintGood
                         } else if (result.tirPercent >= 50) {
                             Color(0xFF35280E)
                         } else {

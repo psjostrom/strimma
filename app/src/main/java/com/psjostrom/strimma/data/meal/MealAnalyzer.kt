@@ -176,7 +176,7 @@ class MealAnalyzer @Inject constructor() {
     ): Double {
         if (readings.isEmpty()) return 0.0
 
-        val inRange = readings.count { it.sgv in bgLow.toInt()..bgHigh.toInt() }
+        val inRange = readings.count { it.sgv.toDouble() in bgLow..bgHigh }
         return (inRange.toDouble() / readings.size) * PERCENT
     }
 
