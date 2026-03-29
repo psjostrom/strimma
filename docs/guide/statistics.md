@@ -97,9 +97,21 @@ The CSV covers the currently selected time period. You can share it via email, m
 
 ---
 
+## AGP Tab
+
+The **AGP** tab shows an Ambulatory Glucose Profile — the ADA-endorsed standard for presenting CGM data. It overlays 14 days of readings into a single 24-hour chart, showing median glucose and variability bands (5th–95th, 25th–75th percentiles) by time of day.
+
+![AGP report](../screenshots/agp-report.png){ width="300" }
+
+Below the chart, a 5-tier Time in Range bar shows Very Low, Low, In Range, High, and Very High percentages.
+
+---
+
 ## Meals Tab
 
 The **Meals** tab analyzes your postprandial (after-meal) glucose response using carb treatments from Nightscout. Requires treatment sync to be enabled.
+
+![Meal analysis](../screenshots/meal-analysis-lunch.png){ width="300" }
 
 ### Aggregate View
 

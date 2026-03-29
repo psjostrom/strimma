@@ -30,6 +30,67 @@ Tap any session to see the full before/during/after BG analysis:
 
 **After** (4 hours post-exercise) — Post-exercise lowest and highest with timing, total drop from entry to overall lowest, and a post-exercise hypo flag if glucose went below your low threshold.
 
+### Exercise Stats
+
+The exercise stats screen shows aggregate BG patterns across your sessions, grouped by activity type (Running, Cycling, Strength, etc.) and metabolic profile:
+
+| Metabolic Profile | Activities | Default Target Range |
+|-------------------|-----------|---------------------|
+| **Aerobic** | Running, Walking, Hiking, Cycling, Swimming, Yoga, Rowing, Skiing | 7–10 mmol/L (126–180 mg/dL) |
+| **Resistance** | Strength, Climbing | 7–10 mmol/L (126–180 mg/dL) |
+| **High-Intensity** | Martial Arts, or any session with "interval"/"tempo"/"hiit"/"sprint" in the title | 8–12 mmol/L (144–216 mg/dL) |
+
+For each category (minimum 3 sessions), you see:
+
+- **Session count** and average duration
+- **Average entry BG** — are you starting high enough?
+- **Average min BG** and **drop rate** (per 10 min) — how fast does your glucose fall?
+- **Hypo rate** — percentage of sessions where glucose dipped below your low threshold
+- **Post-exercise lows** — delayed hypos that occur after the session ends
+
+Stats are further broken down by entry BG bands (below low, low–7.0, 7.0–10.0, above 10.0) so you can see how your starting glucose affects the outcome.
+
+Intensity detection works two ways: from keywords in calendar event titles (for planned workouts) or from actual heart rate data (if average HR ≥ 80% of your configured max HR → High-Intensity).
+
+### Pre-Activity Guidance
+
+When you have a workout coming up (read from your Android calendar), Strimma shows a readiness card on the main screen:
+
+![Pre-activity guidance card](../screenshots/pre-activity-guidance.png){ width="300" }
+
+**Status levels:**
+
+| Status | Meaning |
+|--------|---------|
+| **Ready** | BG is in range, trend is stable, IOB is manageable — you're good to go |
+| **Heads Up** | One concern (e.g., BG dropping, predicted to go low, high BG) — you can start but be aware |
+| **Hold On** | Multiple risk factors — eat carbs and wait before starting |
+
+**What it evaluates:**
+
+- Current BG and trend (rising/falling/stable)
+- IOB (insulin on board) — each unit of IOB adds ~12g to the carb recommendation
+- 30-minute glucose forecast
+- **Compound risk detection** — BG below 8.0 mmol AND falling fast. This combination is dangerous before exercise.
+
+**Carb recommendations:**
+
+When carbs are needed, the card shows a specific amount (rounded to 5g, max 60g) adjusted for your IOB and current BG. Timing suggestions vary based on how soon the workout starts: "immediately" (<15 min), "now" (<45 min), or "~30 minutes before start."
+
+### Workout Schedule
+
+Strimma reads planned workouts from your Android calendar and shows them on the Exercise screen's **Planned** tab. Each upcoming workout shows:
+
+- Event title, time, and detected activity type
+- Pre-activity status (Ready/Heads Up/Hold On) based on current glucose conditions
+- Metabolic profile (Aerobic/Resistance/High-Intensity) — detected from the event title
+
+**Settings:**
+
+- **Calendar** — select which calendar to monitor
+- **Lookahead** — how far ahead to scan (1–6 hours, default 3h)
+- **Guidance trigger** — when the readiness card appears on the main screen (30–240 min before workout, default 120 min)
+
 ### Glucose Write
 
 Optionally, Strimma can write your glucose readings to Health Connect so other health apps can see your CGM data.

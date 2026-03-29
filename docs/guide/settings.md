@@ -125,11 +125,27 @@ See [Alerts](alerts.md) for full details.
 
 ## Exercise
 
-Configure Health Connect integration for exercise-BG analysis.
+Configure Health Connect integration, workout calendar, and pre-activity guidance.
+
+### Health Connect
 
 | Setting | Description | Default |
 |---------|-------------|---------|
 | **Health Connect sync** | Read exercise sessions from Health Connect | Off |
+| **Write glucose** | Write CGM readings to Health Connect | Off |
+| **Max heart rate** | Used for intensity detection on completed sessions | 190 BPM |
+
+### Workout Calendar
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| **Calendar** | Which Android calendar to monitor for workouts | None |
+| **Lookahead** | How far ahead to scan for upcoming workouts | 3 hours |
+| **Guidance trigger** | When the pre-activity card appears on main screen | 120 min before |
+
+### Category Target Ranges
+
+Each exercise category (Running, Cycling, Strength, etc.) has a configurable low and high BG threshold. Defaults come from the category's metabolic profile (Aerobic, Resistance, or High-Intensity).
 
 See [Exercise](exercise.md) for details.
 

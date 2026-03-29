@@ -37,7 +37,7 @@ xDrip+ is an extraordinary open-source project that has served the diabetes comm
 
 Strimma started as a focused CGM app for a specific setup (Libre 3 + CamAPS FX), but is designed from the ground up as an open-source project that can grow to serve a broader audience. It uses modern Android conventions (Kotlin, Compose, Room, Coroutines, targetSdk 36) to provide a codebase that is approachable for contributors familiar with current Android development.
 
-Ideas and wishlist in `docs/internal/wishlist.md`. CGM app landscape in `docs/internal/cgm-landscape.md`.
+Ideas in `docs/internal/ideas.md`. CGM app landscape in `docs/internal/cgm-landscape.md`.
 
 ### Side-by-side validation (completed)
 
@@ -669,13 +669,13 @@ For generic Nightscout setups, no backend changes are needed — Strimma uses th
 
 ### Remaining
 
-Phase 2 is complete. See `docs/internal/wishlist.md` for future ideas.
+Phase 2 is complete. See `docs/internal/ideas.md` for future ideas.
 
 ---
 
 ## 16. Phase 1 Non-Goals
 
-These are out of scope for phase 1. Several are planned for later — see `docs/internal/wishlist.md`.
+These are out of scope for phase 1. Several are planned for later — see `docs/internal/ideas.md`.
 
 - **BLE CGM collection** — Phase 1 uses CamAPS FX notification listener. Direct BLE planned for later phases.
 - **Calibration** — Not applicable for factory-calibrated Libre 3. Planned for sensors that need it.

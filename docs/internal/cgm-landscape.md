@@ -2,7 +2,7 @@
 
 **Updated:** 2026-03-23
 
-Reference material on what exists in the CGM app space, what works well, and what's missing. See `wishlist.md` for ideas and wishlist.
+Reference material on what exists in the CGM app space, what works well, and what's missing. See `ideas.md` for ideas.
 
 ---
 

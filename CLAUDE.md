@@ -82,4 +82,4 @@ When a merge or push fails, ALWAYS check CI status (`gh pr checks`) and read the
 
 ## Spec
 
-Full spec in `docs/internal/spec.md`. Ideas and wishlist in `docs/internal/wishlist.md`. CGM app landscape in `docs/internal/cgm-landscape.md`.
+Full spec in `docs/internal/spec.md`. Ideas in `docs/internal/ideas.md`. CGM app landscape in `docs/internal/cgm-landscape.md`.
