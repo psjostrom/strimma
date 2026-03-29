@@ -14,12 +14,13 @@ data class MealAgpBucket(
 
 data class MealAgpResult(
     val buckets: List<MealAgpBucket>,
-    val maxWindowMinutes: Int
+    val windowMinutes: Int
 )
 
 object MealAgpCalculator {
 
     private const val BUCKET_MINUTES = 5
+    private const val AGP_WINDOW_MINUTES = 180
     private const val P5 = 5.0
     private const val P25 = 25.0
     private const val P50 = 50.0
@@ -31,8 +32,7 @@ object MealAgpCalculator {
     fun compute(results: List<MealPostprandialResult>): MealAgpResult? {
         if (results.isEmpty()) return null
 
-        val maxWindow = results.maxOf { it.windowMinutes }
-        val bucketCount = maxWindow / BUCKET_MINUTES + 1
+        val bucketCount = AGP_WINDOW_MINUTES / BUCKET_MINUTES + 1
         val bucketMap = Array(bucketCount) { mutableListOf<Double>() }
 
         for (result in results) {
@@ -60,6 +60,6 @@ object MealAgpCalculator {
             )
         }
 
-        return if (buckets.isEmpty()) null else MealAgpResult(buckets, maxWindow)
+        return if (buckets.isEmpty()) null else MealAgpResult(buckets, AGP_WINDOW_MINUTES)
     }
 }
