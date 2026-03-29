@@ -6,7 +6,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.clickable
@@ -775,7 +775,7 @@ private fun PlannedWorkoutSheet(
 
                 if (guidance is GuidanceState.WorkoutApproaching) {
                     // Guidance in a tinted inner card
-                    val isDark = isSystemInDarkTheme()
+                    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
                     val (tintBg, badgeColor, badgeText) = when (guidance.readiness) {
                         ReadinessLevel.READY -> Triple(if (isDark) TintInRange else LightTintInRange, InRange, "READY")
                         ReadinessLevel.CAUTION -> Triple(if (isDark) TintWarning else LightTintWarning, AboveHigh, "HEADS UP")
@@ -989,7 +989,7 @@ private fun PatternCard(
     }
 
     // Risk badge
-    val isDark = isSystemInDarkTheme()
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val (badgeText, badgeColor, badgeBg) = when {
         stats.hypoRate >= HYPO_HIGH_RISK_THRESHOLD -> Triple(
             stringResource(R.string.exercise_patterns_high_risk), BelowLow, if (isDark) TintDanger else LightTintDanger
