@@ -399,4 +399,18 @@
     <string name="pause_countdown">Suspendu · %1$s</string>
     <string name="pause_low_warning">Inclut l\u0027alerte bas urgent</string>
 
+    <string name="settings_statistics">Statistiques</string>
+    <string name="settings_statistics_subtitle">Métriques, AGP, repas</string>
+    <string name="settings_sharing">Partage</string>
+    <string name="settings_sharing_subtitle">Broadcast, serveur web, export</string>
+    <string name="settings_meal_slots_title">Créneaux de repas</string>
+    <string name="settings_meal_slots_desc">Ajustez les heures de début et de fin pour le petit-déjeuner, le déjeuner et le dîner. Les repas en dehors de ces créneaux sont classés comme collation.</string>
+    <string name="meal_slot_breakfast">Petit-déjeuner</string>
+    <string name="meal_slot_lunch">Déjeuner</string>
+    <string name="meal_slot_dinner">Dîner</string>
+    <string name="settings_data_pull_treatments">Télécharger les traitements</string>
+    <string name="settings_data_pull_treatments_desc">Télécharger lu0027historique de bolus, glucides et basal depuis Nightscout</string>
+    <string name="activity_pull_treatments_progress">Téléchargement de %1$d jours de traitements…</string>
+    <string name="activity_pull_treatments_success">%1$d traitements téléchargés</string>
+    <string name="activity_pull_treatments_failed">Échec du téléchargement des traitements : %1$s</string>
 </resources>

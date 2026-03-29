@@ -398,4 +398,18 @@
     <string name="pause_high_paused">Höga larm pausade</string>
     <string name="pause_countdown">Pausad · %1$s</string>
     <string name="pause_low_warning">Inkluderar akut lågt-larm</string>
+    <string name="settings_statistics">Statistik</string>
+    <string name="settings_statistics_subtitle">Mätvärden, AGP, måltider</string>
+    <string name="settings_sharing">Delning</string>
+    <string name="settings_sharing_subtitle">Broadcast, webbserver, export</string>
+    <string name="settings_meal_slots_title">Måltidstider</string>
+    <string name="settings_meal_slots_desc">Justera när frukost, lunch och middag börjar och slutar. Måltider utanför dessa tider klassificeras som mellanmål.</string>
+    <string name="meal_slot_breakfast">Frukost</string>
+    <string name="meal_slot_lunch">Lunch</string>
+    <string name="meal_slot_dinner">Middag</string>
+    <string name="settings_data_pull_treatments">Hämta behandlingar</string>
+    <string name="settings_data_pull_treatments_desc">Ladda ner bolus-, kolhydrat- och basalhistorik från Nightscout</string>
+    <string name="activity_pull_treatments_progress">Hämtar %1$d dagars behandlingar…</string>
+    <string name="activity_pull_treatments_success">%1$d behandlingar hämtade</string>
+    <string name="activity_pull_treatments_failed">Behandlingshämtning misslyckades: %1$s</string>
 </resources>

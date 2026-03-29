@@ -399,4 +399,18 @@
     <string name="pause_countdown">Pausiert · %1$s</string>
     <string name="pause_low_warning">Einschließlich Akut-tief-Alarm</string>
 
+    <string name="settings_statistics">Statistik</string>
+    <string name="settings_statistics_subtitle">Messwerte, AGP, Mahlzeiten</string>
+    <string name="settings_sharing">Teilen</string>
+    <string name="settings_sharing_subtitle">Broadcast, Webserver, Export</string>
+    <string name="settings_meal_slots_title">Mahlzeiten-Zeitfenster</string>
+    <string name="settings_meal_slots_desc">Legen Sie fest, wann die Zeitfenster für Frühstück, Mittag- und Abendessen beginnen und enden. Mahlzeiten außerhalb dieser Fenster werden als Snack klassifiziert.</string>
+    <string name="meal_slot_breakfast">Frühstück</string>
+    <string name="meal_slot_lunch">Mittagessen</string>
+    <string name="meal_slot_dinner">Abendessen</string>
+    <string name="settings_data_pull_treatments">Behandlungen abrufen</string>
+    <string name="settings_data_pull_treatments_desc">Bolus-, Kohlenhydrat- und Basalverlauf von Nightscout herunterladen</string>
+    <string name="activity_pull_treatments_progress">Abruf von %1$d Tagen Behandlungen…</string>
+    <string name="activity_pull_treatments_success">%1$d Behandlungen abgerufen</string>
+    <string name="activity_pull_treatments_failed">Behandlungsabruf fehlgeschlagen: %1$s</string>
 </resources>
