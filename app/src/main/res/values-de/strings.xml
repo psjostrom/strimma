@@ -294,6 +294,7 @@
     <string name="activity_import_failed">Import fehlgeschlagen: %1$s</string>
     <string name="activity_export_dialog_title">Einstellungen exportieren</string>
     <string name="activity_export_dialog_message">Die Exportdatei enth\u00E4lt deine Nightscout-Geheimnisse im Klartext. Teile sie nur mit vertrauensw\u00FCrdigen Apps.</string>
+    <string name="activity_export_readings_chooser">Messwerte exportieren</string>
     <string name="activity_export_chooser">Einstellungen exportieren</string>
     <string name="activity_export_failed">Export fehlgeschlagen: %1$s</string>
     <string name="activity_pull_progress">Lade %1$d Tage von Nightscout\u2026</string>
