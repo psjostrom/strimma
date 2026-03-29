@@ -13,12 +13,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.psjostrom.strimma.R
-import com.psjostrom.strimma.ui.theme.InRange
 
 @Composable
 fun SetupNightscoutStep(
-    pushEnabled: Boolean,
-    onPushEnabledChange: (Boolean) -> Unit,
     nightscoutUrl: String,
     nightscoutSecret: String,
     onUrlChange: (String) -> Unit,
@@ -27,66 +24,52 @@ fun SetupNightscoutStep(
     onTestConnection: () -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Text(
+            stringResource(R.string.setup_nightscout_desc),
+            fontSize = 13.sp,
+            color = MaterialTheme.colorScheme.outline,
+            lineHeight = 18.sp
+        )
+
         Surface(
             shape = RoundedCornerShape(12.dp),
             color = MaterialTheme.colorScheme.surfaceVariant
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(
-                    stringResource(R.string.setup_nightscout_toggle),
-                    fontSize = 15.sp
+                var urlText by remember(nightscoutUrl) { mutableStateOf(nightscoutUrl) }
+                OutlinedTextField(
+                    value = urlText,
+                    onValueChange = {
+                        urlText = it
+                        onUrlChange(it)
+                    },
+                    label = { Text(stringResource(R.string.settings_source_nightscout_url)) },
+                    placeholder = { Text(stringResource(R.string.settings_source_url_placeholder)) },
+                    supportingText = { Text(stringResource(R.string.settings_source_url_hint)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
                 )
-                Switch(checked = pushEnabled, onCheckedChange = onPushEnabledChange)
-            }
-        }
 
-        if (pushEnabled) {
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    var urlText by remember(nightscoutUrl) { mutableStateOf(nightscoutUrl) }
-                    OutlinedTextField(
-                        value = urlText,
-                        onValueChange = {
-                            urlText = it
-                            onUrlChange(it)
-                        },
-                        label = { Text(stringResource(R.string.settings_source_nightscout_url)) },
-                        placeholder = { Text(stringResource(R.string.settings_source_url_placeholder)) },
-                        supportingText = { Text(stringResource(R.string.settings_source_url_hint)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
+                var secretText by remember(nightscoutSecret) { mutableStateOf(nightscoutSecret) }
+                OutlinedTextField(
+                    value = secretText,
+                    onValueChange = {
+                        secretText = it
+                        onSecretChange(it)
+                    },
+                    label = { Text(stringResource(R.string.settings_source_api_secret)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
 
-                    var secretText by remember(nightscoutSecret) { mutableStateOf(nightscoutSecret) }
-                    OutlinedTextField(
-                        value = secretText,
-                        onValueChange = {
-                            secretText = it
-                            onSecretChange(it)
-                        },
-                        label = { Text(stringResource(R.string.settings_source_api_secret)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-
-                    ConnectionTestButton(
-                        testState = connectionTestState,
-                        onTest = onTestConnection,
-                        hasCredentials = urlText.isNotBlank() && secretText.isNotBlank()
-                    )
-                }
+                ConnectionTestButton(
+                    testState = connectionTestState,
+                    onTest = onTestConnection,
+                    hasCredentials = urlText.isNotBlank() && secretText.isNotBlank()
+                )
             }
         }
     }

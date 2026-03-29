@@ -376,7 +376,7 @@
     <string name="setup_source_guide_step3">Open notification settings again and enable Strimma. It will work this time.</string>
     <string name="setup_source_guide_step3_button">Enable notification access</string>
     <string name="setup_nightscout_title">Nightscout</string>
-    <string name="setup_nightscout_toggle">Push readings to Nightscout</string>
+    <string name="setup_nightscout_desc">Connect to your Nightscout server for data sync, treatments, and history</string>
     <string name="setup_nightscout_test">Test Connection</string>
     <string name="setup_nightscout_testing">Testing…</string>
     <string name="setup_nightscout_success">Connected</string>

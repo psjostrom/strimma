@@ -43,10 +43,7 @@ fun SetupScreen(
     val glucoseUnit by viewModel.glucoseUnit.collectAsState()
     val glucoseSource by viewModel.glucoseSource.collectAsState()
     val nightscoutUrl by viewModel.nightscoutUrl.collectAsState()
-    val pushEnabled by viewModel.pushEnabled.collectAsState()
     val connectionTestState by viewModel.connectionTestState.collectAsState()
-    val followerUrl by viewModel.followerUrl.collectAsState()
-    val followerTestState by viewModel.followerTestState.collectAsState()
 
     // Alerts
     val alertUrgentLowEnabled by viewModel.alertUrgentLowEnabled.collectAsState()
@@ -64,11 +61,11 @@ fun SetupScreen(
     val canAdvance = when (pagerState.currentPage) {
         2 -> when (glucoseSource) {
             GlucoseSource.COMPANION -> isNotificationAccessGranted
-            GlucoseSource.NIGHTSCOUT_FOLLOWER -> followerTestState is ConnectionTestState.Success
+            GlucoseSource.NIGHTSCOUT_FOLLOWER -> true
             GlucoseSource.XDRIP_BROADCAST -> true
             GlucoseSource.LIBRELINKUP -> true
         }
-        3 -> !pushEnabled || connectionTestState is ConnectionTestState.Success
+        3 -> connectionTestState is ConnectionTestState.Success || nightscoutUrl.isBlank()
         else -> true
     }
 
@@ -149,20 +146,12 @@ fun SetupScreen(
                             isNotificationAccessGranted = isNotificationAccessGranted,
                             onOpenNotificationAccess = onOpenNotificationAccess,
                             onOpenAppInfo = onOpenAppInfo,
-                            followerUrl = followerUrl,
-                            followerSecret = viewModel.followerSecret,
-                            followerTestState = followerTestState,
-                            onFollowerUrlChange = { viewModel.setFollowerUrl(it) },
-                            onFollowerSecretChange = { viewModel.setFollowerSecret(it) },
-                            onTestFollowerConnection = { viewModel.testFollowerConnection() },
                             lluEmail = viewModel.lluEmail,
                             lluPassword = viewModel.lluPassword,
                             onLluEmailChange = { viewModel.setLluEmail(it) },
                             onLluPasswordChange = { viewModel.setLluPassword(it) }
                         )
                         3 -> SetupNightscoutStep(
-                            pushEnabled = pushEnabled,
-                            onPushEnabledChange = { viewModel.setPushEnabled(it) },
                             nightscoutUrl = nightscoutUrl,
                             nightscoutSecret = viewModel.nightscoutSecret,
                             onUrlChange = { viewModel.setNightscoutUrl(it) },

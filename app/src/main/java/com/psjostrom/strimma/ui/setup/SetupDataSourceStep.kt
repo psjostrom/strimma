@@ -31,13 +31,6 @@ fun SetupDataSourceStep(
     isNotificationAccessGranted: Boolean,
     onOpenNotificationAccess: () -> Unit,
     onOpenAppInfo: () -> Unit,
-    // Follower fields (inline when NIGHTSCOUT_FOLLOWER selected)
-    followerUrl: String,
-    followerSecret: String,
-    followerTestState: ConnectionTestState,
-    onFollowerUrlChange: (String) -> Unit,
-    onFollowerSecretChange: (String) -> Unit,
-    onTestFollowerConnection: () -> Unit,
     // LibreLinkUp fields (inline when LIBRELINKUP selected)
     lluEmail: String,
     lluPassword: String,
@@ -75,17 +68,6 @@ fun SetupDataSourceStep(
                 isGranted = isNotificationAccessGranted,
                 onOpenAppInfo = onOpenAppInfo,
                 onOpenNotificationAccess = onOpenNotificationAccess
-            )
-        }
-
-        if (selectedSource == GlucoseSource.NIGHTSCOUT_FOLLOWER) {
-            FollowerConfigBlock(
-                url = followerUrl,
-                secret = followerSecret,
-                testState = followerTestState,
-                onUrlChange = onFollowerUrlChange,
-                onSecretChange = onFollowerSecretChange,
-                onTestConnection = onTestFollowerConnection
             )
         }
 
@@ -254,57 +236,6 @@ private fun NumberedStep(number: Int, text: String) {
             lineHeight = 18.sp,
             modifier = Modifier.padding(top = 2.dp)
         )
-    }
-}
-
-@Composable
-private fun FollowerConfigBlock(
-    url: String,
-    secret: String,
-    testState: ConnectionTestState,
-    onUrlChange: (String) -> Unit,
-    onSecretChange: (String) -> Unit,
-    onTestConnection: () -> Unit
-) {
-    Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            var urlText by remember(url) { mutableStateOf(url) }
-            OutlinedTextField(
-                value = urlText,
-                onValueChange = {
-                    urlText = it
-                    onUrlChange(it)
-                },
-                label = { Text(stringResource(R.string.settings_source_nightscout_url)) },
-                placeholder = { Text(stringResource(R.string.settings_source_follower_url_placeholder)) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
-
-            var secretText by remember(secret) { mutableStateOf(secret) }
-            OutlinedTextField(
-                value = secretText,
-                onValueChange = {
-                    secretText = it
-                    onSecretChange(it)
-                },
-                label = { Text(stringResource(R.string.settings_source_api_secret)) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
-
-            ConnectionTestButton(
-                testState = testState,
-                onTest = onTestConnection,
-                hasCredentials = urlText.isNotBlank() && secretText.isNotBlank()
-            )
-        }
     }
 }
 

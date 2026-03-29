@@ -31,26 +31,14 @@ class SetupViewModel @Inject constructor(
     val setupStep: StateFlow<Int> = settings.setupStep
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
-    // Nightscout push
+    // Nightscout
     val nightscoutUrl: StateFlow<String> = settings.nightscoutUrl
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
 
     val nightscoutSecret: String get() = settings.getNightscoutSecret()
 
-    private val _pushEnabled = MutableStateFlow(false)
-    val pushEnabled: StateFlow<Boolean> = _pushEnabled.asStateFlow()
-
     private val _connectionTestState = MutableStateFlow<ConnectionTestState>(ConnectionTestState.Idle)
     val connectionTestState: StateFlow<ConnectionTestState> = _connectionTestState.asStateFlow()
-
-    // Follower (inline in step 2 when NIGHTSCOUT_FOLLOWER selected)
-    val followerUrl: StateFlow<String> = settings.followerUrl
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
-
-    val followerSecret: String get() = settings.getFollowerSecret()
-
-    private val _followerTestState = MutableStateFlow<ConnectionTestState>(ConnectionTestState.Idle)
-    val followerTestState: StateFlow<ConnectionTestState> = _followerTestState.asStateFlow()
 
     // LibreLinkUp
     val lluEmail: String get() = settings.getLluEmail()
@@ -90,36 +78,12 @@ class SetupViewModel @Inject constructor(
 
     fun setNightscoutUrl(url: String) = viewModelScope.launch { settings.setNightscoutUrl(url) }
     fun setNightscoutSecret(secret: String) = settings.setNightscoutSecret(secret)
-    fun setPushEnabled(enabled: Boolean) {
-        _pushEnabled.value = enabled
-        if (!enabled) {
-            _connectionTestState.value = ConnectionTestState.Idle
-            // Clear credentials so NightscoutPusher won't push
-            viewModelScope.launch { settings.setNightscoutUrl("") }
-            settings.setNightscoutSecret("")
-        }
-    }
-
-    fun setFollowerUrl(url: String) = viewModelScope.launch { settings.setFollowerUrl(url) }
-    fun setFollowerSecret(secret: String) = settings.setFollowerSecret(secret)
 
     fun testConnection() {
         viewModelScope.launch {
             _connectionTestState.value = ConnectionTestState.Testing
             val result = nightscoutClient.testConnection(nightscoutUrl.value, settings.getNightscoutSecret())
             _connectionTestState.value = if (result.success) {
-                ConnectionTestState.Success(result.serverName)
-            } else {
-                ConnectionTestState.Failed(result.error ?: "Unknown error")
-            }
-        }
-    }
-
-    fun testFollowerConnection() {
-        viewModelScope.launch {
-            _followerTestState.value = ConnectionTestState.Testing
-            val result = nightscoutClient.testConnection(followerUrl.value, settings.getFollowerSecret())
-            _followerTestState.value = if (result.success) {
                 ConnectionTestState.Success(result.serverName)
             } else {
                 ConnectionTestState.Failed(result.error ?: "Unknown error")
