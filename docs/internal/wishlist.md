@@ -1,16 +1,10 @@
 # Strimma — Ideas
 
-**Updated:** 2026-03-27
+**Updated:** 2026-03-29
 
 ---
 
 ## Next
-
-### Per-Category Exercise Stats
-
-Aggregate BG patterns across exercise sessions grouped by activity type and optional intensity band. Spec: `docs/specs/exercise-stats-spec.md`.
-
----
 
 ### Insulin Sensitivity & I:C Ratio Analysis
 
@@ -78,6 +72,9 @@ Deferred until there's demand or hardware.
 - Exercise-BG Context (pre/during/post BG arc analysis for Health Connect exercise sessions, sparklines, detail sheets)
 - Workout Schedule — Calendar integration (Android CalendarProvider, calendar picker, planned workouts list with pull-to-refresh)
 - Pre-activity Guidance (readiness assessment card with IOB-aware carb recommendations, compound risk detection, forecast integration)
+- Exercise stats with metabolic profiles — aggregate BG patterns by activity category and intensity
+- Per-meal postprandial analysis (TIR, peak excursion, time-to-peak, recovery, iAUC, IOB at meal, sparkline graphs, AGP-style aggregate profile)
+- Pause alerts by category
 
 ---
 

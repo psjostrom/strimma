@@ -30,15 +30,18 @@ Strimma sits alongside your CGM app and gives you a better glucose display, aler
 - Prediction warnings ("Low in X min" / "High in X min")
 - Persistent notification with mini graph
 - Home screen widget (Glance)
-- Configurable alerts: urgent low, low, high, urgent high, stale — each with its own notification channel
+- Configurable alerts: urgent low, low, high, urgent high, stale — each with its own notification channel, pauseable by category
 
-**Exercise-BG analysis** via Health Connect (Garmin, Samsung Health, Strava, Google Fit, etc.):
+**Exercise & training** via Health Connect (Garmin, Samsung Health, Strava, Google Fit, etc.):
 
 - Lavender exercise bands overlaid on the glucose graph — tap to inspect
-- Per-session analysis: entry BG with trend, min BG, max drop rate per 10 min, post-exercise lowest/highest with timing
+- Per-session BG analysis: entry BG with trend, min BG, max drop rate per 10 min, post-exercise lowest/highest with timing
 - Delayed post-exercise hypo detection (4-hour window after exercise ends)
 - Heart rate, steps, calories from watch data
-- Exercise history screen with BG sparklines per session
+- Exercise history with BG sparklines, grouped by activity type
+- Exercise stats with metabolic profiles — aggregate BG patterns across sessions by category and intensity
+- **Pre-activity guidance** — readiness assessment before workouts: current BG trend, IOB-aware carb recommendations, compound risk detection (stacked IOB + dropping BG + upcoming exercise), 30-min glucose forecast
+- **Workout schedule** — reads planned workouts from Android calendar, shows upcoming sessions with pre-activity status
 - Writes glucose to Health Connect so other health apps can access CGM data
 
 **Integration:**
