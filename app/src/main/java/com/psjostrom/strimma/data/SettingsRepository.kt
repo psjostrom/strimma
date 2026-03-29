@@ -204,17 +204,7 @@ class SettingsRepository @Inject constructor(
     val alertHighSoonEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_HIGH_SOON_ENABLED] ?: true }
 
     suspend fun setNightscoutUrl(url: String) {
-        dataStore.edit { it[KEY_NIGHTSCOUT_URL] = normalizeUrl(url) }
-    }
-
-    private fun normalizeUrl(raw: String): String {
-        val trimmed = raw.trim().trimEnd('/')
-        if (trimmed.isBlank()) return ""
-        return if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-            trimmed
-        } else {
-            "https://$trimmed"
-        }
+        dataStore.edit { it[KEY_NIGHTSCOUT_URL] = url.trim() }
     }
     suspend fun setGraphWindowHours(hours: Int) { dataStore.edit { it[KEY_GRAPH_WINDOW_HOURS] = hours } }
     suspend fun setBgLow(value: Float) { dataStore.edit { it[KEY_BG_LOW] = value } }
@@ -498,7 +488,7 @@ class SettingsRepository @Inject constructor(
         }
 
         dataStore.edit { prefs ->
-            if (settings.has("nightscout_url")) prefs[KEY_NIGHTSCOUT_URL] = settings.getString("nightscout_url")
+            if (settings.has("nightscout_url")) prefs[KEY_NIGHTSCOUT_URL] = settings.getString("nightscout_url").trim()
             if (settings.has("graph_window_hours")) prefs[KEY_GRAPH_WINDOW_HOURS] = settings.getInt("graph_window_hours")
             if (settings.has("bg_low")) prefs[KEY_BG_LOW] = importThreshold("bg_low")
             if (settings.has("bg_high")) prefs[KEY_BG_HIGH] = importThreshold("bg_high")

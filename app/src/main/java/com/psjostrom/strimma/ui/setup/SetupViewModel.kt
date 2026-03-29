@@ -5,12 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.psjostrom.strimma.data.GlucoseSource
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.SettingsRepository
-import com.psjostrom.strimma.network.NightscoutClient
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -18,8 +15,7 @@ import javax.inject.Inject
 @Suppress("TooManyFunctions") // One getter+setter per setting
 @HiltViewModel
 class SetupViewModel @Inject constructor(
-    private val settings: SettingsRepository,
-    private val nightscoutClient: NightscoutClient
+    private val settings: SettingsRepository
 ) : ViewModel() {
 
     val glucoseUnit: StateFlow<GlucoseUnit> = settings.glucoseUnit
@@ -30,15 +26,6 @@ class SetupViewModel @Inject constructor(
 
     val setupStep: StateFlow<Int> = settings.setupStep
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
-
-    // Nightscout
-    val nightscoutUrl: StateFlow<String> = settings.nightscoutUrl
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
-
-    val nightscoutSecret: String get() = settings.getNightscoutSecret()
-
-    private val _connectionTestState = MutableStateFlow<ConnectionTestState>(ConnectionTestState.Idle)
-    val connectionTestState: StateFlow<ConnectionTestState> = _connectionTestState.asStateFlow()
 
     // LibreLinkUp
     val lluEmail: String get() = settings.getLluEmail()
@@ -76,21 +63,6 @@ class SetupViewModel @Inject constructor(
     fun setSetupStep(step: Int) = viewModelScope.launch { settings.setSetupStep(step) }
     fun setSetupCompleted() = viewModelScope.launch { settings.setSetupCompleted(true) }
 
-    fun setNightscoutUrl(url: String) = viewModelScope.launch { settings.setNightscoutUrl(url) }
-    fun setNightscoutSecret(secret: String) = settings.setNightscoutSecret(secret)
-
-    fun testConnection() {
-        viewModelScope.launch {
-            _connectionTestState.value = ConnectionTestState.Testing
-            val result = nightscoutClient.testConnection(nightscoutUrl.value, settings.getNightscoutSecret())
-            _connectionTestState.value = if (result.success) {
-                ConnectionTestState.Success(result.serverName)
-            } else {
-                ConnectionTestState.Failed(result.error ?: "Unknown error")
-            }
-        }
-    }
-
     // Alert setters
     fun setAlertLowEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertLowEnabled(enabled) }
     fun setAlertHighEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertHighEnabled(enabled) }
@@ -103,11 +75,4 @@ class SetupViewModel @Inject constructor(
     fun setAlertStaleEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertStaleEnabled(enabled) }
     fun setAlertLowSoonEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertLowSoonEnabled(enabled) }
     fun setAlertHighSoonEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertHighSoonEnabled(enabled) }
-}
-
-sealed class ConnectionTestState {
-    data object Idle : ConnectionTestState()
-    data object Testing : ConnectionTestState()
-    data class Success(val serverName: String?) : ConnectionTestState()
-    data class Failed(val error: String) : ConnectionTestState()
 }

@@ -324,13 +324,6 @@
     <string name="setup_source_step1_button">Ouvrir les infos de l\u0027app</string>
     <string name="setup_source_guide_step3">Ouvrez à nouveau les paramètres de notification et activez Strimma. Ça fonctionnera cette fois.</string>
     <string name="setup_source_guide_step3_button">Activer l\u0027accès aux notifications</string>
-    <string name="setup_nightscout_title">Nightscout</string>
-    <string name="setup_nightscout_desc">Connectez-vous à votre serveur Nightscout pour la synchronisation des données, les traitements et l\u0027historique</string>
-    <string name="setup_nightscout_test">Tester la connexion</string>
-    <string name="setup_nightscout_testing">Test en cours\u2026</string>
-    <string name="setup_nightscout_success">Connecté</string>
-    <string name="setup_nightscout_success_name">Connecté à %1$s</string>
-    <string name="setup_nightscout_failed">Échec de la connexion : %1$s</string>
     <string name="setup_alerts_title">Alertes</string>
     <string name="setup_alerts_footer">Vous pouvez modifier ces paramètres à tout moment dans Paramètres \u203A Alertes</string>
     <string name="setup_permissions_title">Autorisations</string>
