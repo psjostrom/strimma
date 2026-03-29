@@ -29,9 +29,9 @@ Strimma's code is identical in both cases. It talks to a Nightscout URL.
 
 Poll `GET /api/v1/treatments.json` from the configured Nightscout URL. Same URL and auth (api-secret header) already used for pushing entries.
 
-Query: `?find[created_at][$gte]=<ISO8601>&count=100`
+Query: `?find[created_at][$gte]=<ISO8601>&count=<N>`
 
-Where `$gte` is 6 hours ago (covers IOB lookback window for any rapid insulin).
+Where `$gte` is 30 days ago and count scales with the lookback period (300 per day to accommodate looping systems that generate frequent temp basals).
 
 ### 1.2 Nightscout treatment JSON format
 
@@ -82,7 +82,7 @@ data class Treatment(
 DAO queries needed:
 - `since(timestamp)` — all treatments after a time (for graph overlay)
 - `insulinSince(timestamp)` — treatments with insulin != null (for IOB computation)
-- `deleteOlderThan(timestamp)` — prune (keep 48h)
+- `deleteOlderThan(timestamp)` — prune (keep 30 days)
 
 ### 1.4 IOB computation
 
@@ -101,10 +101,10 @@ Settings needed:
 ### 1.5 Polling strategy
 
 - Poll every **5 minutes** (treatments don't change fast, and NS rate limits matter)
-- On first connect: backfill 6 hours
+- On first connect: backfill 30 days
 - Store in Room with `fetchedAt` timestamp
 - Deduplicate by `id` (INSERT OR IGNORE)
-- Prune treatments older than 48h on each poll
+- Prune treatments older than 30 days on each poll
 
 ### 1.6 UI: graph overlay
 

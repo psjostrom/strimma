@@ -12,7 +12,7 @@ From top to bottom:
 
 ### Top Bar
 
-- **Statistics** icon (bar chart) — opens your glucose statistics
+- **Exercise** icon — opens exercise history
 - **Settings** icon (gear) — opens the settings menu
 
 ### BG Header

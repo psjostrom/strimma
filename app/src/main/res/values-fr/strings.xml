@@ -43,8 +43,6 @@
     <string name="settings_alerts_subtitle">Alertes bas, haut, donn\u00E9es obsol\u00E8tes</string>
     <string name="settings_general">G\u00E9n\u00E9ral</string>
     <string name="settings_general_subtitle">D\u00E9marrage, langue, batterie, \u00E0 propos</string>
-    <string name="settings_data">Donn\u00E9es</string>
-    <string name="settings_data_subtitle">Statistiques, export, t\u00E9l\u00E9chargement Nightscout</string>
     <string name="settings_debug_log">Journal de d\u00E9bogage</string>
 
     <!-- General Settings -->
@@ -143,8 +141,6 @@
 
     <!-- Data Settings -->
     <string name="settings_data_title">Donn\u00E9es</string>
-    <string name="settings_data_views">Vues</string>
-    <string name="settings_data_statistics">Statistiques</string>
     <string name="settings_data_nightscout">Nightscout</string>
     <string name="settings_data_pull">T\u00E9l\u00E9charger depuis Nightscout</string>
     <string name="settings_data_pull_desc">T\u00E9l\u00E9charger l\u2019historique de glyc\u00E9mie depuis votre serveur Nightscout</string>
@@ -383,6 +379,8 @@
     <string name="workout_calendar_label">Calendrier</string>
     <string name="workout_calendar_none">(aucun)</string>
     <string name="workout_calendar_picker_title">Sélectionner le calendrier</string>
+    <string name="stats_tab_meals">Repas</string>
+    <string name="stats_meals_treatments_disabled">L\u0027analyse des repas n\u00E9cessite la synchronisation des traitements. Activez-la dans Param\u00E8tres \u2192 Traitements pour voir comment vos repas affectent votre glyc\u00E9mie.</string>
 
     <!-- Alert pause -->
     <string name="pause_alerts">Suspendre les alertes</string>
@@ -400,4 +398,19 @@
     <string name="pause_high_paused">Alertes hautes suspendues</string>
     <string name="pause_countdown">Suspendu · %1$s</string>
     <string name="pause_low_warning">Inclut l\u0027alerte bas urgent</string>
+
+    <string name="settings_statistics">Statistiques</string>
+    <string name="settings_statistics_subtitle">Métriques, AGP, repas</string>
+    <string name="settings_sharing">Partage</string>
+    <string name="settings_sharing_subtitle">Broadcast, serveur web, export</string>
+    <string name="settings_meal_slots_title">Créneaux de repas</string>
+    <string name="settings_meal_slots_desc">Ajustez les heures de début et de fin pour le petit-déjeuner, le déjeuner et le dîner. Les repas en dehors de ces créneaux sont classés comme collation.</string>
+    <string name="meal_slot_breakfast">Petit-déjeuner</string>
+    <string name="meal_slot_lunch">Déjeuner</string>
+    <string name="meal_slot_dinner">Dîner</string>
+    <string name="settings_data_pull_treatments">Télécharger les traitements</string>
+    <string name="settings_data_pull_treatments_desc">Télécharger lu0027historique de bolus, glucides et basal depuis Nightscout</string>
+    <string name="activity_pull_treatments_progress">Téléchargement de %1$d jours de traitements…</string>
+    <string name="activity_pull_treatments_success">%1$d traitements téléchargés</string>
+    <string name="activity_pull_treatments_failed">Échec du téléchargement des traitements : %1$s</string>
 </resources>

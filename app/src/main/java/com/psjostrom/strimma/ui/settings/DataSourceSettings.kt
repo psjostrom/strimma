@@ -34,6 +34,7 @@ fun DataSourceSettings(
     onLluEmailChange: (String) -> Unit,
     onLluPasswordChange: (String) -> Unit,
     onOpenNotificationAccess: () -> Unit,
+    onPullFromNightscout: (Int) -> Unit,
     onBack: () -> Unit
 ) {
     val onBg = MaterialTheme.colorScheme.onBackground
@@ -136,6 +137,12 @@ fun DataSourceSettings(
                 )
             }
         }
+
+        PullDataSection(
+            title = stringResource(R.string.settings_data_pull),
+            description = stringResource(R.string.settings_data_pull_desc),
+            onPull = onPullFromNightscout
+        )
 
         if (glucoseSource != GlucoseSource.NIGHTSCOUT_FOLLOWER) {
             SettingsSection(stringResource(R.string.settings_source_nightscout_push)) {

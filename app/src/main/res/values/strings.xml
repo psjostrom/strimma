@@ -44,10 +44,12 @@
     <string name="settings_notifications_subtitle">Graph range, prediction</string>
     <string name="settings_alerts">Alerts</string>
     <string name="settings_alerts_subtitle">Low, high, stale alerts</string>
+    <string name="settings_statistics">Statistics</string>
+    <string name="settings_statistics_subtitle">Metrics, AGP, meals</string>
     <string name="settings_general">General</string>
     <string name="settings_general_subtitle">Boot, language, battery, about</string>
-    <string name="settings_data">Data</string>
-    <string name="settings_data_subtitle">Statistics, export, Nightscout pull</string>
+    <string name="settings_sharing">Sharing</string>
+    <string name="settings_sharing_subtitle">Broadcast, web server, export</string>
     <string name="settings_debug_log">Debug Log</string>
 
     <!-- General Settings -->
@@ -110,6 +112,13 @@
     <string name="settings_treatments_novorapid" translatable="false">NovoRapid / Humalog</string>
     <string name="settings_treatments_custom">Custom</string>
 
+    <!-- Meal Time Slots -->
+    <string name="settings_meal_slots_title">Meal time slots</string>
+    <string name="settings_meal_slots_desc">Adjust when Breakfast, Lunch, and Dinner windows start and end. Meals outside these windows are classified as Snack.</string>
+    <string name="meal_slot_breakfast">Breakfast</string>
+    <string name="meal_slot_lunch">Lunch</string>
+    <string name="meal_slot_dinner">Dinner</string>
+
     <!-- Display Settings -->
     <string name="settings_display_title">Display</string>
     <string name="settings_display_section">Display</string>
@@ -158,12 +167,12 @@
     <string name="settings_alerts_stale">Stale Data (10+ min)</string>
 
     <!-- Data Settings -->
-    <string name="settings_data_title">Data</string>
-    <string name="settings_data_views">Views</string>
-    <string name="settings_data_statistics">Statistics</string>
+    <string name="settings_data_title">Sharing</string>
     <string name="settings_data_nightscout">Nightscout</string>
-    <string name="settings_data_pull">Pull from Nightscout</string>
+    <string name="settings_data_pull">Pull readings</string>
     <string name="settings_data_pull_desc">Download glucose history from your Nightscout server</string>
+    <string name="settings_data_pull_treatments">Pull treatments</string>
+    <string name="settings_data_pull_treatments_desc">Download bolus, carb, and basal history from Nightscout</string>
     <string name="settings_data_pull_7d">7 days</string>
     <string name="settings_data_pull_14d">14 days</string>
     <string name="settings_data_pull_30d">30 days</string>
@@ -197,6 +206,8 @@
     <!-- Stats Tabs -->
     <string name="stats_tab_metrics">Metrics</string>
     <string name="stats_tab_agp" translatable="false">AGP</string>
+    <string name="stats_tab_meals">Meals</string>
+    <string name="stats_meals_treatments_disabled">Meal analysis requires treatment sync. Enable it in Settings → Treatments to see how your meals affect your glucose.</string>
 
     <!-- AGP -->
     <string name="agp_title">Ambulatory Glucose Profile</string>
@@ -395,6 +406,9 @@
     <string name="activity_pull_progress" tools:ignore="PluralsCandidate">Pulling %1$d days from Nightscout…</string>
     <string name="activity_pull_success" tools:ignore="PluralsCandidate">Pulled %1$d readings</string>
     <string name="activity_pull_failed">Pull failed: %1$s</string>
+    <string name="activity_pull_treatments_progress" tools:ignore="PluralsCandidate">Pulling %1$d days of treatments…</string>
+    <string name="activity_pull_treatments_success" tools:ignore="PluralsCandidate">Pulled %1$d treatments</string>
+    <string name="activity_pull_treatments_failed">Treatment pull failed: %1$s</string>
 
     <!-- Exercise tabs -->
     <string name="exercise_tab_planned">Planned</string>

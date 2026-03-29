@@ -98,7 +98,7 @@ Some manufacturers (Samsung, Xiaomi, Huawei, OnePlus) add extra battery restrict
 ### Graph is empty
 
 - The graph shows data from the last N hours (default 4). If Strimma hasn't received data in that window, it will be empty.
-- Pull history from Nightscout: Settings > Data > Pull 7 days
+- Pull history from Nightscout: Settings > Data Source > Pull readings 7 days
 
 ### Graph doesn't scroll smoothly
 
@@ -127,7 +127,7 @@ When reporting an issue, always include the debug log — it contains the inform
 
 Strimma stores all data locally. If you uninstall the app, all data is lost. To preserve your data:
 
-1. **Export settings** before uninstalling: Settings > Data > Export Settings
+1. **Export settings** before uninstalling: Settings > Sharing > Export Settings
 2. **Nightscout is your backup** — if push is configured, your glucose history is safe on Nightscout and can be pulled back after reinstalling
 
 Updating Strimma (installing a new version over the existing one) preserves all data and settings.

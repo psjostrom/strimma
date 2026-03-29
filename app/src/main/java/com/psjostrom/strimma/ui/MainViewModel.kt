@@ -27,6 +27,9 @@ import com.psjostrom.strimma.network.FollowerStatus
 import com.psjostrom.strimma.network.LibreLinkUpFollower
 import com.psjostrom.strimma.network.NightscoutFollower
 import com.psjostrom.strimma.network.NightscoutPuller
+import com.psjostrom.strimma.data.meal.MealAnalyzer
+import com.psjostrom.strimma.data.meal.MealTimeSlotConfig
+import com.psjostrom.strimma.network.TreatmentSyncer
 import com.psjostrom.strimma.notification.AlertCategory
 import com.psjostrom.strimma.notification.AlertManager
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -51,7 +54,9 @@ class MainViewModel @Inject constructor(
     private val nightscoutFollower: NightscoutFollower,
     private val libreLinkUpFollower: LibreLinkUpFollower,
     private val nightscoutPuller: NightscoutPuller,
-    private val calendarReader: CalendarReader
+    private val treatmentSyncer: TreatmentSyncer,
+    private val calendarReader: CalendarReader,
+    val mealAnalyzer: MealAnalyzer
 ) : ViewModel() {
 
     companion object {
@@ -283,6 +288,7 @@ class MainViewModel @Inject constructor(
     fun setLluPassword(password: String) = settings.setLluPassword(password)
 
     suspend fun pullFromNightscout(days: Int): Result<Int> = nightscoutPuller.pullHistory(days)
+    suspend fun pullTreatments(days: Int): Result<Int> = treatmentSyncer.pullHistory(days)
 
     // Treatments
     val treatmentsSyncEnabled: StateFlow<Boolean> = settings.treatmentsSyncEnabled
@@ -417,5 +423,39 @@ class MainViewModel @Inject constructor(
                 appendLine("${r.ts},${sdf.format(java.util.Date(r.ts))},${r.sgv},${r.direction},${r.delta ?: ""}")
             }
         }
+    }
+
+    suspend fun carbTreatmentsInRange(start: Long, end: Long): List<Treatment> {
+        return treatmentDao.carbsInRange(start, end)
+    }
+
+    suspend fun allTreatmentsSince(start: Long): List<Treatment> {
+        return treatmentDao.allSince(start)
+    }
+
+    fun currentTauMinutes(): Double {
+        return IOBComputer.tauForInsulinType(insulinType.value, customDIA.value)
+    }
+
+    val mealTimeSlotConfig: StateFlow<MealTimeSlotConfig> = combine(
+        settings.mealBreakfastStart,
+        settings.mealBreakfastEnd,
+        settings.mealLunchStart,
+        settings.mealLunchEnd,
+        settings.mealDinnerStart,
+        settings.mealDinnerEnd
+    ) { values ->
+        MealTimeSlotConfig(
+            breakfastStart = values[0] as Int,
+            breakfastEnd = values[1] as Int,
+            lunchStart = values[2] as Int,
+            lunchEnd = values[3] as Int,
+            dinnerStart = values[4] as Int,
+            dinnerEnd = values[5] as Int
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), MealTimeSlotConfig())
+
+    suspend fun setMealSlotBoundary(key: String, minutes: Int) {
+        settings.setMealSlotBoundary(key, minutes)
     }
 }

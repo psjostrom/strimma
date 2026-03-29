@@ -15,7 +15,8 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Sensors
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -112,6 +113,15 @@ fun SettingsScreen(
 
             SettingsMenuGroup(surfVar) {
                 SettingsMenuItem(
+                    icon = Icons.Outlined.BarChart,
+                    title = stringResource(R.string.settings_statistics),
+                    subtitle = stringResource(R.string.settings_statistics_subtitle),
+                    onClick = { onNavigate("stats") }
+                )
+            }
+
+            SettingsMenuGroup(surfVar) {
+                SettingsMenuItem(
                     icon = Icons.Default.Settings,
                     title = stringResource(R.string.settings_general),
                     subtitle = stringResource(R.string.settings_general_subtitle),
@@ -119,9 +129,9 @@ fun SettingsScreen(
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 SettingsMenuItem(
-                    icon = Icons.Default.Storage,
-                    title = stringResource(R.string.settings_data),
-                    subtitle = stringResource(R.string.settings_data_subtitle),
+                    icon = Icons.Default.Share,
+                    title = stringResource(R.string.settings_sharing),
+                    subtitle = stringResource(R.string.settings_sharing_subtitle),
                     onClick = { onNavigate("settings/data") }
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)

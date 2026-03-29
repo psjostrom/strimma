@@ -35,7 +35,8 @@ Strimma stands on the shoulders of the incredible [xDrip+](https://github.com/Ni
 - **Configurable alerts** — eight alert types (urgent low, low, high, urgent high, low soon, high soon, stale data, push failed), each with its own notification channel. Urgent alerts bypass Do Not Disturb by default; any alert can be configured to bypass DND via Android's notification settings.
 - **Predicts where you're heading** — shows "Low in X min" or "High in X min" warnings before you cross your thresholds.
 - **Pushes to Nightscout** — automatic, immediate upload to any Nightscout-compatible server. Offline-resilient — readings queue and retry.
-- **Tracks treatments and IOB** — fetches bolus and carb data from Nightscout, computes insulin on board with your insulin type's curve.
+- **Tracks treatments and IOB** — fetches bolus and carb data from Nightscout (30-day retention), computes insulin on board with your insulin type's curve.
+- **Per-meal postprandial analysis** — analyzes glucose response to each meal: TIR, peak excursion, recovery time, IOB at meal. Aggregate postprandial profile with AGP-style percentile bands. Configurable meal time slots.
 - **Follows a remote Nightscout** — for caregivers, partners, or parents who need to see someone else's glucose remotely.
 - **Works with watches and other apps** — broadcasts xDrip-compatible intents, runs a local web server, integrates with Garmin watchfaces.
 - **Exercise-BG analysis** — reads exercise sessions from Health Connect (Garmin, Samsung Health, etc.), overlays exercise bands on the glucose graph, and shows before/during/after BG breakdown with post-exercise hypo detection.

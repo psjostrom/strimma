@@ -49,6 +49,25 @@ class MainActivity : ComponentActivity() {
     private var permissionsChecked = false
     private var viewModelRef: MainViewModel? = null
 
+    private fun pullWithToast(
+        days: Int,
+        progressResId: Int,
+        successResId: Int,
+        failureResId: Int,
+        operation: suspend (Int) -> Result<Int>
+    ) {
+        lifecycleScope.launch {
+            Toast.makeText(this@MainActivity, getString(progressResId, days), Toast.LENGTH_SHORT).show()
+            operation(days)
+                .onSuccess { count ->
+                    Toast.makeText(this@MainActivity, getString(successResId, count), Toast.LENGTH_SHORT).show()
+                }
+                .onFailure { e ->
+                    Toast.makeText(this@MainActivity, getString(failureResId, e.message ?: ""), Toast.LENGTH_LONG).show()
+                }
+        }
+    }
+
     private val importSettingsLauncher = registerForActivityResult(
         ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -285,6 +304,15 @@ class MainActivity : ComponentActivity() {
                             onOpenNotificationAccess = {
                                 GlucoseNotificationListener.openSettings(this@MainActivity)
                             },
+                            onPullFromNightscout = { days ->
+                                pullWithToast(
+                                    days,
+                                    R.string.activity_pull_progress,
+                                    R.string.activity_pull_success,
+                                    R.string.activity_pull_failed,
+                                    viewModel::pullFromNightscout
+                                )
+                            },
                             onBack = { navController.popBackStack() }
                         )
                     }
@@ -296,6 +324,19 @@ class MainActivity : ComponentActivity() {
                             onTreatmentsSyncEnabledChange = viewModel::setTreatmentsSyncEnabled,
                             onInsulinTypeChange = viewModel::setInsulinType,
                             onCustomDIAChange = viewModel::setCustomDIA,
+                            onPullTreatments = { days ->
+                                pullWithToast(
+                                    days,
+                                    R.string.activity_pull_treatments_progress,
+                                    R.string.activity_pull_treatments_success,
+                                    R.string.activity_pull_treatments_failed,
+                                    viewModel::pullTreatments
+                                )
+                            },
+                            mealTimeSlotConfig = viewModel.mealTimeSlotConfig.collectAsState().value,
+                            onMealSlotChange = { key, minutes ->
+                                lifecycleScope.launch { viewModel.setMealSlotBoundary(key, minutes) }
+                            },
                             onBack = { navController.popBackStack() }
                         )
                     }
@@ -410,11 +451,6 @@ class MainActivity : ComponentActivity() {
                             webServerSecret = viewModel.webServerSecret,
                             onWebServerEnabledChange = viewModel::setWebServerEnabled,
                             onWebServerSecretChange = viewModel::setWebServerSecret,
-                            onStats = {
-                                navController.navigate("stats") {
-                                    launchSingleTop = true
-                                }
-                            },
                             onExportSettings = {
                                 AlertDialog.Builder(this@MainActivity)
                                     .setTitle(getString(R.string.activity_export_dialog_title))
@@ -458,20 +494,6 @@ class MainActivity : ComponentActivity() {
                             onImportSettings = {
                                 importSettingsLauncher.launch("*/*")
                             },
-                            onPullFromNightscout = { days ->
-                                lifecycleScope.launch {
-                                    val msg = getString(R.string.activity_pull_progress, days)
-                                    Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
-                                    val result = viewModel.pullFromNightscout(days)
-                                    result.onSuccess { count ->
-                                        val ok = getString(R.string.activity_pull_success, count)
-                                        Toast.makeText(this@MainActivity, ok, Toast.LENGTH_SHORT).show()
-                                    }.onFailure { e ->
-                                        val err = getString(R.string.activity_pull_failed, e.message ?: "")
-                                        Toast.makeText(this@MainActivity, err, Toast.LENGTH_LONG).show()
-                                    }
-                                }
-                            },
                             onBack = { navController.popBackStack() }
                         )
                     }
@@ -482,6 +504,12 @@ class MainActivity : ComponentActivity() {
                             glucoseUnit = glucoseUnit,
                             hbA1cUnit = hbA1cUnit,
                             onLoadReadings = viewModel::readingsForPeriod,
+                            onLoadCarbTreatments = viewModel::carbTreatmentsInRange,
+                            onLoadAllTreatments = viewModel::allTreatmentsSince,
+                            treatmentsSyncEnabled = treatmentsSyncEnabled,
+                            tauMinutes = viewModel.currentTauMinutes(),
+                            mealAnalyzer = viewModel.mealAnalyzer,
+                            mealTimeSlotConfig = viewModel.mealTimeSlotConfig.collectAsState().value,
                             onExportCsv = viewModel::exportCsv,
                             onBack = { navController.popBackStack() }
                         )

@@ -57,13 +57,13 @@ api-secret: <sha1-hash>
 ### Fetch Treatments
 
 ```
-GET /api/v1/treatments.json?find[created_at][$gte]=<iso-timestamp>&count=100
+GET /api/v1/treatments.json?find[created_at][$gte]=<iso-timestamp>&count=<n>
 api-secret: <sha1-hash>
 ```
 
 - `.json` suffix is required
 - `find[created_at][$gte]` filters treatments created at or after the ISO 8601 timestamp
-- `count` is fixed at 100 per request
+- `count` scales with the lookback period (500 per day to handle looping pump systems)
 - Returns 404 gracefully (empty list) if the server doesn't support treatments
 
 ---

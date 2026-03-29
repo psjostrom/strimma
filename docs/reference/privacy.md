@@ -78,10 +78,10 @@ Strimma's entire source code is publicly available on [GitHub](https://github.co
 
 ## Settings Backup
 
-The settings export feature (**Settings > Data > Export Settings**) creates a JSON file that includes your Nightscout API secret in **plain text**. Handle exported settings files securely — don't share them publicly or store them in unencrypted cloud storage.
+The settings export feature (**Settings > Sharing > Export Settings**) creates a JSON file that includes your Nightscout API secret in **plain text**. Handle exported settings files securely — don't share them publicly or store them in unencrypted cloud storage.
 
 ---
 
 ## Local Web Server
 
-If you enable the local web server (**Settings > Data > Integration > Local Web Server**), your glucose data is accessible to any device on your local network on port 17580. The web server does not expose data to the internet unless you've specifically configured port forwarding on your router (don't do this — use Nightscout for remote access).
+If you enable the local web server (**Settings > Sharing > Local Web Server**), your glucose data is accessible to any device on your local network on port 17580. The web server does not expose data to the internet unless you've specifically configured port forwarding on your router (don't do this — use Nightscout for remote access).

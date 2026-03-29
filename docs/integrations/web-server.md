@@ -12,7 +12,7 @@ When enabled, Strimma starts an HTTP server accessible at `http://<phone-ip>:175
 
 ## Setup
 
-1. Go to **Settings > Data > Integration**
+1. Go to **Settings > Sharing**
 2. Toggle **Local Web Server** on
 3. Set an **API Secret** if you want devices on your local network to access it
 

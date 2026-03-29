@@ -43,8 +43,6 @@
     <string name="settings_alerts_subtitle">Alertas de bajo, alto y datos obsoletos</string>
     <string name="settings_general">General</string>
     <string name="settings_general_subtitle">Inicio, idioma, bater\u00EDa, acerca de</string>
-    <string name="settings_data">Datos</string>
-    <string name="settings_data_subtitle">Estad\u00EDsticas, exportar, descarga de Nightscout</string>
     <string name="settings_debug_log">Registro de depuraci\u00F3n</string>
 
     <!-- General Settings -->
@@ -143,8 +141,6 @@
 
     <!-- Data Settings -->
     <string name="settings_data_title">Datos</string>
-    <string name="settings_data_views">Vistas</string>
-    <string name="settings_data_statistics">Estad\u00EDsticas</string>
     <string name="settings_data_nightscout">Nightscout</string>
     <string name="settings_data_pull">Descargar de Nightscout</string>
     <string name="settings_data_pull_desc">Descargar historial de glucosa desde tu servidor Nightscout</string>
@@ -383,6 +379,8 @@
     <string name="workout_calendar_label">Calendario</string>
     <string name="workout_calendar_none">(ninguno)</string>
     <string name="workout_calendar_picker_title">Seleccionar calendario</string>
+    <string name="stats_tab_meals">Comidas</string>
+    <string name="stats_meals_treatments_disabled">El an\u00E1lisis de comidas requiere sincronizaci\u00F3n de tratamientos. Act\u00EDvala en Ajustes \u2192 Tratamientos para ver c\u00F3mo tus comidas afectan tu glucosa.</string>
 
     <!-- Alert pause -->
     <string name="pause_alerts">Pausar alertas</string>
@@ -400,4 +398,19 @@
     <string name="pause_high_paused">Alertas de alto pausadas</string>
     <string name="pause_countdown">Pausado · %1$s</string>
     <string name="pause_low_warning">Incluye alerta de bajo urgente</string>
+
+    <string name="settings_statistics">Estadísticas</string>
+    <string name="settings_statistics_subtitle">Métricas, AGP, comidas</string>
+    <string name="settings_sharing">Compartir</string>
+    <string name="settings_sharing_subtitle">Broadcast, servidor web, exportar</string>
+    <string name="settings_meal_slots_title">Horarios de comidas</string>
+    <string name="settings_meal_slots_desc">Ajusta cuándo comienzan y terminan los horarios de desayuno, almuerzo y cena. Las comidas fuera de estos horarios se clasifican como snack.</string>
+    <string name="meal_slot_breakfast">Desayuno</string>
+    <string name="meal_slot_lunch">Almuerzo</string>
+    <string name="meal_slot_dinner">Cena</string>
+    <string name="settings_data_pull_treatments">Descargar tratamientos</string>
+    <string name="settings_data_pull_treatments_desc">Descargar historial de bolos, carbohidratos y basal de Nightscout</string>
+    <string name="activity_pull_treatments_progress">Descargando %1$d días de tratamientos…</string>
+    <string name="activity_pull_treatments_success">%1$d tratamientos descargados</string>
+    <string name="activity_pull_treatments_failed">Error al descargar tratamientos: %1$s</string>
 </resources>

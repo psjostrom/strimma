@@ -162,6 +162,14 @@ class SettingsRepository @Inject constructor(
         private fun exerciseTargetHighKey(name: String) = floatPreferencesKey("exercise_target_high_$name")
         private val KEY_MAX_HEART_RATE = intPreferencesKey("max_heart_rate")
 
+        // Meal time slot boundaries (minutes from midnight)
+        private val KEY_MEAL_BREAKFAST_START = intPreferencesKey("meal_breakfast_start")
+        private val KEY_MEAL_BREAKFAST_END = intPreferencesKey("meal_breakfast_end")
+        private val KEY_MEAL_LUNCH_START = intPreferencesKey("meal_lunch_start")
+        private val KEY_MEAL_LUNCH_END = intPreferencesKey("meal_lunch_end")
+        private val KEY_MEAL_DINNER_START = intPreferencesKey("meal_dinner_start")
+        private val KEY_MEAL_DINNER_END = intPreferencesKey("meal_dinner_end")
+
         private const val DEFAULT_WORKOUT_LOOKAHEAD_HOURS = 3
         private const val DEFAULT_WORKOUT_TRIGGER_MINUTES = 120
 
@@ -177,6 +185,7 @@ class SettingsRepository @Inject constructor(
         private const val DEFAULT_PREDICTION_MINUTES = 15
         private const val DEFAULT_FOLLOWER_POLL_SECONDS = 60
         private const val DEFAULT_CUSTOM_DIA_FLOAT = 5.0f
+        private const val MINUTES_PER_DAY = 1440
     }
 
     val nightscoutUrl: Flow<String> = dataStore.data.map { it[KEY_NIGHTSCOUT_URL] ?: "" }
@@ -293,6 +302,28 @@ class SettingsRepository @Inject constructor(
 
     val customDIA: Flow<Float> = dataStore.data.map { it[KEY_CUSTOM_DIA] ?: DEFAULT_CUSTOM_DIA_FLOAT }
     suspend fun setCustomDIA(hours: Float) { dataStore.edit { it[KEY_CUSTOM_DIA] = hours } }
+
+    // Meal time slot boundaries (minutes from midnight)
+    val mealBreakfastStart: Flow<Int> = dataStore.data.map { it[KEY_MEAL_BREAKFAST_START] ?: 360 }
+    val mealBreakfastEnd: Flow<Int> = dataStore.data.map { it[KEY_MEAL_BREAKFAST_END] ?: 600 }
+    val mealLunchStart: Flow<Int> = dataStore.data.map { it[KEY_MEAL_LUNCH_START] ?: 690 }
+    val mealLunchEnd: Flow<Int> = dataStore.data.map { it[KEY_MEAL_LUNCH_END] ?: 870 }
+    val mealDinnerStart: Flow<Int> = dataStore.data.map { it[KEY_MEAL_DINNER_START] ?: 1020 }
+    val mealDinnerEnd: Flow<Int> = dataStore.data.map { it[KEY_MEAL_DINNER_END] ?: 1260 }
+
+    suspend fun setMealSlotBoundary(key: String, minutes: Int) {
+        if (minutes < 0 || minutes >= MINUTES_PER_DAY) return
+        val prefKey = when (key) {
+            "breakfast_start" -> KEY_MEAL_BREAKFAST_START
+            "breakfast_end" -> KEY_MEAL_BREAKFAST_END
+            "lunch_start" -> KEY_MEAL_LUNCH_START
+            "lunch_end" -> KEY_MEAL_LUNCH_END
+            "dinner_start" -> KEY_MEAL_DINNER_START
+            "dinner_end" -> KEY_MEAL_DINNER_END
+            else -> return
+        }
+        dataStore.edit { it[prefKey] = minutes }
+    }
 
     val webServerEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_WEB_SERVER_ENABLED] ?: false }
     suspend fun setWebServerEnabled(enabled: Boolean) { dataStore.edit { it[KEY_WEB_SERVER_ENABLED] = enabled } }

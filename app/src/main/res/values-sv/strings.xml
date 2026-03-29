@@ -43,8 +43,6 @@
     <string name="settings_alerts_subtitle">L\u00E5gt, h\u00F6gt, gammal data-larm</string>
     <string name="settings_general">Allm\u00E4nt</string>
     <string name="settings_general_subtitle">Uppstart, spr\u00E5k, batteri, om</string>
-    <string name="settings_data">Data</string>
-    <string name="settings_data_subtitle">Statistik, export, Nightscout-h\u00E4mtning</string>
     <string name="settings_debug_log">Fels\u00F6kningslogg</string>
 
     <!-- General Settings -->
@@ -143,8 +141,6 @@
 
     <!-- Data Settings -->
     <string name="settings_data_title">Data</string>
-    <string name="settings_data_views">Vyer</string>
-    <string name="settings_data_statistics">Statistik</string>
     <string name="settings_data_nightscout">Nightscout</string>
     <string name="settings_data_pull">H\u00E4mta fr\u00E5n Nightscout</string>
     <string name="settings_data_pull_desc">Ladda ner glukoshistorik fr\u00E5n din Nightscout-server</string>
@@ -175,6 +171,8 @@
 
     <!-- Stats Tabs -->
     <string name="stats_tab_metrics">M\u00E4tv\u00E4rden</string>
+    <string name="stats_tab_meals">M\u00E5ltider</string>
+    <string name="stats_meals_treatments_disabled">M\u00E5ltidsanalys kr\u00E4ver behandlingssynk. Aktivera det i Inst\u00E4llningar \u2192 Behandlingar f\u00F6r att se hur dina m\u00E5ltider p\u00E5verkar ditt blodsocker.</string>
 
     <!-- AGP -->
     <string name="agp_title">Ambulatorisk glukosprofil</string>
@@ -400,4 +398,18 @@
     <string name="pause_high_paused">Höga larm pausade</string>
     <string name="pause_countdown">Pausad · %1$s</string>
     <string name="pause_low_warning">Inkluderar akut lågt-larm</string>
+    <string name="settings_statistics">Statistik</string>
+    <string name="settings_statistics_subtitle">Mätvärden, AGP, måltider</string>
+    <string name="settings_sharing">Delning</string>
+    <string name="settings_sharing_subtitle">Broadcast, webbserver, export</string>
+    <string name="settings_meal_slots_title">Måltidstider</string>
+    <string name="settings_meal_slots_desc">Justera när frukost, lunch och middag börjar och slutar. Måltider utanför dessa tider klassificeras som mellanmål.</string>
+    <string name="meal_slot_breakfast">Frukost</string>
+    <string name="meal_slot_lunch">Lunch</string>
+    <string name="meal_slot_dinner">Middag</string>
+    <string name="settings_data_pull_treatments">Hämta behandlingar</string>
+    <string name="settings_data_pull_treatments_desc">Ladda ner bolus-, kolhydrat- och basalhistorik från Nightscout</string>
+    <string name="activity_pull_treatments_progress">Hämtar %1$d dagars behandlingar…</string>
+    <string name="activity_pull_treatments_success">%1$d behandlingar hämtade</string>
+    <string name="activity_pull_treatments_failed">Behandlingshämtning misslyckades: %1$s</string>
 </resources>
