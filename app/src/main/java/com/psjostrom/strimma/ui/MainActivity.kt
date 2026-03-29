@@ -43,6 +43,8 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import java.io.File
 
+private const val EXPORT_HOURS_30_DAYS = 720
+
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
@@ -451,6 +453,12 @@ class MainActivity : ComponentActivity() {
                             webServerSecret = viewModel.webServerSecret,
                             onWebServerEnabledChange = viewModel::setWebServerEnabled,
                             onWebServerSecretChange = viewModel::setWebServerSecret,
+                            onExportReadings = {
+                                lifecycleScope.launch {
+                                    val csv = viewModel.exportCsv(EXPORT_HOURS_30_DAYS)
+                                    shareCsv(this@MainActivity, csv, getString(R.string.activity_export_readings_chooser))
+                                }
+                            },
                             onExportSettings = {
                                 AlertDialog.Builder(this@MainActivity)
                                     .setTitle(getString(R.string.activity_export_dialog_title))
