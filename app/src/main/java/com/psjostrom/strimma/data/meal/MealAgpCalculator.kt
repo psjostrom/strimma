@@ -14,7 +14,7 @@ data class MealAgpBucket(
 
 data class MealAgpResult(
     val buckets: List<MealAgpBucket>,
-    val maxWindowMinutes: Int
+    val windowMinutes: Int
 )
 
 object MealAgpCalculator {

@@ -60,7 +60,7 @@ class MealAgpCalculatorTest {
         assertNotNull(result)
         result!!
         assertTrue("Should have buckets", result.buckets.isNotEmpty())
-        assertEquals(180, result.maxWindowMinutes)
+        assertEquals(180, result.windowMinutes)
     }
 
     @Test
@@ -82,7 +82,7 @@ class MealAgpCalculatorTest {
         assertNotNull(agp)
         agp!!
 
-        assertEquals(180, agp.maxWindowMinutes)
+        assertEquals(180, agp.windowMinutes)
 
         val lastBucket = agp.buckets.last()
         assertTrue(
