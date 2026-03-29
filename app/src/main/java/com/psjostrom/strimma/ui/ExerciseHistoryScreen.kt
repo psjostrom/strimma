@@ -6,6 +6,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.clickable
@@ -57,6 +58,9 @@ import com.psjostrom.strimma.data.health.StoredExerciseSession
 import com.psjostrom.strimma.ui.theme.AboveHigh
 import com.psjostrom.strimma.ui.theme.BelowLow
 import com.psjostrom.strimma.ui.theme.InRange
+import com.psjostrom.strimma.ui.theme.LightTintDanger
+import com.psjostrom.strimma.ui.theme.LightTintInRange
+import com.psjostrom.strimma.ui.theme.LightTintWarning
 import com.psjostrom.strimma.ui.theme.TintDanger
 import com.psjostrom.strimma.ui.theme.TintInRange
 import com.psjostrom.strimma.ui.theme.TintWarning
@@ -738,17 +742,6 @@ private fun PlannedWorkoutSheet(
     glucoseUnit: GlucoseUnit,
     onDismiss: () -> Unit
 ) {
-    // Use the guidance card's tinted background when available
-    val (bgColor, borderColor) = if (guidance is GuidanceState.WorkoutApproaching) {
-        when (guidance.readiness) {
-            ReadinessLevel.READY -> TintInRange to MaterialTheme.colorScheme.outlineVariant
-            ReadinessLevel.CAUTION -> TintWarning to MaterialTheme.colorScheme.outlineVariant
-            ReadinessLevel.WAIT -> TintDanger to MaterialTheme.colorScheme.outlineVariant
-        }
-    } else {
-        MaterialTheme.colorScheme.surface to MaterialTheme.colorScheme.outlineVariant
-    }
-
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
@@ -758,8 +751,8 @@ private fun PlannedWorkoutSheet(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 48.dp),
             shape = RoundedCornerShape(20.dp),
-            color = bgColor,
-            border = BorderStroke(1.dp, borderColor)
+            color = MaterialTheme.colorScheme.surface,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
         ) {
             Column(
                 modifier = Modifier
@@ -781,11 +774,12 @@ private fun PlannedWorkoutSheet(
                 }
 
                 if (guidance is GuidanceState.WorkoutApproaching) {
-                    // Render guidance content directly — no nested card
-                    val (badgeColor, badgeText) = when (guidance.readiness) {
-                        ReadinessLevel.READY -> InRange to "READY"
-                        ReadinessLevel.CAUTION -> AboveHigh to "HEADS UP"
-                        ReadinessLevel.WAIT -> BelowLow to "HOLD ON"
+                    // Guidance in a tinted inner card
+                    val isDark = isSystemInDarkTheme()
+                    val (tintBg, badgeColor, badgeText) = when (guidance.readiness) {
+                        ReadinessLevel.READY -> Triple(if (isDark) TintInRange else LightTintInRange, InRange, "READY")
+                        ReadinessLevel.CAUTION -> Triple(if (isDark) TintWarning else LightTintWarning, AboveHigh, "HEADS UP")
+                        ReadinessLevel.WAIT -> Triple(if (isDark) TintDanger else LightTintDanger, BelowLow, "HOLD ON")
                     }
                     val timeText = formatTimeUntil(event.startTime - System.currentTimeMillis())
                     val targetLow = glucoseUnit.format(guidance.targetLowMgdl.toDouble())
@@ -798,38 +792,47 @@ private fun PlannedWorkoutSheet(
                         fontWeight = FontWeight.SemiBold
                     )
                     Spacer(Modifier.height(8.dp))
-                    Text(
-                        text = badgeText,
-                        color = badgeColor,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        letterSpacing = 1.sp
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        text = "Target: $targetLow\u2013$targetHigh ${glucoseUnit.label}",
-                        color = MaterialTheme.colorScheme.onBackground,
-                        fontSize = 13.sp
-                    )
-                    val currentLine = buildString {
-                        append("Current: ${glucoseUnit.format(guidance.currentBgMgdl)} ${guidance.trendArrow}")
-                        if (guidance.iob > 0.0) append("  \u00B7  IOB ${"%.1f".format(guidance.iob)}u")
-                    }
-                    Text(currentLine, color = MaterialTheme.colorScheme.onBackground, fontSize = 13.sp)
 
-                    for (reason in guidance.reasons) {
-                        Spacer(Modifier.height(4.dp))
-                        Text(reason.message, color = MaterialTheme.colorScheme.outline, fontSize = 12.sp)
-                    }
-                    if (guidance.suggestions.isNotEmpty()) {
-                        Spacer(Modifier.height(8.dp))
-                        for (suggestion in guidance.suggestions) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = tintBg,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
                             Text(
-                                text = suggestion,
-                                color = MaterialTheme.colorScheme.onBackground,
+                                text = badgeText,
+                                color = badgeColor,
                                 fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium
+                                fontWeight = FontWeight.SemiBold,
+                                letterSpacing = 1.sp
                             )
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                text = "Target: $targetLow\u2013$targetHigh ${glucoseUnit.label}",
+                                color = MaterialTheme.colorScheme.onBackground,
+                                fontSize = 13.sp
+                            )
+                            val currentLine = buildString {
+                                append("Current: ${glucoseUnit.format(guidance.currentBgMgdl)} ${guidance.trendArrow}")
+                                if (guidance.iob > 0.0) append("  \u00B7  IOB ${"%.1f".format(guidance.iob)}u")
+                            }
+                            Text(currentLine, color = MaterialTheme.colorScheme.onBackground, fontSize = 13.sp)
+
+                            for (reason in guidance.reasons) {
+                                Spacer(Modifier.height(4.dp))
+                                Text(reason.message, color = MaterialTheme.colorScheme.outline, fontSize = 12.sp)
+                            }
+                            if (guidance.suggestions.isNotEmpty()) {
+                                Spacer(Modifier.height(8.dp))
+                                for (suggestion in guidance.suggestions) {
+                                    Text(
+                                        text = suggestion,
+                                        color = MaterialTheme.colorScheme.onBackground,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
                         }
                     }
                 } else {
@@ -986,15 +989,16 @@ private fun PatternCard(
     }
 
     // Risk badge
+    val isDark = isSystemInDarkTheme()
     val (badgeText, badgeColor, badgeBg) = when {
         stats.hypoRate >= HYPO_HIGH_RISK_THRESHOLD -> Triple(
-            stringResource(R.string.exercise_patterns_high_risk), BelowLow, TintDanger
+            stringResource(R.string.exercise_patterns_high_risk), BelowLow, if (isDark) TintDanger else LightTintDanger
         )
         stats.hypoRate >= HYPO_SOME_RISK_THRESHOLD -> Triple(
-            stringResource(R.string.exercise_patterns_some_risk), AboveHigh, TintWarning
+            stringResource(R.string.exercise_patterns_some_risk), AboveHigh, if (isDark) TintWarning else LightTintWarning
         )
         else -> Triple(
-            stringResource(R.string.exercise_patterns_low_risk), InRange, TintInRange
+            stringResource(R.string.exercise_patterns_low_risk), InRange, if (isDark) TintInRange else LightTintInRange
         )
     }
 
