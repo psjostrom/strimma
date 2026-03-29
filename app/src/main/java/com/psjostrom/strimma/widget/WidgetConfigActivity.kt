@@ -62,8 +62,10 @@ class WidgetConfigActivity : ComponentActivity() {
                     initialOpacity = widgetSettings.getOpacity(),
                     initialGraphMinutes = widgetSettings.getGraphMinutes(),
                     initialShowPrediction = widgetSettings.getShowPrediction(),
-                    onSave = { opacity, graphMinutes, showPrediction ->
-                        widgetSettings.save(opacity, graphMinutes, showPrediction)
+                    initialLightMode = widgetSettings.getLightMode(),
+                    initialColorCoded = widgetSettings.getColorCoded(),
+                    onSave = { opacity, graphMinutes, showPrediction, lightMode, colorCoded ->
+                        widgetSettings.save(opacity, graphMinutes, showPrediction, lightMode, colorCoded)
 
                         val appContext = applicationContext
                         lifecycleScope.launch {
@@ -74,6 +76,8 @@ class WidgetConfigActivity : ComponentActivity() {
                                     it[StrimmaWidget.KEY_OPACITY] = opacity
                                     it[StrimmaWidget.KEY_GRAPH_MINUTES] = graphMinutes
                                     it[StrimmaWidget.KEY_SHOW_PREDICTION] = showPrediction
+                                    it[StrimmaWidget.KEY_LIGHT_MODE] = lightMode
+                                    it[StrimmaWidget.KEY_COLOR_CODED] = colorCoded
                                 }
                                 StrimmaWidget().update(appContext, id)
                             }
@@ -105,11 +109,15 @@ private fun WidgetConfigScreen(
     initialOpacity: Float,
     initialGraphMinutes: Int,
     initialShowPrediction: Boolean,
-    onSave: (Float, Int, Boolean) -> Unit
+    initialLightMode: Boolean,
+    initialColorCoded: Boolean,
+    onSave: (Float, Int, Boolean, Boolean, Boolean) -> Unit
 ) {
     var opacity by remember { mutableFloatStateOf(initialOpacity) }
     var graphMinutes by remember { mutableIntStateOf(initialGraphMinutes) }
     var showPrediction by remember { mutableStateOf(initialShowPrediction) }
+    var lightMode by remember { mutableStateOf(initialLightMode) }
+    var colorCoded by remember { mutableStateOf(initialColorCoded) }
     val options = graphOptions()
 
     Scaffold(containerColor = DarkBg) { padding ->
@@ -161,6 +169,24 @@ private fun WidgetConfigScreen(
                         Switch(checked = showPrediction, onCheckedChange = { showPrediction = it })
                     }
 
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(stringResource(R.string.widget_config_light_mode), color = DarkTextPrimary, fontSize = 14.sp)
+                        Switch(checked = lightMode, onCheckedChange = { lightMode = it })
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(stringResource(R.string.widget_config_color_coded), color = DarkTextPrimary, fontSize = 14.sp)
+                        Switch(checked = colorCoded, onCheckedChange = { colorCoded = it })
+                    }
+
                     HorizontalDivider(color = DarkTextTertiary.copy(alpha = 0.3f))
 
                     // Background opacity
@@ -191,7 +217,7 @@ private fun WidgetConfigScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             Button(
-                onClick = { onSave(opacity, graphMinutes, showPrediction) },
+                onClick = { onSave(opacity, graphMinutes, showPrediction, lightMode, colorCoded) },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = InRange)
             ) {

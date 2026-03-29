@@ -234,6 +234,8 @@
     <string name="widget_config_title">Widget-Einstellungen</string>
     <string name="widget_config_graph_range">Diagrammbereich</string>
     <string name="widget_config_show_prediction">Vorhersage anzeigen</string>
+    <string name="widget_config_light_mode">Heller Hintergrund</string>
+    <string name="widget_config_color_coded">Farbcodierter BG</string>
     <string name="widget_config_background">Hintergrund</string>
     <string name="widget_config_opacity">%1$d%%</string>
     <string name="widget_config_background_hint">Steuert nur den Hintergrund \u2014 Diagramm und Werte bleiben voll sichtbar</string>
