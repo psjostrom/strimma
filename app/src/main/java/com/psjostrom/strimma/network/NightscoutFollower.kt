@@ -85,8 +85,8 @@ class NightscoutFollower @Inject constructor(
         return scope.launch {
             _status.value = FollowerStatus.Connecting
 
-            val url = settings.followerUrl.first()
-            val secret = settings.getFollowerSecret()
+            val url = settings.nightscoutUrl.first()
+            val secret = settings.getNightscoutSecret()
             if (url.isBlank() || secret.isBlank()) {
                 DebugLog.log(message = "Follower: URL or secret empty")
                 _status.value = FollowerStatus.Idle
