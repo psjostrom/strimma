@@ -56,6 +56,8 @@ Intensity detection works two ways: from keywords in calendar event titles (for 
 
 When you have a workout coming up (read from your Android calendar), Strimma shows a readiness card on the main screen:
 
+![Pre-activity guidance card](../screenshots/pre-activity-guidance.png){ width="300" }
+
 **Status levels:**
 
 | Status | Meaning |

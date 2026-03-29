@@ -73,6 +73,12 @@ Strimma sits alongside your CGM app and gives you a better glucose display, aler
   <img src="docs/screenshots/exercise-detail.png" width="240" alt="Exercise detail with BG analysis" />
 </p>
 
+<p align="center">
+  <img src="docs/screenshots/pre-activity-guidance.png" width="240" alt="Pre-activity guidance card" />
+  <img src="docs/screenshots/agp-report.png" width="240" alt="AGP report with TIR" />
+  <img src="docs/screenshots/meal-analysis-lunch.png" width="240" alt="Meal postprandial analysis" />
+</p>
+
 ## Install
 
 Download the latest APK from [GitHub Releases](https://github.com/psjostrom/strimma/releases) and install it. Requires Android 13+.
