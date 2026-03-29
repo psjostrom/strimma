@@ -73,15 +73,11 @@
     <string name="settings_source_notification_access">Notification access</string>
     <string name="settings_source_notification_granted">Granted</string>
     <string name="settings_source_notification_not_granted">Not granted — tap to open settings</string>
-    <string name="settings_source_nightscout_push">Nightscout Push</string>
     <string name="settings_source_nightscout">Nightscout</string>
     <string name="settings_source_nightscout_url">Nightscout URL</string>
     <string name="settings_source_url_placeholder">https://your-nightscout.example.com</string>
     <string name="settings_source_url_hint">Base URL only — no /api path</string>
     <string name="settings_source_api_secret">API Secret</string>
-    <string name="settings_source_following">Following</string>
-    <string name="settings_source_follower_url_placeholder">https://nightscout.example.com</string>
-    <string name="settings_source_follower_url_hint">The Nightscout server to follow</string>
     <string name="settings_source_poll_settings">Follower Settings</string>
     <string name="settings_source_poll_interval">Poll Interval: %1$ds</string>
     <string name="settings_source_poll_explanation">How often to check for new readings. Lower values catch updates faster but use more battery. CGM readings typically arrive every 5 minutes.</string>
