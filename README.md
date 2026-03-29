@@ -44,11 +44,17 @@ Strimma sits alongside your CGM app and gives you a better glucose display, aler
 **Integration:**
 
 - Nightscout push via `/api/v1/entries` with retry and offline resilience
-- Treatment sync from Nightscout — bolus/carb markers on graph, IOB computation with configurable insulin curves
+- Treatment sync from Nightscout (30-day retention) — bolus/carb markers on graph, IOB computation with configurable insulin curves, per-meal analysis
 - xDrip-compatible BG broadcast for watches and other apps (AAPS, GDH)
 - Local web server for Garmin watchfaces and other LAN clients
 
-**Stats:** Time in range, GMI, average glucose, CV%, coverage, CSV export.
+**Stats:**
+
+- Time in range, GMI, average glucose, CV%, coverage, CSV export
+- Ambulatory Glucose Profile (AGP) with percentile bands
+- Per-meal postprandial analysis: TIR, peak excursion, time-to-peak, recovery, IOB at meal, sparkline graphs
+- Aggregate postprandial profile — AGP-style percentile chart showing average meal response
+- Configurable meal time slots (Breakfast/Lunch/Dinner)
 
 ## Screenshots
 
@@ -89,6 +95,7 @@ Single-module app. Kotlin, Jetpack Compose, Material 3.
 | Package | Purpose |
 |---------|---------|
 | `data/` | Room entities, DAO, SettingsRepository, DirectionComputer, GlucoseUnit |
+| `data/meal/` | Per-meal postprandial analysis, aggregate AGP, time slot classification |
 | `data/health/` | Health Connect — exercise sessions, BG analysis, HC sync |
 | `di/` | Hilt dependency injection modules |
 | `graph/` | Shared graph constants, colors, Y-range, prediction |
