@@ -13,6 +13,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.psjostrom.strimma.R
+import com.psjostrom.strimma.ui.theme.InRange
 
 @Composable
 fun SetupNightscoutStep(
