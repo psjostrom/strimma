@@ -1,6 +1,5 @@
 package com.psjostrom.strimma.ui
 
-import android.content.Intent
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -21,7 +20,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.FileProvider
 import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.AgpCalculator
 import com.psjostrom.strimma.data.AgpResult
@@ -39,7 +37,6 @@ import com.psjostrom.strimma.ui.theme.InRange
 import com.psjostrom.strimma.ui.theme.VeryHigh
 import com.psjostrom.strimma.ui.theme.VeryLow
 import kotlinx.coroutines.launch
-import java.io.File
 
 private const val HOURS_24 = 24
 private const val HOURS_7_DAYS = 168
@@ -111,19 +108,7 @@ fun StatsScreen(
                             scope.launch {
                                 val (hours, _) = periods[selectedPeriod]
                                 val csv = onExportCsv(hours)
-                                val file = File(context.cacheDir, "strimma_readings.csv")
-                                file.writeText(csv)
-                                val uri = FileProvider.getUriForFile(
-                                    context, "${context.packageName}.fileprovider", file
-                                )
-                                context.startActivity(Intent.createChooser(
-                                    Intent(Intent.ACTION_SEND).apply {
-                                        type = "text/csv"
-                                        putExtra(Intent.EXTRA_STREAM, uri)
-                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                    },
-                                    exportChooserTitle
-                                ))
+                                shareCsv(context, csv, exportChooserTitle)
                             }
                         }) {
                             Icon(Icons.Outlined.Share, contentDescription = stringResource(R.string.common_content_desc_export))

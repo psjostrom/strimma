@@ -154,6 +154,7 @@
     <string name="settings_data_web_server_desc">Servir les donn\u00E9es BG sur le port 17580 pour cadrans et applications</string>
     <string name="settings_data_api_secret">Secret API</string>
     <string name="settings_data_backup">Sauvegarde</string>
+    <string name="settings_data_export_readings">Exporter les lectures (CSV)</string>
     <string name="settings_data_export_settings">Exporter les param\u00E8tres</string>
     <string name="settings_data_import_settings">Importer les param\u00E8tres</string>
 
@@ -295,6 +296,7 @@
     <string name="activity_import_failed">\u00C9chec de l\u2019importation : %1$s</string>
     <string name="activity_export_dialog_title">Exporter les param\u00E8tres</string>
     <string name="activity_export_dialog_message">Le fichier d\u2019exportation contient vos secrets Nightscout en texte clair. Ne le partagez qu\u2019avec des applications de confiance.</string>
+    <string name="activity_export_readings_chooser">Exporter les lectures</string>
     <string name="activity_export_chooser">Exporter les param\u00E8tres</string>
     <string name="activity_export_failed">\u00C9chec de l\u2019exportation : %1$s</string>
     <string name="activity_pull_progress">T\u00E9l\u00E9chargement de %1$d jours depuis Nightscout\u2026</string>

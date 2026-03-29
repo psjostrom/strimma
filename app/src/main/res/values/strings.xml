@@ -183,6 +183,7 @@
     <string name="settings_data_web_server_desc">Serve BG data on port 17580 for watchfaces and apps</string>
     <string name="settings_data_api_secret">API Secret</string>
     <string name="settings_data_backup">Backup</string>
+    <string name="settings_data_export_readings">Export Readings (CSV)</string>
     <string name="settings_data_export_settings">Export Settings</string>
     <string name="settings_data_import_settings">Import Settings</string>
 
@@ -403,6 +404,7 @@
     <string name="activity_import_failed">Import failed: %1$s</string>
     <string name="activity_export_dialog_title">Export Settings</string>
     <string name="activity_export_dialog_message">The export file contains your Nightscout secrets in plain text. Only share it with apps you trust.</string>
+    <string name="activity_export_readings_chooser">Export Readings</string>
     <string name="activity_export_chooser">Export Settings</string>
     <string name="activity_export_failed">Export failed: %1$s</string>
     <string name="activity_pull_progress" tools:ignore="PluralsCandidate">Pulling %1$d days from Nightscout…</string>
