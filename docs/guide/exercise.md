@@ -71,7 +71,7 @@ When you have a workout coming up (read from your Android calendar), Strimma sho
 - Current BG and trend (rising/falling/stable)
 - IOB (insulin on board) — each unit of IOB adds ~12g to the carb recommendation
 - 30-minute glucose forecast
-- **Compound risk detection** — BG below 8.0 mmol AND falling fast AND IOB present. This combination is dangerous before exercise.
+- **Compound risk detection** — BG below 8.0 mmol AND falling fast. This combination is dangerous before exercise.
 
 **Carb recommendations:**
 

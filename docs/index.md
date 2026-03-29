@@ -51,7 +51,7 @@ Strimma stands on the shoulders of the incredible [xDrip+](https://github.com/Ni
 - **Works with watches and other apps** — broadcasts xDrip-compatible intents, runs a local web server, integrates with Garmin watchfaces.
 - **Exercise-BG analysis** — reads exercise sessions from Health Connect (Garmin, Samsung Health, etc.), overlays exercise bands on the glucose graph, and shows before/during/after BG breakdown with post-exercise hypo detection.
 - **Exercise stats** — aggregate BG patterns across sessions grouped by activity type (Running, Cycling, Strength, etc.) and metabolic profile (Aerobic, Resistance, High-Intensity). Hypo rate, average entry BG, drop rate, recovery patterns.
-- **Pre-activity guidance** — readiness card before scheduled workouts. Evaluates current BG, trend, IOB, and 30-min forecast. Generates carb recommendations adjusted for IOB and time until workout. Compound risk detection (stacked IOB + falling BG + upcoming exercise).
+- **Pre-activity guidance** — readiness card before scheduled workouts. Evaluates current BG, trend, IOB, and 30-min forecast. Generates carb recommendations adjusted for IOB and time until workout. Compound risk detection (falling BG + low-ish starting point + upcoming exercise).
 - **Workout schedule** — reads planned workouts from your Android calendar. Shows upcoming sessions with pre-activity status so you can prepare.
 
 ---

@@ -40,7 +40,7 @@ Strimma sits alongside your CGM app and gives you a better glucose display, aler
 - Heart rate, steps, calories from watch data
 - Exercise history with BG sparklines, grouped by activity type
 - Exercise stats with metabolic profiles — aggregate BG patterns across sessions by category and intensity
-- **Pre-activity guidance** — readiness assessment before workouts: current BG trend, IOB-aware carb recommendations, compound risk detection (stacked IOB + dropping BG + upcoming exercise), 30-min glucose forecast
+- **Pre-activity guidance** — readiness assessment before workouts: current BG trend, IOB-aware carb recommendations, compound risk detection (dropping BG + low-ish starting point + upcoming exercise), 30-min glucose forecast
 - **Workout schedule** — reads planned workouts from Android calendar, shows upcoming sessions with pre-activity status
 - Writes glucose to Health Connect so other health apps can access CGM data
 
