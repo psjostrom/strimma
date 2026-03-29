@@ -14,6 +14,7 @@
     <string name="common_content_desc_share_log">Dela logg</string>
 
     <!-- Main Screen -->
+    <string name="main_waiting_for_reading">V\u00E4ntar p\u00E5 f\u00F6rsta glukosv\u00E4rdet\u2026</string>
     <string name="main_just_now">Just nu</string>
     <string name="main_min_ago">%1$d min sedan</string>
     <string name="main_prediction_low">L\u00E5gt om %1$d min</string>

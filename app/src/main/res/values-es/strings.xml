@@ -14,6 +14,7 @@
     <string name="common_content_desc_share_log">Compartir registro</string>
 
     <!-- Main Screen -->
+    <string name="main_waiting_for_reading">Esperando la primera lectura de glucosa\u2026</string>
     <string name="main_just_now">Ahora</string>
     <string name="main_min_ago">Hace %1$d min</string>
     <string name="main_prediction_low">Bajo en %1$d min</string>
