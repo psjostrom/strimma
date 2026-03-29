@@ -67,6 +67,7 @@
     <string name="settings_source_notification_granted">Accordé</string>
     <string name="settings_source_notification_not_granted">Non accordé — appuyez pour ouvrir les paramètres</string>
     <string name="settings_source_nightscout_push">Nightscout Push</string>
+    <string name="settings_source_nightscout">Nightscout</string>
     <string name="settings_source_nightscout_url">URL Nightscout</string>
     <string name="settings_source_url_placeholder">https://votre-nightscout.example.com</string>
     <string name="settings_source_url_hint">URL de base uniquement \u2014 pas de chemin /api</string>
@@ -74,6 +75,7 @@
     <string name="settings_source_following">Suivi</string>
     <string name="settings_source_follower_url_placeholder">https://nightscout.example.com</string>
     <string name="settings_source_follower_url_hint">Le serveur Nightscout \u00E0 suivre</string>
+    <string name="settings_source_poll_settings">Paramètres de suivi</string>
     <string name="settings_source_poll_interval">Intervalle de scrutation : %1$ds</string>
     <string name="settings_source_poll_explanation">Fr\u00E9quence de v\u00E9rification des nouvelles lectures. Des valeurs plus basses d\u00E9tectent les mises \u00E0 jour plus vite mais consomment plus de batterie. Les lectures CGM arrivent g\u00E9n\u00E9ralement toutes les 5 minutes.</string>
     <string name="settings_source_companion_label">Mode compagnon</string>

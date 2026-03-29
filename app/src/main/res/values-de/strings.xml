@@ -67,6 +67,7 @@
     <string name="settings_source_notification_granted">Gewährt</string>
     <string name="settings_source_notification_not_granted">Nicht gewährt — tippen um Einstellungen zu öffnen</string>
     <string name="settings_source_nightscout_push">Nightscout Push</string>
+    <string name="settings_source_nightscout">Nightscout</string>
     <string name="settings_source_nightscout_url">Nightscout-URL</string>
     <string name="settings_source_url_placeholder">https://dein-nightscout.example.com</string>
     <string name="settings_source_url_hint">Nur Basis-URL \u2014 kein /api-Pfad</string>
@@ -74,6 +75,7 @@
     <string name="settings_source_following">Folgen</string>
     <string name="settings_source_follower_url_placeholder">https://nightscout.example.com</string>
     <string name="settings_source_follower_url_hint">Der Nightscout-Server zum Folgen</string>
+    <string name="settings_source_poll_settings">Follower-Einstellungen</string>
     <string name="settings_source_poll_interval">Abfrageintervall: %1$ds</string>
     <string name="settings_source_poll_explanation">Wie oft nach neuen Messwerten gesucht wird. Niedrigere Werte erfassen Aktualisierungen schneller, verbrauchen aber mehr Akku. CGM-Messwerte kommen normalerweise alle 5 Minuten.</string>
     <string name="settings_source_companion_label">Begleitmodus</string>

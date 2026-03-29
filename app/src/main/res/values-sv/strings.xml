@@ -67,6 +67,7 @@
     <string name="settings_source_notification_granted">Beviljad</string>
     <string name="settings_source_notification_not_granted">Ej beviljad — tryck för att öppna inställningar</string>
     <string name="settings_source_nightscout_push">Nightscout Push</string>
+    <string name="settings_source_nightscout">Nightscout</string>
     <string name="settings_source_nightscout_url">Nightscout-URL</string>
     <string name="settings_source_url_placeholder">https://din-nightscout.example.com</string>
     <string name="settings_source_url_hint">Bara bas-URL \u2014 ingen /api-s\u00F6kv\u00E4g</string>
@@ -74,6 +75,7 @@
     <string name="settings_source_following">F\u00F6ljer</string>
     <string name="settings_source_follower_url_placeholder">https://nightscout.example.com</string>
     <string name="settings_source_follower_url_hint">Nightscout-servern att f\u00F6lja</string>
+    <string name="settings_source_poll_settings">Följarinställningar</string>
     <string name="settings_source_poll_interval">Pollintervall: %1$ds</string>
     <string name="settings_source_poll_explanation">Hur ofta nya avl\u00E4sningar kontrolleras. L\u00E4gre v\u00E4rden f\u00E5ngar uppdateringar snabbare men drar mer batteri. CGM-avl\u00E4sningar kommer vanligtvis var 5:e minut.</string>
     <string name="settings_source_companion_label">Kompanjonl\u00E4ge</string>
