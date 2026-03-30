@@ -207,6 +207,7 @@ class ExerciseHistoryViewModel @Inject constructor(
 @Composable
 fun ExerciseHistoryScreen(
     onBack: () -> Unit,
+    onNavigateToExerciseSettings: () -> Unit = {},
     viewModel: ExerciseHistoryViewModel = hiltViewModel()
 ) {
     val sessions by viewModel.sessions.collectAsState()
@@ -351,7 +352,8 @@ fun ExerciseHistoryScreen(
                         glucoseUnit = glucoseUnit,
                         bgLow = bgLow,
                         viewModel = viewModel,
-                        onSessionClick = { selectedExercise = it }
+                        onSessionClick = { selectedExercise = it },
+                        onConnectHealthConnect = onNavigateToExerciseSettings
                     )
                     2 -> PatternsTab(viewModel = viewModel, glucoseUnit = glucoseUnit)
                 }
@@ -546,7 +548,7 @@ private fun PlannedWorkoutCard(
     val dateStr = dateFmt.format(Date(event.startTime))
     val timeRange = "${timeFmt.format(Date(event.startTime))}\u2013${timeFmt.format(Date(event.endTime))}"
     val durationMin = ((event.endTime - event.startTime) / MS_PER_MINUTE).toInt()
-    val categoryName = event.category.name.lowercase().replaceFirstChar { it.uppercase() }
+    val categoryName = event.category.displayName
     val targetLow = glucoseUnit.format(event.metabolicProfile.defaultTargetLowMgdl.toDouble())
     val targetHigh = glucoseUnit.format(event.metabolicProfile.defaultTargetHighMgdl.toDouble())
 
@@ -571,12 +573,10 @@ private fun PlannedWorkoutCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(Modifier.height(6.dp))
-            val profileName = event.metabolicProfile.name.lowercase()
-                .replaceFirstChar { it.uppercase() }.replace('_', ' ')
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 StatChip(
                     label = stringResource(R.string.exercise_planned_category),
-                    value = "$categoryName \u00B7 $profileName"
+                    value = categoryName
                 )
                 StatChip(
                     label = stringResource(R.string.exercise_planned_target),
@@ -593,7 +593,8 @@ private fun CompletedTab(
     glucoseUnit: GlucoseUnit,
     bgLow: Float,
     viewModel: ExerciseHistoryViewModel,
-    onSessionClick: (StoredExerciseSession) -> Unit
+    onSessionClick: (StoredExerciseSession) -> Unit,
+    onConnectHealthConnect: () -> Unit
 ) {
     if (sessions.isEmpty()) {
         Box(
@@ -602,12 +603,38 @@ private fun CompletedTab(
                 .padding(32.dp),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = stringResource(R.string.exercise_history_empty),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 14.sp,
-                lineHeight = 20.sp
-            )
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                border = BorderStroke(1.dp, InRange.copy(alpha = 0.3f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = stringResource(R.string.exercise_history_empty_title),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.exercise_history_empty),
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 18.sp
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    Button(
+                        onClick = onConnectHealthConnect,
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(stringResource(R.string.exercise_history_empty_button))
+                    }
+                }
+            }
         }
     } else {
         LazyColumn(
@@ -691,7 +718,7 @@ private fun ExerciseCard(
             val maxHR by viewModel.maxHeartRate.collectAsState()
             val profileName = bgContext?.let { ctx ->
                 val profile = CategoryStatsCalculator.resolveProfile(session, ctx, maxHR)
-                profile.name.lowercase().replaceFirstChar { it.uppercase() }.replace('_', ' ')
+                profile.displayName
             }
             val subtitle = buildString {
                 append("$dateStr \u00B7 $timeRange")
@@ -841,9 +868,7 @@ private fun PlannedWorkoutSheet(
                     val dateStr = dateFmt.format(Date(event.startTime))
                     val timeRange = "${timeFmt.format(Date(event.startTime))}\u2013${timeFmt.format(Date(event.endTime))}"
                     val durationMin = ((event.endTime - event.startTime) / MS_PER_MINUTE).toInt()
-                    val categoryName = event.category.name.lowercase().replaceFirstChar { it.uppercase() }
-                    val profileName = event.metabolicProfile.name.lowercase()
-                        .replaceFirstChar { it.uppercase() }.replace('_', ' ')
+                    val categoryName = event.category.displayName
                     val targetLow = glucoseUnit.format(event.metabolicProfile.defaultTargetLowMgdl.toDouble())
                     val targetHigh = glucoseUnit.format(event.metabolicProfile.defaultTargetHighMgdl.toDouble())
 
@@ -861,7 +886,7 @@ private fun PlannedWorkoutSheet(
                     )
                     Spacer(Modifier.height(12.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        StatChip(label = stringResource(R.string.exercise_planned_category), value = "$categoryName \u00B7 $profileName")
+                        StatChip(label = stringResource(R.string.exercise_planned_category), value = categoryName)
                         StatChip(label = stringResource(R.string.exercise_planned_target), value = "$targetLow\u2013$targetHigh")
                     }
                     Spacer(Modifier.height(12.dp))
@@ -943,12 +968,31 @@ private fun PatternsTab(
                     .padding(32.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = stringResource(R.string.exercise_patterns_empty),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 14.sp,
-                    lineHeight = 20.sp
-                )
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    border = BorderStroke(1.dp, InRange.copy(alpha = 0.3f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = stringResource(R.string.exercise_patterns_empty_title),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = stringResource(R.string.exercise_patterns_empty),
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            lineHeight = 18.sp
+                        )
+                    }
+                }
             }
         } else {
             LazyColumn(
@@ -985,7 +1029,7 @@ private fun PatternCard(
         profile?.name?.lowercase()?.replaceFirstChar { it.uppercase() }?.replace('_', ' ')
             ?: "Unknown"
     } else {
-        "${stats.category.emoji} ${stats.category.name.lowercase().replaceFirstChar { it.uppercase() }}"
+        "${stats.category.emoji} ${stats.category.displayName}"
     }
 
     // Risk badge
@@ -1074,6 +1118,20 @@ private fun PatternCard(
                     color = if (stats.hypoRate >= HYPO_HIGH_RISK_THRESHOLD) BelowLow
                         else MaterialTheme.colorScheme.onSurface
                 )
+                // Actionable tip based on risk level
+                if (stats.hypoRate >= HYPO_HIGH_RISK_THRESHOLD) {
+                    Text(
+                        text = stringResource(R.string.exercise_patterns_tip_high_risk),
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else if (stats.hypoRate >= HYPO_SOME_RISK_THRESHOLD) {
+                    Text(
+                        text = stringResource(R.string.exercise_patterns_tip_some_risk),
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             } else {
                 Text(
                     text = stringResource(R.string.exercise_patterns_never_low),

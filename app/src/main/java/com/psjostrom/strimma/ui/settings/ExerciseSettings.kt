@@ -200,6 +200,7 @@ fun ExerciseSettings(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                val writeEnabled = hcStatus == HealthConnectStatus.AVAILABLE && hasPermissions
                 Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
                     Text(
                         stringResource(R.string.exercise_hc_write_toggle),
@@ -207,7 +208,8 @@ fun ExerciseSettings(
                         fontSize = 14.sp
                     )
                     Text(
-                        stringResource(R.string.exercise_hc_write_subtitle),
+                        if (writeEnabled) stringResource(R.string.exercise_hc_write_subtitle)
+                        else stringResource(R.string.exercise_hc_write_disabled_hint),
                         color = outline,
                         fontSize = 12.sp
                     )
@@ -215,7 +217,7 @@ fun ExerciseSettings(
                 Switch(
                     checked = hcWriteEnabled,
                     onCheckedChange = viewModel::setHcWriteEnabled,
-                    enabled = hcStatus == HealthConnectStatus.AVAILABLE && hasPermissions
+                    enabled = writeEnabled
                 )
             }
 
@@ -290,6 +292,10 @@ fun ExerciseSettings(
             // Lookahead slider
             Column {
                 Text("Lookahead: ${lookaheadHours}h", color = onBg, fontSize = 14.sp)
+                Text(
+                    stringResource(R.string.exercise_lookahead_subtitle),
+                    color = outline, fontSize = 12.sp
+                )
                 Slider(
                     value = lookaheadHours.toFloat(),
                     onValueChange = { viewModel.setWorkoutLookaheadHours(it.toInt()) },
@@ -301,6 +307,10 @@ fun ExerciseSettings(
             // Trigger slider
             Column {
                 Text("Guidance trigger: ${triggerMinutes}min before", color = onBg, fontSize = 14.sp)
+                Text(
+                    stringResource(R.string.exercise_trigger_subtitle),
+                    color = outline, fontSize = 12.sp
+                )
                 Slider(
                     value = triggerMinutes.toFloat(),
                     onValueChange = { viewModel.setWorkoutTriggerMinutes(it.toInt()) },
@@ -415,7 +425,7 @@ private fun ExerciseTargetRow(
 
     Column {
         Text(
-            "${category.emoji} ${category.name.lowercase().replaceFirstChar { it.uppercase() }}",
+            "${category.emoji} ${category.displayName}",
             color = textColor, fontSize = 14.sp
         )
         Row(

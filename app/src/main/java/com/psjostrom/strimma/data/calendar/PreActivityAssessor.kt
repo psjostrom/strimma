@@ -53,40 +53,47 @@ object PreActivityAssessor {
             velocityMgdlPerMin != null && velocityMgdlPerMin < SLOPE_FALLING
 
         if (isCompound) {
-            reasons.add(AssessmentReason(ReadinessLevel.WAIT, "BG below 8 and falling -- high hypo risk"))
+            reasons.add(AssessmentReason(ReadinessLevel.WAIT,
+                "BG below ${glucoseUnit.format(COMPOUND_BG.toDouble())} and falling \u2014 high hypo risk during exercise"))
             baseCarbs = BASE_CARBS_COMPOUND
             waitForTrend = true
         } else {
             when {
                 currentBgMgdl < HYPO_THRESHOLD -> {
-                    reasons.add(AssessmentReason(ReadinessLevel.WAIT, "BG too low to start"))
+                    reasons.add(AssessmentReason(ReadinessLevel.WAIT,
+                        "BG too low to exercise safely \u2014 eat fast carbs first"))
                     baseCarbs = BASE_CARBS_HYPO
                     waitForTrend = true
                 }
                 currentBgMgdl < targetLowMgdl -> {
-                    reasons.add(AssessmentReason(ReadinessLevel.CAUTION, "BG below target"))
+                    reasons.add(AssessmentReason(ReadinessLevel.CAUTION,
+                        "BG below exercise target \u2014 exercise will drop it further"))
                     baseCarbs = BASE_CARBS_LOW
                 }
                 currentBgMgdl > HIGH_THRESHOLD -> {
-                    reasons.add(AssessmentReason(ReadinessLevel.CAUTION, "BG high -- expect steeper drop"))
+                    reasons.add(AssessmentReason(ReadinessLevel.CAUTION,
+                        "BG is high \u2014 exercise may cause a steeper drop than usual"))
                 }
             }
 
             if (velocityMgdlPerMin != null) {
                 when {
                     velocityMgdlPerMin < SLOPE_FAST_FALLING -> {
-                        reasons.add(AssessmentReason(ReadinessLevel.WAIT, "BG dropping fast"))
-                        suggestions.add("Hold off until the trend levels out")
+                        reasons.add(AssessmentReason(ReadinessLevel.WAIT,
+                            "BG dropping fast \u2014 wait for the trend to level out"))
                     }
                     velocityMgdlPerMin < SLOPE_FALLING -> {
-                        reasons.add(AssessmentReason(ReadinessLevel.CAUTION, "BG trending down"))
+                        reasons.add(AssessmentReason(ReadinessLevel.CAUTION,
+                            "BG trending down \u2014 exercise will accelerate the drop"))
                     }
                 }
             }
         }
 
         if (forecastBgAt30minMgdl != null && forecastBgAt30minMgdl < FORECAST_LOW) {
-            reasons.add(AssessmentReason(ReadinessLevel.CAUTION, "Forecast: BG below 5.5 in 30 min"))
+            val formatted = glucoseUnit.format(forecastBgAt30minMgdl)
+            reasons.add(AssessmentReason(ReadinessLevel.CAUTION,
+                "Predicted to reach $formatted in 30 min without exercise"))
         }
 
         val iobCarbs = if (iob >= IOB_THRESHOLD) {
@@ -122,12 +129,6 @@ object PreActivityAssessor {
                 "Have ${totalCarbs}g carbs$factorStr before starting"
             }
             suggestions.add(0, carbText)
-        }
-
-        // Forecast suggestion
-        if (forecastBgAt30minMgdl != null && forecastBgAt30minMgdl < FORECAST_LOW) {
-            val formatted = glucoseUnit.format(forecastBgAt30minMgdl)
-            suggestions.add("Forecast: $formatted in 30 min")
         }
 
         // Re-check suggestion when workout is far away

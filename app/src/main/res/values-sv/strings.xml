@@ -276,21 +276,23 @@
     <!-- Exercise Detail -->
     <string name="exercise_detail_before">F\u00D6RE</string>
     <string name="exercise_detail_during">UNDER</string>
-    <string name="exercise_detail_after">EFTER</string>
-    <string name="exercise_detail_entry_bg">Ing\u00E5ng</string>
-    <string name="exercise_detail_min_bg">Min</string>
-    <string name="exercise_detail_lowest_bg">L\u00E4gsta</string>
+    <string name="exercise_detail_after">EFTER (4T)</string>
+    <string name="exercise_detail_entry_bg">Start-BG</string>
+    <string name="exercise_detail_min_bg">L\u00E4gsta under</string>
+    <string name="exercise_detail_lowest_bg">L\u00E4gsta efter</string>
     <string name="exercise_detail_avg_hr">Snitt HF</string>
     <string name="exercise_detail_max_hr">Max HF</string>
     <string name="exercise_detail_steps">Steg</string>
     <string name="exercise_detail_calories">Kalorier</string>
-    <string name="exercise_detail_highest_bg">H\u00F6gsta</string>
-    <string name="exercise_detail_total_drop">Totalt fall</string>
+    <string name="exercise_detail_highest_bg">H\u00F6gsta efter</string>
+    <string name="exercise_detail_total_drop">Totalt BG-fall</string>
     <string name="exercise_detail_post_hypo">L\u00E5gt efter tr\u00E4ning</string>
     <string name="exercise_detail_no_data">Inte tillr\u00E4ckligt med glukosdata</string>
     <string name="exercise_detail_no_value">\u2014</string>
     <string name="exercise_history_title">Tr\u00E4ning</string>
-    <string name="exercise_history_empty">Inga tr\u00E4ningspass \u00E4nnu. Anslut Health Connect i Inst\u00E4llningar f\u00F6r att se dina tr\u00E4ningar h\u00E4r.</string>
+    <string name="exercise_history_empty_title">Inga tr\u00E4ningspass \u00E4nnu</string>
+    <string name="exercise_history_empty">Strimma l\u00E4ser tr\u00E4ningspass fr\u00E5n Health Connect. Anslut och bevilja beh\u00F6righeter f\u00F6r att se dina tr\u00E4ningar h\u00E4r.</string>
+    <string name="exercise_history_empty_button">Anslut Health Connect</string>
     <string name="hc_rationale_title">Health Connect-beh\u00F6righeter</string>
     <string name="hc_rationale_body">Strimma anv\u00E4nder Health Connect f\u00F6r att l\u00E4sa dina tr\u00E4ningspass, puls, steg och kalorier f\u00F6r att visa hur tr\u00E4ning p\u00E5verkar ditt blodsocker. Valfritt kan Strimma skriva glukosvärden s\u00E5 att andra h\u00E4lsoappar kan se dem.</string>
 
@@ -353,7 +355,7 @@
     <string name="exercise_tab_planned">Planerade</string>
     <string name="exercise_tab_completed">Genomförda</string>
     <string name="exercise_connect_title">Koppla träningskalender</string>
-    <string name="exercise_connect_subtitle">Se kommande träningspass och få BG-vägledning innan varje pass. Strimma läser din kalender för att visa beredskapsanalys och kolhydratrekommendationer.</string>
+    <string name="exercise_connect_subtitle">Se kommande träningspass och få BG-vägledning innan varje pass. Använd en kalender som bara innehåller träning — Strimma behandlar varje händelse som ett träningspass.</string>
     <string name="exercise_connect_button">Koppla kalender</string>
     <string name="exercise_planned_empty">Inga kommande träningspass hittades i den kopplade kalendern.</string>
     <string name="exercise_planned_category">Kategori</string>
@@ -364,6 +366,7 @@
 
     <!-- Patterns tab -->
     <string name="exercise_tab_patterns">M\u00F6nster</string>
+    <string name="exercise_patterns_empty_title">Inga m\u00F6nster \u00E4nnu</string>
     <string name="exercise_patterns_empty">Forts\u00E4tt tr\u00E4na med Strimma ig\u00E5ng. Efter n\u00E5gra pass av samma typ ser du dina personliga BG-m\u00F6nster h\u00E4r.</string>
     <string name="exercise_patterns_by_activity">Per aktivitet</string>
     <string name="exercise_patterns_by_profile">Per profil</string>
@@ -373,6 +376,13 @@
     <string name="exercise_patterns_drop_summary">BG sjunker vanligtvis ungef\u00E4r %1$s</string>
     <string name="exercise_patterns_went_low">Blev l\u00E5gt %1$d av %2$d</string>
     <string name="exercise_patterns_never_low">Blev aldrig l\u00E5gt</string>
+    <string name="exercise_patterns_tip_high_risk">F\u00F6rs\u00F6k starta med h\u00F6gre BG, mer kolhydrater eller mindre IOB</string>
+    <string name="exercise_patterns_tip_some_risk">Kolla start-BG-f\u00F6rdelningen nedan \u2014 vissa startv\u00E4rden kan fungera b\u00E4ttre</string>
+
+    <string name="exercise_lookahead_subtitle">Hur l\u00E5ngt fram Planerade-fliken s\u00F6ker efter tr\u00E4ningspass</string>
+    <string name="exercise_trigger_subtitle">N\u00E4r beredskapskort visas p\u00E5 huvudsk\u00E4rmen</string>
+    <string name="exercise_hc_write_disabled_hint">Bevilja Health Connect-beh\u00F6righeter f\u00F6rst</string>
+    <string name="exercise_metabolic_profile_hint">BG-responstyp \u2014 best\u00E4mmer m\u00E5lomr\u00E5de. Detekteras fr\u00E5n aktivitetstyp eller puls.</string>
 
     <!-- Pre-activity guidance -->
     <string name="workout_settings_title">Träningsschema</string>

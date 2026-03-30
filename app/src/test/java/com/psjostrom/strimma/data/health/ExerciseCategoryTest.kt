@@ -62,6 +62,48 @@ class ExerciseCategoryTest {
     }
 
     @Test
+    fun `fromTitle matches German keywords`() {
+        assertEquals(ExerciseCategory.RUNNING, ExerciseCategory.fromTitle("Lauftraining"))
+        assertEquals(ExerciseCategory.STRENGTH, ExerciseCategory.fromTitle("Krafttraining"))
+        assertEquals(ExerciseCategory.SWIMMING, ExerciseCategory.fromTitle("Schwimmen"))
+        assertEquals(ExerciseCategory.CYCLING, ExerciseCategory.fromTitle("Radfahren"))
+    }
+
+    @Test
+    fun `fromTitle matches French keywords`() {
+        assertEquals(ExerciseCategory.RUNNING, ExerciseCategory.fromTitle("Course à pied"))
+        assertEquals(ExerciseCategory.STRENGTH, ExerciseCategory.fromTitle("Musculation"))
+        assertEquals(ExerciseCategory.SWIMMING, ExerciseCategory.fromTitle("Natation"))
+    }
+
+    @Test
+    fun `fromTitle matches Spanish keywords`() {
+        assertEquals(ExerciseCategory.RUNNING, ExerciseCategory.fromTitle("Corrida matutina"))
+        assertEquals(ExerciseCategory.STRENGTH, ExerciseCategory.fromTitle("Musculación"))
+        assertEquals(ExerciseCategory.SWIMMING, ExerciseCategory.fromTitle("Nadar en piscina"))
+    }
+
+    @Test
+    fun `fromTitle matches brand and sport-specific terms`() {
+        assertEquals(ExerciseCategory.RUNNING, ExerciseCategory.fromTitle("5k race"))
+        assertEquals(ExerciseCategory.RUNNING, ExerciseCategory.fromTitle("Parkrun Saturday"))
+        assertEquals(ExerciseCategory.CYCLING, ExerciseCategory.fromTitle("Zwift session"))
+        assertEquals(ExerciseCategory.MARTIAL_ARTS, ExerciseCategory.fromTitle("BJJ open mat"))
+        assertEquals(ExerciseCategory.MARTIAL_ARTS, ExerciseCategory.fromTitle("Muay thai"))
+        assertEquals(ExerciseCategory.ROWING, ExerciseCategory.fromTitle("Concept2 workout"))
+    }
+
+    @Test
+    fun `fromTitle matches multi-word keyword variants`() {
+        assertEquals(ExerciseCategory.MARTIAL_ARTS, ExerciseCategory.fromTitle("jiu-jitsu"))
+        assertEquals(ExerciseCategory.MARTIAL_ARTS, ExerciseCategory.fromTitle("jiu jitsu"))
+        assertEquals(ExerciseCategory.MARTIAL_ARTS, ExerciseCategory.fromTitle("jiujitsu"))
+        assertEquals(ExerciseCategory.RUNNING, ExerciseCategory.fromTitle("Half marathon training"))
+        assertEquals(ExerciseCategory.CLIMBING, ExerciseCategory.fromTitle("Top rope session"))
+        assertEquals(ExerciseCategory.SWIMMING, ExerciseCategory.fromTitle("Pool swim"))
+    }
+
+    @Test
     fun `fromTitle returns OTHER for unrecognized titles`() {
         assertEquals(ExerciseCategory.OTHER, ExerciseCategory.fromTitle("Padel med Johan"))
         assertEquals(ExerciseCategory.OTHER, ExerciseCategory.fromTitle(""))
