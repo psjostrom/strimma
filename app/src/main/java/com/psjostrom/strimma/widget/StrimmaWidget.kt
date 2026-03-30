@@ -127,7 +127,7 @@ private fun WidgetContent(
     }
 
     val direction = reading?.let {
-        try { Direction.valueOf(it.direction) } catch (_: Exception) { Direction.NONE }
+        Direction.parse(it.direction)
     } ?: Direction.NONE
 
     val bgValue = reading?.let { glucoseUnit.format(it.sgv) } ?: "--"

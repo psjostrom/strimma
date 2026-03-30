@@ -75,7 +75,7 @@ class StrimmaService : Service() {
         private const val FORECAST_HORIZON_MINUTES = 30
 
         private const val DELTA_DIVISOR = 5.0
-        private const val MGDL_FACTOR = 18.0182
+        private const val MGDL_FACTOR = GlucoseUnit.MGDL_FACTOR
         private const val MIN_VALID_MGDL = 18.0
         private const val MAX_VALID_MGDL = 900.0
     }
@@ -470,11 +470,7 @@ class StrimmaService : Service() {
             putExtra("com.eveningoutpost.dexdrip.Extras.Time", reading.ts)
             putExtra("com.eveningoutpost.dexdrip.Extras.BgSlope", ((reading.delta ?: 0.0) / MGDL_FACTOR) / DELTA_DIVISOR)
             putExtra("com.eveningoutpost.dexdrip.Extras.SensorId", "Strimma")
-            val direction = try {
-                com.psjostrom.strimma.data.Direction.valueOf(reading.direction)
-            } catch (_: Exception) {
-                com.psjostrom.strimma.data.Direction.NONE
-            }
+            val direction = com.psjostrom.strimma.data.Direction.parse(reading.direction)
             putExtra("com.eveningoutpost.dexdrip.Extras.BgSlopeName", direction.name)
         }
         sendBroadcast(intent)
