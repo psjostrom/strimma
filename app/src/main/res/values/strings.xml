@@ -74,14 +74,12 @@
     <string name="settings_source_notification_access">Notification access</string>
     <string name="settings_source_notification_granted">Granted</string>
     <string name="settings_source_notification_not_granted">Not granted — tap to open settings</string>
-    <string name="settings_source_nightscout_push">Nightscout Push</string>
+    <string name="settings_source_nightscout">Nightscout</string>
     <string name="settings_source_nightscout_url">Nightscout URL</string>
     <string name="settings_source_url_placeholder">https://your-nightscout.example.com</string>
     <string name="settings_source_url_hint">Base URL only — no /api path</string>
     <string name="settings_source_api_secret">API Secret</string>
-    <string name="settings_source_following">Following</string>
-    <string name="settings_source_follower_url_placeholder">https://nightscout.example.com</string>
-    <string name="settings_source_follower_url_hint">The Nightscout server to follow</string>
+    <string name="settings_source_poll_settings">Follower Settings</string>
     <string name="settings_source_poll_interval">Poll Interval: %1$ds</string>
     <string name="settings_source_poll_explanation">How often to check for new readings. Lower values catch updates faster but use more battery. CGM readings typically arrive every 5 minutes.</string>
     <!-- GlucoseSource enum labels -->
@@ -379,13 +377,6 @@
     <string name="setup_source_step1_button">Open app info</string>
     <string name="setup_source_guide_step3">Open notification settings again and enable Strimma. It will work this time.</string>
     <string name="setup_source_guide_step3_button">Enable notification access</string>
-    <string name="setup_nightscout_title">Nightscout</string>
-    <string name="setup_nightscout_toggle">Push readings to Nightscout</string>
-    <string name="setup_nightscout_test">Test Connection</string>
-    <string name="setup_nightscout_testing">Testing…</string>
-    <string name="setup_nightscout_success">Connected</string>
-    <string name="setup_nightscout_success_name">Connected to %1$s</string>
-    <string name="setup_nightscout_failed">Connection failed: %1$s</string>
     <string name="setup_alerts_title">Alerts</string>
     <string name="setup_alerts_footer">You can adjust these anytime in Settings \u203A Alerts</string>
     <string name="setup_permissions_title">Permissions</string>

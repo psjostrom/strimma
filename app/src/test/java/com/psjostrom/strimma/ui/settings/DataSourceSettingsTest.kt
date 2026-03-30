@@ -30,16 +30,12 @@ class DataSourceSettingsTest {
                 glucoseSource = glucoseSource,
                 nightscoutUrl = "https://ns.example.com",
                 nightscoutSecret = "secret123",
-                followerUrl = "",
-                followerSecret = "",
                 followerPollSeconds = 60,
                 lluEmail = "",
                 lluPassword = "",
                 onGlucoseSourceChange = onGlucoseSourceChange,
                 onNightscoutUrlChange = {},
                 onNightscoutSecretChange = {},
-                onFollowerUrlChange = {},
-                onFollowerSecretChange = {},
                 onFollowerPollSecondsChange = {},
                 onLluEmailChange = {},
                 onLluPasswordChange = {},
@@ -80,22 +76,18 @@ class DataSourceSettingsTest {
     }
 
     @Test
-    fun `companion mode shows nightscout push section`() {
+    fun `shows nightscout section for all modes`() {
         render(glucoseSource = GlucoseSource.COMPANION)
         composeRule.onNodeWithText("Nightscout URL").assertExists()
         composeRule.onNodeWithText("API Secret").assertExists()
     }
 
     @Test
-    fun `follower mode shows following section with poll interval`() {
+    fun `follower mode shows nightscout section and poll settings`() {
         render(glucoseSource = GlucoseSource.NIGHTSCOUT_FOLLOWER)
+        composeRule.onNodeWithText("Nightscout URL").assertExists()
+        composeRule.onNodeWithText("API Secret").assertExists()
         composeRule.onNodeWithText("Poll Interval: 60s").assertExists()
-    }
-
-    @Test
-    fun `follower mode hides nightscout push section`() {
-        render(glucoseSource = GlucoseSource.NIGHTSCOUT_FOLLOWER)
-        composeRule.onNodeWithText("Base URL only — no /api path").assertDoesNotExist()
     }
 
     @Test
@@ -106,7 +98,7 @@ class DataSourceSettingsTest {
     }
 
     @Test
-    fun `librelinkup mode shows nightscout push section`() {
+    fun `librelinkup mode shows nightscout section`() {
         render(glucoseSource = GlucoseSource.LIBRELINKUP)
         composeRule.onNodeWithText("Nightscout URL").assertExists()
         composeRule.onNodeWithText("API Secret").assertExists()

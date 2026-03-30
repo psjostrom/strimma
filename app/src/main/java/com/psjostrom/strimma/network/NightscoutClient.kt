@@ -64,8 +64,19 @@ class NightscoutClient @Inject constructor() {
         private const val MAX_ERROR_LENGTH = 80
         private const val DEFAULT_TREATMENT_COUNT = 100
 
+        fun normalizeUrl(raw: String): String {
+            val trimmed = raw.trim().trimEnd('/')
+            if (trimmed.isBlank()) return ""
+            return if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+                trimmed
+            } else {
+                "https://$trimmed"
+            }
+        }
+
         fun buildFetchUrl(baseUrl: String, since: Long, count: Int, before: Long? = null): String {
-            val base = "${baseUrl.trimEnd('/')}/api/v1/entries.json?find[date][\$gt]=$since&count=$count"
+            val normalized = normalizeUrl(baseUrl)
+            val base = "$normalized/api/v1/entries.json?find[date][\$gt]=$since&count=$count"
             return if (before != null) "$base&find[date][\$lt]=$before" else base
         }
     }
@@ -91,7 +102,7 @@ class NightscoutClient @Inject constructor() {
         if (apiSecret.isBlank()) return ConnectionTestResult(false, error = "API secret is empty")
 
         val hashedSecret = hashSecret(apiSecret)
-        val statusUrl = "${baseUrl.trimEnd('/')}/api/v1/status.json"
+        val statusUrl = "${normalizeUrl(baseUrl)}/api/v1/status.json"
 
         return try {
             val response = client.get(statusUrl) { header("api-secret", hashedSecret) }
@@ -140,7 +151,7 @@ class NightscoutClient @Inject constructor() {
         }
 
         return try {
-            val fullUrl = "${baseUrl.trimEnd('/')}/api/v1/entries"
+            val fullUrl = "${normalizeUrl(baseUrl)}/api/v1/entries"
             val response = client.post(fullUrl) {
                 contentType(ContentType.Application.Json)
                 header("api-secret", hashedSecret)
@@ -212,7 +223,7 @@ class NightscoutClient @Inject constructor() {
 
         val hashedSecret = hashSecret(secret)
         val sinceIso = isoFormatter.format(Instant.ofEpochMilli(since))
-        val fullUrl = "${baseUrl.trimEnd('/')}/api/v1/treatments.json?find[created_at][\$gte]=$sinceIso&count=$count"
+        val fullUrl = "${normalizeUrl(baseUrl)}/api/v1/treatments.json?find[created_at][\$gte]=$sinceIso&count=$count"
 
         return try {
             val response = client.get(fullUrl) {

@@ -173,16 +173,10 @@ class StrimmaService : Service() {
             combine(
                 settings.treatmentsSyncEnabled,
                 settings.nightscoutUrl,
-                settings.followerUrl,
-                settings.glucoseSource,
                 settings.secretVersion
-            ) { enabled, nsUrl, followerUrl, source, _ ->
+            ) { enabled, nsUrl, _ ->
                 if (!enabled) return@combine false
-                val hasConfig = if (source == GlucoseSource.NIGHTSCOUT_FOLLOWER) {
-                    followerUrl.isNotBlank() && settings.getFollowerSecret().isNotBlank()
-                } else {
-                    nsUrl.isNotBlank() && settings.getNightscoutSecret().isNotBlank()
-                }
+                val hasConfig = nsUrl.isNotBlank() && settings.getNightscoutSecret().isNotBlank()
                 if (!hasConfig && enabled) {
                     settings.setTreatmentsSyncEnabled(false)
                     DebugLog.log("Treatment sync auto-disabled: Nightscout not configured")
