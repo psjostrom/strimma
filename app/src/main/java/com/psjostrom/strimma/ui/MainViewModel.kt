@@ -134,6 +134,18 @@ class MainViewModel @Inject constructor(
     val nightscoutUrl: StateFlow<String> = settings.nightscoutUrl
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
 
+    val nightscoutConfigured: StateFlow<Boolean> = combine(
+        settings.nightscoutUrl,
+        settings.followerUrl,
+        settings.glucoseSource
+    ) { nsUrl, followerUrl, source ->
+        if (source == GlucoseSource.NIGHTSCOUT_FOLLOWER) {
+            followerUrl.isNotBlank() && settings.getFollowerSecret().isNotBlank()
+        } else {
+            nsUrl.isNotBlank() && settings.getNightscoutSecret().isNotBlank()
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
     val graphWindowHours: StateFlow<Int> = settings.graphWindowHours
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 4)
 

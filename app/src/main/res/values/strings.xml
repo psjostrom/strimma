@@ -104,6 +104,7 @@
     <string name="settings_treatments_section">Treatments</string>
     <string name="settings_treatments_sync">Treatments sync</string>
     <string name="settings_treatments_sync_desc">Fetch bolus, carb, and basal data for IOB display</string>
+    <string name="settings_treatments_requires_ns">Treatment data requires a Nightscout connection. Configure a Nightscout URL and secret in Data Source settings to enable this feature.</string>
     <string name="settings_treatments_insulin_type">Insulin type</string>
     <string name="settings_treatments_custom_dia">Custom DIA (hours)</string>
     <string name="settings_treatments_dia_hint">Duration of Insulin Action, 2–10 hours</string>

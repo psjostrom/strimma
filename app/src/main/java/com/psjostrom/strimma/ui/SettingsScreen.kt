@@ -33,7 +33,8 @@ import com.psjostrom.strimma.R
 @Composable
 fun SettingsScreen(
     onNavigate: (String) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    nightscoutConfigured: Boolean = false
 ) {
     val bg = MaterialTheme.colorScheme.background
     val onBg = MaterialTheme.colorScheme.onBackground
@@ -74,13 +75,15 @@ fun SettingsScreen(
                     subtitle = stringResource(R.string.settings_data_source_subtitle),
                     onClick = { onNavigate("settings/data-source") }
                 )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                SettingsMenuItem(
-                    icon = Icons.Default.Medication,
-                    title = stringResource(R.string.settings_treatments),
-                    subtitle = stringResource(R.string.settings_treatments_subtitle),
-                    onClick = { onNavigate("settings/treatments") }
-                )
+                if (nightscoutConfigured) {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    SettingsMenuItem(
+                        icon = Icons.Default.Medication,
+                        title = stringResource(R.string.settings_treatments),
+                        subtitle = stringResource(R.string.settings_treatments_subtitle),
+                        onClick = { onNavigate("settings/treatments") }
+                    )
+                }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 SettingsMenuItem(
                     icon = Icons.Default.FitnessCenter,

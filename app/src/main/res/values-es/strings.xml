@@ -93,6 +93,7 @@
     <string name="settings_treatments_section">Tratamientos</string>
     <string name="settings_treatments_sync">Sincronizar tratamientos</string>
     <string name="settings_treatments_sync_desc">Obtener datos de bolo, carbohidratos y basal para mostrar IOB</string>
+    <string name="settings_treatments_requires_ns">Los datos de tratamiento requieren una conexi\u00F3n Nightscout. Configure una URL y secreto de Nightscout en la configuraci\u00F3n de Fuente de datos para habilitar esta funci\u00F3n.</string>
     <string name="settings_treatments_insulin_type">Tipo de insulina</string>
     <string name="settings_treatments_custom_dia">DIA personalizada (horas)</string>
     <string name="settings_treatments_dia_hint">Duraci\u00F3n de la acci\u00F3n de insulina, 2\u201310 horas</string>
