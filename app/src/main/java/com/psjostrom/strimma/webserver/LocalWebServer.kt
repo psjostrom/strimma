@@ -3,6 +3,7 @@
 package com.psjostrom.strimma.webserver
 
 import com.psjostrom.strimma.data.GlucoseUnit
+import com.psjostrom.strimma.data.MS_PER_HOUR
 import com.psjostrom.strimma.data.IOBComputer
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
@@ -25,7 +26,6 @@ private const val MAX_SGV_COUNT = 1000
 private const val MAX_TREATMENT_COUNT = 100
 private const val HTTP_OK = 200
 private const val TREATMENT_LOOKBACK_HOURS = 48
-private const val MS_PER_HOUR = 3600_000L
 private const val STOP_GRACE_MS = 1000L
 private const val STOP_TIMEOUT_MS = 2000L
 

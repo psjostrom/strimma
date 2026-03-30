@@ -24,6 +24,7 @@ import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.Direction
+import com.psjostrom.strimma.data.MS_PER_MINUTE
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.SettingsRepository
@@ -42,8 +43,7 @@ class StrimmaWidget : GlanceAppWidget() {
         val KEY_LIGHT_MODE = booleanPreferencesKey("light_mode")
         val KEY_COLOR_CODED = booleanPreferencesKey("color_coded")
 
-        private const val MS_PER_MINUTE = 60_000L
-        private const val MAX_WINDOW_MS = 180 * MS_PER_MINUTE // 3h — largest selectable graph window
+        private val MAX_WINDOW_MS = 180 * MS_PER_MINUTE // 3h — largest selectable graph window
         private const val DEFAULT_PREDICTION_MINUTES = 5
         val STALE_THRESHOLD_MINUTES = AlertManager.STALE_THRESHOLD_MINUTES
     }
