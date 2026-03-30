@@ -70,13 +70,11 @@ class NightscoutFollower @Inject constructor(
     companion object {
         private const val SEVEN_DAYS_MS = 7L * 24 * 60 * 60 * 1000
         private const val FETCH_COUNT = 2016
-        private const val MIN_VALID_SGV = 18
-        private const val MAX_VALID_SGV = 900
 
         fun filterValidEntries(entries: List<NightscoutEntryResponse>): List<NightscoutEntryResponse> {
             return entries
                 .filter { it.type == "sgv" && it.sgv != null && it.date != null }
-                .filter { it.sgv!! in MIN_VALID_SGV..MAX_VALID_SGV }
+                .filter { GlucoseReading.isValidSgv(it.sgv!!) }
                 .sortedBy { it.date }
         }
     }
