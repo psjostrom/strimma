@@ -75,9 +75,7 @@ class StrimmaService : Service() {
         private const val FORECAST_HORIZON_MINUTES = 30
 
         private const val DELTA_DIVISOR = 5.0
-        private const val MGDL_FACTOR = 18.0182
-        private const val MIN_VALID_MGDL = 18.0
-        private const val MAX_VALID_MGDL = 900.0
+        private const val MGDL_FACTOR = GlucoseUnit.MGDL_FACTOR
     }
 
     @Inject lateinit var dao: ReadingDao
@@ -296,12 +294,7 @@ class StrimmaService : Service() {
             val alertReadings = dao.since(reading.ts - LOOKBACK_MINUTES * MINUTES_TO_MS)
             alertManager.checkReading(reading, alertReadings, predMinutes.value)
             broadcastBgIfEnabled(reading)
-            try {
-                val mgr = GlanceAppWidgetManager(this@StrimmaService)
-                mgr.getGlanceIds(StrimmaWidget::class.java).forEach { id ->
-                    StrimmaWidget().update(this@StrimmaService, id)
-                }
-            } catch (_: Exception) {}
+            updateWidgets()
         }
         DebugLog.log("Nightscout follower started")
     }
@@ -322,17 +315,7 @@ class StrimmaService : Service() {
             alertManager.checkReading(reading, alertReadings, predMinutes.value)
             broadcastBgIfEnabled(reading)
             writeToHealthConnectIfEnabled(reading)
-            try {
-                val mgr = GlanceAppWidgetManager(this@StrimmaService)
-                mgr.getGlanceIds(StrimmaWidget::class.java).forEach { id ->
-                    StrimmaWidget().update(this@StrimmaService, id)
-                }
-            } catch (
-                @Suppress("TooGenericExceptionCaught") // Glance SDK can throw various platform exceptions
-                e: Exception
-            ) {
-                DebugLog.log("LLU widget update failed: ${e.message}")
-            }
+            updateWidgets()
         }
         DebugLog.log("LibreLinkUp follower started")
     }
@@ -345,7 +328,7 @@ class StrimmaService : Service() {
     }
 
     private suspend fun processReading(mgdl: Double, timestamp: Long) {
-        if (mgdl < MIN_VALID_MGDL || mgdl > MAX_VALID_MGDL) {
+        if (!GlucoseReading.isValidSgv(mgdl)) {
             DebugLog.log("Rejected invalid mg/dL value: $mgdl")
             return
         }
@@ -375,6 +358,10 @@ class StrimmaService : Service() {
         alertManager.checkReading(reading, alertReadings, predMinutes.value)
         broadcastBgIfEnabled(reading)
         writeToHealthConnectIfEnabled(reading)
+        updateWidgets()
+    }
+
+    private suspend fun updateWidgets() {
         try {
             val mgr = GlanceAppWidgetManager(this@StrimmaService)
             mgr.getGlanceIds(StrimmaWidget::class.java).forEach { id ->
@@ -470,11 +457,7 @@ class StrimmaService : Service() {
             putExtra("com.eveningoutpost.dexdrip.Extras.Time", reading.ts)
             putExtra("com.eveningoutpost.dexdrip.Extras.BgSlope", ((reading.delta ?: 0.0) / MGDL_FACTOR) / DELTA_DIVISOR)
             putExtra("com.eveningoutpost.dexdrip.Extras.SensorId", "Strimma")
-            val direction = try {
-                com.psjostrom.strimma.data.Direction.valueOf(reading.direction)
-            } catch (_: Exception) {
-                com.psjostrom.strimma.data.Direction.NONE
-            }
+            val direction = com.psjostrom.strimma.data.Direction.parse(reading.direction)
             putExtra("com.eveningoutpost.dexdrip.Extras.BgSlopeName", direction.name)
         }
         sendBroadcast(intent)
