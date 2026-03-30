@@ -123,7 +123,10 @@ class LibreLinkUpFollower @Inject constructor(
         onNewReading: suspend (GlucoseReading) -> Unit
     ): Boolean {
         if (!GlucoseReading.isValidSgv(item.value)) {
-            DebugLog.log(message = "LLU: rejected SGV ${item.value} (outside ${GlucoseReading.MIN_VALID_SGV}–${GlucoseReading.MAX_VALID_SGV})")
+            DebugLog.log(
+                message = "LLU: rejected SGV ${item.value} " +
+                    "(outside ${GlucoseReading.MIN_VALID_SGV}–${GlucoseReading.MAX_VALID_SGV})",
+            )
             return false
         }
         val ts = parseLluTimestamp(item.factoryTimestamp) ?: return false
