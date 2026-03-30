@@ -63,6 +63,10 @@ class NightscoutPusher @Inject constructor(
         }
     }
 
+    fun stop() {
+        scope.cancel()
+    }
+
     fun pushPending() {
         scope.launch {
             val url = settings.nightscoutUrl.first()

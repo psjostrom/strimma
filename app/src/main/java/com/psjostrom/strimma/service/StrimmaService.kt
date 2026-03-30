@@ -275,6 +275,7 @@ class StrimmaService : Service() {
         calendarPollJob?.cancel()
         pruneJob?.cancel()
         localWebServer.stop()
+        pusher.stop()
         scope.cancel()
         super.onDestroy()
     }
