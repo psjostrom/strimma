@@ -6,17 +6,11 @@ import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.notification.AlertCategory
 import com.psjostrom.strimma.notification.AlertManager
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-
-private const val PAUSE_POLL_INTERVAL_MS = 10_000L
 
 @Suppress("TooManyFunctions") // One getter+setter per alert setting
 @HiltViewModel
@@ -48,11 +42,8 @@ class AlertsViewModel @Inject constructor(
     val alertHighSoonEnabled: StateFlow<Boolean> = settings.alertHighSoonEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
-    private val _pauseLowExpiryMs = MutableStateFlow<Long?>(null)
-    val pauseLowExpiryMs: StateFlow<Long?> = _pauseLowExpiryMs
-
-    private val _pauseHighExpiryMs = MutableStateFlow<Long?>(null)
-    val pauseHighExpiryMs: StateFlow<Long?> = _pauseHighExpiryMs
+    val pauseLowExpiryMs: StateFlow<Long?> = alertManager.pauseLowExpiryMs
+    val pauseHighExpiryMs: StateFlow<Long?> = alertManager.pauseHighExpiryMs
 
     fun setAlertLowEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertLowEnabled(enabled) }
     fun setAlertHighEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertHighEnabled(enabled) }
@@ -70,28 +61,9 @@ class AlertsViewModel @Inject constructor(
 
     fun pauseAlerts(category: AlertCategory, durationMs: Long) {
         alertManager.pauseAlertCategory(category, durationMs)
-        val expiryMs = System.currentTimeMillis() + durationMs
-        when (category) {
-            AlertCategory.LOW -> _pauseLowExpiryMs.value = expiryMs
-            AlertCategory.HIGH -> _pauseHighExpiryMs.value = expiryMs
-        }
     }
 
     fun cancelAlertPause(category: AlertCategory) {
         alertManager.cancelAlertPause(category)
-        when (category) {
-            AlertCategory.LOW -> _pauseLowExpiryMs.value = null
-            AlertCategory.HIGH -> _pauseHighExpiryMs.value = null
-        }
-    }
-
-    init {
-        viewModelScope.launch {
-            while (currentCoroutineContext().isActive) {
-                _pauseLowExpiryMs.value = alertManager.alertPauseExpiryMs(AlertCategory.LOW)
-                _pauseHighExpiryMs.value = alertManager.alertPauseExpiryMs(AlertCategory.HIGH)
-                delay(PAUSE_POLL_INTERVAL_MS)
-            }
-        }
     }
 }

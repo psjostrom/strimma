@@ -20,6 +20,8 @@ import com.psjostrom.strimma.graph.PredictionComputer
 import com.psjostrom.strimma.receiver.DebugLog
 import com.psjostrom.strimma.ui.MainActivity
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -409,16 +411,23 @@ class AlertManager @Inject constructor(
         DebugLog.log("Alert $alertId snoozed for 30 min")
     }
 
+    private val _pauseLowExpiryMs = MutableStateFlow<Long?>(alertPauseExpiryMs(AlertCategory.LOW))
+    private val _pauseHighExpiryMs = MutableStateFlow<Long?>(alertPauseExpiryMs(AlertCategory.HIGH))
+    val pauseLowExpiryMs: StateFlow<Long?> = _pauseLowExpiryMs
+    val pauseHighExpiryMs: StateFlow<Long?> = _pauseHighExpiryMs
+
     fun pauseAlertCategory(category: AlertCategory, durationMs: Long) {
         pauseCategory(snoozePrefs, category, durationMs)
-        // Cancel any active notifications in this category
+        val expiryMs = System.currentTimeMillis() + durationMs
         when (category) {
             AlertCategory.LOW -> {
+                _pauseLowExpiryMs.value = expiryMs
                 notificationManager.cancel(ALERT_URGENT_LOW_ID)
                 notificationManager.cancel(ALERT_LOW_ID)
                 notificationManager.cancel(ALERT_LOW_SOON_ID)
             }
             AlertCategory.HIGH -> {
+                _pauseHighExpiryMs.value = expiryMs
                 notificationManager.cancel(ALERT_URGENT_HIGH_ID)
                 notificationManager.cancel(ALERT_HIGH_ID)
                 notificationManager.cancel(ALERT_HIGH_SOON_ID)
@@ -428,6 +437,10 @@ class AlertManager @Inject constructor(
 
     fun cancelAlertPause(category: AlertCategory) {
         cancelPause(snoozePrefs, category)
+        when (category) {
+            AlertCategory.LOW -> _pauseLowExpiryMs.value = null
+            AlertCategory.HIGH -> _pauseHighExpiryMs.value = null
+        }
     }
 
     fun isAlertCategoryPaused(category: AlertCategory): Boolean =

@@ -63,7 +63,6 @@ class MainViewModel @Inject constructor(
         private const val HOURS_PER_DAY = 24
         private const val PRE_WINDOW_MINUTES = 30
         private const val POST_WINDOW_HOURS = 4
-        private const val MS_PER_MINUTE = 60_000L
         internal const val FORECAST_HORIZON_MINUTES = 30
 
         internal fun computeGuidance(
