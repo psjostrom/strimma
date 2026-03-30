@@ -25,13 +25,13 @@ class DirectionComputer @Inject constructor() {
         if (currentIndex == -1) return Pair(Direction.NONE, null)
 
         // Find reading closest to 5 minutes before current
-        val targetTs = currentReading.ts - (LOOKBACK_MINUTES * TimeConstants.MS_PER_MINUTE_L)
+        val targetTs = currentReading.ts - (LOOKBACK_MINUTES * MS_PER_MINUTE)
         val pastReading = allReadings.take(currentIndex).minByOrNull {
             kotlin.math.abs(it.ts - targetTs)
         }
 
         // If no reading within 10 minutes, return NONE
-        if (pastReading == null || kotlin.math.abs(pastReading.ts - targetTs) > MAX_TIME_GAP_MINUTES * TimeConstants.MS_PER_MINUTE_L) {
+        if (pastReading == null || kotlin.math.abs(pastReading.ts - targetTs) > MAX_TIME_GAP_MINUTES * MS_PER_MINUTE) {
             return Pair(Direction.NONE, null)
         }
 
@@ -42,7 +42,7 @@ class DirectionComputer @Inject constructor() {
         val avgPast = avgSgv(allReadings, pastIndex)
 
         // Calculate time difference in minutes
-        val timeMinutes = (currentReading.ts - pastReading.ts) / TimeConstants.MS_PER_MINUTE_L.toDouble()
+        val timeMinutes = (currentReading.ts - pastReading.ts) / MS_PER_MINUTE.toDouble()
         if (timeMinutes == 0.0) return Pair(Direction.NONE, null)
 
         // Calculate delta in mg/dL per minute

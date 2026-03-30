@@ -1,7 +1,7 @@
 package com.psjostrom.strimma.data.meal
 
 import com.psjostrom.strimma.data.AgpCalculator
-import com.psjostrom.strimma.data.TimeConstants
+import com.psjostrom.strimma.data.MS_PER_MINUTE
 
 data class MealAgpBucket(
     val minuteFromMeal: Int,
@@ -38,7 +38,7 @@ object MealAgpCalculator {
 
         for (result in results) {
             for (reading in result.readings) {
-                val minuteFromMeal = ((reading.ts - result.mealTime) / TimeConstants.MS_PER_MINUTE_L).toInt()
+                val minuteFromMeal = ((reading.ts - result.mealTime) / MS_PER_MINUTE).toInt()
                 if (minuteFromMeal < 0) continue
                 val bucketIndex = minuteFromMeal / BUCKET_MINUTES
                 if (bucketIndex < bucketCount) {

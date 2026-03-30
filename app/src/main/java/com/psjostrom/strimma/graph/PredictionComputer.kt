@@ -1,7 +1,7 @@
 package com.psjostrom.strimma.graph
 
 import com.psjostrom.strimma.data.GlucoseReading
-import com.psjostrom.strimma.data.TimeConstants
+import com.psjostrom.strimma.data.MS_PER_MINUTE
 import kotlin.math.abs
 import kotlin.math.exp
 
@@ -50,7 +50,7 @@ object PredictionComputer {
         val anchor = recent.last()
         val anchorMgdl = anchor.sgv.toDouble()
         // Normalize to minutes relative to anchor for numerical stability
-        val points = recent.map { (it.ts - anchor.ts).toDouble() / TimeConstants.MS_PER_MINUTE_D to it.sgv.toDouble() }
+        val points = recent.map { (it.ts - anchor.ts).toDouble() / MS_PER_MINUTE.toDouble() to it.sgv.toDouble() }
 
         val velocity = fitWeightedVelocity(points) ?: return null
         if (abs(velocity) > MAX_VELOCITY) return null  // sensor artifact
@@ -100,7 +100,7 @@ object PredictionComputer {
 
         val anchor = recent.last()
         val points = recent.map {
-            (it.ts - anchor.ts).toDouble() / TimeConstants.MS_PER_MINUTE_D to it.sgv.toDouble()
+            (it.ts - anchor.ts).toDouble() / MS_PER_MINUTE.toDouble() to it.sgv.toDouble()
         }
         val velocity = fitWeightedVelocity(points) ?: return null
         return if (abs(velocity) > MAX_VELOCITY) null else velocity

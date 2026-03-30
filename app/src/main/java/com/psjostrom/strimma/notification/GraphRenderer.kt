@@ -2,7 +2,7 @@ package com.psjostrom.strimma.notification
 
 import android.graphics.*
 import com.psjostrom.strimma.data.GlucoseReading
-import com.psjostrom.strimma.data.TimeConstants
+import com.psjostrom.strimma.data.MS_PER_MINUTE
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.health.StoredExerciseSession
 import com.psjostrom.strimma.graph.PredictionComputer
@@ -45,8 +45,8 @@ object GraphRenderer {
 
     // Time intervals
     private const val HOUR_IN_MS = 3600_000L
-    private val TIME_TICK_15_MIN = 15 * TimeConstants.MS_PER_MINUTE_L
-    private val TIME_TICK_30_MIN = 30 * TimeConstants.MS_PER_MINUTE_L
+    private val TIME_TICK_15_MIN = 15 * MS_PER_MINUTE
+    private val TIME_TICK_30_MIN = 30 * MS_PER_MINUTE
 
     // Axis label dimensions
     private const val LABEL_TEXT_SIZE = 22f
@@ -80,7 +80,7 @@ object GraphRenderer {
         canvas.drawColor(BG_COLOR)
 
         val now = System.currentTimeMillis()
-        val predictionMs = predictionMinutes * TimeConstants.MS_PER_MINUTE_L
+        val predictionMs = predictionMinutes * MS_PER_MINUTE
         val endTime = now + predictionMs
         val startTime = endTime - windowMs - predictionMs
 
@@ -194,7 +194,7 @@ object GraphRenderer {
             var prevPx = xFor(prediction.anchorTs)
             var prevPy = yFor(prediction.anchorMgdl)
             for (pt in prediction.points) {
-                val px = xFor(prediction.anchorTs + pt.minuteOffset * TimeConstants.MS_PER_MINUTE_L)
+                val px = xFor(prediction.anchorTs + pt.minuteOffset * MS_PER_MINUTE)
                 val py = yFor(pt.mgdl)
                 if (px > width - marginRight) break
                 val predColor = canvasColorFor(pt.mgdl, bgLow, bgHigh)

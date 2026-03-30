@@ -41,7 +41,7 @@ object IOBComputer {
     }
 
     fun lookbackMs(tauMinutes: Double): Long =
-        (TAU_MULTIPLIER * tauMinutes * TimeConstants.MS_PER_MINUTE_D).toLong()
+        (TAU_MULTIPLIER * tauMinutes * MS_PER_MINUTE.toDouble()).toLong()
 
     fun iobForTreatment(dose: Double, minutesSince: Double, tauMinutes: Double): Double {
         val t = minutesSince / tauMinutes
@@ -66,7 +66,7 @@ object IOBComputer {
             if (treatment.createdAt < cutoff) continue
             if (treatment.createdAt > now) continue
 
-            val minutesSince = (now - treatment.createdAt) / TimeConstants.MS_PER_MINUTE_D
+            val minutesSince = (now - treatment.createdAt) / MS_PER_MINUTE.toDouble()
             total += iobForTreatment(dose, minutesSince, tauMinutes)
         }
 

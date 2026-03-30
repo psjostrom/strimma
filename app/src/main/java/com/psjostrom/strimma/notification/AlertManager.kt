@@ -12,7 +12,7 @@ import android.provider.Settings
 import androidx.core.app.NotificationCompat
 import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.GlucoseReading
-import com.psjostrom.strimma.data.TimeConstants
+import com.psjostrom.strimma.data.MS_PER_MINUTE
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.graph.CrossingType
@@ -378,7 +378,7 @@ class AlertManager @Inject constructor(
         if (!staleEnabled) return
 
         val now = System.currentTimeMillis()
-        if (lastReadingTs == null || (now - lastReadingTs) > STALE_THRESHOLD_MINUTES * TimeConstants.MS_PER_MINUTE_L) {
+        if (lastReadingTs == null || (now - lastReadingTs) > STALE_THRESHOLD_MINUTES * MS_PER_MINUTE) {
             if (!isSnoozed(ALERT_STALE_ID, now)) {
                 val title = context.getString(R.string.alert_stale_title)
                 val body = context.getString(R.string.alert_stale_body)

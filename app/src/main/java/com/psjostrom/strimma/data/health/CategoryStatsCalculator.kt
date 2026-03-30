@@ -1,6 +1,6 @@
 package com.psjostrom.strimma.data.health
 
-import com.psjostrom.strimma.data.TimeConstants
+import com.psjostrom.strimma.data.MS_PER_MINUTE
 import com.psjostrom.strimma.data.calendar.MetabolicProfile
 
 object CategoryStatsCalculator {
@@ -68,7 +68,7 @@ object CategoryStatsCalculator {
         val minBGs = contexts.mapNotNull { it.minBG }
         val dropRates = contexts.flatMap { it.dropPer10Min }
         val durations = sessions.map {
-            ((it.first.endTime - it.first.startTime) / TimeConstants.MS_PER_MINUTE_D).toInt()
+            ((it.first.endTime - it.first.startTime) / MS_PER_MINUTE.toDouble()).toInt()
         }
         val postNadirs = contexts.mapNotNull { it.lowestBG }
         val postHighests = contexts.mapNotNull { it.highestBG }

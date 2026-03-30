@@ -24,7 +24,7 @@ import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.Direction
-import com.psjostrom.strimma.data.TimeConstants
+import com.psjostrom.strimma.data.MS_PER_MINUTE
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.SettingsRepository
@@ -43,7 +43,7 @@ class StrimmaWidget : GlanceAppWidget() {
         val KEY_LIGHT_MODE = booleanPreferencesKey("light_mode")
         val KEY_COLOR_CODED = booleanPreferencesKey("color_coded")
 
-        private val MAX_WINDOW_MS = 180 * TimeConstants.MS_PER_MINUTE_L // 3h — largest selectable graph window
+        private val MAX_WINDOW_MS = 180 * MS_PER_MINUTE // 3h — largest selectable graph window
         private const val DEFAULT_PREDICTION_MINUTES = 5
         val STALE_THRESHOLD_MINUTES = AlertManager.STALE_THRESHOLD_MINUTES
     }
@@ -70,7 +70,7 @@ class StrimmaWidget : GlanceAppWidget() {
             val showPrediction = state[KEY_SHOW_PREDICTION] ?: WidgetSettingsRepository.DEFAULT_SHOW_PREDICTION
             val lightMode = state[KEY_LIGHT_MODE] ?: WidgetSettingsRepository.DEFAULT_LIGHT_MODE
             val colorCoded = state[KEY_COLOR_CODED] ?: WidgetSettingsRepository.DEFAULT_COLOR_CODED
-            val graphWindowMs = graphMinutes * TimeConstants.MS_PER_MINUTE_L
+            val graphWindowMs = graphMinutes * MS_PER_MINUTE
             val predictionMinutes = if (showPrediction) DEFAULT_PREDICTION_MINUTES else 0
 
             val since = System.currentTimeMillis() - graphWindowMs

@@ -38,7 +38,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.GlucoseReading
-import com.psjostrom.strimma.data.TimeConstants
+import com.psjostrom.strimma.data.MS_PER_DAY
+import com.psjostrom.strimma.data.MS_PER_MINUTE
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
@@ -80,10 +81,10 @@ import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
 
-private val PRE_WINDOW_MS = 30 * TimeConstants.MS_PER_MINUTE_L
-private val POST_WINDOW_MS = 4 * 60 * TimeConstants.MS_PER_MINUTE_L
+private val PRE_WINDOW_MS = 30 * MS_PER_MINUTE
+private val POST_WINDOW_MS = 4 * 60 * MS_PER_MINUTE
 private const val PLANNED_LOOKAHEAD_DAYS = 365
-private val PLANNED_POLL_MS = 5 * TimeConstants.MS_PER_MINUTE_L
+private val PLANNED_POLL_MS = 5 * MS_PER_MINUTE
 private const val DATASTORE_PROPAGATION_MS = 100L
 
 @HiltViewModel
@@ -126,7 +127,7 @@ class ExerciseHistoryViewModel @Inject constructor(
         viewModelScope.launch {
             workoutCalendarId.collect { calId ->
                 _upcomingWorkouts.value = if (calId >= 0) {
-                    calendarReader.getUpcomingWorkouts(calId, PLANNED_LOOKAHEAD_DAYS.toLong() * TimeConstants.MS_PER_DAY)
+                    calendarReader.getUpcomingWorkouts(calId, PLANNED_LOOKAHEAD_DAYS.toLong() * MS_PER_DAY)
                 } else emptyList()
             }
         }
@@ -151,7 +152,7 @@ class ExerciseHistoryViewModel @Inject constructor(
     private suspend fun refreshUpcoming() {
         val calId = workoutCalendarId.value
         _upcomingWorkouts.value = if (calId >= 0) {
-            calendarReader.getUpcomingWorkouts(calId, PLANNED_LOOKAHEAD_DAYS.toLong() * TimeConstants.MS_PER_DAY)
+            calendarReader.getUpcomingWorkouts(calId, PLANNED_LOOKAHEAD_DAYS.toLong() * MS_PER_DAY)
         } else emptyList()
     }
 
@@ -182,7 +183,7 @@ class ExerciseHistoryViewModel @Inject constructor(
 
     suspend fun computePlannedGuidance(event: WorkoutEvent): GuidanceState {
         val now = System.currentTimeMillis()
-        val readings = readingDao.readingsInRange(now - TimeConstants.MS_PER_DAY, now)
+        val readings = readingDao.readingsInRange(now - MS_PER_DAY, now)
         val latest = readings.maxByOrNull { it.ts }
         val iob = fetchCurrentIOB(settings, treatmentDao, now)
         val targetLow = settings.exerciseTargetLow(event.category).first()
@@ -546,7 +547,7 @@ private fun PlannedWorkoutCard(
     val timeFmt = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
     val dateStr = dateFmt.format(Date(event.startTime))
     val timeRange = "${timeFmt.format(Date(event.startTime))}\u2013${timeFmt.format(Date(event.endTime))}"
-    val durationMin = ((event.endTime - event.startTime) / TimeConstants.MS_PER_MINUTE_L).toInt()
+    val durationMin = ((event.endTime - event.startTime) / MS_PER_MINUTE).toInt()
     val categoryName = event.category.displayName
     val targetLow = glucoseUnit.format(event.metabolicProfile.defaultTargetLowMgdl.toDouble())
     val targetHigh = glucoseUnit.format(event.metabolicProfile.defaultTargetHighMgdl.toDouble())
@@ -666,7 +667,7 @@ private fun ExerciseCard(
 ) {
     val category = ExerciseCategory.fromHCType(session.type)
     val typeName = stringResource(category.labelRes)
-    val durationMin = ((session.endTime - session.startTime) / TimeConstants.MS_PER_MINUTE_L).toInt()
+    val durationMin = ((session.endTime - session.startTime) / MS_PER_MINUTE).toInt()
     val timeFmt = SimpleDateFormat("HH:mm", Locale.getDefault())
     val dateFmt = SimpleDateFormat("d MMM", Locale.getDefault())
     val timeRange = "${timeFmt.format(Date(session.startTime))}\u2013${timeFmt.format(Date(session.endTime))}"
@@ -866,7 +867,7 @@ private fun PlannedWorkoutSheet(
                     val timeFmt = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
                     val dateStr = dateFmt.format(Date(event.startTime))
                     val timeRange = "${timeFmt.format(Date(event.startTime))}\u2013${timeFmt.format(Date(event.endTime))}"
-                    val durationMin = ((event.endTime - event.startTime) / TimeConstants.MS_PER_MINUTE_L).toInt()
+                    val durationMin = ((event.endTime - event.startTime) / MS_PER_MINUTE).toInt()
                     val categoryName = event.category.displayName
                     val targetLow = glucoseUnit.format(event.metabolicProfile.defaultTargetLowMgdl.toDouble())
                     val targetHigh = glucoseUnit.format(event.metabolicProfile.defaultTargetHighMgdl.toDouble())

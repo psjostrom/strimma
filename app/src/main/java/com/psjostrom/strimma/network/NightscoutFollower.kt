@@ -1,7 +1,7 @@
 package com.psjostrom.strimma.network
 
 import com.psjostrom.strimma.data.DirectionComputer
-import com.psjostrom.strimma.data.TimeConstants
+import com.psjostrom.strimma.data.MS_PER_MINUTE
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
@@ -26,7 +26,6 @@ sealed class FollowerStatus {
 
 private const val LOOKBACK_MINUTES = 15
 private const val DUPLICATE_THRESHOLD_MS = 3_000L
-private val MINUTES_TO_MS = TimeConstants.MS_PER_MINUTE_L
 private const val SECONDS_TO_MS = 1000L
 private const val DELTA_ROUNDING_FACTOR = 10.0
 
@@ -39,7 +38,7 @@ suspend fun processNightscoutEntry(
     val sgv = entry.sgv ?: return null
     val ts = entry.date ?: return null
 
-    val recentReadings = dao.since(ts - LOOKBACK_MINUTES * MINUTES_TO_MS)
+    val recentReadings = dao.since(ts - LOOKBACK_MINUTES * MS_PER_MINUTE)
     val existing = recentReadings.find { kotlin.math.abs(it.ts - ts) < DUPLICATE_THRESHOLD_MS }
     if (existing != null) return null
 

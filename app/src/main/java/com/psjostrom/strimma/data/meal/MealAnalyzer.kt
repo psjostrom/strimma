@@ -1,7 +1,7 @@
 package com.psjostrom.strimma.data.meal
 
 import com.psjostrom.strimma.data.GlucoseReading
-import com.psjostrom.strimma.data.TimeConstants
+import com.psjostrom.strimma.data.MS_PER_MINUTE
 import com.psjostrom.strimma.data.IOBComputer
 import com.psjostrom.strimma.data.Treatment
 import java.time.Duration
@@ -70,7 +70,7 @@ class MealAnalyzer @Inject constructor() {
         val peak = postprandialReadings.maxByOrNull { it.sgv }!!
         val peakMgdl = peak.sgv.toDouble()
         val excursionMgdl = max(0.0, peakMgdl - baseline)
-        val timeToPeakMinutes = ((peak.ts - mealTime) / TimeConstants.MS_PER_MINUTE_L).toInt()
+        val timeToPeakMinutes = ((peak.ts - mealTime) / MS_PER_MINUTE).toInt()
 
         val recoveryMinutes = computeRecovery(postprandialReadings, mealTime, baseline)
 
@@ -136,7 +136,7 @@ class MealAnalyzer @Inject constructor() {
 
         // Check if BG has returned to baseline at the default window end
         val bgAtDefaultEnd = readings
-            .filter { it.ts in (effectiveEnd - TimeConstants.MS_PER_MINUTE_L * RECOVERY_CHECK_WINDOW_MINUTES)..effectiveEnd }
+            .filter { it.ts in (effectiveEnd - MS_PER_MINUTE * RECOVERY_CHECK_WINDOW_MINUTES)..effectiveEnd }
             .lastOrNull()
 
         // Extend to 4h if BG hasn't recovered at 3h (and no next meal cutoff)
@@ -146,7 +146,7 @@ class MealAnalyzer @Inject constructor() {
 
         val finalEnd = if (shouldExtend) extendedEnd else effectiveEnd
 
-        return ((finalEnd - mealTime) / TimeConstants.MS_PER_MINUTE_L)
+        return ((finalEnd - mealTime) / MS_PER_MINUTE)
     }
 
     private fun computeRecovery(
@@ -162,7 +162,7 @@ class MealAnalyzer @Inject constructor() {
         val recoveryReading = afterPeak.firstOrNull { hasReturned(it.sgv.toDouble(), baseline) }
 
         return recoveryReading?.let {
-            ((it.ts - mealTime) / TimeConstants.MS_PER_MINUTE_L).toInt()
+            ((it.ts - mealTime) / MS_PER_MINUTE).toInt()
         }
     }
 
@@ -193,7 +193,7 @@ class MealAnalyzer @Inject constructor() {
             val r1 = readings[i]
             val r2 = readings[i + 1]
 
-            val deltaMinutes = (r2.ts - r1.ts).toDouble() / TimeConstants.MS_PER_MINUTE_L
+            val deltaMinutes = (r2.ts - r1.ts).toDouble() / MS_PER_MINUTE
 
             // Height above baseline for each point (clamped to >= 0)
             val h1 = max(0.0, r1.sgv - baseline)
