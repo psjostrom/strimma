@@ -76,6 +76,11 @@ class AlertManager @Inject constructor(
         // Stale data threshold
         const val STALE_THRESHOLD_MINUTES = 10
 
+        fun isStale(lastReadingTs: Long?): Boolean {
+            return lastReadingTs == null ||
+                (System.currentTimeMillis() - lastReadingTs) > STALE_THRESHOLD_MINUTES * MS_PER_MINUTE
+        }
+
 
         val ALL_CHANNELS = listOf(
             CHANNEL_URGENT_LOW, CHANNEL_LOW, CHANNEL_HIGH, CHANNEL_URGENT_HIGH,
@@ -380,7 +385,7 @@ class AlertManager @Inject constructor(
         if (!staleEnabled) return
 
         val now = System.currentTimeMillis()
-        if (lastReadingTs == null || (now - lastReadingTs) > STALE_THRESHOLD_MINUTES * MS_PER_MINUTE) {
+        if (isStale(lastReadingTs)) {
             if (!isSnoozed(ALERT_STALE_ID, now)) {
                 val title = context.getString(R.string.alert_stale_title)
                 val body = context.getString(R.string.alert_stale_body)

@@ -105,6 +105,8 @@ class StrimmaService : Service() {
     private var calendarPollJob: Job? = null
     @Volatile
     private var cachedWorkoutEvent: WorkoutEvent? = null
+    @Volatile
+    private var wasStale = true // Start as stale (no data yet)
     private lateinit var workoutCalendarId: StateFlow<Long>
     private lateinit var workoutLookaheadHours: StateFlow<Int>
     private lateinit var workoutTriggerMinutes: StateFlow<Int>
@@ -232,7 +234,14 @@ class StrimmaService : Service() {
                 delay(STALE_CHECK_INTERVAL_SECONDS * SECONDS_TO_MS)
                 val latest = dao.latestOnce()
                 alertManager.checkStale(latest?.ts)
-                updateNotification()
+
+                val isStale = AlertManager.isStale(latest?.ts)
+                val workoutCountdownActive =
+                    WorkoutAlarmReceiver.notificationTriggerFired.get() && cachedWorkoutEvent != null
+                if (isStale != wasStale || workoutCountdownActive) {
+                    updateNotification()
+                }
+
                 cachedWorkoutEvent?.let { event ->
                     if (System.currentTimeMillis() > event.startTime + WORKOUT_GRACE_MINUTES * MS_PER_MINUTE) {
                         cachedWorkoutEvent = null
@@ -387,8 +396,9 @@ class StrimmaService : Service() {
 
     private suspend fun updateNotification() {
         val latest = dao.latestOnce()?.takeUnless { reading ->
-            (System.currentTimeMillis() - reading.ts) > AlertManager.STALE_THRESHOLD_MINUTES * MS_PER_MINUTE
+            AlertManager.isStale(reading.ts)
         }
+        wasStale = (latest == null)
         val graphWindowMs = notifGraphMinutes.value.toLong() * MS_PER_MINUTE
         val now = System.currentTimeMillis()
         val recent = dao.since(now - graphWindowMs)
