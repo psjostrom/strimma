@@ -571,12 +571,10 @@ private fun PlannedWorkoutCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(Modifier.height(6.dp))
-            val profileName = event.metabolicProfile.name.lowercase()
-                .replaceFirstChar { it.uppercase() }.replace('_', ' ')
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 StatChip(
                     label = stringResource(R.string.exercise_planned_category),
-                    value = "$categoryName \u00B7 $profileName"
+                    value = categoryName
                 )
                 StatChip(
                     label = stringResource(R.string.exercise_planned_target),
@@ -842,8 +840,6 @@ private fun PlannedWorkoutSheet(
                     val timeRange = "${timeFmt.format(Date(event.startTime))}\u2013${timeFmt.format(Date(event.endTime))}"
                     val durationMin = ((event.endTime - event.startTime) / MS_PER_MINUTE).toInt()
                     val categoryName = event.category.name.lowercase().replaceFirstChar { it.uppercase() }
-                    val profileName = event.metabolicProfile.name.lowercase()
-                        .replaceFirstChar { it.uppercase() }.replace('_', ' ')
                     val targetLow = glucoseUnit.format(event.metabolicProfile.defaultTargetLowMgdl.toDouble())
                     val targetHigh = glucoseUnit.format(event.metabolicProfile.defaultTargetHighMgdl.toDouble())
 
@@ -861,7 +857,7 @@ private fun PlannedWorkoutSheet(
                     )
                     Spacer(Modifier.height(12.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        StatChip(label = stringResource(R.string.exercise_planned_category), value = "$categoryName \u00B7 $profileName")
+                        StatChip(label = stringResource(R.string.exercise_planned_category), value = categoryName)
                         StatChip(label = stringResource(R.string.exercise_planned_target), value = "$targetLow\u2013$targetHigh")
                     }
                     Spacer(Modifier.height(12.dp))
@@ -1074,6 +1070,20 @@ private fun PatternCard(
                     color = if (stats.hypoRate >= HYPO_HIGH_RISK_THRESHOLD) BelowLow
                         else MaterialTheme.colorScheme.onSurface
                 )
+                // Actionable tip based on risk level
+                if (stats.hypoRate >= HYPO_HIGH_RISK_THRESHOLD) {
+                    Text(
+                        text = stringResource(R.string.exercise_patterns_tip_high_risk),
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else if (stats.hypoRate >= HYPO_SOME_RISK_THRESHOLD) {
+                    Text(
+                        text = stringResource(R.string.exercise_patterns_tip_some_risk),
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             } else {
                 Text(
                     text = stringResource(R.string.exercise_patterns_never_low),

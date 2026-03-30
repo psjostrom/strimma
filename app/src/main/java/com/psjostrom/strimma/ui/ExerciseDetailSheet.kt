@@ -108,9 +108,10 @@ fun ExerciseDetailSheet(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = profileName,
-                    fontSize = 13.sp,
+                    text = "$profileName \u2014 ${stringResource(R.string.exercise_metabolic_profile_hint)}",
+                    fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = 16.sp,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
 

@@ -43,7 +43,7 @@ class PreActivityAssessorTest {
     fun `bg at 81 is caution when below target`() {
         val result = assess(81)
         assertEquals(ReadinessLevel.CAUTION, result.readiness)
-        assertTrue(result.reasons.any { it.message.contains("below target") })
+        assertTrue(result.reasons.any { it.message.contains("below exercise target") })
     }
 
     @Test
@@ -101,14 +101,14 @@ class PreActivityAssessorTest {
     fun `bg below 144 and falling is wait`() {
         val result = assess(130, velocityMgdlPerMin = -0.6)
         assertEquals(ReadinessLevel.WAIT, result.readiness)
-        assertTrue(result.reasons.any { it.message.contains("below 8 and falling") })
+        assertTrue(result.reasons.any { it.message.contains("and falling") && it.message.contains("hypo risk") })
     }
 
     @Test
     fun `bg at 144 and falling is not compound`() {
         val result = assess(144, velocityMgdlPerMin = -0.6)
         assertEquals(ReadinessLevel.CAUTION, result.readiness)
-        assertFalse(result.reasons.any { it.message.contains("below 8 and falling") })
+        assertFalse(result.reasons.any { it.message.contains("hypo risk during exercise") })
     }
 
     // --- 30-min Forecast ---
@@ -117,7 +117,7 @@ class PreActivityAssessorTest {
     fun `forecast below 99 is caution`() {
         val result = assess(140, forecastBgAt30min = 90.0)
         assertEquals(ReadinessLevel.CAUTION, result.readiness)
-        assertTrue(result.reasons.any { it.message.contains("Forecast") })
+        assertTrue(result.reasons.any { it.message.contains("Predicted") && it.message.contains("30 min") })
     }
 
     @Test
@@ -206,9 +206,9 @@ class PreActivityAssessorTest {
     // --- Suggestions ---
 
     @Test
-    fun `fast falling slope suggests hold off`() {
+    fun `fast falling slope reason contains wait message`() {
         val result = assess(150, velocityMgdlPerMin = -1.0)
-        assertTrue(result.suggestions.any { it.contains("Hold off") })
+        assertTrue(result.reasons.any { it.message.contains("dropping fast") && it.message.contains("wait") })
     }
 
     @Test
@@ -236,13 +236,13 @@ class PreActivityAssessorTest {
     }
 
     @Test
-    fun `forecast below 5_5 adds forecast suggestion in mmol`() {
+    fun `forecast below 5_5 adds forecast reason in mmol`() {
         val result = assess(140, forecastBgAt30min = 90.0)
-        assertTrue(result.suggestions.any { it.contains("Forecast") && it.contains("5.0") && it.contains("30 min") })
+        assertTrue(result.reasons.any { it.message.contains("Predicted") && it.message.contains("5.0") && it.message.contains("30 min") })
     }
 
     @Test
-    fun `forecast suggestion respects mgdl unit`() {
+    fun `forecast reason respects mgdl unit`() {
         val result = PreActivityAssessor.assess(
             currentBgMgdl = 140,
             velocityMgdlPerMin = 0.0,
@@ -253,7 +253,7 @@ class PreActivityAssessorTest {
             targetHighMgdl = targetHigh,
             glucoseUnit = GlucoseUnit.MGDL
         )
-        assertTrue(result.suggestions.any { it.contains("Forecast") && it.contains("90") && it.contains("30 min") })
+        assertTrue(result.reasons.any { it.message.contains("Predicted") && it.message.contains("90") && it.message.contains("30 min") })
     }
 
     @Test
@@ -275,10 +275,10 @@ class PreActivityAssessorTest {
     }
 
     @Test
-    fun `dropping fast in range gives suggestion but no carbs`() {
+    fun `dropping fast in range gives wait reason but no carbs`() {
         val result = assess(150, velocityMgdlPerMin = -1.0)
         assertNull(result.carbRecommendation)
-        assertTrue(result.suggestions.any { it.contains("Hold off") })
+        assertTrue(result.reasons.any { it.message.contains("dropping fast") })
     }
 
     // --- Boundary and edge cases ---
@@ -307,8 +307,8 @@ class PreActivityAssessorTest {
         // BG=120 is below targetLow (126) but null velocity prevents compound rule
         val result = assess(120, velocityMgdlPerMin = null)
         assertEquals(ReadinessLevel.CAUTION, result.readiness)
-        assertTrue(result.reasons.any { it.message.contains("below target") })
-        assertFalse(result.reasons.any { it.message.contains("below 8 and falling") })
+        assertTrue(result.reasons.any { it.message.contains("below exercise target") })
+        assertFalse(result.reasons.any { it.message.contains("hypo risk during exercise") })
     }
 
     @Test

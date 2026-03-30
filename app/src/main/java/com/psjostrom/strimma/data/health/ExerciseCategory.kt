@@ -12,47 +12,102 @@ enum class ExerciseCategory(
 ) {
     RUNNING(
         "\uD83C\uDFC3", R.string.exercise_type_running, MetabolicProfile.AEROBIC,
-        listOf("run", "jog", "sprint", "löpning")
+        listOf(
+            "run", "running", "jog", "jogging", "sprint", "sprinting",
+            "5k", "10k", "half marathon", "marathon", "parkrun", "trail run",
+            "treadmill", "track run", "track workout",
+            "löpning", "löp", "jogga", "lopp", "lauftraining", "laufen",
+            "course", "courir", "correr", "corrida", "carrera"
+        )
     ),
     WALKING(
         "\uD83D\uDEB6", R.string.exercise_type_walking, MetabolicProfile.AEROBIC,
-        listOf("walk", "promenad")
+        listOf(
+            "walk", "walking", "stroll", "hike-walk",
+            "promenad", "promenera", "spazier", "spaziergang",
+            "marche", "caminar", "caminata"
+        )
     ),
     HIKING(
         "\u26F0\uFE0F", R.string.exercise_type_hiking, MetabolicProfile.AEROBIC,
-        listOf("hike", "hiking", "vandring")
+        listOf(
+            "hike", "hiking", "trek", "trekking", "backpack",
+            "vandring", "vandra", "bergwandern", "wanderung",
+            "randonnée", "senderismo", "excursión"
+        )
     ),
     CYCLING(
         "\uD83D\uDEB4", R.string.exercise_type_cycling, MetabolicProfile.AEROBIC,
-        listOf("bike", "cycle", "cykel")
+        listOf(
+            "bike", "biking", "cycle", "cycling", "bicycle", "spinning", "spin class",
+            "zwift", "peloton", "velodrome", "criterium", "crit ride",
+            "cykel", "cykl", "radfahren", "radtour",
+            "vélo", "cyclisme", "ciclismo", "bicicleta"
+        )
     ),
     SWIMMING(
         "\uD83C\uDFCA", R.string.exercise_type_swimming, MetabolicProfile.AEROBIC,
-        listOf("swim", "simning")
+        listOf(
+            "swim", "swimming", "pool swim", "open water", "triathlon swim",
+            "simning", "simma", "simträning", "schwimmen",
+            "natation", "nager", "nadar", "natación"
+        )
     ),
     STRENGTH(
         "\uD83C\uDFCB\uFE0F", R.string.exercise_type_strength, MetabolicProfile.RESISTANCE,
-        listOf("gym", "strength", "weights", "lift", "styrk")
+        listOf(
+            "gym", "strength", "weights", "weightlifting", "powerlifting", "deadlift",
+            "squat", "bench press", "barbell", "dumbbell", "kettlebell",
+            "crossfit", "calisthenics", "bodyweight", "resistance",
+            "lift", "lifting",
+            "styrk", "styrketräning", "vikter", "krafttraining",
+            "musculation", "musculación", "pesas"
+        )
     ),
     YOGA(
         "\uD83E\uDDD8", R.string.exercise_type_yoga, MetabolicProfile.AEROBIC,
-        listOf("yoga", "pilates")
+        listOf(
+            "yoga", "pilates", "stretch", "stretching", "flexibility", "mobility",
+            "vinyasa", "ashtanga", "bikram", "yin yoga", "hatha",
+            "tai chi", "qigong",
+            "stretching", "rörlighet", "dehnen", "étirement", "estiramiento"
+        )
     ),
     ROWING(
         "\uD83D\uDEA3", R.string.exercise_type_rowing, MetabolicProfile.AEROBIC,
-        listOf("row", "erg", "rodd")
+        listOf(
+            "rowing", "row machine", "ergometer", "concept2", "c2",
+            "kayak", "canoe", "paddling", "paddle",
+            "rodd", "roddmaskin", "paddla", "rudern", "aviron", "remo"
+        )
     ),
     SKIING(
         "\u26F7\uFE0F", R.string.exercise_type_skiing, MetabolicProfile.AEROBIC,
-        listOf("ski", "snowboard", "skid")
+        listOf(
+            "ski", "skiing", "snowboard", "snowboarding",
+            "cross-country", "xc ski", "langlauf", "downhill", "slalom",
+            "skid", "skidor", "längdskid", "utför",
+            "esquí", "esquiar"
+        )
     ),
     CLIMBING(
         "\uD83E\uDDD7", R.string.exercise_type_climbing, MetabolicProfile.RESISTANCE,
-        listOf("climb", "boulder", "klättr")
+        listOf(
+            "climb", "climbing", "boulder", "bouldering", "top rope", "lead climb",
+            "rock climbing", "wall climbing",
+            "klättr", "klättring", "klettern", "escalade", "escalada"
+        )
     ),
     MARTIAL_ARTS(
         "\uD83E\uDD4A", R.string.exercise_type_martial_arts, MetabolicProfile.HIGH_INTENSITY,
-        listOf("martial", "boxing", "mma", "kampsport")
+        listOf(
+            "martial", "boxing", "kickboxing", "muay thai", "mma",
+            "karate", "taekwondo", "judo", "jiu-jitsu", "jiu jitsu", "jiujitsu",
+            "bjj", "wrestling", "krav maga", "capoeira", "kung fu",
+            "fencing", "sparring", "self-defense", "self defense",
+            "kampsport", "brottning", "boxning", "kampfsport", "boxen",
+            "arts martiaux", "boxe", "lutte", "artes marciales", "lucha"
+        )
     ),
     OTHER(
         "\uD83C\uDFCB\uFE0F", R.string.exercise_type_other, MetabolicProfile.AEROBIC,

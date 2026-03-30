@@ -273,21 +273,21 @@
     <!-- Exercise Detail -->
     <string name="exercise_detail_before">ANTES</string>
     <string name="exercise_detail_during">DURANTE</string>
-    <string name="exercise_detail_after">DESPU\u00C9S</string>
-    <string name="exercise_detail_entry_bg">Entrada</string>
-    <string name="exercise_detail_min_bg">M\u00EDn</string>
-    <string name="exercise_detail_lowest_bg">M\u00E1s bajo</string>
+    <string name="exercise_detail_after">DESPU\u00C9S (4H)</string>
+    <string name="exercise_detail_entry_bg">BG de inicio</string>
+    <string name="exercise_detail_min_bg">M\u00EDnimo durante</string>
+    <string name="exercise_detail_lowest_bg">M\u00EDnimo despu\u00E9s</string>
     <string name="exercise_detail_avg_hr">FC prom</string>
     <string name="exercise_detail_max_hr">FC m\u00E1x</string>
     <string name="exercise_detail_steps">Pasos</string>
     <string name="exercise_detail_calories">Calor\u00EDas</string>
-    <string name="exercise_detail_highest_bg">M\u00E1s alto</string>
-    <string name="exercise_detail_total_drop">Ca\u00EDda total</string>
+    <string name="exercise_detail_highest_bg">M\u00E1ximo despu\u00E9s</string>
+    <string name="exercise_detail_total_drop">Ca\u00EDda total de BG</string>
     <string name="exercise_detail_post_hypo">Bajo post-ejercicio</string>
     <string name="exercise_detail_no_data">Datos de glucosa insuficientes</string>
     <string name="exercise_detail_no_value">\u2014</string>
     <string name="exercise_history_title">Ejercicio</string>
-    <string name="exercise_history_empty">No hay sesiones de ejercicio. Conecta Health Connect en Ajustes para ver tus entrenamientos aqu\u00ED.</string>
+    <string name="exercise_history_empty">No hay sesiones de ejercicio.\n\nStrimma lee entrenamientos de Health Connect. Ve a Ajustes \u2192 Ejercicio para conectar y otorgar permisos.</string>
     <string name="hc_rationale_title">Permisos de Health Connect</string>
     <string name="hc_rationale_body">Strimma usa Health Connect para leer tus sesiones de ejercicio, frecuencia card\u00EDaca, pasos y calor\u00EDas para mostrar c\u00F3mo el ejercicio afecta tu glucosa. Opcionalmente, Strimma puede escribir lecturas de glucosa para que otras apps de salud las vean.</string>
 
@@ -350,7 +350,7 @@
     <string name="exercise_tab_planned">Planificados</string>
     <string name="exercise_tab_completed">Completados</string>
     <string name="exercise_connect_title">Conectar calendario de ejercicio</string>
-    <string name="exercise_connect_subtitle">Ver próximos entrenamientos y recibir orientación de BG antes de cada sesión. Strimma lee tu calendario para mostrar evaluaciones de preparación y recomendaciones de carbohidratos.</string>
+    <string name="exercise_connect_subtitle">Ver próximos entrenamientos y recibir orientación de BG antes de cada sesión. Usa un calendario que solo contenga entrenamientos — Strimma trata cada evento como una sesión de ejercicio.</string>
     <string name="exercise_connect_button">Conectar calendario</string>
     <string name="exercise_planned_empty">No se encontraron entrenamientos próximos en el calendario conectado.</string>
     <string name="exercise_planned_category">Categoría</string>
@@ -370,6 +370,13 @@
     <string name="exercise_patterns_drop_summary">La glucemia suele bajar aproximadamente %1$s</string>
     <string name="exercise_patterns_went_low">Hipoglucemia %1$d de %2$d</string>
     <string name="exercise_patterns_never_low">Nunca tuvo hipoglucemia</string>
+    <string name="exercise_patterns_tip_high_risk">Intenta comenzar con BG m\u00E1s alto, m\u00E1s carbohidratos o menos IOB</string>
+    <string name="exercise_patterns_tip_some_risk">Revisa el desglose de BG de inicio abajo \u2014 algunos rangos pueden funcionar mejor</string>
+
+    <string name="exercise_lookahead_subtitle">Cu\u00E1nto tiempo adelante busca entrenamientos la pesta\u00F1a Planificados</string>
+    <string name="exercise_trigger_subtitle">Cu\u00E1ndo aparece la tarjeta de preparaci\u00F3n en la pantalla principal</string>
+    <string name="exercise_hc_write_disabled_hint">Primero otorga los permisos de Health Connect</string>
+    <string name="exercise_metabolic_profile_hint">Tipo de respuesta de BG \u2014 determina el rango objetivo. Detectado por tipo de actividad o frecuencia card\u00EDaca.</string>
 
     <!-- Pre-activity guidance -->
     <string name="workout_settings_title">Horario de entrenamiento</string>

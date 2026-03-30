@@ -85,9 +85,34 @@ Strimma reads planned workouts from your Android calendar and shows them on the 
 - Pre-activity status (Ready/Heads Up/Hold On) based on current glucose conditions
 - Metabolic profile (Aerobic/Resistance/High-Intensity) — detected from the event title
 
+!!! warning "Use a workout-only calendar"
+    Strimma treats **every event** in the connected calendar as an exercise session. If you connect your main calendar, non-workout events (meetings, appointments, etc.) will show up as planned workouts with readiness cards and carb recommendations. Create a separate calendar for workouts only.
+
+**Activity type detection:**
+
+Strimma detects the activity type from the event title using keyword matching. The following keywords are recognized (case-insensitive):
+
+| Activity | Keywords |
+|----------|----------|
+| Running | run, running, jog, jogging, sprint, sprinting, 5k, 10k, half marathon, marathon, parkrun, trail run, treadmill, track run, track workout, löpning, löp, jogga, lopp, lauftraining, laufen, course, courir, correr, corrida, carrera |
+| Walking | walk, walking, stroll, hike-walk, promenad, promenera, spazier, spaziergang, marche, caminar, caminata |
+| Hiking | hike, hiking, trek, trekking, backpack, vandring, vandra, bergwandern, wanderung, randonnée, senderismo, excursión |
+| Cycling | bike, biking, cycle, cycling, bicycle, spinning, spin class, zwift, peloton, velodrome, criterium, crit ride, cykel, cykl, radfahren, radtour, vélo, cyclisme, ciclismo, bicicleta |
+| Swimming | swim, swimming, pool swim, open water, triathlon swim, simning, simma, simträning, schwimmen, natation, nager, nadar, natación |
+| Strength | gym, strength, weights, weightlifting, powerlifting, deadlift, squat, bench press, barbell, dumbbell, kettlebell, crossfit, calisthenics, bodyweight, resistance, lift, lifting, styrk, styrketräning, vikter, krafttraining, musculation, musculación, pesas |
+| Yoga | yoga, pilates, stretch, stretching, flexibility, mobility, vinyasa, ashtanga, bikram, yin yoga, hatha, tai chi, qigong, rörlighet, dehnen, étirement, estiramiento |
+| Rowing | rowing, row machine, ergometer, concept2, c2, kayak, canoe, paddling, paddle, rodd, roddmaskin, paddla, rudern, aviron, remo |
+| Skiing | ski, skiing, snowboard, snowboarding, cross-country, xc ski, langlauf, downhill, slalom, skid, skidor, längdskid, utför, esquí, esquiar |
+| Climbing | climb, climbing, boulder, bouldering, top rope, lead climb, rock climbing, wall climbing, klättr, klättring, klettern, escalade, escalada |
+| Martial Arts | martial, boxing, kickboxing, muay thai, mma, karate, taekwondo, judo, jiu-jitsu, jiu jitsu, jiujitsu, bjj, wrestling, krav maga, capoeira, kung fu, fencing, sparring, self-defense, self defense, kampsport, brottning, boxning, kampfsport, boxen, arts martiaux, boxe, lutte, artes marciales, lucha |
+
+Events that don't match any keyword are categorized as **Other** with the default Aerobic metabolic profile. Use a recognized keyword in the event title for correct categorization.
+
+Intensity keywords ("interval", "tempo", "hiit", "sprint") in the title override the metabolic profile to **High-Intensity**, regardless of activity type.
+
 **Settings:**
 
-- **Calendar** — select which calendar to monitor
+- **Calendar** — select which calendar to monitor (use a workout-only calendar)
 - **Lookahead** — how far ahead to scan (1–6 hours, default 3h)
 - **Guidance trigger** — when the readiness card appears on the main screen (30–240 min before workout, default 120 min)
 
