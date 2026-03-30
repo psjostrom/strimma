@@ -512,10 +512,6 @@ class SettingsRepository @Inject constructor(
             if (settings.has("hba1c_unit")) prefs[KEY_HBA1C_UNIT] = settings.getString("hba1c_unit")
             if (settings.has("bg_broadcast_enabled")) prefs[KEY_BG_BROADCAST_ENABLED] = settings.getBoolean("bg_broadcast_enabled")
             if (settings.has("glucose_source")) prefs[KEY_GLUCOSE_SOURCE] = settings.getString("glucose_source")
-            // Legacy: if importing old export with follower_url but no nightscout_url, adopt it
-            if (settings.has("follower_url") && !settings.has("nightscout_url")) {
-                prefs[KEY_NIGHTSCOUT_URL] = settings.getString("follower_url")
-            }
             if (settings.has("follower_poll_seconds")) prefs[KEY_FOLLOWER_POLL_SECONDS] = settings.getInt("follower_poll_seconds")
             if (settings.has("treatments_sync_enabled")) prefs[KEY_TREATMENTS_SYNC_ENABLED] = settings.getBoolean("treatments_sync_enabled")
             if (settings.has("insulin_type")) prefs[KEY_INSULIN_TYPE] = settings.getString("insulin_type")
@@ -538,10 +534,6 @@ class SettingsRepository @Inject constructor(
         if (root.has("secrets")) {
             val secrets = root.getJSONObject("secrets")
             if (secrets.has("nightscout_secret")) setNightscoutSecret(secrets.getString("nightscout_secret"))
-            // Legacy: if importing old export with follower_secret but no nightscout_secret, adopt it
-            if (secrets.has("follower_secret") && !secrets.has("nightscout_secret")) {
-                setNightscoutSecret(secrets.getString("follower_secret"))
-            }
             if (secrets.has("web_server_secret")) setWebServerSecret(secrets.getString("web_server_secret"))
             if (secrets.has("llu_email")) setLluEmail(secrets.getString("llu_email"))
             if (secrets.has("llu_password")) setLluPassword(secrets.getString("llu_password"))
