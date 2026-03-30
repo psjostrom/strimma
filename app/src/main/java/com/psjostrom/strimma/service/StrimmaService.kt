@@ -6,6 +6,7 @@ import android.content.IntentFilter
 import android.os.IBinder
 import com.psjostrom.strimma.data.Direction
 import com.psjostrom.strimma.data.DirectionComputer
+import com.psjostrom.strimma.data.TimeConstants
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseSource
 import com.psjostrom.strimma.data.GlucoseUnit
@@ -57,8 +58,8 @@ class StrimmaService : Service() {
 
         private const val DUPLICATE_THRESHOLD_MS = 3_000L
         private const val LOOKBACK_MINUTES = 15
-        private const val MINUTES_TO_MS = 60 * 1000L
-        private const val HOURS_TO_MS = 60 * MINUTES_TO_MS
+        private val MINUTES_TO_MS = TimeConstants.MS_PER_MINUTE_L
+        private val HOURS_TO_MS = TimeConstants.MS_PER_HOUR
 
         private const val RETRY_INTERVAL_MINUTES = 5
         private const val PRUNE_INTERVAL_DAYS = 1

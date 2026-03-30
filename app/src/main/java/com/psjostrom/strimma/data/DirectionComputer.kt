@@ -7,7 +7,6 @@ class DirectionComputer @Inject constructor() {
     companion object {
         private const val LOOKBACK_MINUTES = 5
         private const val MAX_TIME_GAP_MINUTES = 10
-        private const val MINUTES_TO_MS = 60 * 1000L
 
         // EASD/ISPAD direction thresholds (mg/dL per minute)
         private const val THRESHOLD_DOUBLE_DOWN = -3.0
@@ -26,13 +25,13 @@ class DirectionComputer @Inject constructor() {
         if (currentIndex == -1) return Pair(Direction.NONE, null)
 
         // Find reading closest to 5 minutes before current
-        val targetTs = currentReading.ts - (LOOKBACK_MINUTES * MINUTES_TO_MS)
+        val targetTs = currentReading.ts - (LOOKBACK_MINUTES * TimeConstants.MS_PER_MINUTE_L)
         val pastReading = allReadings.take(currentIndex).minByOrNull {
             kotlin.math.abs(it.ts - targetTs)
         }
 
         // If no reading within 10 minutes, return NONE
-        if (pastReading == null || kotlin.math.abs(pastReading.ts - targetTs) > MAX_TIME_GAP_MINUTES * MINUTES_TO_MS) {
+        if (pastReading == null || kotlin.math.abs(pastReading.ts - targetTs) > MAX_TIME_GAP_MINUTES * TimeConstants.MS_PER_MINUTE_L) {
             return Pair(Direction.NONE, null)
         }
 
@@ -43,7 +42,7 @@ class DirectionComputer @Inject constructor() {
         val avgPast = avgSgv(allReadings, pastIndex)
 
         // Calculate time difference in minutes
-        val timeMinutes = (currentReading.ts - pastReading.ts) / MINUTES_TO_MS.toDouble()
+        val timeMinutes = (currentReading.ts - pastReading.ts) / TimeConstants.MS_PER_MINUTE_L.toDouble()
         if (timeMinutes == 0.0) return Pair(Direction.NONE, null)
 
         // Calculate delta in mg/dL per minute

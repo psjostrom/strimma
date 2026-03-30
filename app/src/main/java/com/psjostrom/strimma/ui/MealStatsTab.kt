@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
 import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.GlucoseReading
+import com.psjostrom.strimma.data.TimeConstants
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.Treatment
 import com.psjostrom.strimma.data.meal.CarbSizeBucket
@@ -51,7 +52,7 @@ import kotlin.math.max
 import kotlin.math.min
 
 private const val MINUTES_PER_HOUR = 60
-private const val MS_PER_MINUTE = 60_000L
+private val MS_PER_MINUTE = TimeConstants.MS_PER_MINUTE_L
 
 private fun MealPostprandialResult.carbSize(): CarbSizeBucket =
     CarbSizeBucket.fromGrams(carbGrams)

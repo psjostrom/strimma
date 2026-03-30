@@ -37,7 +37,7 @@ object AgpCalculator {
     const val AGP_DAYS = 14
     private const val BUCKET_MINUTES = 15
     private const val BUCKETS_PER_DAY = 24 * 60 / BUCKET_MINUTES
-    private const val MS_PER_MINUTE = 60_000L
+
     private const val PERCENT = 100.0
 
     // ADA fixed thresholds (mg/dL)
@@ -137,7 +137,7 @@ object AgpCalculator {
             sortedGaps[mid]
         }
         // Clamp to reasonable range (1-5 min)
-        val intervalMs = medianGapMs.coerceIn(MS_PER_MINUTE, MAX_SENSOR_INTERVAL_MINUTES * MS_PER_MINUTE)
+        val intervalMs = medianGapMs.coerceIn(TimeConstants.MS_PER_MINUTE_L, MAX_SENSOR_INTERVAL_MINUTES * TimeConstants.MS_PER_MINUTE_L)
 
         val expectedReadings = spanMs / intervalMs + 1
         return ((readings.size.toDouble() / expectedReadings) * PERCENT).coerceAtMost(PERCENT)

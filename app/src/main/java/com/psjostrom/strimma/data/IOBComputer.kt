@@ -24,7 +24,7 @@ object IOBComputer {
 
     private const val MINUTES_PER_HOUR = 60.0
     private const val TAU_MULTIPLIER = 5.0
-    private const val MS_PER_MINUTE = 60_000.0
+
     private const val ROUNDING_FACTOR = 10.0
 
     /**
@@ -41,7 +41,7 @@ object IOBComputer {
     }
 
     fun lookbackMs(tauMinutes: Double): Long =
-        (TAU_MULTIPLIER * tauMinutes * MS_PER_MINUTE).toLong()
+        (TAU_MULTIPLIER * tauMinutes * TimeConstants.MS_PER_MINUTE_D).toLong()
 
     fun iobForTreatment(dose: Double, minutesSince: Double, tauMinutes: Double): Double {
         val t = minutesSince / tauMinutes
@@ -66,7 +66,7 @@ object IOBComputer {
             if (treatment.createdAt < cutoff) continue
             if (treatment.createdAt > now) continue
 
-            val minutesSince = (now - treatment.createdAt) / MS_PER_MINUTE
+            val minutesSince = (now - treatment.createdAt) / TimeConstants.MS_PER_MINUTE_D
             total += iobForTreatment(dose, minutesSince, tauMinutes)
         }
 

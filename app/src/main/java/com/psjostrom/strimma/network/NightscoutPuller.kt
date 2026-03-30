@@ -1,6 +1,7 @@
 package com.psjostrom.strimma.network
 
 import com.psjostrom.strimma.data.GlucoseReading
+import com.psjostrom.strimma.data.TimeConstants
 import com.psjostrom.strimma.data.GlucoseSource
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
@@ -17,11 +18,7 @@ class NightscoutPuller @Inject constructor(
 ) {
     companion object {
         private const val PAGE_SIZE = 2016
-        private const val HOURS_PER_DAY = 24
-        private const val MINUTES_PER_HOUR = 60
-        private const val SECONDS_PER_MINUTE = 60
-        private const val MS_PER_SECOND = 1000L
-        private const val MS_PER_DAY = HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MS_PER_SECOND
+        private val MS_PER_DAY = TimeConstants.MS_PER_DAY
         private const val AUTO_PULL_DAYS = 30
         private const val MAX_ERROR_LENGTH = 80
     }
