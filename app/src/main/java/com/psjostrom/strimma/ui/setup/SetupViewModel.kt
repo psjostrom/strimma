@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-@Suppress("TooManyFunctions") // One getter+setter per setting
 @HiltViewModel
 class SetupViewModel @Inject constructor(
     private val settings: SettingsRepository
@@ -34,45 +33,8 @@ class SetupViewModel @Inject constructor(
     fun setLluEmail(email: String) = settings.setLluEmail(email)
     fun setLluPassword(password: String) = settings.setLluPassword(password)
 
-    // Alert settings
-    val alertLowEnabled: StateFlow<Boolean> = settings.alertLowEnabled
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
-    val alertHighEnabled: StateFlow<Boolean> = settings.alertHighEnabled
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
-    val alertUrgentLowEnabled: StateFlow<Boolean> = settings.alertUrgentLowEnabled
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
-    val alertUrgentHighEnabled: StateFlow<Boolean> = settings.alertUrgentHighEnabled
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
-    val alertLow: StateFlow<Float> = settings.alertLow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 72f)
-    val alertHigh: StateFlow<Float> = settings.alertHigh
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 180f)
-    val alertUrgentLow: StateFlow<Float> = settings.alertUrgentLow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 54f)
-    val alertUrgentHigh: StateFlow<Float> = settings.alertUrgentHigh
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 234f)
-    val alertStaleEnabled: StateFlow<Boolean> = settings.alertStaleEnabled
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
-    val alertLowSoonEnabled: StateFlow<Boolean> = settings.alertLowSoonEnabled
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
-    val alertHighSoonEnabled: StateFlow<Boolean> = settings.alertHighSoonEnabled
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
-
     fun setGlucoseUnit(unit: GlucoseUnit) = viewModelScope.launch { settings.setGlucoseUnit(unit) }
     fun setGlucoseSource(source: GlucoseSource) = viewModelScope.launch { settings.setGlucoseSource(source) }
     fun setSetupStep(step: Int) = viewModelScope.launch { settings.setSetupStep(step) }
     fun setSetupCompleted() = viewModelScope.launch { settings.setSetupCompleted(true) }
-
-    // Alert setters
-    fun setAlertLowEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertLowEnabled(enabled) }
-    fun setAlertHighEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertHighEnabled(enabled) }
-    fun setAlertUrgentLowEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertUrgentLowEnabled(enabled) }
-    fun setAlertUrgentHighEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertUrgentHighEnabled(enabled) }
-    fun setAlertLow(value: Float) = viewModelScope.launch { settings.setAlertLow(value) }
-    fun setAlertHigh(value: Float) = viewModelScope.launch { settings.setAlertHigh(value) }
-    fun setAlertUrgentLow(value: Float) = viewModelScope.launch { settings.setAlertUrgentLow(value) }
-    fun setAlertUrgentHigh(value: Float) = viewModelScope.launch { settings.setAlertUrgentHigh(value) }
-    fun setAlertStaleEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertStaleEnabled(enabled) }
-    fun setAlertLowSoonEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertLowSoonEnabled(enabled) }
-    fun setAlertHighSoonEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertHighSoonEnabled(enabled) }
 }

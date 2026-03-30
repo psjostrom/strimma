@@ -18,7 +18,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.psjostrom.strimma.R
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.psjostrom.strimma.data.GlucoseSource
+import com.psjostrom.strimma.ui.settings.AlertsViewModel
 import com.psjostrom.strimma.ui.theme.InRange
 import kotlinx.coroutines.launch
 
@@ -39,22 +41,23 @@ fun SetupScreen(
 ) {
     val scope = rememberCoroutineScope()
     val pagerState = rememberPagerState(initialPage = initialStep) { STEP_COUNT }
+    val alertsViewModel: AlertsViewModel = hiltViewModel()
 
     val glucoseUnit by viewModel.glucoseUnit.collectAsState()
     val glucoseSource by viewModel.glucoseSource.collectAsState()
 
     // Alerts
-    val alertUrgentLowEnabled by viewModel.alertUrgentLowEnabled.collectAsState()
-    val alertLowEnabled by viewModel.alertLowEnabled.collectAsState()
-    val alertHighEnabled by viewModel.alertHighEnabled.collectAsState()
-    val alertUrgentHighEnabled by viewModel.alertUrgentHighEnabled.collectAsState()
-    val alertStaleEnabled by viewModel.alertStaleEnabled.collectAsState()
-    val alertLowSoonEnabled by viewModel.alertLowSoonEnabled.collectAsState()
-    val alertHighSoonEnabled by viewModel.alertHighSoonEnabled.collectAsState()
-    val alertUrgentLow by viewModel.alertUrgentLow.collectAsState()
-    val alertLow by viewModel.alertLow.collectAsState()
-    val alertHigh by viewModel.alertHigh.collectAsState()
-    val alertUrgentHigh by viewModel.alertUrgentHigh.collectAsState()
+    val alertUrgentLowEnabled by alertsViewModel.alertUrgentLowEnabled.collectAsState()
+    val alertLowEnabled by alertsViewModel.alertLowEnabled.collectAsState()
+    val alertHighEnabled by alertsViewModel.alertHighEnabled.collectAsState()
+    val alertUrgentHighEnabled by alertsViewModel.alertUrgentHighEnabled.collectAsState()
+    val alertStaleEnabled by alertsViewModel.alertStaleEnabled.collectAsState()
+    val alertLowSoonEnabled by alertsViewModel.alertLowSoonEnabled.collectAsState()
+    val alertHighSoonEnabled by alertsViewModel.alertHighSoonEnabled.collectAsState()
+    val alertUrgentLow by alertsViewModel.alertUrgentLow.collectAsState()
+    val alertLow by alertsViewModel.alertLow.collectAsState()
+    val alertHigh by alertsViewModel.alertHigh.collectAsState()
+    val alertUrgentHigh by alertsViewModel.alertUrgentHigh.collectAsState()
 
     val canAdvance = when (pagerState.currentPage) {
         2 -> when (glucoseSource) {
@@ -160,17 +163,17 @@ fun SetupScreen(
                             alertLow = alertLow,
                             alertHigh = alertHigh,
                             alertUrgentHigh = alertUrgentHigh,
-                            onAlertUrgentLowEnabledChange = viewModel::setAlertUrgentLowEnabled,
-                            onAlertLowEnabledChange = viewModel::setAlertLowEnabled,
-                            onAlertHighEnabledChange = viewModel::setAlertHighEnabled,
-                            onAlertUrgentHighEnabledChange = viewModel::setAlertUrgentHighEnabled,
-                            onAlertStaleEnabledChange = viewModel::setAlertStaleEnabled,
-                            onAlertLowSoonEnabledChange = viewModel::setAlertLowSoonEnabled,
-                            onAlertHighSoonEnabledChange = viewModel::setAlertHighSoonEnabled,
-                            onAlertUrgentLowChange = viewModel::setAlertUrgentLow,
-                            onAlertLowChange = viewModel::setAlertLow,
-                            onAlertHighChange = viewModel::setAlertHigh,
-                            onAlertUrgentHighChange = viewModel::setAlertUrgentHigh
+                            onAlertUrgentLowEnabledChange = alertsViewModel::setAlertUrgentLowEnabled,
+                            onAlertLowEnabledChange = alertsViewModel::setAlertLowEnabled,
+                            onAlertHighEnabledChange = alertsViewModel::setAlertHighEnabled,
+                            onAlertUrgentHighEnabledChange = alertsViewModel::setAlertUrgentHighEnabled,
+                            onAlertStaleEnabledChange = alertsViewModel::setAlertStaleEnabled,
+                            onAlertLowSoonEnabledChange = alertsViewModel::setAlertLowSoonEnabled,
+                            onAlertHighSoonEnabledChange = alertsViewModel::setAlertHighSoonEnabled,
+                            onAlertUrgentLowChange = alertsViewModel::setAlertUrgentLow,
+                            onAlertLowChange = alertsViewModel::setAlertLow,
+                            onAlertHighChange = alertsViewModel::setAlertHigh,
+                            onAlertUrgentHighChange = alertsViewModel::setAlertUrgentHigh
                         )
                         4 -> SetupPermissionsStep(
                             isNotificationPermissionGranted = isNotificationPermissionGranted,
