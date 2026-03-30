@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import com.psjostrom.strimma.ui.theme.ThemeMode
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -230,8 +231,10 @@ class SettingsRepository @Inject constructor(
     suspend fun setAlertLowSoonEnabled(enabled: Boolean) { dataStore.edit { it[KEY_ALERT_LOW_SOON_ENABLED] = enabled } }
     suspend fun setAlertHighSoonEnabled(enabled: Boolean) { dataStore.edit { it[KEY_ALERT_HIGH_SOON_ENABLED] = enabled } }
 
-    val themeMode: Flow<String> = dataStore.data.map { it[KEY_THEME_MODE] ?: "System" }
-    suspend fun setThemeMode(mode: String) { dataStore.edit { it[KEY_THEME_MODE] = mode } }
+    val themeMode: Flow<ThemeMode> = dataStore.data.map {
+        try { ThemeMode.valueOf(it[KEY_THEME_MODE] ?: "System") } catch (_: Exception) { ThemeMode.System }
+    }
+    suspend fun setThemeMode(mode: ThemeMode) { dataStore.edit { it[KEY_THEME_MODE] = mode.name } }
 
     val notifGraphMinutes: Flow<Int> = dataStore.data.map { it[KEY_NOTIF_GRAPH_MINUTES] ?: DEFAULT_NOTIF_GRAPH_MINUTES }
     suspend fun setNotifGraphMinutes(minutes: Int) { dataStore.edit { it[KEY_NOTIF_GRAPH_MINUTES] = minutes } }

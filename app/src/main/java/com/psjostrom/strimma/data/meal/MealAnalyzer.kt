@@ -1,6 +1,7 @@
 package com.psjostrom.strimma.data.meal
 
 import com.psjostrom.strimma.data.GlucoseReading
+import com.psjostrom.strimma.data.MS_PER_MINUTE
 import com.psjostrom.strimma.data.IOBComputer
 import com.psjostrom.strimma.data.Treatment
 import java.time.Duration
@@ -27,7 +28,7 @@ class MealAnalyzer @Inject constructor() {
         private const val MIN_BASELINE_READINGS = 3
         private const val MIN_POSTPRANDIAL_READINGS = 5
         private const val RECOVERY_CHECK_WINDOW_MINUTES = 5L
-        private const val MS_PER_MINUTE = 60_000L
+
         private const val PERCENT = 100.0
     }
 
