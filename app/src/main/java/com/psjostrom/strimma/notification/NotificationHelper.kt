@@ -83,7 +83,7 @@ class NotificationHelper @Inject constructor(
             .setColor(ContextCompat.getColor(context, R.color.brand_accent))
 
         if (reading != null) {
-            val direction = try { Direction.valueOf(reading.direction) } catch (_: Exception) { Direction.NONE }
+            val direction = Direction.parse(reading.direction)
             val bgText = glucoseUnit.format(reading.sgv)
             val baseDelta = reading.delta?.let {
                 glucoseUnit.formatDeltaCompact(it)
