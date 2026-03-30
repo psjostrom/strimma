@@ -410,7 +410,6 @@ class MainActivity : ComponentActivity() {
                     }
                     composable("settings/general") {
                         val startOnBoot by viewModel.startOnBoot.collectAsState()
-                        val language by viewModel.language.collectAsState()
                         val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
                         val lifecycleState by lifecycleOwner.lifecycle.currentStateFlow.collectAsState()
                         val isBatteryOptimizationIgnored = remember(lifecycleState) {
@@ -420,16 +419,6 @@ class MainActivity : ComponentActivity() {
                         GeneralSettings(
                             startOnBoot = startOnBoot,
                             onStartOnBootChange = viewModel::setStartOnBoot,
-                            language = language,
-                            onLanguageChange = { tag ->
-                                viewModel.setLanguage(tag)
-                                val localeManager = getSystemService(android.app.LocaleManager::class.java)
-                                localeManager.applicationLocales = if (tag.isEmpty()) {
-                                    android.os.LocaleList.getEmptyLocaleList()
-                                } else {
-                                    android.os.LocaleList.forLanguageTags(tag)
-                                }
-                            },
                             appVersion = packageManager.getPackageInfo(packageName, 0).versionName ?: "",
                             isDebug = com.psjostrom.strimma.BuildConfig.DEBUG,
                             isBatteryOptimizationIgnored = isBatteryOptimizationIgnored,

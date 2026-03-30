@@ -43,7 +43,7 @@
     <string name="settings_alerts">Alertes</string>
     <string name="settings_alerts_subtitle">Alertes bas, haut, donn\u00E9es obsol\u00E8tes</string>
     <string name="settings_general">G\u00E9n\u00E9ral</string>
-    <string name="settings_general_subtitle">D\u00E9marrage, langue, batterie, \u00E0 propos</string>
+    <string name="settings_general_subtitle">D\u00E9marrage, batterie, \u00E0 propos</string>
     <string name="settings_debug_log">Journal de d\u00E9bogage</string>
 
     <!-- General Settings -->
@@ -55,8 +55,7 @@
     <string name="settings_general_battery_desc">Strimma doit \u00EAtre exclu de l\u0027optimisation de la batterie pour fonctionner de mani\u00E8re fiable en arri\u00E8re-plan</string>
     <string name="settings_general_battery_button">Ouvrir les param\u00E8tres de batterie</string>
     <string name="settings_general_battery_allowed">Strimma est exclu de l\u0027optimisation de la batterie</string>
-    <string name="settings_general_language">Langue</string>
-    <string name="settings_general_language_system_desc">Utiliser la langue du t\u00E9l\u00E9phone</string>
+
     <string name="settings_general_about">\u00C0 propos</string>
     <string name="settings_general_version">Version</string>
     <string name="settings_general_build">Build</string>

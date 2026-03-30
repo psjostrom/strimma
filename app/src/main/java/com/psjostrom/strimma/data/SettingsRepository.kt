@@ -138,7 +138,7 @@ class SettingsRepository @Inject constructor(
         private val KEY_HBA1C_UNIT = stringPreferencesKey("hba1c_unit")
         private val KEY_START_ON_BOOT = booleanPreferencesKey("start_on_boot")
         private const val KEY_START_ON_BOOT_SYNC = "start_on_boot"
-        private val KEY_LANGUAGE = stringPreferencesKey("language")
+
 
         private val KEY_HC_WRITE_ENABLED = booleanPreferencesKey("hc_write_enabled")
         private val KEY_HC_LAST_SYNC = longPreferencesKey("hc_last_sync")
@@ -330,8 +330,6 @@ class SettingsRepository @Inject constructor(
             .getBoolean(KEY_START_ON_BOOT_SYNC, true)
     }
 
-    val language: Flow<String> = dataStore.data.map { it[KEY_LANGUAGE] ?: "" }
-    suspend fun setLanguage(tag: String) { dataStore.edit { it[KEY_LANGUAGE] = tag } }
 
     val hcWriteEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_HC_WRITE_ENABLED] ?: false }
     suspend fun setHcWriteEnabled(enabled: Boolean) { dataStore.edit { it[KEY_HC_WRITE_ENABLED] = enabled } }
@@ -462,7 +460,6 @@ class SettingsRepository @Inject constructor(
             put("custom_dia", prefs[KEY_CUSTOM_DIA]?.toDouble() ?: DEFAULT_CUSTOM_DIA_HOURS)
             put("web_server_enabled", prefs[KEY_WEB_SERVER_ENABLED] ?: false)
             put("start_on_boot", prefs[KEY_START_ON_BOOT] ?: true)
-            put("language", prefs[KEY_LANGUAGE] ?: "")
             put("hc_write_enabled", prefs[KEY_HC_WRITE_ENABLED] ?: false)
         }
 
@@ -524,7 +521,6 @@ class SettingsRepository @Inject constructor(
             if (settings.has("custom_dia")) prefs[KEY_CUSTOM_DIA] = settings.getDouble("custom_dia").toFloat()
             if (settings.has("web_server_enabled")) prefs[KEY_WEB_SERVER_ENABLED] = settings.getBoolean("web_server_enabled")
             if (settings.has("start_on_boot")) prefs[KEY_START_ON_BOOT] = settings.getBoolean("start_on_boot")
-            if (settings.has("language")) prefs[KEY_LANGUAGE] = settings.getString("language")
             if (settings.has("hc_write_enabled")) prefs[KEY_HC_WRITE_ENABLED] = settings.getBoolean("hc_write_enabled")
 
             // Sync to SharedPreferences atomically with DataStore edit
