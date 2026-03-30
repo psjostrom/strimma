@@ -43,7 +43,7 @@
     <string name="settings_alerts">Alertas</string>
     <string name="settings_alerts_subtitle">Alertas de bajo, alto y datos obsoletos</string>
     <string name="settings_general">General</string>
-    <string name="settings_general_subtitle">Inicio, idioma, bater\u00EDa, acerca de</string>
+    <string name="settings_general_subtitle">Inicio, bater\u00EDa, acerca de</string>
     <string name="settings_debug_log">Registro de depuraci\u00F3n</string>
 
     <!-- General Settings -->

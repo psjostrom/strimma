@@ -43,7 +43,7 @@
     <string name="settings_alerts">Alarme</string>
     <string name="settings_alerts_subtitle">Tief-, Hoch- und veraltete Daten-Alarme</string>
     <string name="settings_general">Allgemein</string>
-    <string name="settings_general_subtitle">Autostart, Sprache, Akku, \u00DCber</string>
+    <string name="settings_general_subtitle">Autostart, Akku, \u00DCber</string>
     <string name="settings_debug_log">Fehlerprotokoll</string>
 
     <!-- General Settings -->

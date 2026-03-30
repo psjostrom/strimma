@@ -43,7 +43,7 @@
     <string name="settings_alerts">Alertes</string>
     <string name="settings_alerts_subtitle">Alertes bas, haut, donn\u00E9es obsol\u00E8tes</string>
     <string name="settings_general">G\u00E9n\u00E9ral</string>
-    <string name="settings_general_subtitle">D\u00E9marrage, langue, batterie, \u00E0 propos</string>
+    <string name="settings_general_subtitle">D\u00E9marrage, batterie, \u00E0 propos</string>
     <string name="settings_debug_log">Journal de d\u00E9bogage</string>
 
     <!-- General Settings -->

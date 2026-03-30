@@ -246,9 +246,6 @@ class MainViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
     fun setStartOnBoot(enabled: Boolean) = viewModelScope.launch { settings.setStartOnBoot(enabled) }
 
-    val language: StateFlow<String> = settings.language
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
-    fun setLanguage(tag: String) = viewModelScope.launch { settings.setLanguage(tag) }
 
     val bgBroadcastEnabled: StateFlow<Boolean> = settings.bgBroadcastEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)

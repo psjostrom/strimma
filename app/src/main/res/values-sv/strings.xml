@@ -43,7 +43,7 @@
     <string name="settings_alerts">Larm</string>
     <string name="settings_alerts_subtitle">L\u00E5gt, h\u00F6gt, gammal data-larm</string>
     <string name="settings_general">Allm\u00E4nt</string>
-    <string name="settings_general_subtitle">Uppstart, spr\u00E5k, batteri, om</string>
+    <string name="settings_general_subtitle">Uppstart, batteri, om</string>
     <string name="settings_debug_log">Fels\u00F6kningslogg</string>
 
     <!-- General Settings -->

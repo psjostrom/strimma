@@ -48,7 +48,7 @@
     <string name="settings_statistics">Statistics</string>
     <string name="settings_statistics_subtitle">Metrics, AGP, meals</string>
     <string name="settings_general">General</string>
-    <string name="settings_general_subtitle">Boot, language, battery, about</string>
+    <string name="settings_general_subtitle">Boot, battery, about</string>
     <string name="settings_sharing">Sharing</string>
     <string name="settings_sharing_subtitle">Broadcast, web server, export</string>
     <string name="settings_debug_log">Debug Log</string>
