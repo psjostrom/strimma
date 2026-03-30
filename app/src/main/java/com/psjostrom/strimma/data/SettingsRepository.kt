@@ -85,18 +85,29 @@ class SettingsRepository @Inject constructor(
     private val _secretVersion = kotlinx.coroutines.flow.MutableStateFlow(0)
     val secretVersion: kotlinx.coroutines.flow.StateFlow<Int> = _secretVersion
 
+    private val _credentialsLost = kotlinx.coroutines.flow.MutableStateFlow(false)
+    val credentialsLost: kotlinx.coroutines.flow.StateFlow<Boolean> = _credentialsLost
+
+    fun clearCredentialsLostFlag() { _credentialsLost.value = false }
+
+    @Suppress("TooGenericExceptionCaught") // Keystore corruption throws various exception types
     private val encryptedPrefs by lazy {
         try {
             createEncryptedPrefs()
-        } catch (
-            @Suppress("TooGenericExceptionCaught") // Keystore corruption throws various exception types
-            e: Exception
-        ) {
+        } catch (e: Exception) {
             com.psjostrom.strimma.receiver.DebugLog.log(
                 "EncryptedSharedPreferences corrupted, recreating: ${e.javaClass.simpleName}"
             )
             context.deleteSharedPreferences(ENCRYPTED_PREFS_NAME)
-            createEncryptedPrefs()
+            _credentialsLost.value = true
+            try {
+                createEncryptedPrefs()
+            } catch (e2: Exception) {
+                com.psjostrom.strimma.receiver.DebugLog.log(
+                    "EncryptedSharedPreferences unrecoverable, falling back to plain: ${e2.javaClass.simpleName}"
+                )
+                context.getSharedPreferences(ENCRYPTED_PREFS_NAME, Context.MODE_PRIVATE)
+            }
         }
     }
 
