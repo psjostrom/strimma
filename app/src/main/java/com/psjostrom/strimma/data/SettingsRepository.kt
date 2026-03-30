@@ -86,17 +86,33 @@ class SettingsRepository @Inject constructor(
     val secretVersion: kotlinx.coroutines.flow.StateFlow<Int> = _secretVersion
 
     private val encryptedPrefs by lazy {
+        try {
+            createEncryptedPrefs()
+        } catch (
+            @Suppress("TooGenericExceptionCaught") // Keystore corruption throws various exception types
+            e: Exception
+        ) {
+            com.psjostrom.strimma.receiver.DebugLog.log(
+                "EncryptedSharedPreferences corrupted, recreating: ${e.javaClass.simpleName}"
+            )
+            context.deleteSharedPreferences(ENCRYPTED_PREFS_NAME)
+            createEncryptedPrefs()
+        }
+    }
+
+    private fun createEncryptedPrefs(): android.content.SharedPreferences {
         val masterKey = MasterKey.Builder(context)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
             .build()
-        EncryptedSharedPreferences.create(
-            context, "strimma_secrets", masterKey,
+        return EncryptedSharedPreferences.create(
+            context, ENCRYPTED_PREFS_NAME, masterKey,
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         )
     }
 
     companion object {
+        private const val ENCRYPTED_PREFS_NAME = "strimma_secrets"
         private val KEY_NIGHTSCOUT_URL = stringPreferencesKey("nightscout_url")
         private val KEY_GRAPH_WINDOW_HOURS = intPreferencesKey("graph_window_hours")
         private val KEY_BG_LOW = floatPreferencesKey("bg_low")
