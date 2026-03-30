@@ -27,7 +27,7 @@ private object MgdlSettingsMigration : DataMigration<Preferences> {
         floatPreferencesKey("alert_urgent_high")
     )
     private val KEY_VERSION = intPreferencesKey("settings_version")
-    private const val MGDL_FACTOR = 18.0182f
+    private val MGDL_FACTOR = GlucoseUnit.MGDL_FACTOR.toFloat()
 
     override suspend fun shouldMigrate(currentData: Preferences): Boolean {
         return (currentData[KEY_VERSION] ?: 0) < 2

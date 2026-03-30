@@ -1,5 +1,6 @@
 package com.psjostrom.strimma.data
 
+import com.psjostrom.strimma.graph.CRITICAL_LOW
 import java.util.Calendar
 import java.util.TimeZone
 import kotlin.math.sqrt
@@ -41,7 +42,7 @@ object AgpCalculator {
     private const val PERCENT = 100.0
 
     // ADA fixed thresholds (mg/dL)
-    const val VERY_LOW = 54.0
+    const val VERY_LOW = CRITICAL_LOW
     const val LOW = 70.0
     const val HIGH = 180.0
     const val VERY_HIGH = 250.0

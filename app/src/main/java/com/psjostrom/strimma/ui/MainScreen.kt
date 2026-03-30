@@ -43,13 +43,17 @@ import com.psjostrom.strimma.data.health.ExerciseBGContext
 import com.psjostrom.strimma.data.health.ExerciseCategory
 import com.psjostrom.strimma.data.health.StoredExerciseSession
 import com.psjostrom.strimma.graph.CRITICAL_HIGH
+import com.psjostrom.strimma.graph.BgStatus
+import com.psjostrom.strimma.graph.bgStatusFor
 import com.psjostrom.strimma.graph.CRITICAL_LOW
 import com.psjostrom.strimma.graph.PredictionComputer
 import com.psjostrom.strimma.graph.ThresholdCrossing
 import com.psjostrom.strimma.graph.CrossingType
+import com.psjostrom.strimma.graph.computeYAxisLabels
 import com.psjostrom.strimma.graph.computeYRange
 import com.psjostrom.strimma.network.FollowerStatus
 import com.psjostrom.strimma.notification.AlertCategory
+import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.ui.components.PauseAlertsSheet
 import com.psjostrom.strimma.ui.components.rememberCountdownText
 import com.psjostrom.strimma.ui.theme.AboveHigh
@@ -285,9 +289,9 @@ private fun BgHeader(
         }
     }
 
-    val isStale = minutesAgo > 10
+    val isStale = minutesAgo > AlertManager.STALE_THRESHOLD_MINUTES
     val direction = reading?.let {
-        try { Direction.valueOf(it.direction) } catch (_: Exception) { Direction.NONE }
+        Direction.parse(it.direction)
     } ?: Direction.NONE
 
     val bgColor = when {
@@ -876,7 +880,7 @@ fun GlucoseGraph(
             val sdf = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
             val timeStr = sdf.format(java.util.Date(sel.ts))
             val valueStr = glucoseUnit.format(sel.sgv)
-            val direction = try { Direction.valueOf(sel.direction) } catch (_: Exception) { Direction.NONE }
+            val direction = Direction.parse(sel.direction)
             val deltaStr = sel.delta?.let { glucoseUnit.formatDeltaCompact(it) }
 
             val line1 = "$valueStr ${direction.arrow}"
@@ -951,25 +955,13 @@ fun GlucoseGraph(
         }
 
         textPaint.textAlign = android.graphics.Paint.Align.RIGHT
-        val yStep = if (glucoseUnit == GlucoseUnit.MGDL) {
-            if (yr.range > 180.0) 50.0 else 25.0
-        } else {
-            if (yr.range > 180.0) 2.0 * GlucoseUnit.MGDL_FACTOR else GlucoseUnit.MGDL_FACTOR
-        }
-        var yLabel = Math.ceil(yr.yMin / yStep) * yStep
-        while (yLabel <= yr.yMax) {
-            val y = yFor(yLabel)
+        for (label in computeYAxisLabels(yr, glucoseUnit)) {
+            val y = yFor(label.mgdl)
             if (y > marginTop + 10 && y < size.height - marginBottom - 10) {
-                val labelText = if (glucoseUnit == GlucoseUnit.MGDL) {
-                    "%.0f".format(yLabel)
-                } else {
-                    "%.0f".format(yLabel / GlucoseUnit.MGDL_FACTOR)
-                }
                 drawContext.canvas.nativeCanvas.drawText(
-                    labelText, marginLeft - 6f, y + 8f, textPaint
+                    label.text, marginLeft - 6f, y + 8f, textPaint
                 )
             }
-            yLabel += yStep
         }
     }
 }
@@ -1095,13 +1087,12 @@ fun Minimap(
 
 // --- Helpers ---
 
-private fun dotColor(mgdl: Double, bgLow: Double, bgHigh: Double): Color = when {
-    mgdl <= CRITICAL_LOW -> BelowLow
-    mgdl < bgLow -> BelowLow
-    mgdl >= CRITICAL_HIGH -> BelowLow
-    mgdl > bgHigh -> AboveHigh
-    else -> InRange
-}
+private fun dotColor(mgdl: Double, bgLow: Double, bgHigh: Double): Color =
+    when (bgStatusFor(mgdl, bgLow, bgHigh)) {
+        BgStatus.IN_RANGE -> InRange
+        BgStatus.HIGH -> AboveHigh
+        BgStatus.LOW -> BelowLow
+    }
 
 internal const val GRAPH_MARGIN_TOP = 16f
 internal const val GRAPH_MARGIN_BOTTOM = 40f
