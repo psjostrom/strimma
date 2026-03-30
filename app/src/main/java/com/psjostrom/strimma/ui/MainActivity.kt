@@ -28,6 +28,7 @@ import com.psjostrom.strimma.network.FollowerStatus
 import com.psjostrom.strimma.receiver.GlucoseNotificationListener
 import com.psjostrom.strimma.service.StrimmaService
 import com.psjostrom.strimma.ui.settings.AlertsSettings
+import com.psjostrom.strimma.ui.settings.AlertsViewModel
 import com.psjostrom.strimma.ui.settings.DataSettings
 import com.psjostrom.strimma.ui.settings.DataSourceSettings
 import com.psjostrom.strimma.ui.settings.GeneralSettings
@@ -142,17 +143,6 @@ class MainActivity : ComponentActivity() {
                 val bgHigh by viewModel.bgHigh.collectAsState()
                 val graphWindowHours by viewModel.graphWindowHours.collectAsState()
                 val nightscoutUrl by viewModel.nightscoutUrl.collectAsState()
-                val alertLowEnabled by viewModel.alertLowEnabled.collectAsState()
-                val alertHighEnabled by viewModel.alertHighEnabled.collectAsState()
-                val alertUrgentLowEnabled by viewModel.alertUrgentLowEnabled.collectAsState()
-                val alertLow by viewModel.alertLow.collectAsState()
-                val alertHigh by viewModel.alertHigh.collectAsState()
-                val alertUrgentLow by viewModel.alertUrgentLow.collectAsState()
-                val alertUrgentHighEnabled by viewModel.alertUrgentHighEnabled.collectAsState()
-                val alertUrgentHigh by viewModel.alertUrgentHigh.collectAsState()
-                val alertStaleEnabled by viewModel.alertStaleEnabled.collectAsState()
-                val alertLowSoonEnabled by viewModel.alertLowSoonEnabled.collectAsState()
-                val alertHighSoonEnabled by viewModel.alertHighSoonEnabled.collectAsState()
                 val notifGraphMinutes by viewModel.notifGraphMinutes.collectAsState()
                 val predictionMinutes by viewModel.predictionMinutes.collectAsState()
                 val glucoseUnit by viewModel.glucoseUnit.collectAsState()
@@ -169,8 +159,6 @@ class MainActivity : ComponentActivity() {
                 val iob by viewModel.iob.collectAsState()
                 val exerciseSessions by viewModel.exerciseSessions.collectAsState()
                 val guidanceState by viewModel.guidanceState.collectAsState()
-                val pauseLowExpiryMs by viewModel.pauseLowExpiryMs.collectAsState()
-                val pauseHighExpiryMs by viewModel.pauseHighExpiryMs.collectAsState()
                 NavHost(navController, startDestination = startDest) {
                     composable("setup") {
                         val setupViewModel: SetupViewModel = hiltViewModel()
@@ -232,6 +220,9 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable("main") {
+                        val alertsViewModel: AlertsViewModel = hiltViewModel()
+                        val pauseLowExpiryMs by alertsViewModel.pauseLowExpiryMs.collectAsState()
+                        val pauseHighExpiryMs by alertsViewModel.pauseHighExpiryMs.collectAsState()
                         MainScreen(
                             latestReading = latestReading,
                             readings = readings,
@@ -248,8 +239,8 @@ class MainActivity : ComponentActivity() {
                             guidanceState = guidanceState,
                             pauseLowExpiryMs = pauseLowExpiryMs,
                             pauseHighExpiryMs = pauseHighExpiryMs,
-                            onPauseAlerts = viewModel::pauseAlerts,
-                            onCancelPause = viewModel::cancelAlertPause,
+                            onPauseAlerts = alertsViewModel::pauseAlerts,
+                            onCancelPause = alertsViewModel::cancelAlertPause,
                             onComputeBGContext = viewModel::computeExerciseBGContext,
                             onSettingsClick = {
                                 navController.navigate("settings") {
@@ -376,6 +367,20 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable("settings/alerts") {
+                        val alertsViewModel: AlertsViewModel = hiltViewModel()
+                        val alertLowEnabled by alertsViewModel.alertLowEnabled.collectAsState()
+                        val alertHighEnabled by alertsViewModel.alertHighEnabled.collectAsState()
+                        val alertUrgentLowEnabled by alertsViewModel.alertUrgentLowEnabled.collectAsState()
+                        val alertLow by alertsViewModel.alertLow.collectAsState()
+                        val alertHigh by alertsViewModel.alertHigh.collectAsState()
+                        val alertUrgentLow by alertsViewModel.alertUrgentLow.collectAsState()
+                        val alertUrgentHighEnabled by alertsViewModel.alertUrgentHighEnabled.collectAsState()
+                        val alertUrgentHigh by alertsViewModel.alertUrgentHigh.collectAsState()
+                        val alertStaleEnabled by alertsViewModel.alertStaleEnabled.collectAsState()
+                        val alertLowSoonEnabled by alertsViewModel.alertLowSoonEnabled.collectAsState()
+                        val alertHighSoonEnabled by alertsViewModel.alertHighSoonEnabled.collectAsState()
+                        val pauseLowExpiryMs by alertsViewModel.pauseLowExpiryMs.collectAsState()
+                        val pauseHighExpiryMs by alertsViewModel.pauseHighExpiryMs.collectAsState()
                         AlertsSettings(
                             glucoseUnit = glucoseUnit,
                             alertLowEnabled = alertLowEnabled,
@@ -391,20 +396,20 @@ class MainActivity : ComponentActivity() {
                             alertHighSoonEnabled = alertHighSoonEnabled,
                             pauseLowExpiryMs = pauseLowExpiryMs,
                             pauseHighExpiryMs = pauseHighExpiryMs,
-                            onPauseAlerts = viewModel::pauseAlerts,
-                            onCancelPause = viewModel::cancelAlertPause,
-                            onAlertLowEnabledChange = viewModel::setAlertLowEnabled,
-                            onAlertHighEnabledChange = viewModel::setAlertHighEnabled,
-                            onAlertUrgentLowEnabledChange = viewModel::setAlertUrgentLowEnabled,
-                            onAlertUrgentHighEnabledChange = viewModel::setAlertUrgentHighEnabled,
-                            onAlertLowChange = viewModel::setAlertLow,
-                            onAlertHighChange = viewModel::setAlertHigh,
-                            onAlertUrgentLowChange = viewModel::setAlertUrgentLow,
-                            onAlertUrgentHighChange = viewModel::setAlertUrgentHigh,
-                            onAlertStaleEnabledChange = viewModel::setAlertStaleEnabled,
-                            onAlertLowSoonEnabledChange = viewModel::setAlertLowSoonEnabled,
-                            onAlertHighSoonEnabledChange = viewModel::setAlertHighSoonEnabled,
-                            onOpenAlertSound = viewModel::openAlertChannelSettings,
+                            onPauseAlerts = alertsViewModel::pauseAlerts,
+                            onCancelPause = alertsViewModel::cancelAlertPause,
+                            onAlertLowEnabledChange = alertsViewModel::setAlertLowEnabled,
+                            onAlertHighEnabledChange = alertsViewModel::setAlertHighEnabled,
+                            onAlertUrgentLowEnabledChange = alertsViewModel::setAlertUrgentLowEnabled,
+                            onAlertUrgentHighEnabledChange = alertsViewModel::setAlertUrgentHighEnabled,
+                            onAlertLowChange = alertsViewModel::setAlertLow,
+                            onAlertHighChange = alertsViewModel::setAlertHigh,
+                            onAlertUrgentLowChange = alertsViewModel::setAlertUrgentLow,
+                            onAlertUrgentHighChange = alertsViewModel::setAlertUrgentHigh,
+                            onAlertStaleEnabledChange = alertsViewModel::setAlertStaleEnabled,
+                            onAlertLowSoonEnabledChange = alertsViewModel::setAlertLowSoonEnabled,
+                            onAlertHighSoonEnabledChange = alertsViewModel::setAlertHighSoonEnabled,
+                            onOpenAlertSound = alertsViewModel::openAlertChannelSettings,
                             onBack = { navController.popBackStack() }
                         )
                     }
