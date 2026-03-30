@@ -32,6 +32,35 @@ data class YRange(val yMin: Double, val yMax: Double) {
 private const val Y_PADDING_LARGE = 9.0
 private const val Y_PADDING_SMALL = 5.0
 
+private const val Y_RANGE_THRESHOLD = 180.0
+private const val MGDL_Y_STEP_LARGE = 50.0
+private const val MGDL_Y_STEP_SMALL = 25.0
+private const val MMOL_Y_STEP_LARGE = 2.0
+private const val MMOL_Y_STEP_SMALL = 1.0
+
+data class YAxisLabel(val mgdl: Double, val text: String)
+
+fun computeYAxisLabels(yr: YRange, glucoseUnit: com.psjostrom.strimma.data.GlucoseUnit): List<YAxisLabel> {
+    val yStep = if (glucoseUnit == com.psjostrom.strimma.data.GlucoseUnit.MGDL) {
+        if (yr.range > Y_RANGE_THRESHOLD) MGDL_Y_STEP_LARGE else MGDL_Y_STEP_SMALL
+    } else {
+        (if (yr.range > Y_RANGE_THRESHOLD) MMOL_Y_STEP_LARGE else MMOL_Y_STEP_SMALL) *
+            com.psjostrom.strimma.data.GlucoseUnit.MGDL_FACTOR
+    }
+    val labels = mutableListOf<YAxisLabel>()
+    var yLabel = Math.ceil(yr.yMin / yStep) * yStep
+    while (yLabel <= yr.yMax) {
+        val text = if (glucoseUnit == com.psjostrom.strimma.data.GlucoseUnit.MGDL) {
+            "%.0f".format(yLabel)
+        } else {
+            "%.0f".format(yLabel / com.psjostrom.strimma.data.GlucoseUnit.MGDL_FACTOR)
+        }
+        labels += YAxisLabel(yLabel, text)
+        yLabel += yStep
+    }
+    return labels
+}
+
 fun computeYRange(mgdlValues: List<Double>, bgLow: Double, bgHigh: Double): YRange {
     val dataMin = mgdlValues.minOrNull() ?: bgLow
     val dataMax = mgdlValues.maxOrNull() ?: bgHigh

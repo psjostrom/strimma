@@ -3,6 +3,7 @@ package com.psjostrom.strimma.receiver
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import com.psjostrom.strimma.data.GlucoseReading
 
 /**
  * Receives xDrip-compatible BG broadcasts from other CGM apps.
@@ -20,8 +21,6 @@ class XdripBroadcastReceiver : BroadcastReceiver() {
 
     companion object {
         const val ACTION = "com.eveningoutpost.dexdrip.BgEstimate"
-        private const val MIN_VALID_MGDL = 18.0
-        private const val MAX_VALID_MGDL = 900.0
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -34,7 +33,7 @@ class XdripBroadcastReceiver : BroadcastReceiver() {
         val timestamp = intent.getLongExtra("com.eveningoutpost.dexdrip.Extras.Time", 0L)
 
         if (sgv <= 0.0 || timestamp <= 0L) return
-        if (sgv < MIN_VALID_MGDL || sgv > MAX_VALID_MGDL) return
+        if (!GlucoseReading.isValidSgv(sgv)) return
 
         DebugLog.log(message = "xDrip broadcast: ${sgv.toInt()} mg/dL")
 
