@@ -377,7 +377,12 @@ class StrimmaService : Service() {
             mgr.getGlanceIds(StrimmaWidget::class.java).forEach { id ->
                 StrimmaWidget().update(this@StrimmaService, id)
             }
-        } catch (_: Exception) {}
+        } catch (
+            @Suppress("TooGenericExceptionCaught") // Glance can throw various platform exceptions
+            e: Exception
+        ) {
+            DebugLog.log("Widget update failed: ${e.javaClass.simpleName}: ${e.message}")
+        }
     }
 
     private fun writeToHealthConnectIfEnabled(reading: GlucoseReading) {
