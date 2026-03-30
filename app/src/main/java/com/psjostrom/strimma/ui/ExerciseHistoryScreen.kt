@@ -548,7 +548,7 @@ private fun PlannedWorkoutCard(
     val dateStr = dateFmt.format(Date(event.startTime))
     val timeRange = "${timeFmt.format(Date(event.startTime))}\u2013${timeFmt.format(Date(event.endTime))}"
     val durationMin = ((event.endTime - event.startTime) / MS_PER_MINUTE).toInt()
-    val categoryName = event.category.name.lowercase().replaceFirstChar { it.uppercase() }
+    val categoryName = event.category.displayName
     val targetLow = glucoseUnit.format(event.metabolicProfile.defaultTargetLowMgdl.toDouble())
     val targetHigh = glucoseUnit.format(event.metabolicProfile.defaultTargetHighMgdl.toDouble())
 
@@ -718,7 +718,7 @@ private fun ExerciseCard(
             val maxHR by viewModel.maxHeartRate.collectAsState()
             val profileName = bgContext?.let { ctx ->
                 val profile = CategoryStatsCalculator.resolveProfile(session, ctx, maxHR)
-                profile.name.lowercase().replaceFirstChar { it.uppercase() }.replace('_', ' ')
+                profile.displayName
             }
             val subtitle = buildString {
                 append("$dateStr \u00B7 $timeRange")
@@ -868,7 +868,7 @@ private fun PlannedWorkoutSheet(
                     val dateStr = dateFmt.format(Date(event.startTime))
                     val timeRange = "${timeFmt.format(Date(event.startTime))}\u2013${timeFmt.format(Date(event.endTime))}"
                     val durationMin = ((event.endTime - event.startTime) / MS_PER_MINUTE).toInt()
-                    val categoryName = event.category.name.lowercase().replaceFirstChar { it.uppercase() }
+                    val categoryName = event.category.displayName
                     val targetLow = glucoseUnit.format(event.metabolicProfile.defaultTargetLowMgdl.toDouble())
                     val targetHigh = glucoseUnit.format(event.metabolicProfile.defaultTargetHighMgdl.toDouble())
 
@@ -1029,7 +1029,7 @@ private fun PatternCard(
         profile?.name?.lowercase()?.replaceFirstChar { it.uppercase() }?.replace('_', ' ')
             ?: "Unknown"
     } else {
-        "${stats.category.emoji} ${stats.category.name.lowercase().replaceFirstChar { it.uppercase() }}"
+        "${stats.category.emoji} ${stats.category.displayName}"
     }
 
     // Risk badge

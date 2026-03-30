@@ -97,9 +97,8 @@ fun ExerciseDetailSheet(
                 val profileName = bgContext?.let { ctx ->
                     val profile = com.psjostrom.strimma.data.health.CategoryStatsCalculator
                         .resolveProfile(session, ctx, null)
-                    profile.name.lowercase().replaceFirstChar { it.uppercase() }.replace('_', ' ')
-                } ?: category.defaultMetabolicProfile.name.lowercase()
-                    .replaceFirstChar { it.uppercase() }.replace('_', ' ')
+                    profile.displayName
+                } ?: category.defaultMetabolicProfile.displayName
 
                 Text(
                     text = header,

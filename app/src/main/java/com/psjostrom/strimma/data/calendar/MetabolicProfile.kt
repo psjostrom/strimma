@@ -8,6 +8,9 @@ enum class MetabolicProfile(
     HIGH_INTENSITY(144f, 216f),    // 8-12 mmol/L — lower hypo risk, may spike
     RESISTANCE(126f, 180f);        // 7-10 mmol/L — similar to aerobic, delayed effect
 
+    val displayName: String
+        get() = name.lowercase().replaceFirstChar { it.uppercase() }.replace('_', ' ')
+
     companion object {
         private val HIGH_INTENSITY_KEYWORDS = listOf(
             "interval", "tempo", "threshold", "speed", "fartlek", "hiit", "sprint",

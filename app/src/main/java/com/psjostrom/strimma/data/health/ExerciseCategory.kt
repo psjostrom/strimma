@@ -114,7 +114,14 @@ enum class ExerciseCategory(
         emptyList()
     );
 
+    val displayName: String
+        get() = name.lowercase().replaceFirstChar { it.uppercase() }
+
     companion object {
+        private val keywordIndex: List<Pair<ExerciseCategory, List<String>>> by lazy {
+            entries.map { cat -> cat to cat.keywords.map { it.lowercase() } }
+        }
+
         fun fromHCType(type: Int): ExerciseCategory = when (type) {
             ExerciseSessionRecord.EXERCISE_TYPE_RUNNING,
             ExerciseSessionRecord.EXERCISE_TYPE_RUNNING_TREADMILL -> RUNNING
@@ -139,8 +146,8 @@ enum class ExerciseCategory(
 
         fun fromTitle(title: String): ExerciseCategory {
             val lower = title.lowercase()
-            for (category in entries) {
-                if (category.keywords.any { lower.contains(it) }) return category
+            for ((category, kws) in keywordIndex) {
+                if (kws.any { lower.contains(it) }) return category
             }
             return OTHER
         }

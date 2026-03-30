@@ -425,7 +425,7 @@ private fun ExerciseTargetRow(
 
     Column {
         Text(
-            "${category.emoji} ${category.name.lowercase().replaceFirstChar { it.uppercase() }}",
+            "${category.emoji} ${category.displayName}",
             color = textColor, fontSize = 14.sp
         )
         Row(
