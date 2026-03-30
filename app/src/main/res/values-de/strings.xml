@@ -14,6 +14,7 @@
     <string name="common_content_desc_share_log">Protokoll teilen</string>
 
     <!-- Main Screen -->
+    <string name="main_waiting_for_reading">Warte auf ersten Glukosewert\u2026</string>
     <string name="main_just_now">Gerade eben</string>
     <string name="main_min_ago">Vor %1$d Min.</string>
     <string name="main_prediction_low">Tief in %1$d Min.</string>
@@ -152,6 +153,7 @@
     <string name="settings_data_web_server_desc">BG-Daten auf Port 17580 f\u00FCr Zifferbl\u00E4tter und Apps bereitstellen</string>
     <string name="settings_data_api_secret">API-Geheimnis</string>
     <string name="settings_data_backup">Sicherung</string>
+    <string name="settings_data_export_readings">Messwerte exportieren (CSV)</string>
     <string name="settings_data_export_settings">Einstellungen exportieren</string>
     <string name="settings_data_import_settings">Einstellungen importieren</string>
 
@@ -232,6 +234,8 @@
     <string name="widget_config_title">Widget-Einstellungen</string>
     <string name="widget_config_graph_range">Diagrammbereich</string>
     <string name="widget_config_show_prediction">Vorhersage anzeigen</string>
+    <string name="widget_config_light_mode">Heller Hintergrund</string>
+    <string name="widget_config_color_coded">Farbcodierter BG</string>
     <string name="widget_config_background">Hintergrund</string>
     <string name="widget_config_opacity">%1$d%%</string>
     <string name="widget_config_background_hint">Steuert nur den Hintergrund \u2014 Diagramm und Werte bleiben voll sichtbar</string>
@@ -291,6 +295,7 @@
     <string name="activity_import_failed">Import fehlgeschlagen: %1$s</string>
     <string name="activity_export_dialog_title">Einstellungen exportieren</string>
     <string name="activity_export_dialog_message">Die Exportdatei enth\u00E4lt deine Nightscout-Geheimnisse im Klartext. Teile sie nur mit vertrauensw\u00FCrdigen Apps.</string>
+    <string name="activity_export_readings_chooser">Messwerte exportieren</string>
     <string name="activity_export_chooser">Einstellungen exportieren</string>
     <string name="activity_export_failed">Export fehlgeschlagen: %1$s</string>
     <string name="activity_pull_progress">Lade %1$d Tage von Nightscout\u2026</string>

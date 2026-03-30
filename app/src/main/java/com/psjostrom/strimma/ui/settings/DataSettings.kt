@@ -23,6 +23,7 @@ fun DataSettings(
     onWebServerEnabledChange: (Boolean) -> Unit,
     onWebServerSecretChange: (String) -> Unit,
     onExportSettings: () -> Unit,
+    onExportReadings: () -> Unit,
     onImportSettings: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -82,6 +83,12 @@ fun DataSettings(
         }
 
         SettingsSection(stringResource(R.string.settings_data_backup)) {
+            OutlinedButton(
+                onClick = onExportReadings,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(stringResource(R.string.settings_data_export_readings))
+            }
             OutlinedButton(
                 onClick = onExportSettings,
                 modifier = Modifier.fillMaxWidth()

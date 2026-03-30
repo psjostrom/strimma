@@ -14,6 +14,7 @@
     <string name="common_content_desc_share_log">Partager le journal</string>
 
     <!-- Main Screen -->
+    <string name="main_waiting_for_reading">En attente de la premi\u00E8re glyc\u00E9mie\u2026</string>
     <string name="main_just_now">\u00C0 l\u2019instant</string>
     <string name="main_min_ago">Il y a %1$d min</string>
     <string name="main_prediction_low">Bas dans %1$d min</string>
@@ -152,6 +153,7 @@
     <string name="settings_data_web_server_desc">Servir les donn\u00E9es BG sur le port 17580 pour cadrans et applications</string>
     <string name="settings_data_api_secret">Secret API</string>
     <string name="settings_data_backup">Sauvegarde</string>
+    <string name="settings_data_export_readings">Exporter les lectures (CSV)</string>
     <string name="settings_data_export_settings">Exporter les param\u00E8tres</string>
     <string name="settings_data_import_settings">Importer les param\u00E8tres</string>
 
@@ -232,6 +234,8 @@
     <string name="widget_config_title">Param\u00E8tres du widget</string>
     <string name="widget_config_graph_range">Plage du graphique</string>
     <string name="widget_config_show_prediction">Afficher la pr\u00E9diction</string>
+    <string name="widget_config_light_mode">Fond clair</string>
+    <string name="widget_config_color_coded">BG color\u00E9</string>
     <string name="widget_config_background">Arri\u00E8re-plan</string>
     <string name="widget_config_opacity">%1$d%%</string>
     <string name="widget_config_background_hint">Contr\u00F4le uniquement l\u2019arri\u00E8re-plan \u2014 le graphique et les valeurs restent enti\u00E8rement visibles</string>
@@ -291,6 +295,7 @@
     <string name="activity_import_failed">\u00C9chec de l\u2019importation : %1$s</string>
     <string name="activity_export_dialog_title">Exporter les param\u00E8tres</string>
     <string name="activity_export_dialog_message">Le fichier d\u2019exportation contient vos secrets Nightscout en texte clair. Ne le partagez qu\u2019avec des applications de confiance.</string>
+    <string name="activity_export_readings_chooser">Exporter les lectures</string>
     <string name="activity_export_chooser">Exporter les param\u00E8tres</string>
     <string name="activity_export_failed">\u00C9chec de l\u2019exportation : %1$s</string>
     <string name="activity_pull_progress">T\u00E9l\u00E9chargement de %1$d jours depuis Nightscout\u2026</string>
