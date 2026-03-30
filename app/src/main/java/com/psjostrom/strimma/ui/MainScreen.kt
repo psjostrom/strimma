@@ -47,6 +47,7 @@ import com.psjostrom.strimma.graph.CRITICAL_LOW
 import com.psjostrom.strimma.graph.PredictionComputer
 import com.psjostrom.strimma.graph.ThresholdCrossing
 import com.psjostrom.strimma.graph.CrossingType
+import com.psjostrom.strimma.graph.computeYAxisLabels
 import com.psjostrom.strimma.graph.computeYRange
 import com.psjostrom.strimma.network.FollowerStatus
 import com.psjostrom.strimma.notification.AlertCategory
@@ -952,25 +953,13 @@ fun GlucoseGraph(
         }
 
         textPaint.textAlign = android.graphics.Paint.Align.RIGHT
-        val yStep = if (glucoseUnit == GlucoseUnit.MGDL) {
-            if (yr.range > 180.0) 50.0 else 25.0
-        } else {
-            if (yr.range > 180.0) 2.0 * GlucoseUnit.MGDL_FACTOR else GlucoseUnit.MGDL_FACTOR
-        }
-        var yLabel = Math.ceil(yr.yMin / yStep) * yStep
-        while (yLabel <= yr.yMax) {
-            val y = yFor(yLabel)
+        for (label in computeYAxisLabels(yr, glucoseUnit)) {
+            val y = yFor(label.mgdl)
             if (y > marginTop + 10 && y < size.height - marginBottom - 10) {
-                val labelText = if (glucoseUnit == GlucoseUnit.MGDL) {
-                    "%.0f".format(yLabel)
-                } else {
-                    "%.0f".format(yLabel / GlucoseUnit.MGDL_FACTOR)
-                }
                 drawContext.canvas.nativeCanvas.drawText(
-                    labelText, marginLeft - 6f, y + 8f, textPaint
+                    label.text, marginLeft - 6f, y + 8f, textPaint
                 )
             }
-            yLabel += yStep
         }
     }
 }
