@@ -75,7 +75,7 @@ class StrimmaService : Service() {
         private const val FORECAST_HORIZON_MINUTES = 30
 
         private const val DELTA_DIVISOR = 5.0
-        private const val MGDL_FACTOR = 18.0182
+        private const val MGDL_FACTOR = GlucoseUnit.MGDL_FACTOR
         private const val MIN_VALID_MGDL = 18.0
         private const val MAX_VALID_MGDL = 900.0
     }
