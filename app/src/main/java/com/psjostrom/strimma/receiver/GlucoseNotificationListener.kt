@@ -10,6 +10,7 @@ import android.service.notification.StatusBarNotification
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseSource
 
 /**
@@ -95,8 +96,6 @@ class GlucoseNotificationListener : NotificationListenerService() {
         const val EXTRA_MGDL = "mgdl"
         const val EXTRA_TIMESTAMP = "timestamp"
 
-        private const val MIN_VALID_MGDL = 18.0
-        private const val MAX_VALID_MGDL = 900.0
 
         fun isEnabled(context: Context): Boolean {
             val flat = Settings.Secure.getString(
@@ -144,7 +143,7 @@ class GlucoseNotificationListener : NotificationListenerService() {
         val notification = sbn.notification ?: return
         val mgdl = extractGlucose(notification)
 
-        if (mgdl != null && mgdl > MIN_VALID_MGDL && mgdl < MAX_VALID_MGDL) {
+        if (mgdl != null && GlucoseReading.isValidSgv(mgdl)) {
             DebugLog.log(message = "Parsed: ${mgdl.toInt()} mg/dL")
             val intent = Intent(this, com.psjostrom.strimma.service.StrimmaService::class.java).apply {
                 action = ACTION_GLUCOSE_RECEIVED

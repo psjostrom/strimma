@@ -122,8 +122,11 @@ class LibreLinkUpFollower @Inject constructor(
         item: LluGlucoseItem,
         onNewReading: suspend (GlucoseReading) -> Unit
     ): Boolean {
-        if (item.value < MIN_VALID_SGV || item.value > MAX_VALID_SGV) {
-            DebugLog.log(message = "LLU: rejected SGV ${item.value} (outside $MIN_VALID_SGV–$MAX_VALID_SGV)")
+        if (!GlucoseReading.isValidSgv(item.value)) {
+            DebugLog.log(
+                message = "LLU: rejected SGV ${item.value} " +
+                    "(outside ${GlucoseReading.MIN_VALID_SGV}–${GlucoseReading.MAX_VALID_SGV})",
+            )
             return false
         }
         val ts = parseLluTimestamp(item.factoryTimestamp) ?: return false
@@ -157,8 +160,6 @@ class LibreLinkUpFollower @Inject constructor(
     }
 
     companion object {
-        private const val MIN_VALID_SGV = 18
-        private const val MAX_VALID_SGV = 900
 
         // FactoryTimestamp is UTC and uses a consistent M/d/yyyy format across all regions,
         // unlike Timestamp which uses regional formats (EU day-first vs US month-first).

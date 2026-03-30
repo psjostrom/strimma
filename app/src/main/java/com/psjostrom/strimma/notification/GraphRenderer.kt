@@ -6,6 +6,7 @@ import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.health.StoredExerciseSession
 import com.psjostrom.strimma.graph.PredictionComputer
 import com.psjostrom.strimma.graph.canvasColorFor
+import com.psjostrom.strimma.graph.computeYAxisLabels
 import com.psjostrom.strimma.graph.computeYRange
 import com.psjostrom.strimma.graph.CANVAS_EXERCISE
 import com.psjostrom.strimma.graph.CANVAS_HIGH
@@ -53,12 +54,6 @@ object GraphRenderer {
     private const val LABEL_X_OFFSET = 6f
     private const val LABEL_MARGIN_TOP = 8f
     private const val LABEL_MARGIN_BOTTOM = 8f
-
-    // Y-axis step thresholds (all in mg/dL now — yRange is in mg/dL)
-    private const val MGDL_Y_RANGE_THRESHOLD = 180.0
-    private const val MGDL_Y_STEP_LARGE = 50.0
-    private const val MGDL_Y_STEP_SMALL = 25.0
-    private const val MMOL_Y_RANGE_THRESHOLD = 180.0
 
     // Alpha values
     private const val PREDICTION_ALPHA = 128
@@ -234,23 +229,11 @@ object GraphRenderer {
             }
 
             textPaint.textAlign = Paint.Align.RIGHT
-            val yStep = if (glucoseUnit == GlucoseUnit.MGDL) {
-                if (yr.range > MGDL_Y_RANGE_THRESHOLD) MGDL_Y_STEP_LARGE else MGDL_Y_STEP_SMALL
-            } else {
-                if (yr.range > MMOL_Y_RANGE_THRESHOLD) 2.0 * GlucoseUnit.MGDL_FACTOR else GlucoseUnit.MGDL_FACTOR
-            }
-            var yLabel = Math.ceil(yr.yMin / yStep) * yStep
-            while (yLabel <= yr.yMax) {
-                val y = yFor(yLabel)
+            for (label in computeYAxisLabels(yr, glucoseUnit)) {
+                val y = yFor(label.mgdl)
                 if (y > marginTop + LABEL_MARGIN_TOP && y < height - marginBottom - LABEL_MARGIN_BOTTOM) {
-                    val labelText = if (glucoseUnit == GlucoseUnit.MGDL) {
-                        "%.0f".format(yLabel)
-                    } else {
-                        "%.0f".format(yLabel / GlucoseUnit.MGDL_FACTOR)
-                    }
-                    canvas.drawText(labelText, marginLeft - LABEL_Y_OFFSET, y + LABEL_X_OFFSET, textPaint)
+                    canvas.drawText(label.text, marginLeft - LABEL_Y_OFFSET, y + LABEL_X_OFFSET, textPaint)
                 }
-                yLabel += yStep
             }
         }
 
