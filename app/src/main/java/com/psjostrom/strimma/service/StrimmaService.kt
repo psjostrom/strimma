@@ -345,7 +345,7 @@ class StrimmaService : Service() {
         val sgv = Math.round(mgdl).toInt()
 
         val existing = dao.lastN(1)
-        if (existing.isNotEmpty() && (timestamp - existing[0].ts) < DUPLICATE_THRESHOLD_MS) return
+        if (existing.isNotEmpty() && kotlin.math.abs(timestamp - existing[0].ts) < DUPLICATE_THRESHOLD_MS) return
 
         val recentReadings = dao.since(timestamp - LOOKBACK_MINUTES * MS_PER_MINUTE)
         val tempReading = GlucoseReading(
