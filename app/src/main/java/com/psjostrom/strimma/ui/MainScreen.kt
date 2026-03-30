@@ -43,6 +43,8 @@ import com.psjostrom.strimma.data.health.ExerciseBGContext
 import com.psjostrom.strimma.data.health.ExerciseCategory
 import com.psjostrom.strimma.data.health.StoredExerciseSession
 import com.psjostrom.strimma.graph.CRITICAL_HIGH
+import com.psjostrom.strimma.graph.BgStatus
+import com.psjostrom.strimma.graph.bgStatusFor
 import com.psjostrom.strimma.graph.CRITICAL_LOW
 import com.psjostrom.strimma.graph.PredictionComputer
 import com.psjostrom.strimma.graph.ThresholdCrossing
@@ -1085,13 +1087,12 @@ fun Minimap(
 
 // --- Helpers ---
 
-private fun dotColor(mgdl: Double, bgLow: Double, bgHigh: Double): Color = when {
-    mgdl <= CRITICAL_LOW -> BelowLow
-    mgdl < bgLow -> BelowLow
-    mgdl >= CRITICAL_HIGH -> BelowLow
-    mgdl > bgHigh -> AboveHigh
-    else -> InRange
-}
+private fun dotColor(mgdl: Double, bgLow: Double, bgHigh: Double): Color =
+    when (bgStatusFor(mgdl, bgLow, bgHigh)) {
+        BgStatus.IN_RANGE -> InRange
+        BgStatus.HIGH -> AboveHigh
+        BgStatus.LOW -> BelowLow
+    }
 
 internal const val GRAPH_MARGIN_TOP = 16f
 internal const val GRAPH_MARGIN_BOTTOM = 40f
