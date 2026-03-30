@@ -19,8 +19,6 @@ fun DataSourceSettings(
     glucoseSource: GlucoseSource,
     nightscoutUrl: String,
     nightscoutSecret: String,
-    followerUrl: String,
-    followerSecret: String,
     followerPollSeconds: Int,
     lluEmail: String,
     lluPassword: String,
@@ -28,8 +26,6 @@ fun DataSourceSettings(
     onGlucoseSourceChange: (GlucoseSource) -> Unit,
     onNightscoutUrlChange: (String) -> Unit,
     onNightscoutSecretChange: (String) -> Unit,
-    onFollowerUrlChange: (String) -> Unit,
-    onFollowerSecretChange: (String) -> Unit,
     onFollowerPollSecondsChange: (Int) -> Unit,
     onLluEmailChange: (String) -> Unit,
     onLluPasswordChange: (String) -> Unit,
@@ -144,62 +140,36 @@ fun DataSourceSettings(
             onPull = onPullFromNightscout
         )
 
-        if (glucoseSource != GlucoseSource.NIGHTSCOUT_FOLLOWER) {
-            SettingsSection(stringResource(R.string.settings_source_nightscout_push)) {
-                var urlText by remember(nightscoutUrl) { mutableStateOf(nightscoutUrl) }
-                OutlinedTextField(
-                    value = urlText,
-                    onValueChange = {
-                        urlText = it
-                        onNightscoutUrlChange(it)
-                    },
-                    label = { Text(stringResource(R.string.settings_source_nightscout_url)) },
-                    placeholder = { Text(stringResource(R.string.settings_source_url_placeholder)) },
-                    supportingText = { Text(stringResource(R.string.settings_source_url_hint)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
+        SettingsSection(stringResource(R.string.settings_source_nightscout)) {
+            var urlText by remember(nightscoutUrl) { mutableStateOf(nightscoutUrl) }
+            OutlinedTextField(
+                value = urlText,
+                onValueChange = {
+                    urlText = it
+                    onNightscoutUrlChange(it)
+                },
+                label = { Text(stringResource(R.string.settings_source_nightscout_url)) },
+                placeholder = { Text(stringResource(R.string.settings_source_url_placeholder)) },
+                supportingText = { Text(stringResource(R.string.settings_source_url_hint)) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
 
-                var secretText by remember(nightscoutSecret) { mutableStateOf(nightscoutSecret) }
-                OutlinedTextField(
-                    value = secretText,
-                    onValueChange = {
-                        secretText = it
-                        onNightscoutSecretChange(it)
-                    },
-                    label = { Text(stringResource(R.string.settings_source_api_secret)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-            }
-        } else {
-            SettingsSection(stringResource(R.string.settings_source_following)) {
-                var urlText by remember(followerUrl) { mutableStateOf(followerUrl) }
-                OutlinedTextField(
-                    value = urlText,
-                    onValueChange = {
-                        urlText = it
-                        onFollowerUrlChange(it)
-                    },
-                    label = { Text(stringResource(R.string.settings_source_nightscout_url)) },
-                    placeholder = { Text(stringResource(R.string.settings_source_follower_url_placeholder)) },
-                    supportingText = { Text(stringResource(R.string.settings_source_follower_url_hint)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
+            var secretText by remember(nightscoutSecret) { mutableStateOf(nightscoutSecret) }
+            OutlinedTextField(
+                value = secretText,
+                onValueChange = {
+                    secretText = it
+                    onNightscoutSecretChange(it)
+                },
+                label = { Text(stringResource(R.string.settings_source_api_secret)) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+        }
 
-                var secretText by remember(followerSecret) { mutableStateOf(followerSecret) }
-                OutlinedTextField(
-                    value = secretText,
-                    onValueChange = {
-                        secretText = it
-                        onFollowerSecretChange(it)
-                    },
-                    label = { Text(stringResource(R.string.settings_source_api_secret)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-
+        if (glucoseSource == GlucoseSource.NIGHTSCOUT_FOLLOWER) {
+            SettingsSection(stringResource(R.string.settings_source_poll_settings)) {
                 Text(
                     stringResource(R.string.settings_source_poll_interval, followerPollSeconds),
                     color = onBg,

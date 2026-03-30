@@ -1,6 +1,5 @@
 package com.psjostrom.strimma.network
 
-import com.psjostrom.strimma.data.GlucoseSource
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.TreatmentDao
 import com.psjostrom.strimma.receiver.DebugLog
@@ -43,7 +42,8 @@ class TreatmentSyncer @Inject constructor(
     }
 
     suspend fun pullHistory(days: Int): Result<Int> {
-        val (url, secret) = resolveUrlAndSecret()
+        val url = settings.nightscoutUrl.first()
+        val secret = settings.getNightscoutSecret()
         if (url.isBlank() || secret.isBlank()) {
             return Result.failure(IllegalStateException("Nightscout URL or secret not configured"))
         }
@@ -66,16 +66,9 @@ class TreatmentSyncer @Inject constructor(
         }
     }
 
-    private suspend fun resolveUrlAndSecret(): Pair<String, String> {
-        return if (settings.glucoseSource.first() == GlucoseSource.NIGHTSCOUT_FOLLOWER) {
-            settings.followerUrl.first() to settings.getFollowerSecret()
-        } else {
-            settings.nightscoutUrl.first() to settings.getNightscoutSecret()
-        }
-    }
-
     private suspend fun sync() {
-        val (url, secret) = resolveUrlAndSecret()
+        val url = settings.nightscoutUrl.first()
+        val secret = settings.getNightscoutSecret()
         if (url.isBlank() || secret.isBlank()) return
 
         val since = System.currentTimeMillis() - LOOKBACK_MS

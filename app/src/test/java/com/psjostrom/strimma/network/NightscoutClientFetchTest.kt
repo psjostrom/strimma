@@ -56,6 +56,43 @@ class NightscoutClientFetchTest {
     }
 
     @Test
+    fun `normalizeUrl returns empty for blank input`() {
+        assertEquals("", NightscoutClient.normalizeUrl(""))
+        assertEquals("", NightscoutClient.normalizeUrl("   "))
+    }
+
+    @Test
+    fun `normalizeUrl prepends https when no scheme`() {
+        assertEquals("https://ns.example.com", NightscoutClient.normalizeUrl("ns.example.com"))
+    }
+
+    @Test
+    fun `normalizeUrl preserves existing http scheme`() {
+        assertEquals("http://ns.example.com", NightscoutClient.normalizeUrl("http://ns.example.com"))
+    }
+
+    @Test
+    fun `normalizeUrl preserves existing https scheme`() {
+        assertEquals("https://ns.example.com", NightscoutClient.normalizeUrl("https://ns.example.com"))
+    }
+
+    @Test
+    fun `normalizeUrl strips trailing slashes`() {
+        assertEquals("https://ns.example.com", NightscoutClient.normalizeUrl("https://ns.example.com/"))
+        assertEquals("https://ns.example.com", NightscoutClient.normalizeUrl("https://ns.example.com///"))
+    }
+
+    @Test
+    fun `normalizeUrl trims whitespace`() {
+        assertEquals("https://ns.example.com", NightscoutClient.normalizeUrl("  https://ns.example.com  "))
+    }
+
+    @Test
+    fun `normalizeUrl handles combined edge cases`() {
+        assertEquals("https://ns.example.com", NightscoutClient.normalizeUrl("  ns.example.com/  "))
+    }
+
+    @Test
     fun `buildFetchUrl constructs correct query string`() {
         val url = NightscoutClient.buildFetchUrl("https://ns.example.com", since = 1710700000000L, count = 100)
         assertEquals("https://ns.example.com/api/v1/entries.json?find[date][\$gt]=1710700000000&count=100", url)

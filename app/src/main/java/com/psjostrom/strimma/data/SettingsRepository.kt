@@ -120,9 +120,7 @@ class SettingsRepository @Inject constructor(
         private const val SYNC_PREFS = "strimma_sync"
         private const val KEY_GLUCOSE_SOURCE_SYNC = "glucose_source"
 
-        private val KEY_FOLLOWER_URL = stringPreferencesKey("follower_url")
         private val KEY_FOLLOWER_POLL_SECONDS = intPreferencesKey("follower_poll_seconds")
-        private const val KEY_FOLLOWER_SECRET = "follower_secret"
 
         private const val KEY_LLU_EMAIL = "llu_email"
         private const val KEY_LLU_PASSWORD = "llu_password"
@@ -206,17 +204,7 @@ class SettingsRepository @Inject constructor(
     val alertHighSoonEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_HIGH_SOON_ENABLED] ?: true }
 
     suspend fun setNightscoutUrl(url: String) {
-        dataStore.edit { it[KEY_NIGHTSCOUT_URL] = normalizeUrl(url) }
-    }
-
-    private fun normalizeUrl(raw: String): String {
-        val trimmed = raw.trim().trimEnd('/')
-        if (trimmed.isBlank()) return ""
-        return if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-            trimmed
-        } else {
-            "https://$trimmed"
-        }
+        dataStore.edit { it[KEY_NIGHTSCOUT_URL] = url.trim() }
     }
     suspend fun setGraphWindowHours(hours: Int) { dataStore.edit { it[KEY_GRAPH_WINDOW_HOURS] = hours } }
     suspend fun setBgLow(value: Float) { dataStore.edit { it[KEY_BG_LOW] = value } }
@@ -271,16 +259,8 @@ class SettingsRepository @Inject constructor(
         return try { GlucoseSource.valueOf(name) } catch (_: Exception) { GlucoseSource.COMPANION }
     }
 
-    val followerUrl: Flow<String> = dataStore.data.map { it[KEY_FOLLOWER_URL] ?: "" }
-    suspend fun setFollowerUrl(url: String) { dataStore.edit { it[KEY_FOLLOWER_URL] = normalizeUrl(url) } }
-
     val followerPollSeconds: Flow<Int> = dataStore.data.map { it[KEY_FOLLOWER_POLL_SECONDS] ?: DEFAULT_FOLLOWER_POLL_SECONDS }
     suspend fun setFollowerPollSeconds(seconds: Int) { dataStore.edit { it[KEY_FOLLOWER_POLL_SECONDS] = seconds } }
-
-    fun getFollowerSecret(): String = encryptedPrefs.getString(KEY_FOLLOWER_SECRET, "") ?: ""
-    fun setFollowerSecret(secret: String) {
-        encryptedPrefs.edit().putString(KEY_FOLLOWER_SECRET, secret).apply()
-    }
 
     fun getLluEmail(): String = encryptedPrefs.getString(KEY_LLU_EMAIL, "") ?: ""
     fun setLluEmail(email: String) {
@@ -470,7 +450,6 @@ class SettingsRepository @Inject constructor(
             put("hba1c_unit", prefs[KEY_HBA1C_UNIT] ?: "MMOL_MOL")
             put("bg_broadcast_enabled", prefs[KEY_BG_BROADCAST_ENABLED] ?: false)
             put("glucose_source", prefs[KEY_GLUCOSE_SOURCE] ?: "COMPANION")
-            put("follower_url", prefs[KEY_FOLLOWER_URL] ?: "")
             put("follower_poll_seconds", prefs[KEY_FOLLOWER_POLL_SECONDS] ?: DEFAULT_FOLLOWER_POLL_SECONDS)
             put("treatments_sync_enabled", prefs[KEY_TREATMENTS_SYNC_ENABLED] ?: false)
             put("insulin_type", prefs[KEY_INSULIN_TYPE] ?: "FIASP")
@@ -483,7 +462,6 @@ class SettingsRepository @Inject constructor(
 
         val secrets = JSONObject().apply {
             put("nightscout_secret", getNightscoutSecret())
-            put("follower_secret", getFollowerSecret())
             put("web_server_secret", getWebServerSecret())
             put("llu_email", getLluEmail())
             put("llu_password", getLluPassword())
@@ -510,7 +488,7 @@ class SettingsRepository @Inject constructor(
         }
 
         dataStore.edit { prefs ->
-            if (settings.has("nightscout_url")) prefs[KEY_NIGHTSCOUT_URL] = settings.getString("nightscout_url")
+            if (settings.has("nightscout_url")) prefs[KEY_NIGHTSCOUT_URL] = settings.getString("nightscout_url").trim()
             if (settings.has("graph_window_hours")) prefs[KEY_GRAPH_WINDOW_HOURS] = settings.getInt("graph_window_hours")
             if (settings.has("bg_low")) prefs[KEY_BG_LOW] = importThreshold("bg_low")
             if (settings.has("bg_high")) prefs[KEY_BG_HIGH] = importThreshold("bg_high")
@@ -534,7 +512,6 @@ class SettingsRepository @Inject constructor(
             if (settings.has("hba1c_unit")) prefs[KEY_HBA1C_UNIT] = settings.getString("hba1c_unit")
             if (settings.has("bg_broadcast_enabled")) prefs[KEY_BG_BROADCAST_ENABLED] = settings.getBoolean("bg_broadcast_enabled")
             if (settings.has("glucose_source")) prefs[KEY_GLUCOSE_SOURCE] = settings.getString("glucose_source")
-            if (settings.has("follower_url")) prefs[KEY_FOLLOWER_URL] = settings.getString("follower_url")
             if (settings.has("follower_poll_seconds")) prefs[KEY_FOLLOWER_POLL_SECONDS] = settings.getInt("follower_poll_seconds")
             if (settings.has("treatments_sync_enabled")) prefs[KEY_TREATMENTS_SYNC_ENABLED] = settings.getBoolean("treatments_sync_enabled")
             if (settings.has("insulin_type")) prefs[KEY_INSULIN_TYPE] = settings.getString("insulin_type")
@@ -557,7 +534,6 @@ class SettingsRepository @Inject constructor(
         if (root.has("secrets")) {
             val secrets = root.getJSONObject("secrets")
             if (secrets.has("nightscout_secret")) setNightscoutSecret(secrets.getString("nightscout_secret"))
-            if (secrets.has("follower_secret")) setFollowerSecret(secrets.getString("follower_secret"))
             if (secrets.has("web_server_secret")) setWebServerSecret(secrets.getString("web_server_secret"))
             if (secrets.has("llu_email")) setLluEmail(secrets.getString("llu_email"))
             if (secrets.has("llu_password")) setLluPassword(secrets.getString("llu_password"))

@@ -22,7 +22,7 @@ import com.psjostrom.strimma.data.GlucoseSource
 import com.psjostrom.strimma.ui.theme.InRange
 import kotlinx.coroutines.launch
 
-private const val STEP_COUNT = 6
+private const val STEP_COUNT = 5
 
 @Composable
 fun SetupScreen(
@@ -42,11 +42,6 @@ fun SetupScreen(
 
     val glucoseUnit by viewModel.glucoseUnit.collectAsState()
     val glucoseSource by viewModel.glucoseSource.collectAsState()
-    val nightscoutUrl by viewModel.nightscoutUrl.collectAsState()
-    val pushEnabled by viewModel.pushEnabled.collectAsState()
-    val connectionTestState by viewModel.connectionTestState.collectAsState()
-    val followerUrl by viewModel.followerUrl.collectAsState()
-    val followerTestState by viewModel.followerTestState.collectAsState()
 
     // Alerts
     val alertUrgentLowEnabled by viewModel.alertUrgentLowEnabled.collectAsState()
@@ -64,11 +59,10 @@ fun SetupScreen(
     val canAdvance = when (pagerState.currentPage) {
         2 -> when (glucoseSource) {
             GlucoseSource.COMPANION -> isNotificationAccessGranted
-            GlucoseSource.NIGHTSCOUT_FOLLOWER -> followerTestState is ConnectionTestState.Success
+            GlucoseSource.NIGHTSCOUT_FOLLOWER -> true
             GlucoseSource.XDRIP_BROADCAST -> true
             GlucoseSource.LIBRELINKUP -> true
         }
-        3 -> !pushEnabled || connectionTestState is ConnectionTestState.Success
         else -> true
     }
 
@@ -76,7 +70,6 @@ fun SetupScreen(
         stringResource(R.string.setup_welcome_title),
         stringResource(R.string.setup_units_title),
         stringResource(R.string.setup_source_title),
-        stringResource(R.string.setup_nightscout_title),
         stringResource(R.string.setup_alerts_title),
         stringResource(R.string.setup_permissions_title)
     )
@@ -149,28 +142,12 @@ fun SetupScreen(
                             isNotificationAccessGranted = isNotificationAccessGranted,
                             onOpenNotificationAccess = onOpenNotificationAccess,
                             onOpenAppInfo = onOpenAppInfo,
-                            followerUrl = followerUrl,
-                            followerSecret = viewModel.followerSecret,
-                            followerTestState = followerTestState,
-                            onFollowerUrlChange = { viewModel.setFollowerUrl(it) },
-                            onFollowerSecretChange = { viewModel.setFollowerSecret(it) },
-                            onTestFollowerConnection = { viewModel.testFollowerConnection() },
                             lluEmail = viewModel.lluEmail,
                             lluPassword = viewModel.lluPassword,
                             onLluEmailChange = { viewModel.setLluEmail(it) },
                             onLluPasswordChange = { viewModel.setLluPassword(it) }
                         )
-                        3 -> SetupNightscoutStep(
-                            pushEnabled = pushEnabled,
-                            onPushEnabledChange = { viewModel.setPushEnabled(it) },
-                            nightscoutUrl = nightscoutUrl,
-                            nightscoutSecret = viewModel.nightscoutSecret,
-                            onUrlChange = { viewModel.setNightscoutUrl(it) },
-                            onSecretChange = { viewModel.setNightscoutSecret(it) },
-                            connectionTestState = connectionTestState,
-                            onTestConnection = { viewModel.testConnection() }
-                        )
-                        4 -> SetupAlertsStep(
+                        3 -> SetupAlertsStep(
                             glucoseUnit = glucoseUnit,
                             alertUrgentLowEnabled = alertUrgentLowEnabled,
                             alertLowEnabled = alertLowEnabled,
@@ -195,7 +172,7 @@ fun SetupScreen(
                             onAlertHighChange = viewModel::setAlertHigh,
                             onAlertUrgentHighChange = viewModel::setAlertUrgentHigh
                         )
-                        5 -> SetupPermissionsStep(
+                        4 -> SetupPermissionsStep(
                             isNotificationPermissionGranted = isNotificationPermissionGranted,
                             isBatteryOptimizationIgnored = isBatteryOptimizationIgnored,
                             isNotificationAccessGranted = isNotificationAccessGranted,
