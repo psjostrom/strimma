@@ -90,11 +90,7 @@ class MainViewModel @Inject constructor(
             val prediction = PredictionComputer.compute(allReadings, FORECAST_HORIZON_MINUTES, bgLow, bgHigh)
             val forecastBg = prediction?.points?.lastOrNull()?.mgdl
 
-            val direction = try {
-                com.psjostrom.strimma.data.Direction.valueOf(latest.direction)
-            } catch (_: Exception) {
-                com.psjostrom.strimma.data.Direction.NONE
-            }
+            val direction = com.psjostrom.strimma.data.Direction.parse(latest.direction)
 
             val result = PreActivityAssessor.assess(
                 currentBgMgdl = latest.sgv,

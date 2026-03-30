@@ -61,8 +61,17 @@ class NightscoutClient @Inject constructor() {
 
     companion object {
         private const val HTTP_NOT_FOUND = 404
-        private const val MAX_ERROR_LENGTH = 80
+        const val MAX_ERROR_LENGTH = 80
         private const val DEFAULT_TREATMENT_COUNT = 100
+
+        val ISO_FORMATTER: DateTimeFormatter = DateTimeFormatter
+            .ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+            .withZone(ZoneOffset.UTC)
+
+        fun sha1Hex(input: String): String =
+            MessageDigest.getInstance("SHA-1")
+                .digest(input.toByteArray(Charsets.UTF_8))
+                .joinToString("") { "%02x".format(it) }
 
         fun normalizeUrl(raw: String): String {
             val trimmed = raw.trim().trimEnd('/')
@@ -87,9 +96,7 @@ class NightscoutClient @Inject constructor() {
         }
     }
 
-    private val isoFormatter: DateTimeFormatter = DateTimeFormatter
-        .ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-        .withZone(ZoneOffset.UTC)
+    private val isoFormatter get() = ISO_FORMATTER
 
     data class ConnectionTestResult(
         val success: Boolean,
@@ -285,16 +292,8 @@ class NightscoutClient @Inject constructor() {
         }
     }
 
-    private fun generateTreatmentId(createdAt: String, eventType: String, insulin: Double?, carbs: Double?): String {
-        val raw = "$createdAt|$eventType|$insulin|$carbs"
-        return MessageDigest.getInstance("SHA-1")
-            .digest(raw.toByteArray(Charsets.UTF_8))
-            .joinToString("") { "%02x".format(it) }
-    }
+    private fun generateTreatmentId(createdAt: String, eventType: String, insulin: Double?, carbs: Double?): String =
+        sha1Hex("$createdAt|$eventType|$insulin|$carbs")
 
-    private fun hashSecret(secret: String): String {
-        return MessageDigest.getInstance("SHA-1")
-            .digest(secret.toByteArray(Charsets.UTF_8))
-            .joinToString("") { "%02x".format(it) }
-    }
+    private fun hashSecret(secret: String): String = sha1Hex(secret)
 }

@@ -49,10 +49,10 @@ import javax.inject.Inject
 class StrimmaService : Service() {
 
     companion object {
-        private const val DEFAULT_BG_LOW = 72.0
-        private const val DEFAULT_BG_HIGH = 180.0
-        private const val DEFAULT_PREDICTION_MINUTES = 15
-        private const val DEFAULT_NOTIF_GRAPH_MINUTES = 60
+        private val DEFAULT_BG_LOW = SettingsRepository.DEFAULT_BG_LOW.toDouble()
+        private val DEFAULT_BG_HIGH = SettingsRepository.DEFAULT_BG_HIGH.toDouble()
+        private const val DEFAULT_PREDICTION_MINUTES = SettingsRepository.DEFAULT_PREDICTION_MINUTES
+        private const val DEFAULT_NOTIF_GRAPH_MINUTES = SettingsRepository.DEFAULT_NOTIF_GRAPH_MINUTES
         private const val DEFAULT_CUSTOM_DIA = 5.0f
 
         private const val DUPLICATE_THRESHOLD_MS = 3_000L
@@ -75,9 +75,7 @@ class StrimmaService : Service() {
         private const val FORECAST_HORIZON_MINUTES = 30
 
         private const val DELTA_DIVISOR = 5.0
-        private const val MGDL_FACTOR = 18.0182
-        private const val MIN_VALID_MGDL = 18.0
-        private const val MAX_VALID_MGDL = 900.0
+        private const val MGDL_FACTOR = GlucoseUnit.MGDL_FACTOR
     }
 
     @Inject lateinit var dao: ReadingDao
@@ -296,12 +294,7 @@ class StrimmaService : Service() {
             val alertReadings = dao.since(reading.ts - LOOKBACK_MINUTES * MINUTES_TO_MS)
             alertManager.checkReading(reading, alertReadings, predMinutes.value)
             broadcastBgIfEnabled(reading)
-            try {
-                val mgr = GlanceAppWidgetManager(this@StrimmaService)
-                mgr.getGlanceIds(StrimmaWidget::class.java).forEach { id ->
-                    StrimmaWidget().update(this@StrimmaService, id)
-                }
-            } catch (_: Exception) {}
+            updateWidgets()
         }
         DebugLog.log("Nightscout follower started")
     }
@@ -322,17 +315,7 @@ class StrimmaService : Service() {
             alertManager.checkReading(reading, alertReadings, predMinutes.value)
             broadcastBgIfEnabled(reading)
             writeToHealthConnectIfEnabled(reading)
-            try {
-                val mgr = GlanceAppWidgetManager(this@StrimmaService)
-                mgr.getGlanceIds(StrimmaWidget::class.java).forEach { id ->
-                    StrimmaWidget().update(this@StrimmaService, id)
-                }
-            } catch (
-                @Suppress("TooGenericExceptionCaught") // Glance SDK can throw various platform exceptions
-                e: Exception
-            ) {
-                DebugLog.log("LLU widget update failed: ${e.message}")
-            }
+            updateWidgets()
         }
         DebugLog.log("LibreLinkUp follower started")
     }
@@ -345,7 +328,7 @@ class StrimmaService : Service() {
     }
 
     private suspend fun processReading(mgdl: Double, timestamp: Long) {
-        if (mgdl < MIN_VALID_MGDL || mgdl > MAX_VALID_MGDL) {
+        if (!GlucoseReading.isValidSgv(mgdl)) {
             DebugLog.log("Rejected invalid mg/dL value: $mgdl")
             return
         }
@@ -375,6 +358,10 @@ class StrimmaService : Service() {
         alertManager.checkReading(reading, alertReadings, predMinutes.value)
         broadcastBgIfEnabled(reading)
         writeToHealthConnectIfEnabled(reading)
+        updateWidgets()
+    }
+
+    private suspend fun updateWidgets() {
         try {
             val mgr = GlanceAppWidgetManager(this@StrimmaService)
             mgr.getGlanceIds(StrimmaWidget::class.java).forEach { id ->
@@ -470,11 +457,7 @@ class StrimmaService : Service() {
             putExtra("com.eveningoutpost.dexdrip.Extras.Time", reading.ts)
             putExtra("com.eveningoutpost.dexdrip.Extras.BgSlope", ((reading.delta ?: 0.0) / MGDL_FACTOR) / DELTA_DIVISOR)
             putExtra("com.eveningoutpost.dexdrip.Extras.SensorId", "Strimma")
-            val direction = try {
-                com.psjostrom.strimma.data.Direction.valueOf(reading.direction)
-            } catch (_: Exception) {
-                com.psjostrom.strimma.data.Direction.NONE
-            }
+            val direction = com.psjostrom.strimma.data.Direction.parse(reading.direction)
             putExtra("com.eveningoutpost.dexdrip.Extras.BgSlopeName", direction.name)
         }
         sendBroadcast(intent)

@@ -28,7 +28,7 @@ private object MgdlSettingsMigration : DataMigration<Preferences> {
         floatPreferencesKey("alert_urgent_high")
     )
     private val KEY_VERSION = intPreferencesKey("settings_version")
-    private const val MGDL_FACTOR = 18.0182f
+    private val MGDL_FACTOR = GlucoseUnit.MGDL_FACTOR.toFloat()
 
     override suspend fun shouldMigrate(currentData: Preferences): Boolean {
         return (currentData[KEY_VERSION] ?: 0) < 2
@@ -176,14 +176,14 @@ class SettingsRepository @Inject constructor(
 
         // Settings defaults (mg/dL)
         private const val DEFAULT_GRAPH_WINDOW_HOURS = 4
-        private const val DEFAULT_BG_LOW = 72f
-        private const val DEFAULT_BG_HIGH = 180f
+        const val DEFAULT_BG_LOW = 72f
+        const val DEFAULT_BG_HIGH = 180f
         private const val DEFAULT_ALERT_LOW = 72f
         private const val DEFAULT_ALERT_HIGH = 180f
         private const val DEFAULT_ALERT_URGENT_LOW = 54f
         private const val DEFAULT_ALERT_URGENT_HIGH = 234f
-        private const val DEFAULT_NOTIF_GRAPH_MINUTES = 60
-        private const val DEFAULT_PREDICTION_MINUTES = 15
+        const val DEFAULT_NOTIF_GRAPH_MINUTES = 60
+        const val DEFAULT_PREDICTION_MINUTES = 15
         private const val DEFAULT_FOLLOWER_POLL_SECONDS = 60
         private const val DEFAULT_CUSTOM_DIA_FLOAT = 5.0f
         private const val MINUTES_PER_DAY = 1440
