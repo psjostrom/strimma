@@ -7,6 +7,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.HbA1cUnit
+import com.psjostrom.strimma.ui.theme.ThemeMode
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -25,13 +26,13 @@ class DisplaySettingsTest {
         graphWindowHours: Int = 4,
         bgLow: Float = 4.0f,
         bgHigh: Float = 10.0f,
-        themeMode: String = "System",
+        themeMode: ThemeMode = ThemeMode.System,
         onGlucoseUnitChange: (GlucoseUnit) -> Unit = {},
         onHbA1cUnitChange: (HbA1cUnit) -> Unit = {},
         onGraphWindowChange: (Int) -> Unit = {},
         onBgLowChange: (Float) -> Unit = {},
         onBgHighChange: (Float) -> Unit = {},
-        onThemeModeChange: (String) -> Unit = {},
+        onThemeModeChange: (ThemeMode) -> Unit = {},
         onBack: () -> Unit = {}
     ) {
         composeRule.setContent {
@@ -115,11 +116,11 @@ class DisplaySettingsTest {
 
     @Test
     fun `switching theme fires callback`() {
-        var selected: String? = null
+        var selected: ThemeMode? = null
         render(onThemeModeChange = { selected = it })
         composeRule.onNodeWithText("Dark").assertIsNotSelected()
         composeRule.onNodeWithText("Dark").performScrollTo().performClick()
         composeRule.waitForIdle()
-        assertEquals("Dark", selected)
+        assertEquals(ThemeMode.Dark, selected)
     }
 }

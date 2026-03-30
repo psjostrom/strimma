@@ -3,6 +3,7 @@ package com.psjostrom.strimma.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.psjostrom.strimma.data.GlucoseReading
+import com.psjostrom.strimma.ui.theme.ThemeMode
 import com.psjostrom.strimma.data.GlucoseSource
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.HbA1cUnit
@@ -226,9 +227,9 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    val themeMode: StateFlow<String> = settings.themeMode
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "System")
-    fun setThemeMode(mode: String) = viewModelScope.launch { settings.setThemeMode(mode) }
+    val themeMode: StateFlow<ThemeMode> = settings.themeMode
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ThemeMode.System)
+    fun setThemeMode(mode: ThemeMode) = viewModelScope.launch { settings.setThemeMode(mode) }
 
     val notifGraphMinutes: StateFlow<Int> = settings.notifGraphMinutes
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 60)
