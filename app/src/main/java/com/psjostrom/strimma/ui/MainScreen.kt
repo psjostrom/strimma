@@ -287,7 +287,7 @@ private fun BgHeader(
 
     val isStale = minutesAgo > 10
     val direction = reading?.let {
-        try { Direction.valueOf(it.direction) } catch (_: Exception) { Direction.NONE }
+        Direction.parse(it.direction)
     } ?: Direction.NONE
 
     val bgColor = when {
@@ -876,7 +876,7 @@ fun GlucoseGraph(
             val sdf = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
             val timeStr = sdf.format(java.util.Date(sel.ts))
             val valueStr = glucoseUnit.format(sel.sgv)
-            val direction = try { Direction.valueOf(sel.direction) } catch (_: Exception) { Direction.NONE }
+            val direction = Direction.parse(sel.direction)
             val deltaStr = sel.delta?.let { glucoseUnit.formatDeltaCompact(it) }
 
             val line1 = "$valueStr ${direction.arrow}"

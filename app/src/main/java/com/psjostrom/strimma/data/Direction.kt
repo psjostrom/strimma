@@ -9,4 +9,9 @@ enum class Direction(val arrow: String) {
     SingleUp("↑"),
     DoubleUp("⇈"),
     NONE("?");
+
+    companion object {
+        fun parse(name: String): Direction =
+            try { valueOf(name) } catch (_: Exception) { NONE }
+    }
 }
