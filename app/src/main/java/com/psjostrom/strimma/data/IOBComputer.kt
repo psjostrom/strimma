@@ -20,6 +20,23 @@ suspend fun fetchCurrentIOB(
     return IOBComputer.computeIOB(treatments, now, tau)
 }
 
+/**
+ * Compute current IOB from already-resolved settings values.
+ * Used by StrimmaService (StateFlow.value) and LocalWebServer (Flow.first()).
+ */
+suspend fun computeCurrentIOB(
+    treatmentsSyncEnabled: Boolean,
+    insulinType: InsulinType,
+    customDIA: Float,
+    treatmentDao: TreatmentDao,
+    now: Long = System.currentTimeMillis()
+): Double {
+    if (!treatmentsSyncEnabled) return 0.0
+    val tau = IOBComputer.tauForInsulinType(insulinType, customDIA)
+    val treatments = treatmentDao.insulinSince(now - IOBComputer.lookbackMs(tau))
+    return IOBComputer.computeIOB(treatments, now, tau)
+}
+
 object IOBComputer {
 
     private const val MINUTES_PER_HOUR = 60.0
