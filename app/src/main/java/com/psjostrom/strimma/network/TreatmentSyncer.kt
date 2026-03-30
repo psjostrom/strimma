@@ -25,7 +25,6 @@ class TreatmentSyncer @Inject constructor(
         private const val PRUNE_DAYS = 30
         private const val LOOKBACK_MS = LOOKBACK_DAYS * 24 * 60 * 60 * 1000L
         private const val PRUNE_MS = PRUNE_DAYS * 24 * 60 * 60 * 1000L
-        private const val MAX_ERROR_LENGTH = 80
         // Looping systems (CamAPS, AndroidAPS, Loop) generate temp basals every 5 min
         // (~288/day) plus boluses/carbs (~10-20/day). 500/day covers aggressive configurations.
         private const val TREATMENTS_PER_DAY = 500
@@ -61,7 +60,7 @@ class TreatmentSyncer @Inject constructor(
             @Suppress("TooGenericExceptionCaught")
             e: Exception
         ) {
-            DebugLog.log(message = "Treatment pull error: ${e.message?.take(MAX_ERROR_LENGTH)}")
+            DebugLog.log(message = "Treatment pull error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
             Result.failure(e)
         }
     }

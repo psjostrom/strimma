@@ -106,7 +106,6 @@ class LibreLinkUpClient @Inject constructor() {
         private const val DEFAULT_BASE_URL = "https://api.libreview.io"
         private const val CLIENT_VERSION = "4.12.0"
         private const val PRODUCT = "llu.android"
-        private const val MAX_ERROR_LENGTH = 80
         private const val STATUS_BAD_CREDENTIALS = 2
         private const val STATUS_ACTION_REQUIRED = 4
     }
@@ -152,7 +151,7 @@ class LibreLinkUpClient @Inject constructor() {
             @Suppress("TooGenericExceptionCaught")
             e: Exception
         ) {
-            DebugLog.log(message = "LLU login error: ${e.message?.take(MAX_ERROR_LENGTH)}")
+            DebugLog.log(message = "LLU login error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
             null
         }
     }
@@ -210,7 +209,7 @@ class LibreLinkUpClient @Inject constructor() {
             @Suppress("TooGenericExceptionCaught")
             e: Exception
         ) {
-            DebugLog.log(message = "LLU connections error: ${e.message?.take(MAX_ERROR_LENGTH)}")
+            DebugLog.log(message = "LLU connections error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
             null
         }
     }
@@ -231,7 +230,7 @@ class LibreLinkUpClient @Inject constructor() {
             @Suppress("TooGenericExceptionCaught")
             e: Exception
         ) {
-            DebugLog.log(message = "LLU graph error: ${e.message?.take(MAX_ERROR_LENGTH)}")
+            DebugLog.log(message = "LLU graph error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
             null
         }
     }
@@ -263,7 +262,7 @@ class LibreLinkUpClient @Inject constructor() {
             @Suppress("TooGenericExceptionCaught")
             e: Exception
         ) {
-            DebugLog.log(message = "LLU region resolve error: ${e.message?.take(MAX_ERROR_LENGTH)}")
+            DebugLog.log(message = "LLU region resolve error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
             null
         }
     }
