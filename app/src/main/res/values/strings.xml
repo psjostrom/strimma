@@ -211,6 +211,7 @@
     <string name="stats_tab_agp" translatable="false">AGP</string>
     <string name="stats_tab_meals">Meals</string>
     <string name="stats_meals_treatments_disabled">Meal analysis requires treatment sync. Enable it in Settings → Treatments to see how your meals affect your glucose.</string>
+    <string name="stats_meals_requires_ns">Meal analysis requires a Nightscout connection. Configure a Nightscout URL and secret in Settings → Data Source to enable treatment sync.</string>
 
     <!-- AGP -->
     <string name="agp_title">Ambulatory Glucose Profile</string>

@@ -174,8 +174,9 @@ class StrimmaService : Service() {
                 settings.treatmentsSyncEnabled,
                 settings.nightscoutUrl,
                 settings.followerUrl,
-                settings.glucoseSource
-            ) { enabled, nsUrl, followerUrl, source ->
+                settings.glucoseSource,
+                settings.secretVersion
+            ) { enabled, nsUrl, followerUrl, source, _ ->
                 if (!enabled) return@combine false
                 val hasConfig = if (source == GlucoseSource.NIGHTSCOUT_FOLLOWER) {
                     followerUrl.isNotBlank() && settings.getFollowerSecret().isNotBlank()

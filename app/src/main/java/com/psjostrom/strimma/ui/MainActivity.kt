@@ -518,6 +518,7 @@ class MainActivity : ComponentActivity() {
                             onLoadCarbTreatments = viewModel::carbTreatmentsInRange,
                             onLoadAllTreatments = viewModel::allTreatmentsSince,
                             treatmentsSyncEnabled = treatmentsSyncEnabled,
+                            nightscoutConfigured = nightscoutConfigured,
                             tauMinutes = viewModel.currentTauMinutes(),
                             mealAnalyzer = viewModel.mealAnalyzer,
                             mealTimeSlotConfig = viewModel.mealTimeSlotConfig.collectAsState().value,

@@ -81,6 +81,8 @@ class SettingsRepository @Inject constructor(
     private val widgetSettingsRepository: WidgetSettingsRepository
 ) {
     private val dataStore = context.dataStore
+    private val _secretVersion = kotlinx.coroutines.flow.MutableStateFlow(0)
+    val secretVersion: kotlinx.coroutines.flow.StateFlow<Int> = _secretVersion
 
     private val encryptedPrefs by lazy {
         val masterKey = MasterKey.Builder(context)
@@ -225,6 +227,7 @@ class SettingsRepository @Inject constructor(
     fun getNightscoutSecret(): String = encryptedPrefs.getString(KEY_NIGHTSCOUT_SECRET, "") ?: ""
     fun setNightscoutSecret(secret: String) {
         encryptedPrefs.edit().putString(KEY_NIGHTSCOUT_SECRET, secret).apply()
+        _secretVersion.value++
     }
 
     suspend fun setAlertLowEnabled(enabled: Boolean) { dataStore.edit { it[KEY_ALERT_LOW_ENABLED] = enabled } }
@@ -280,6 +283,7 @@ class SettingsRepository @Inject constructor(
     fun getFollowerSecret(): String = encryptedPrefs.getString(KEY_FOLLOWER_SECRET, "") ?: ""
     fun setFollowerSecret(secret: String) {
         encryptedPrefs.edit().putString(KEY_FOLLOWER_SECRET, secret).apply()
+        _secretVersion.value++
     }
 
     fun getLluEmail(): String = encryptedPrefs.getString(KEY_LLU_EMAIL, "") ?: ""

@@ -137,8 +137,9 @@ class MainViewModel @Inject constructor(
     val nightscoutConfigured: StateFlow<Boolean> = combine(
         settings.nightscoutUrl,
         settings.followerUrl,
-        settings.glucoseSource
-    ) { nsUrl, followerUrl, source ->
+        settings.glucoseSource,
+        settings.secretVersion
+    ) { nsUrl, followerUrl, source, _ ->
         if (source == GlucoseSource.NIGHTSCOUT_FOLLOWER) {
             followerUrl.isNotBlank() && settings.getFollowerSecret().isNotBlank()
         } else {

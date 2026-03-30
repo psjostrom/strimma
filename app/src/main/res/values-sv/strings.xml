@@ -176,6 +176,7 @@
     <string name="stats_tab_metrics">M\u00E4tv\u00E4rden</string>
     <string name="stats_tab_meals">M\u00E5ltider</string>
     <string name="stats_meals_treatments_disabled">M\u00E5ltidsanalys kr\u00E4ver behandlingssynk. Aktivera det i Inst\u00E4llningar \u2192 Behandlingar f\u00F6r att se hur dina m\u00E5ltider p\u00E5verkar ditt blodsocker.</string>
+    <string name="stats_meals_requires_ns">M\u00E5ltidsanalys kr\u00E4ver en Nightscout-anslutning. Konfigurera en Nightscout-URL och hemlighet under Inst\u00E4llningar \u2192 Datak\u00E4lla f\u00F6r att aktivera behandlingssynk.</string>
 
     <!-- AGP -->
     <string name="agp_title">Ambulatorisk glukosprofil</string>
