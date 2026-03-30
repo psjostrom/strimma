@@ -32,7 +32,7 @@ enum class ExerciseCategory(
         "\u26F0\uFE0F", R.string.exercise_type_hiking, MetabolicProfile.AEROBIC,
         listOf(
             "hike", "hiking", "trek", "trekking", "backpack",
-            "vandring", "vandra", "bergwandern", "wanderung",
+            "vandring", "vandra", "bergwandern", "wandern",
             "randonnée", "senderismo", "excursión"
         )
     ),

@@ -96,7 +96,7 @@ Strimma detects the activity type from the event title using keyword matching. T
 |----------|----------|
 | Running | run, running, jog, jogging, sprint, sprinting, 5k, 10k, half marathon, marathon, parkrun, trail run, treadmill, track run, track workout, löpning, löp, jogga, lopp, lauftraining, laufen, course, courir, correr, corrida, carrera |
 | Walking | walk, walking, stroll, hike-walk, promenad, promenera, spazier, spaziergang, marche, caminar, caminata |
-| Hiking | hike, hiking, trek, trekking, backpack, vandring, vandra, bergwandern, wanderung, randonnée, senderismo, excursión |
+| Hiking | hike, hiking, trek, trekking, backpack, vandring, vandra, bergwandern, wandern, randonnée, senderismo, excursión |
 | Cycling | bike, biking, cycle, cycling, bicycle, spinning, spin class, zwift, peloton, velodrome, criterium, crit ride, cykel, cykl, radfahren, radtour, vélo, cyclisme, ciclismo, bicicleta |
 | Swimming | swim, swimming, pool swim, open water, triathlon swim, simning, simma, simträning, schwimmen, natation, nager, nadar, natación |
 | Strength | gym, strength, weights, weightlifting, powerlifting, deadlift, squat, bench press, barbell, dumbbell, kettlebell, crossfit, calisthenics, bodyweight, resistance, lift, lifting, styrk, styrketräning, vikter, krafttraining, musculation, musculación, pesas |
