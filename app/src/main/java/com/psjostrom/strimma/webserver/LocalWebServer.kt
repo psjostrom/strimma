@@ -4,7 +4,7 @@ package com.psjostrom.strimma.webserver
 
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.MS_PER_HOUR
-import com.psjostrom.strimma.data.IOBComputer
+import com.psjostrom.strimma.data.computeCurrentIOB
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.TreatmentDao
@@ -112,11 +112,9 @@ private fun Routing.sgvRoutes(dao: ReadingDao, treatmentDao: TreatmentDao, setti
         val unitsHint = if (unit == GlucoseUnit.MMOL) "mmol" else "mgdl"
 
         val iob = if (settings.treatmentsSyncEnabled.first()) {
-            val insulinType = settings.insulinType.first()
-            val customDIA = settings.customDIA.first()
-            val tau = IOBComputer.tauForInsulinType(insulinType, customDIA)
-            val treatments = treatmentDao.insulinSince(System.currentTimeMillis() - IOBComputer.lookbackMs(tau))
-            IOBComputer.computeIOB(treatments, System.currentTimeMillis(), tau)
+            computeCurrentIOB(
+                true, settings.insulinType.first(), settings.customDIA.first(), treatmentDao
+            )
         } else null
 
         val json = buildSgvJson(

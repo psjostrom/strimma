@@ -11,7 +11,7 @@ import com.psjostrom.strimma.data.MS_PER_MINUTE
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseSource
 import com.psjostrom.strimma.data.GlucoseUnit
-import com.psjostrom.strimma.data.IOBComputer
+import com.psjostrom.strimma.data.computeCurrentIOB
 import com.psjostrom.strimma.data.InsulinType
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
@@ -353,8 +353,8 @@ class StrimmaService : Service() {
         DebugLog.log("Stored: ${reading.sgv} mg/dL ${direction.arrow}")
         pusher.pushReading(reading)
         updateNotification()
-        // 15-min lookback covers PredictionComputer (12 min) + DirectionComputer (5 min lookback, 10 min max gap)
-        val alertReadings = dao.since(timestamp - LOOKBACK_MINUTES * MS_PER_MINUTE)
+        // Reuse recentReadings + the newly inserted reading instead of re-querying
+        val alertReadings = recentReadings + reading
         alertManager.checkReading(reading, alertReadings, predMinutes.value)
         broadcastBgIfEnabled(reading)
         writeToHealthConnectIfEnabled(reading)
@@ -393,11 +393,9 @@ class StrimmaService : Service() {
         val now = System.currentTimeMillis()
         val recent = dao.since(now - graphWindowMs)
 
-        val iob = if (treatmentsSyncEnabled.value) {
-            val tau = IOBComputer.tauForInsulinType(insulinType.value, customDIA.value)
-            val treatments = treatmentDao.insulinSince(now - IOBComputer.lookbackMs(tau))
-            IOBComputer.computeIOB(treatments, now, tau)
-        } else 0.0
+        val iob = computeCurrentIOB(
+            treatmentsSyncEnabled.value, insulinType.value, customDIA.value, treatmentDao, now
+        )
 
         val exerciseSessions = exerciseDao.getSessionsInRange(now - graphWindowMs, now)
 
