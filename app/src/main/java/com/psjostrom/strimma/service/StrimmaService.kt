@@ -353,8 +353,8 @@ class StrimmaService : Service() {
         DebugLog.log("Stored: ${reading.sgv} mg/dL ${direction.arrow}")
         pusher.pushReading(reading)
         updateNotification()
-        // 15-min lookback covers PredictionComputer (12 min) + DirectionComputer (5 min lookback, 10 min max gap)
-        val alertReadings = dao.since(timestamp - LOOKBACK_MINUTES * MINUTES_TO_MS)
+        // Reuse recentReadings + the newly inserted reading instead of re-querying
+        val alertReadings = recentReadings + reading
         alertManager.checkReading(reading, alertReadings, predMinutes.value)
         broadcastBgIfEnabled(reading)
         writeToHealthConnectIfEnabled(reading)
