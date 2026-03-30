@@ -136,6 +136,21 @@ class TreatmentDaoTest {
     }
 
     @Test
+    fun `latestFetchedAt returns null when table is empty`() = runTest {
+        assertNull(dao.latestFetchedAt())
+    }
+
+    @Test
+    fun `latestFetchedAt returns max fetchedAt value`() = runTest {
+        val t1 = treatment("a", 10, insulin = 1.0).copy(fetchedAt = 1000L)
+        val t2 = treatment("b", 5, insulin = 2.0).copy(fetchedAt = 3000L)
+        val t3 = treatment("c", 1, insulin = 3.0).copy(fetchedAt = 2000L)
+        dao.upsert(listOf(t1, t2, t3))
+
+        assertEquals(3000L, dao.latestFetchedAt())
+    }
+
+    @Test
     fun `allSince returns descending order`() = runTest {
         dao.upsert(listOf(
             treatment("a", 10, insulin = 1.0),
