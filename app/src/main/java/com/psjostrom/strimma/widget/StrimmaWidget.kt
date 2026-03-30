@@ -28,6 +28,7 @@ import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.StrimmaDatabase
+import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.notification.GraphRenderer
 import com.psjostrom.strimma.ui.MainActivity
 import kotlinx.coroutines.flow.first
@@ -44,7 +45,7 @@ class StrimmaWidget : GlanceAppWidget() {
         private const val MS_PER_MINUTE = 60_000L
         private const val MAX_WINDOW_MS = 180 * MS_PER_MINUTE // 3h — largest selectable graph window
         private const val DEFAULT_PREDICTION_MINUTES = 5
-        const val STALE_THRESHOLD_MINUTES = 10
+        val STALE_THRESHOLD_MINUTES = AlertManager.STALE_THRESHOLD_MINUTES
     }
 
     override val stateDefinition = PreferencesGlanceStateDefinition

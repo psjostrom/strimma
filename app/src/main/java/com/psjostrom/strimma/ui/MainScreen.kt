@@ -50,6 +50,7 @@ import com.psjostrom.strimma.graph.CrossingType
 import com.psjostrom.strimma.graph.computeYRange
 import com.psjostrom.strimma.network.FollowerStatus
 import com.psjostrom.strimma.notification.AlertCategory
+import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.ui.components.PauseAlertsSheet
 import com.psjostrom.strimma.ui.components.rememberCountdownText
 import com.psjostrom.strimma.ui.theme.AboveHigh
@@ -285,7 +286,7 @@ private fun BgHeader(
         }
     }
 
-    val isStale = minutesAgo > 10
+    val isStale = minutesAgo > AlertManager.STALE_THRESHOLD_MINUTES
     val direction = reading?.let {
         Direction.parse(it.direction)
     } ?: Direction.NONE
