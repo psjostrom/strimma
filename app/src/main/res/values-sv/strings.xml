@@ -290,7 +290,9 @@
     <string name="exercise_detail_no_data">Inte tillr\u00E4ckligt med glukosdata</string>
     <string name="exercise_detail_no_value">\u2014</string>
     <string name="exercise_history_title">Tr\u00E4ning</string>
-    <string name="exercise_history_empty">Inga tr\u00E4ningspass \u00E4nnu.\n\nStrimma l\u00E4ser tr\u00E4ningspass fr\u00E5n Health Connect. G\u00E5 till Inst\u00E4llningar \u2192 Tr\u00E4ning f\u00F6r att ansluta och bevilja beh\u00F6righeter.</string>
+    <string name="exercise_history_empty_title">Inga tr\u00E4ningspass \u00E4nnu</string>
+    <string name="exercise_history_empty">Strimma l\u00E4ser tr\u00E4ningspass fr\u00E5n Health Connect. Anslut och bevilja beh\u00F6righeter f\u00F6r att se dina tr\u00E4ningar h\u00E4r.</string>
+    <string name="exercise_history_empty_button">Anslut Health Connect</string>
     <string name="hc_rationale_title">Health Connect-beh\u00F6righeter</string>
     <string name="hc_rationale_body">Strimma anv\u00E4nder Health Connect f\u00F6r att l\u00E4sa dina tr\u00E4ningspass, puls, steg och kalorier f\u00F6r att visa hur tr\u00E4ning p\u00E5verkar ditt blodsocker. Valfritt kan Strimma skriva glukosvärden s\u00E5 att andra h\u00E4lsoappar kan se dem.</string>
 
@@ -364,6 +366,7 @@
 
     <!-- Patterns tab -->
     <string name="exercise_tab_patterns">M\u00F6nster</string>
+    <string name="exercise_patterns_empty_title">Inga m\u00F6nster \u00E4nnu</string>
     <string name="exercise_patterns_empty">Forts\u00E4tt tr\u00E4na med Strimma ig\u00E5ng. Efter n\u00E5gra pass av samma typ ser du dina personliga BG-m\u00F6nster h\u00E4r.</string>
     <string name="exercise_patterns_by_activity">Per aktivitet</string>
     <string name="exercise_patterns_by_profile">Per profil</string>

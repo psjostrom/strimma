@@ -287,7 +287,9 @@
     <string name="exercise_detail_no_data">Datos de glucosa insuficientes</string>
     <string name="exercise_detail_no_value">\u2014</string>
     <string name="exercise_history_title">Ejercicio</string>
-    <string name="exercise_history_empty">No hay sesiones de ejercicio.\n\nStrimma lee entrenamientos de Health Connect. Ve a Ajustes \u2192 Ejercicio para conectar y otorgar permisos.</string>
+    <string name="exercise_history_empty_title">Sin entrenamientos a\u00FAn</string>
+    <string name="exercise_history_empty">Strimma lee entrenamientos de Health Connect. Conecta y otorga permisos para ver tus sesiones de ejercicio aqu\u00ED.</string>
+    <string name="exercise_history_empty_button">Conectar Health Connect</string>
     <string name="hc_rationale_title">Permisos de Health Connect</string>
     <string name="hc_rationale_body">Strimma usa Health Connect para leer tus sesiones de ejercicio, frecuencia card\u00EDaca, pasos y calor\u00EDas para mostrar c\u00F3mo el ejercicio afecta tu glucosa. Opcionalmente, Strimma puede escribir lecturas de glucosa para que otras apps de salud las vean.</string>
 
@@ -361,6 +363,7 @@
 
     <!-- Patterns tab -->
     <string name="exercise_tab_patterns">Patrones</string>
+    <string name="exercise_patterns_empty_title">Sin patrones a\u00FAn</string>
     <string name="exercise_patterns_empty">Sigue entrenando con Strimma. Despu\u00E9s de algunas sesiones del mismo tipo, ver\u00E1s tus patrones de glucemia personales aqu\u00ED.</string>
     <string name="exercise_patterns_by_activity">Por actividad</string>
     <string name="exercise_patterns_by_profile">Por perfil</string>

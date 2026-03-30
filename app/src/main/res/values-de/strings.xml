@@ -287,7 +287,9 @@
     <string name="exercise_detail_no_data">Nicht gen\u00FCgend Glukosedaten</string>
     <string name="exercise_detail_no_value">\u2014</string>
     <string name="exercise_history_title">Training</string>
-    <string name="exercise_history_empty">Noch keine Trainingseinheiten.\n\nStrimma liest Workouts aus Health Connect. Gehe zu Einstellungen \u2192 Training, um zu verbinden und Berechtigungen zu erteilen.</string>
+    <string name="exercise_history_empty_title">Noch keine Trainingseinheiten</string>
+    <string name="exercise_history_empty">Strimma liest Workouts aus Health Connect. Verbinde und erteile Berechtigungen, um deine Trainings hier zu sehen.</string>
+    <string name="exercise_history_empty_button">Health Connect verbinden</string>
     <string name="hc_rationale_title">Health Connect-Berechtigungen</string>
     <string name="hc_rationale_body">Strimma nutzt Health Connect, um Trainingseinheiten, Herzfrequenz, Schritte und Kalorien zu lesen und zu zeigen, wie Training den Blutzucker beeinflusst. Optional kann Strimma Glukosewerte schreiben, damit andere Gesundheits-Apps sie sehen k\u00F6nnen.</string>
 
@@ -361,6 +363,7 @@
 
     <!-- Patterns tab -->
     <string name="exercise_tab_patterns">Muster</string>
+    <string name="exercise_patterns_empty_title">Noch keine Muster</string>
     <string name="exercise_patterns_empty">Trainiere weiter mit Strimma. Nach einigen Einheiten desselben Typs siehst du hier deine pers\u00F6nlichen BG-Muster.</string>
     <string name="exercise_patterns_by_activity">Nach Aktivit\u00E4t</string>
     <string name="exercise_patterns_by_profile">Nach Profil</string>

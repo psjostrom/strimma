@@ -207,6 +207,7 @@ class ExerciseHistoryViewModel @Inject constructor(
 @Composable
 fun ExerciseHistoryScreen(
     onBack: () -> Unit,
+    onNavigateToExerciseSettings: () -> Unit = {},
     viewModel: ExerciseHistoryViewModel = hiltViewModel()
 ) {
     val sessions by viewModel.sessions.collectAsState()
@@ -351,7 +352,8 @@ fun ExerciseHistoryScreen(
                         glucoseUnit = glucoseUnit,
                         bgLow = bgLow,
                         viewModel = viewModel,
-                        onSessionClick = { selectedExercise = it }
+                        onSessionClick = { selectedExercise = it },
+                        onConnectHealthConnect = onNavigateToExerciseSettings
                     )
                     2 -> PatternsTab(viewModel = viewModel, glucoseUnit = glucoseUnit)
                 }
@@ -591,7 +593,8 @@ private fun CompletedTab(
     glucoseUnit: GlucoseUnit,
     bgLow: Float,
     viewModel: ExerciseHistoryViewModel,
-    onSessionClick: (StoredExerciseSession) -> Unit
+    onSessionClick: (StoredExerciseSession) -> Unit,
+    onConnectHealthConnect: () -> Unit
 ) {
     if (sessions.isEmpty()) {
         Box(
@@ -600,12 +603,38 @@ private fun CompletedTab(
                 .padding(32.dp),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = stringResource(R.string.exercise_history_empty),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 14.sp,
-                lineHeight = 20.sp
-            )
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                border = BorderStroke(1.dp, InRange.copy(alpha = 0.3f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = stringResource(R.string.exercise_history_empty_title),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.exercise_history_empty),
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 18.sp
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    Button(
+                        onClick = onConnectHealthConnect,
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(stringResource(R.string.exercise_history_empty_button))
+                    }
+                }
+            }
         }
     } else {
         LazyColumn(
@@ -939,12 +968,31 @@ private fun PatternsTab(
                     .padding(32.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = stringResource(R.string.exercise_patterns_empty),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 14.sp,
-                    lineHeight = 20.sp
-                )
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    border = BorderStroke(1.dp, InRange.copy(alpha = 0.3f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = stringResource(R.string.exercise_patterns_empty_title),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = stringResource(R.string.exercise_patterns_empty),
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            lineHeight = 18.sp
+                        )
+                    }
+                }
             }
         } else {
             LazyColumn(

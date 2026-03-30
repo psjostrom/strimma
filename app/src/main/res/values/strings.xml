@@ -347,7 +347,9 @@
     <string name="exercise_detail_no_data">Not enough glucose data</string>
     <string name="exercise_detail_no_value">\u2014</string>
     <string name="exercise_history_title">Exercise</string>
-    <string name="exercise_history_empty">No exercise sessions yet.\n\nStrimma reads workouts from Health Connect. Go to Settings → Exercise to connect and grant permissions.</string>
+    <string name="exercise_history_empty_title">No workouts yet</string>
+    <string name="exercise_history_empty">Strimma reads workouts from Health Connect. Connect and grant permissions to see your exercise sessions here.</string>
+    <string name="exercise_history_empty_button">Connect Health Connect</string>
 
     <!-- Setup Wizard -->
     <string name="setup_welcome_title">Welcome to Strimma</string>
@@ -428,6 +430,7 @@
 
     <!-- Patterns tab -->
     <string name="exercise_tab_patterns">Patterns</string>
+    <string name="exercise_patterns_empty_title">No patterns yet</string>
     <string name="exercise_patterns_empty">Keep exercising with Strimma running. After a few sessions of the same type, you\'ll see your personal BG patterns here.</string>
     <string name="exercise_patterns_by_activity">By Activity</string>
     <string name="exercise_patterns_by_profile">By Profile</string>

@@ -266,7 +266,12 @@ class MainActivity : ComponentActivity() {
                     }
                     composable("exercise") {
                         ExerciseHistoryScreen(
-                            onBack = { navController.popBackStack() }
+                            onBack = { navController.popBackStack() },
+                            onNavigateToExerciseSettings = {
+                                navController.navigate("settings/exercise") {
+                                    launchSingleTop = true
+                                }
+                            }
                         )
                     }
                     composable("settings") {
