@@ -38,7 +38,7 @@ object AgpCalculator {
     const val AGP_DAYS = 14
     private const val BUCKET_MINUTES = 15
     private const val BUCKETS_PER_DAY = 24 * 60 / BUCKET_MINUTES
-    private const val MS_PER_MINUTE = 60_000L
+
     private const val PERCENT = 100.0
 
     // ADA fixed thresholds (mg/dL)

@@ -3,6 +3,8 @@ package com.psjostrom.strimma.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.psjostrom.strimma.data.GlucoseReading
+import com.psjostrom.strimma.data.MS_PER_HOUR
+import com.psjostrom.strimma.data.MS_PER_MINUTE
 import com.psjostrom.strimma.ui.theme.ThemeMode
 import com.psjostrom.strimma.data.GlucoseSource
 import com.psjostrom.strimma.data.GlucoseUnit
@@ -59,7 +61,6 @@ class MainViewModel @Inject constructor(
 
     companion object {
         private const val HOURS_PER_DAY = 24
-        private const val MS_PER_HOUR = 3600_000L
         private const val PRE_WINDOW_MINUTES = 30
         private const val POST_WINDOW_HOURS = 4
         private const val MS_PER_MINUTE = 60_000L

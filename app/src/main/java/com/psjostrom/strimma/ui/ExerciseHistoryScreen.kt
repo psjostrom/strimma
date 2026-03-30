@@ -38,6 +38,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.GlucoseReading
+import com.psjostrom.strimma.data.MS_PER_DAY
+import com.psjostrom.strimma.data.MS_PER_MINUTE
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
@@ -79,12 +81,10 @@ import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
 
-private const val MS_PER_MINUTE = 60_000L
-private const val MS_PER_DAY = 86_400_000L
-private const val PRE_WINDOW_MS = 30 * MS_PER_MINUTE
-private const val POST_WINDOW_MS = 4 * 60 * MS_PER_MINUTE
+private val PRE_WINDOW_MS = 30 * MS_PER_MINUTE
+private val POST_WINDOW_MS = 4 * 60 * MS_PER_MINUTE
 private const val PLANNED_LOOKAHEAD_DAYS = 365
-private const val PLANNED_POLL_MS = 5 * MS_PER_MINUTE
+private val PLANNED_POLL_MS = 5 * MS_PER_MINUTE
 private const val DATASTORE_PROPAGATION_MS = 100L
 
 @HiltViewModel
