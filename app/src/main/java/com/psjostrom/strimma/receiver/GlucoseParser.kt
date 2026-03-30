@@ -1,6 +1,8 @@
 package com.psjostrom.strimma.receiver
 
-private const val MGDL_CONVERSION = 18.0182
+import com.psjostrom.strimma.data.GlucoseUnit
+
+private val MGDL_CONVERSION = GlucoseUnit.MGDL_FACTOR
 private const val MIN_MGDL_RANGE = 51
 private const val MAX_MGDL_RANGE = 500
 
