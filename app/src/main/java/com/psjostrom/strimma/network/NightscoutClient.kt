@@ -4,6 +4,7 @@ import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.Treatment
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
@@ -63,6 +64,8 @@ class NightscoutClient @Inject constructor() {
         private const val HTTP_NOT_FOUND = 404
         const val MAX_ERROR_LENGTH = 80
         private const val DEFAULT_TREATMENT_COUNT = 100
+        private const val REQUEST_TIMEOUT_MS = 30_000L
+        private const val SOCKET_TIMEOUT_MS = 30_000L
 
         val ISO_FORMATTER: DateTimeFormatter = DateTimeFormatter
             .ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
@@ -91,6 +94,10 @@ class NightscoutClient @Inject constructor() {
     }
 
     private val client = HttpClient(CIO) {
+        install(HttpTimeout) {
+            requestTimeoutMillis = REQUEST_TIMEOUT_MS
+            socketTimeoutMillis = SOCKET_TIMEOUT_MS
+        }
         install(ContentNegotiation) {
             json(Json { ignoreUnknownKeys = true })
         }

@@ -4,6 +4,7 @@ import com.psjostrom.strimma.receiver.DebugLog
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.http.*
@@ -108,11 +109,17 @@ class LibreLinkUpClient @Inject constructor() {
         private const val PRODUCT = "llu.android"
         private const val STATUS_BAD_CREDENTIALS = 2
         private const val STATUS_ACTION_REQUIRED = 4
+        private const val REQUEST_TIMEOUT_MS = 30_000L
+        private const val SOCKET_TIMEOUT_MS = 30_000L
     }
 
     private val json = Json { ignoreUnknownKeys = true }
 
     private val client = HttpClient(CIO) {
+        install(HttpTimeout) {
+            requestTimeoutMillis = REQUEST_TIMEOUT_MS
+            socketTimeoutMillis = SOCKET_TIMEOUT_MS
+        }
         install(ContentNegotiation) {
             json(json)
         }
