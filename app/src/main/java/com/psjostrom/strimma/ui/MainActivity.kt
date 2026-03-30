@@ -122,8 +122,7 @@ class MainActivity : ComponentActivity() {
             val viewModel: MainViewModel = hiltViewModel()
             viewModelRef = viewModel
             val setupCompleted by viewModel.setupCompleted.collectAsState()
-            val themeModeStr by viewModel.themeMode.collectAsState()
-            val themeMode = try { ThemeMode.valueOf(themeModeStr) } catch (_: Exception) { ThemeMode.System }
+            val themeMode by viewModel.themeMode.collectAsState()
 
             // Wait for DataStore to load before showing anything
             if (setupCompleted == null) return@setContent
@@ -357,7 +356,7 @@ class MainActivity : ComponentActivity() {
                             graphWindowHours = graphWindowHours,
                             bgLow = bgLow,
                             bgHigh = bgHigh,
-                            themeMode = themeModeStr,
+                            themeMode = themeMode,
                             onGlucoseUnitChange = viewModel::setGlucoseUnit,
                             onHbA1cUnitChange = viewModel::setHbA1cUnit,
                             onGraphWindowChange = viewModel::setGraphWindowHours,

@@ -1,6 +1,7 @@
 package com.psjostrom.strimma.data.meal
 
 import com.psjostrom.strimma.data.AgpCalculator
+import com.psjostrom.strimma.data.MS_PER_MINUTE
 
 data class MealAgpBucket(
     val minuteFromMeal: Int,
@@ -26,7 +27,7 @@ object MealAgpCalculator {
     private const val P50 = 50.0
     private const val P75 = 75.0
     private const val P95 = 95.0
-    private const val MS_PER_MINUTE = 60_000L
+
     private const val MIN_READINGS_PER_BUCKET = 2
 
     fun compute(results: List<MealPostprandialResult>): MealAgpResult? {

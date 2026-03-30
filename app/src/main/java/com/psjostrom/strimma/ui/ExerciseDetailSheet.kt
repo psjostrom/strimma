@@ -20,6 +20,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.GlucoseUnit
+import com.psjostrom.strimma.data.MS_PER_MINUTE
 import com.psjostrom.strimma.data.health.ExerciseBGContext
 import com.psjostrom.strimma.data.health.ExerciseCategory
 import com.psjostrom.strimma.data.health.StoredExerciseSession
@@ -34,7 +35,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-private const val MS_PER_MINUTE = 60_000L
 private const val MINUTES_PER_HOUR = 60L
 
 private fun formatDuration(totalMinutes: Long): String {

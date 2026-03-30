@@ -6,6 +6,8 @@ import android.content.IntentFilter
 import android.os.IBinder
 import com.psjostrom.strimma.data.Direction
 import com.psjostrom.strimma.data.DirectionComputer
+import com.psjostrom.strimma.data.MS_PER_HOUR
+import com.psjostrom.strimma.data.MS_PER_MINUTE
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseSource
 import com.psjostrom.strimma.data.GlucoseUnit
@@ -57,8 +59,6 @@ class StrimmaService : Service() {
 
         private const val DUPLICATE_THRESHOLD_MS = 3_000L
         private const val LOOKBACK_MINUTES = 15
-        private const val MINUTES_TO_MS = 60 * 1000L
-        private const val HOURS_TO_MS = 60 * MINUTES_TO_MS
 
         private const val RETRY_INTERVAL_MINUTES = 5
         private const val PRUNE_INTERVAL_DAYS = 1
@@ -216,15 +216,15 @@ class StrimmaService : Service() {
     private fun startPeriodicJobs() {
         scope.launch {
             while (isActive) {
-                delay(RETRY_INTERVAL_MINUTES * MINUTES_TO_MS)
+                delay(RETRY_INTERVAL_MINUTES * MS_PER_MINUTE)
                 pusher.pushPending()
             }
         }
         scope.launch {
             while (isActive) {
-                val thirtyDaysAgo = System.currentTimeMillis() - PRUNE_RETENTION_DAYS * HOURS_PER_DAY * HOURS_TO_MS
+                val thirtyDaysAgo = System.currentTimeMillis() - PRUNE_RETENTION_DAYS * HOURS_PER_DAY * MS_PER_HOUR
                 dao.pruneBefore(thirtyDaysAgo)
-                delay(PRUNE_INTERVAL_DAYS * HOURS_PER_DAY * HOURS_TO_MS)
+                delay(PRUNE_INTERVAL_DAYS * HOURS_PER_DAY * MS_PER_HOUR)
             }
         }
         scope.launch {
@@ -234,7 +234,7 @@ class StrimmaService : Service() {
                 alertManager.checkStale(latest?.ts)
                 updateNotification()
                 cachedWorkoutEvent?.let { event ->
-                    if (System.currentTimeMillis() > event.startTime + WORKOUT_GRACE_MINUTES * MINUTES_TO_MS) {
+                    if (System.currentTimeMillis() > event.startTime + WORKOUT_GRACE_MINUTES * MS_PER_MINUTE) {
                         cachedWorkoutEvent = null
                         cancelWorkoutAlarm()
                         WorkoutAlarmReceiver.notificationTriggerFired.set(false)
@@ -291,7 +291,7 @@ class StrimmaService : Service() {
         if (followerJob != null) return
         followerJob = nightscoutFollower.start(scope) { reading ->
             updateNotification()
-            val alertReadings = dao.since(reading.ts - LOOKBACK_MINUTES * MINUTES_TO_MS)
+            val alertReadings = dao.since(reading.ts - LOOKBACK_MINUTES * MS_PER_MINUTE)
             alertManager.checkReading(reading, alertReadings, predMinutes.value)
             broadcastBgIfEnabled(reading)
             updateWidgets()
@@ -311,7 +311,7 @@ class StrimmaService : Service() {
         lluFollowerJob = libreLinkUpFollower.start(scope) { reading ->
             pusher.pushReading(reading)
             updateNotification()
-            val alertReadings = dao.since(reading.ts - LOOKBACK_MINUTES * MINUTES_TO_MS)
+            val alertReadings = dao.since(reading.ts - LOOKBACK_MINUTES * MS_PER_MINUTE)
             alertManager.checkReading(reading, alertReadings, predMinutes.value)
             broadcastBgIfEnabled(reading)
             writeToHealthConnectIfEnabled(reading)
@@ -337,7 +337,7 @@ class StrimmaService : Service() {
         val existing = dao.lastN(1)
         if (existing.isNotEmpty() && (timestamp - existing[0].ts) < DUPLICATE_THRESHOLD_MS) return
 
-        val recentReadings = dao.since(timestamp - LOOKBACK_MINUTES * MINUTES_TO_MS)
+        val recentReadings = dao.since(timestamp - LOOKBACK_MINUTES * MS_PER_MINUTE)
         val tempReading = GlucoseReading(
             ts = timestamp, sgv = sgv,
             direction = "NONE", delta = null, pushed = 0
@@ -387,9 +387,9 @@ class StrimmaService : Service() {
 
     private suspend fun updateNotification() {
         val latest = dao.latestOnce()?.takeUnless { reading ->
-            (System.currentTimeMillis() - reading.ts) > AlertManager.STALE_THRESHOLD_MINUTES * MINUTES_TO_MS
+            (System.currentTimeMillis() - reading.ts) > AlertManager.STALE_THRESHOLD_MINUTES * MS_PER_MINUTE
         }
-        val graphWindowMs = notifGraphMinutes.value.toLong() * MINUTES_TO_MS
+        val graphWindowMs = notifGraphMinutes.value.toLong() * MS_PER_MINUTE
         val now = System.currentTimeMillis()
         val recent = dao.since(now - graphWindowMs)
 
@@ -403,7 +403,7 @@ class StrimmaService : Service() {
 
         val workoutText = if (WorkoutAlarmReceiver.notificationTriggerFired.get() && latest != null) {
             cachedWorkoutEvent?.let { event ->
-                val minutesUntil = ((event.startTime - now) / MINUTES_TO_MS).toInt()
+                val minutesUntil = ((event.startTime - now) / MS_PER_MINUTE).toInt()
                 if (minutesUntil <= 0) return@let null
                 val timeText = if (minutesUntil >= MINUTES_PER_HOUR) {
                     val h = minutesUntil / MINUTES_PER_HOUR
@@ -482,7 +482,7 @@ class StrimmaService : Service() {
         // Background poll for calendar changes (events added/removed externally)
         calendarPollJob = scope.launch {
             while (isActive) {
-                delay(CALENDAR_POLL_INTERVAL_MINUTES * MINUTES_TO_MS)
+                delay(CALENDAR_POLL_INTERVAL_MINUTES * MS_PER_MINUTE)
                 try {
                     pollCalendar()
                 } catch (
@@ -503,13 +503,13 @@ class StrimmaService : Service() {
             WorkoutAlarmReceiver.notificationTriggerFired.set(false)
             return
         }
-        val lookaheadMs = workoutLookaheadHours.value.toLong() * HOURS_TO_MS
+        val lookaheadMs = workoutLookaheadHours.value.toLong() * MS_PER_HOUR
         val event = calendarReader.getNextWorkout(calId, lookaheadMs)
         val previous = cachedWorkoutEvent
         cachedWorkoutEvent = event
 
         if (event != null && (previous == null || previous.startTime != event.startTime)) {
-            val triggerMs = workoutTriggerMinutes.value.toLong() * MINUTES_TO_MS
+            val triggerMs = workoutTriggerMinutes.value.toLong() * MS_PER_MINUTE
             val alarmTime = event.startTime - triggerMs
             if (alarmTime > System.currentTimeMillis()) {
                 WorkoutAlarmReceiver.notificationTriggerFired.set(false)
@@ -523,7 +523,7 @@ class StrimmaService : Service() {
     }
 
     private fun scheduleWorkoutAlarm(event: WorkoutEvent) {
-        val triggerMs = workoutTriggerMinutes.value.toLong() * MINUTES_TO_MS
+        val triggerMs = workoutTriggerMinutes.value.toLong() * MS_PER_MINUTE
         val alarmTime = event.startTime - triggerMs
         if (alarmTime <= System.currentTimeMillis()) {
             WorkoutAlarmReceiver.notificationTriggerFired.set(true)

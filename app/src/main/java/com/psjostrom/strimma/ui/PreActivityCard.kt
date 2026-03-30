@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.sp
 import com.psjostrom.strimma.data.GlucoseUnit
+import com.psjostrom.strimma.data.MS_PER_MINUTE
 import com.psjostrom.strimma.data.calendar.GuidanceState
 import com.psjostrom.strimma.data.calendar.ReadinessLevel
 import com.psjostrom.strimma.ui.theme.AboveHigh
@@ -29,7 +30,6 @@ import com.psjostrom.strimma.ui.theme.TintDanger
 import com.psjostrom.strimma.ui.theme.TintInRange
 import com.psjostrom.strimma.ui.theme.TintWarning
 
-private const val MS_PER_MINUTE = 60_000
 private const val MINUTES_PER_HOUR = 60
 
 @Composable

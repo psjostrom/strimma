@@ -1,6 +1,7 @@
 package com.psjostrom.strimma.data.health
 
 import com.psjostrom.strimma.data.GlucoseReading
+import com.psjostrom.strimma.data.MS_PER_MINUTE
 import java.time.Duration
 import java.time.Instant
 import javax.inject.Inject
@@ -48,7 +49,7 @@ class ExerciseBGAnalyzer @Inject constructor() {
         private const val MIN_INTERVAL_MS = 30_000L // 30 seconds
         private const val MAX_INTERVAL_MS = 600_000L // 10 minutes
         private const val PERCENT = 100.0
-        private const val MS_PER_MINUTE_D = 60_000.0
+
     }
 
     fun analyze(
@@ -151,7 +152,7 @@ class ExerciseBGAnalyzer @Inject constructor() {
 
         // Linear regression: x = time in minutes from first reading, y = sgv
         val firstTs = readings.first().ts
-        val xs = readings.map { (it.ts - firstTs).toDouble() / MS_PER_MINUTE_D }
+        val xs = readings.map { (it.ts - firstTs).toDouble() / MS_PER_MINUTE.toDouble() }
         val ys = readings.map { it.sgv.toDouble() }
 
         val regression = linearRegression(xs, ys)
