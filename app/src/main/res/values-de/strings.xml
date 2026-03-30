@@ -91,6 +91,7 @@
     <string name="settings_treatments_section">Behandlungen</string>
     <string name="settings_treatments_sync">Behandlungen synchronisieren</string>
     <string name="settings_treatments_sync_desc">Bolus-, Kohlenhydrat- und Basaldaten f\u00FCr IOB-Anzeige abrufen</string>
+    <string name="settings_treatments_requires_ns">Behandlungsdaten erfordern eine Nightscout-Verbindung. Konfigurieren Sie eine Nightscout-URL und ein Passwort unter Datenquelle, um diese Funktion zu aktivieren.</string>
     <string name="settings_treatments_insulin_type">Insulintyp</string>
     <string name="settings_treatments_custom_dia">Benutzerdefinierte DIA (Stunden)</string>
     <string name="settings_treatments_dia_hint">Insulinwirkdauer, 2\u201310 Stunden</string>
@@ -377,6 +378,7 @@
     <string name="workout_calendar_picker_title">Kalender auswählen</string>
     <string name="stats_tab_meals">Mahlzeiten</string>
     <string name="stats_meals_treatments_disabled">Die Mahlzeitenanalyse erfordert die Behandlungssynchronisation. Aktivieren Sie diese unter Einstellungen \u2192 Behandlungen, um zu sehen, wie Ihre Mahlzeiten Ihren Blutzucker beeinflussen.</string>
+    <string name="stats_meals_requires_ns">Die Mahlzeitenanalyse erfordert eine Nightscout-Verbindung. Konfigurieren Sie eine Nightscout-URL und ein Passwort unter Einstellungen \u2192 Datenquelle, um die Behandlungssynchronisation zu aktivieren.</string>
 
     <!-- Alert pause -->
     <string name="pause_alerts">Alarme pausieren</string>

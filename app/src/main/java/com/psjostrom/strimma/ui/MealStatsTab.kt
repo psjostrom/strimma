@@ -63,6 +63,7 @@ fun MealStatsTab(
     onLoadCarbTreatments: suspend (Long, Long) -> List<Treatment>,
     onLoadAllTreatments: suspend (Long) -> List<Treatment>,
     treatmentsSyncEnabled: Boolean,
+    nightscoutConfigured: Boolean,
     periods: List<Pair<Int, String>>,
     selectedPeriod: Int,
     onPeriodChange: (Int) -> Unit,
@@ -76,7 +77,7 @@ fun MealStatsTab(
     val onSurfaceVar = MaterialTheme.colorScheme.onSurfaceVariant
     val surfVar = MaterialTheme.colorScheme.surfaceVariant
 
-    if (!treatmentsSyncEnabled) {
+    if (!nightscoutConfigured || !treatmentsSyncEnabled) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -84,7 +85,10 @@ fun MealStatsTab(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                stringResource(R.string.stats_meals_treatments_disabled),
+                stringResource(
+                    if (!nightscoutConfigured) R.string.stats_meals_requires_ns
+                    else R.string.stats_meals_treatments_disabled
+                ),
                 color = onSurfaceVar,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )

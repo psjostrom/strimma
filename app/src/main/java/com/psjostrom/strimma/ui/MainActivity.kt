@@ -162,6 +162,7 @@ class MainActivity : ComponentActivity() {
                 val glucoseSource by viewModel.glucoseSource.collectAsState()
                 val followerStatus by viewModel.followerStatus.collectAsState()
                 val followerPollSeconds by viewModel.followerPollSeconds.collectAsState()
+                val nightscoutConfigured by viewModel.nightscoutConfigured.collectAsState()
                 val treatmentsSyncEnabled by viewModel.treatmentsSyncEnabled.collectAsState()
                 val insulinType by viewModel.insulinType.collectAsState()
                 val customDIA by viewModel.customDIA.collectAsState()
@@ -275,7 +276,8 @@ class MainActivity : ComponentActivity() {
                                     launchSingleTop = true
                                 }
                             },
-                            onBack = { navController.popBackStack() }
+                            onBack = { navController.popBackStack() },
+                            nightscoutConfigured = nightscoutConfigured
                         )
                     }
                     composable("settings/data-source") {
@@ -318,6 +320,7 @@ class MainActivity : ComponentActivity() {
                             treatmentsSyncEnabled = treatmentsSyncEnabled,
                             insulinType = insulinType,
                             customDIA = customDIA,
+                            nightscoutConfigured = nightscoutConfigured,
                             onTreatmentsSyncEnabledChange = viewModel::setTreatmentsSyncEnabled,
                             onInsulinTypeChange = viewModel::setInsulinType,
                             onCustomDIAChange = viewModel::setCustomDIA,
@@ -510,6 +513,7 @@ class MainActivity : ComponentActivity() {
                             onLoadCarbTreatments = viewModel::carbTreatmentsInRange,
                             onLoadAllTreatments = viewModel::allTreatmentsSince,
                             treatmentsSyncEnabled = treatmentsSyncEnabled,
+                            nightscoutConfigured = nightscoutConfigured,
                             tauMinutes = viewModel.currentTauMinutes(),
                             mealAnalyzer = viewModel.mealAnalyzer,
                             mealTimeSlotConfig = viewModel.mealTimeSlotConfig.collectAsState().value,

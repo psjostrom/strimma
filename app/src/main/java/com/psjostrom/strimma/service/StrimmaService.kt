@@ -39,6 +39,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
@@ -167,12 +168,24 @@ class StrimmaService : Service() {
             }
         }
 
-        // Treatment sync lifecycle
+        // Treatment sync lifecycle — only run when NS is configured
         scope.launch {
-            settings.treatmentsSyncEnabled.collect { enabled ->
+            combine(
+                settings.treatmentsSyncEnabled,
+                settings.nightscoutUrl,
+                settings.secretVersion
+            ) { enabled, nsUrl, _ ->
+                if (!enabled) return@combine false
+                val hasConfig = nsUrl.isNotBlank() && settings.getNightscoutSecret().isNotBlank()
+                if (!hasConfig && enabled) {
+                    settings.setTreatmentsSyncEnabled(false)
+                    DebugLog.log("Treatment sync auto-disabled: Nightscout not configured")
+                }
+                hasConfig && enabled
+            }.collect { shouldSync ->
                 treatmentSyncJob?.cancel()
                 treatmentSyncJob = null
-                if (enabled) {
+                if (shouldSync) {
                     treatmentSyncJob = treatmentSyncer.start(scope)
                     DebugLog.log("Treatment sync started")
                 } else {

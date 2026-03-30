@@ -91,6 +91,7 @@
     <string name="settings_treatments_section">Behandlingar</string>
     <string name="settings_treatments_sync">Synka behandlingar</string>
     <string name="settings_treatments_sync_desc">H\u00E4mta bolus-, kolhydrat- och basaldata f\u00F6r IOB-visning</string>
+    <string name="settings_treatments_requires_ns">Behandlingsdata kr\u00E4ver en Nightscout-anslutning. Konfigurera en Nightscout-URL och hemlighet under Datak\u00E4lla f\u00F6r att aktivera denna funktion.</string>
     <string name="settings_treatments_insulin_type">Insulintyp</string>
     <string name="settings_treatments_custom_dia">Anpassad DIA (timmar)</string>
     <string name="settings_treatments_dia_hint">Insulinets verkningstid, 2\u201310 timmar</string>
@@ -173,6 +174,7 @@
     <string name="stats_tab_metrics">M\u00E4tv\u00E4rden</string>
     <string name="stats_tab_meals">M\u00E5ltider</string>
     <string name="stats_meals_treatments_disabled">M\u00E5ltidsanalys kr\u00E4ver behandlingssynk. Aktivera det i Inst\u00E4llningar \u2192 Behandlingar f\u00F6r att se hur dina m\u00E5ltider p\u00E5verkar ditt blodsocker.</string>
+    <string name="stats_meals_requires_ns">M\u00E5ltidsanalys kr\u00E4ver en Nightscout-anslutning. Konfigurera en Nightscout-URL och hemlighet under Inst\u00E4llningar \u2192 Datak\u00E4lla f\u00F6r att aktivera behandlingssynk.</string>
 
     <!-- AGP -->
     <string name="agp_title">Ambulatorisk glukosprofil</string>

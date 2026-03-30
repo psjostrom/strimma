@@ -91,6 +91,7 @@
     <string name="settings_treatments_section">Traitements</string>
     <string name="settings_treatments_sync">Synchroniser les traitements</string>
     <string name="settings_treatments_sync_desc">R\u00E9cup\u00E9rer les donn\u00E9es de bolus, glucides et basal pour l\u2019affichage IOB</string>
+    <string name="settings_treatments_requires_ns">Les donn\u00E9es de traitement n\u00E9cessitent une connexion Nightscout. Configurez une URL et un secret Nightscout dans les param\u00E8tres Source de donn\u00E9es pour activer cette fonctionnalit\u00E9.</string>
     <string name="settings_treatments_insulin_type">Type d\u2019insuline</string>
     <string name="settings_treatments_custom_dia">DIA personnalis\u00E9e (heures)</string>
     <string name="settings_treatments_dia_hint">Dur\u00E9e d\u2019action de l\u2019insuline, 2\u201310 heures</string>
@@ -377,6 +378,7 @@
     <string name="workout_calendar_picker_title">Sélectionner le calendrier</string>
     <string name="stats_tab_meals">Repas</string>
     <string name="stats_meals_treatments_disabled">L\u0027analyse des repas n\u00E9cessite la synchronisation des traitements. Activez-la dans Param\u00E8tres \u2192 Traitements pour voir comment vos repas affectent votre glyc\u00E9mie.</string>
+    <string name="stats_meals_requires_ns">L\u0027analyse des repas n\u00E9cessite une connexion Nightscout. Configurez une URL et un secret Nightscout dans Param\u00E8tres \u2192 Source de donn\u00E9es pour activer la synchronisation des traitements.</string>
 
     <!-- Alert pause -->
     <string name="pause_alerts">Suspendre les alertes</string>

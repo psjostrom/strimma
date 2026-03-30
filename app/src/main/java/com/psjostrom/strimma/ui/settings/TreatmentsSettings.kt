@@ -21,6 +21,7 @@ fun TreatmentsSettings(
     treatmentsSyncEnabled: Boolean,
     insulinType: InsulinType,
     customDIA: Float,
+    nightscoutConfigured: Boolean,
     onTreatmentsSyncEnabledChange: (Boolean) -> Unit,
     onInsulinTypeChange: (InsulinType) -> Unit,
     onCustomDIAChange: (Float) -> Unit,
@@ -33,6 +34,17 @@ fun TreatmentsSettings(
     val outline = MaterialTheme.colorScheme.outline
 
     SettingsScaffold(title = stringResource(R.string.settings_treatments_title), onBack = onBack) {
+        if (!nightscoutConfigured) {
+            SettingsSection(stringResource(R.string.settings_treatments_section)) {
+                Text(
+                    stringResource(R.string.settings_treatments_requires_ns),
+                    color = outline,
+                    fontSize = 13.sp
+                )
+            }
+            return@SettingsScaffold
+        }
+
         SettingsSection(stringResource(R.string.settings_treatments_section)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
