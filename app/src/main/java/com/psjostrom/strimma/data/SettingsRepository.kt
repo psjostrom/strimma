@@ -85,18 +85,45 @@ class SettingsRepository @Inject constructor(
     private val _secretVersion = kotlinx.coroutines.flow.MutableStateFlow(0)
     val secretVersion: kotlinx.coroutines.flow.StateFlow<Int> = _secretVersion
 
+    private val _credentialsLost = kotlinx.coroutines.flow.MutableStateFlow(false)
+    val credentialsLost: kotlinx.coroutines.flow.StateFlow<Boolean> = _credentialsLost
+
+    fun clearCredentialsLostFlag() { _credentialsLost.value = false }
+
+    @Suppress("TooGenericExceptionCaught") // Keystore corruption throws various exception types
     private val encryptedPrefs by lazy {
+        try {
+            createEncryptedPrefs()
+        } catch (e: Exception) {
+            com.psjostrom.strimma.receiver.DebugLog.log(
+                "EncryptedSharedPreferences corrupted, recreating: ${e.javaClass.simpleName}"
+            )
+            context.deleteSharedPreferences(ENCRYPTED_PREFS_NAME)
+            _credentialsLost.value = true
+            try {
+                createEncryptedPrefs()
+            } catch (e2: Exception) {
+                com.psjostrom.strimma.receiver.DebugLog.log(
+                    "EncryptedSharedPreferences unrecoverable, falling back to plain: ${e2.javaClass.simpleName}"
+                )
+                context.getSharedPreferences(ENCRYPTED_PREFS_NAME, Context.MODE_PRIVATE)
+            }
+        }
+    }
+
+    private fun createEncryptedPrefs(): android.content.SharedPreferences {
         val masterKey = MasterKey.Builder(context)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
             .build()
-        EncryptedSharedPreferences.create(
-            context, "strimma_secrets", masterKey,
+        return EncryptedSharedPreferences.create(
+            context, ENCRYPTED_PREFS_NAME, masterKey,
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         )
     }
 
     companion object {
+        private const val ENCRYPTED_PREFS_NAME = "strimma_secrets"
         private val KEY_NIGHTSCOUT_URL = stringPreferencesKey("nightscout_url")
         private val KEY_GRAPH_WINDOW_HOURS = intPreferencesKey("graph_window_hours")
         private val KEY_BG_LOW = floatPreferencesKey("bg_low")
