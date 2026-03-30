@@ -84,6 +84,8 @@ class NightscoutPuller @Inject constructor(
 
             DebugLog.log(message = "Pull: $totalInserted readings from Nightscout")
             Result.success(totalInserted)
+        } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+            throw e
         } catch (
             @Suppress("TooGenericExceptionCaught") // Network boundary — Ktor can throw any exception type
             e: Exception
