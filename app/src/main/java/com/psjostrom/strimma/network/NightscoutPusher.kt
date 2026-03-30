@@ -25,7 +25,7 @@ class NightscoutPusher @Inject constructor(
         private const val PUSH_FAIL_ALERT_MS = 15 * 60 * 1000L // 15 minutes
     }
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val failureTracker = PushFailureTracker(
         alertThresholdMs = PUSH_FAIL_ALERT_MS,
@@ -61,6 +61,11 @@ class NightscoutPusher @Inject constructor(
                 DebugLog.log(message = "Push gave up after $MAX_RETRY_ATTEMPTS attempts: ${reading.sgv} mg/dL")
             }
         }
+    }
+
+    fun stop() {
+        scope.cancel()
+        scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     }
 
     fun pushPending() {
