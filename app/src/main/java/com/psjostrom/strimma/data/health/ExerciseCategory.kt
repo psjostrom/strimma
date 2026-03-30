@@ -70,7 +70,7 @@ enum class ExerciseCategory(
             "yoga", "pilates", "stretch", "stretching", "flexibility", "mobility",
             "vinyasa", "ashtanga", "bikram", "yin yoga", "hatha",
             "tai chi", "qigong",
-            "stretching", "rörlighet", "dehnen", "étirement", "estiramiento"
+            "rörlighet", "dehnen", "étirement", "estiramiento"
         )
     ),
     ROWING(
