@@ -296,12 +296,7 @@ class StrimmaService : Service() {
             val alertReadings = dao.since(reading.ts - LOOKBACK_MINUTES * MINUTES_TO_MS)
             alertManager.checkReading(reading, alertReadings, predMinutes.value)
             broadcastBgIfEnabled(reading)
-            try {
-                val mgr = GlanceAppWidgetManager(this@StrimmaService)
-                mgr.getGlanceIds(StrimmaWidget::class.java).forEach { id ->
-                    StrimmaWidget().update(this@StrimmaService, id)
-                }
-            } catch (_: Exception) {}
+            updateWidgets()
         }
         DebugLog.log("Nightscout follower started")
     }
@@ -322,17 +317,7 @@ class StrimmaService : Service() {
             alertManager.checkReading(reading, alertReadings, predMinutes.value)
             broadcastBgIfEnabled(reading)
             writeToHealthConnectIfEnabled(reading)
-            try {
-                val mgr = GlanceAppWidgetManager(this@StrimmaService)
-                mgr.getGlanceIds(StrimmaWidget::class.java).forEach { id ->
-                    StrimmaWidget().update(this@StrimmaService, id)
-                }
-            } catch (
-                @Suppress("TooGenericExceptionCaught") // Glance SDK can throw various platform exceptions
-                e: Exception
-            ) {
-                DebugLog.log("LLU widget update failed: ${e.message}")
-            }
+            updateWidgets()
         }
         DebugLog.log("LibreLinkUp follower started")
     }
@@ -375,6 +360,10 @@ class StrimmaService : Service() {
         alertManager.checkReading(reading, alertReadings, predMinutes.value)
         broadcastBgIfEnabled(reading)
         writeToHealthConnectIfEnabled(reading)
+        updateWidgets()
+    }
+
+    private suspend fun updateWidgets() {
         try {
             val mgr = GlanceAppWidgetManager(this@StrimmaService)
             mgr.getGlanceIds(StrimmaWidget::class.java).forEach { id ->
