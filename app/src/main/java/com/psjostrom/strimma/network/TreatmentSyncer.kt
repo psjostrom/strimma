@@ -82,6 +82,8 @@ class TreatmentSyncer @Inject constructor(
             }
             DebugLog.log(message = "Treatment pull: ${treatments.size} treatments for $days days")
             Result.success(treatments.size)
+        } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+            throw e
         } catch (
             @Suppress("TooGenericExceptionCaught")
             e: Exception
