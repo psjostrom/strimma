@@ -61,7 +61,7 @@ class NightscoutClient @Inject constructor() {
 
     companion object {
         private const val HTTP_NOT_FOUND = 404
-        private const val MAX_ERROR_LENGTH = 80
+        const val MAX_ERROR_LENGTH = 80
         private const val DEFAULT_TREATMENT_COUNT = 100
 
         fun normalizeUrl(raw: String): String {

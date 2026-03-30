@@ -23,7 +23,6 @@ class NightscoutPuller @Inject constructor(
         private const val MS_PER_SECOND = 1000L
         private const val MS_PER_DAY = HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MS_PER_SECOND
         private const val AUTO_PULL_DAYS = 30
-        private const val MAX_ERROR_LENGTH = 80
     }
 
     suspend fun pullHistory(days: Int): Result<Int> {
@@ -53,7 +52,7 @@ class NightscoutPuller @Inject constructor(
         result.onSuccess { count ->
             DebugLog.log(message = "Pull: auto-pull complete, $count readings")
         }.onFailure { e ->
-            DebugLog.log(message = "Pull: auto-pull failed: ${e.message?.take(MAX_ERROR_LENGTH)}")
+            DebugLog.log(message = "Pull: auto-pull failed: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
         }
     }
 
@@ -93,7 +92,7 @@ class NightscoutPuller @Inject constructor(
             @Suppress("TooGenericExceptionCaught") // Network boundary — Ktor can throw any exception type
             e: Exception
         ) {
-            DebugLog.log(message = "Pull error: ${e.message?.take(MAX_ERROR_LENGTH)}")
+            DebugLog.log(message = "Pull error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
             Result.failure(e)
         }
     }
