@@ -104,14 +104,23 @@ class TreatmentSyncer @Inject constructor(
         val secret = settings.getNightscoutSecret()
         if (url.isBlank() || secret.isBlank()) return
 
-        val treatments = client.fetchTreatments(url, secret, since, count)
+        try {
+            val treatments = client.fetchTreatments(url, secret, since, count)
 
-        if (treatments.isEmpty()) return
+            if (treatments.isEmpty()) return
 
-        dao.upsert(treatments)
-        DebugLog.log(message = "Treatments synced: ${treatments.size}")
+            dao.upsert(treatments)
+            DebugLog.log(message = "Treatments synced: ${treatments.size}")
 
-        val pruneThreshold = System.currentTimeMillis() - PRUNE_MS
-        dao.deleteOlderThan(pruneThreshold)
+            val pruneThreshold = System.currentTimeMillis() - PRUNE_MS
+            dao.deleteOlderThan(pruneThreshold)
+        } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+            throw e
+        } catch (
+            @Suppress("TooGenericExceptionCaught") // Room can throw various exceptions (disk full, DB locked)
+            e: Exception
+        ) {
+            DebugLog.log(message = "Treatment sync error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
+        }
     }
 }
