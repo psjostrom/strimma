@@ -26,6 +26,9 @@ interface TreatmentDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(treatments: List<Treatment>)
 
+    @Query("SELECT MAX(fetchedAt) FROM treatments")
+    suspend fun latestFetchedAt(): Long?
+
     @Query("DELETE FROM treatments WHERE createdAt < :timestamp")
     suspend fun deleteOlderThan(timestamp: Long)
 }

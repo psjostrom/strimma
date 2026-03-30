@@ -34,10 +34,32 @@ class TreatmentSyncer @Inject constructor(
 
     fun start(scope: CoroutineScope): Job {
         return scope.launch {
-            sync(fullSync = true)
+            startupSync()
             while (isActive) {
                 delay(POLL_INTERVAL_MS)
                 sync(fullSync = false)
+            }
+        }
+    }
+
+    private suspend fun startupSync() {
+        val lastFetch = dao.latestFetchedAt()
+        if (lastFetch == null) {
+            // Empty DB — full 30-day sync
+            sync(fullSync = true)
+        } else {
+            // Sync from last fetch time, capped at 30 days. This covers the exact
+            // gap since the app last ran — no data loss, no redundant fetching.
+            val gapMs = (System.currentTimeMillis() - lastFetch).coerceIn(0, FULL_LOOKBACK_MS)
+            if (gapMs <= POLL_LOOKBACK_MS) {
+                // Last fetch was within 24h — the regular poll will cover it
+                sync(fullSync = false)
+            } else {
+                // Gap exceeds poll window — fetch from last fetch time
+                val since = System.currentTimeMillis() - gapMs
+                val gapDays = (gapMs / MS_PER_DAY + 1).toInt().coerceAtMost(FULL_LOOKBACK_DAYS)
+                val count = gapDays * TREATMENTS_PER_DAY
+                syncSince(since, count)
             }
         }
     }
@@ -67,21 +89,20 @@ class TreatmentSyncer @Inject constructor(
         }
     }
 
-    private suspend fun sync(fullSync: Boolean = false) {
+    private suspend fun sync(fullSync: Boolean) {
+        if (fullSync) {
+            syncSince(System.currentTimeMillis() - FULL_LOOKBACK_MS, FULL_SYNC_COUNT)
+        } else {
+            syncSince(System.currentTimeMillis() - POLL_LOOKBACK_MS, TREATMENTS_PER_DAY)
+        }
+    }
+
+    private suspend fun syncSince(since: Long, count: Int) {
         val url = settings.nightscoutUrl.first()
         val secret = settings.getNightscoutSecret()
         if (url.isBlank() || secret.isBlank()) return
 
-        val since: Long
-        val syncCount: Int
-        if (fullSync) {
-            since = System.currentTimeMillis() - FULL_LOOKBACK_MS
-            syncCount = FULL_SYNC_COUNT
-        } else {
-            since = System.currentTimeMillis() - POLL_LOOKBACK_MS
-            syncCount = TREATMENTS_PER_DAY
-        }
-        val treatments = client.fetchTreatments(url, secret, since, syncCount)
+        val treatments = client.fetchTreatments(url, secret, since, count)
 
         if (treatments.isEmpty()) return
 
