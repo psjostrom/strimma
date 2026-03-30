@@ -76,8 +76,6 @@ class StrimmaService : Service() {
 
         private const val DELTA_DIVISOR = 5.0
         private const val MGDL_FACTOR = GlucoseUnit.MGDL_FACTOR
-        private const val MIN_VALID_MGDL = 18.0
-        private const val MAX_VALID_MGDL = 900.0
     }
 
     @Inject lateinit var dao: ReadingDao
@@ -345,7 +343,7 @@ class StrimmaService : Service() {
     }
 
     private suspend fun processReading(mgdl: Double, timestamp: Long) {
-        if (mgdl < MIN_VALID_MGDL || mgdl > MAX_VALID_MGDL) {
+        if (!GlucoseReading.isValidSgv(mgdl)) {
             DebugLog.log("Rejected invalid mg/dL value: $mgdl")
             return
         }
