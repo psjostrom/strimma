@@ -62,8 +62,7 @@
     <string name="settings_general_battery_desc">Strimma must be excluded from battery optimization to run reliably in the background</string>
     <string name="settings_general_battery_button">Open battery settings</string>
     <string name="settings_general_battery_allowed">Strimma is excluded from battery optimization</string>
-    <string name="settings_general_language">Language</string>
-    <string name="settings_general_language_system_desc">Use phone language</string>
+
     <string name="settings_general_about">About</string>
     <string name="settings_general_version">Version</string>
     <string name="settings_general_build">Build</string>

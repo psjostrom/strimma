@@ -138,7 +138,7 @@ class SettingsRepository @Inject constructor(
         private val KEY_HBA1C_UNIT = stringPreferencesKey("hba1c_unit")
         private val KEY_START_ON_BOOT = booleanPreferencesKey("start_on_boot")
         private const val KEY_START_ON_BOOT_SYNC = "start_on_boot"
-        private val KEY_LANGUAGE = stringPreferencesKey("language")
+
 
         private val KEY_HC_WRITE_ENABLED = booleanPreferencesKey("hc_write_enabled")
         private val KEY_HC_LAST_SYNC = longPreferencesKey("hc_last_sync")
@@ -330,8 +330,6 @@ class SettingsRepository @Inject constructor(
             .getBoolean(KEY_START_ON_BOOT_SYNC, true)
     }
 
-    val language: Flow<String> = dataStore.data.map { it[KEY_LANGUAGE] ?: "" }
-    suspend fun setLanguage(tag: String) { dataStore.edit { it[KEY_LANGUAGE] = tag } }
 
     val hcWriteEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_HC_WRITE_ENABLED] ?: false }
     suspend fun setHcWriteEnabled(enabled: Boolean) { dataStore.edit { it[KEY_HC_WRITE_ENABLED] = enabled } }
