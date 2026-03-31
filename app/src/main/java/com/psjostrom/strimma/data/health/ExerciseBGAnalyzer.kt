@@ -33,23 +33,17 @@ data class ExerciseBGContext(
     val totalSteps: Int?,
     val activeCalories: Double?,
 
-    // Coverage
-    val bgCoveragePercent: Double
 )
 
 @Singleton
 class ExerciseBGAnalyzer @Inject constructor() {
 
     companion object {
-        private const val PRE_WINDOW_MINUTES = 30L
-        private const val POST_WINDOW_HOURS = 4L
+        internal const val PRE_WINDOW_MINUTES = 30L
+        internal const val POST_WINDOW_HOURS = 4L
         private const val BUCKET_MINUTES = 10L
-        private const val MIN_COVERAGE = 0.50
+        private const val MIN_READINGS_DURING = 2
         private const val TREND_THRESHOLD = 1.0 // mg/dL per minute
-        private const val MIN_INTERVAL_MS = 30_000L // 30 seconds
-        private const val MAX_INTERVAL_MS = 600_000L // 10 minutes
-        private const val PERCENT = 100.0
-
     }
 
     fun analyze(
@@ -68,13 +62,7 @@ class ExerciseBGAnalyzer @Inject constructor() {
             .filter { it.ts in startMs..endMs }
             .sortedBy { it.ts }
 
-        // Coverage check: infer sensor interval from all readings
-        val sensorIntervalMs = inferSensorInterval(readings) ?: return null
-        val expectedReadings = (durationMs.toDouble() / sensorIntervalMs).coerceAtLeast(1.0)
-        val coverage = duringReadings.size / expectedReadings
-        if (coverage < MIN_COVERAGE) return null
-
-        val coveragePercent = (coverage * PERCENT).coerceAtMost(PERCENT)
+        if (duringReadings.size < MIN_READINGS_DURING) return null
 
         // Pre-activity analysis (30 min before start)
         val preWindowStart = startMs - Duration.ofMinutes(PRE_WINDOW_MINUTES).toMillis()
@@ -118,23 +106,8 @@ class ExerciseBGAnalyzer @Inject constructor() {
             avgHR = avgHR,
             maxHR = maxHR,
             totalSteps = session.totalSteps,
-            activeCalories = session.activeCalories,
-            bgCoveragePercent = coveragePercent
+            activeCalories = session.activeCalories
         )
-    }
-
-    internal fun inferSensorInterval(readings: List<GlucoseReading>): Long? {
-        val sorted = readings.sortedBy { it.ts }
-        if (sorted.size < 2) return null
-
-        val intervals = sorted.zipWithNext { a, b -> b.ts - a.ts }
-            .filter { it in MIN_INTERVAL_MS..MAX_INTERVAL_MS }
-
-        if (intervals.isEmpty()) return null
-
-        // Median of valid intervals
-        val sortedIntervals = intervals.sorted()
-        return sortedIntervals[sortedIntervals.size / 2]
     }
 
     private data class PreAnalysis(

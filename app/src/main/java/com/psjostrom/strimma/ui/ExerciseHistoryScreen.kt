@@ -18,7 +18,6 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.pullToRefresh
@@ -31,8 +30,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -105,6 +102,9 @@ class ExerciseHistoryViewModel @Inject constructor(
 
     val bgLow: StateFlow<Float> = settings.bgLow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 72f)
+
+    val bgHigh: StateFlow<Float> = settings.bgHigh
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 180f)
 
     val maxHeartRate: StateFlow<Int?> = settings.maxHeartRate
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
@@ -213,6 +213,7 @@ fun ExerciseHistoryScreen(
     val sessions by viewModel.sessions.collectAsState()
     val glucoseUnit by viewModel.glucoseUnit.collectAsState()
     val bgLow by viewModel.bgLow.collectAsState()
+    val bgHigh by viewModel.bgHigh.collectAsState()
     val calendarId by viewModel.workoutCalendarId.collectAsState()
     val upcomingWorkouts by viewModel.upcomingWorkouts.collectAsState()
 
@@ -225,6 +226,7 @@ fun ExerciseHistoryScreen(
 
     var selectedExercise by remember { mutableStateOf<StoredExerciseSession?>(null) }
     var selectedBGContext by remember { mutableStateOf<ExerciseBGContext?>(null) }
+    var selectedReadings by remember { mutableStateOf<List<GlucoseReading>>(emptyList()) }
     var bgContextLoaded by remember { mutableStateOf(false) }
 
     LaunchedEffect(selectedExercise) {
@@ -232,9 +234,11 @@ fun ExerciseHistoryScreen(
         if (session != null) {
             bgContextLoaded = false
             selectedBGContext = viewModel.computeBGContext(session)
+            selectedReadings = viewModel.getSparklineReadings(session)
             bgContextLoaded = true
         } else {
             selectedBGContext = null
+            selectedReadings = emptyList()
             bgContextLoaded = false
         }
     }
@@ -243,7 +247,10 @@ fun ExerciseHistoryScreen(
         ExerciseDetailSheet(
             session = selectedExercise!!,
             bgContext = selectedBGContext,
+            readings = selectedReadings,
             glucoseUnit = glucoseUnit,
+            bgLow = bgLow.toDouble(),
+            bgHigh = bgHigh.toDouble(),
             onDismiss = { selectedExercise = null }
         )
     }
@@ -771,134 +778,103 @@ internal fun PlannedWorkoutSheet(
     glucoseUnit: GlucoseUnit,
     onDismiss: () -> Unit
 ) {
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 48.dp),
-            shape = RoundedCornerShape(20.dp),
-            color = MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-        ) {
-            Column(
-                modifier = Modifier
-                    .verticalScroll(rememberScrollState())
-                    .padding(20.dp)
+    StrimmaBottomSheet(onDismiss = onDismiss) {
+
+        if (guidance is GuidanceState.WorkoutApproaching) {
+            // Guidance in a tinted inner card
+            val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+            val (tintBg, badgeColor, badgeText) = when (guidance.readiness) {
+                ReadinessLevel.READY -> Triple(if (isDark) TintInRange else LightTintInRange, InRange, "READY")
+                ReadinessLevel.CAUTION -> Triple(if (isDark) TintWarning else LightTintWarning, AboveHigh, "HEADS UP")
+                ReadinessLevel.WAIT -> Triple(if (isDark) TintDanger else LightTintDanger, BelowLow, "HOLD ON")
+            }
+            val timeText = formatTimeUntil(event.startTime - System.currentTimeMillis())
+            val targetLow = glucoseUnit.format(guidance.targetLowMgdl.toDouble())
+            val targetHigh = glucoseUnit.format(guidance.targetHighMgdl.toDouble())
+
+            Text(
+                text = "${event.title} in $timeText",
+                color = MaterialTheme.colorScheme.onBackground,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+            Spacer(Modifier.height(8.dp))
+
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = tintBg,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
-                        Icon(
-                            Icons.Default.Close,
-                            contentDescription = stringResource(R.string.common_content_desc_back),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-
-                if (guidance is GuidanceState.WorkoutApproaching) {
-                    // Guidance in a tinted inner card
-                    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
-                    val (tintBg, badgeColor, badgeText) = when (guidance.readiness) {
-                        ReadinessLevel.READY -> Triple(if (isDark) TintInRange else LightTintInRange, InRange, "READY")
-                        ReadinessLevel.CAUTION -> Triple(if (isDark) TintWarning else LightTintWarning, AboveHigh, "HEADS UP")
-                        ReadinessLevel.WAIT -> Triple(if (isDark) TintDanger else LightTintDanger, BelowLow, "HOLD ON")
-                    }
-                    val timeText = formatTimeUntil(event.startTime - System.currentTimeMillis())
-                    val targetLow = glucoseUnit.format(guidance.targetLowMgdl.toDouble())
-                    val targetHigh = glucoseUnit.format(guidance.targetHighMgdl.toDouble())
-
+                Column(modifier = Modifier.padding(12.dp)) {
                     Text(
-                        text = "${event.title} in $timeText",
-                        color = MaterialTheme.colorScheme.onBackground,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold
+                        text = badgeText,
+                        color = badgeColor,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 1.sp
                     )
                     Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = "Target: $targetLow\u2013$targetHigh ${glucoseUnit.label}",
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontSize = 13.sp
+                    )
+                    val currentLine = buildString {
+                        append("Current: ${glucoseUnit.format(guidance.currentBgMgdl)} ${guidance.trendArrow}")
+                        if (guidance.iob > 0.0) append("  \u00B7  IOB ${"%.1f".format(guidance.iob)}u")
+                    }
+                    Text(currentLine, color = MaterialTheme.colorScheme.onBackground, fontSize = 13.sp)
 
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = tintBg,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
+                    for (reason in guidance.reasons) {
+                        Spacer(Modifier.height(4.dp))
+                        Text(reason.message, color = MaterialTheme.colorScheme.outline, fontSize = 12.sp)
+                    }
+                    if (guidance.suggestions.isNotEmpty()) {
+                        Spacer(Modifier.height(8.dp))
+                        for (suggestion in guidance.suggestions) {
                             Text(
-                                text = badgeText,
-                                color = badgeColor,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                letterSpacing = 1.sp
-                            )
-                            Spacer(Modifier.height(8.dp))
-                            Text(
-                                text = "Target: $targetLow\u2013$targetHigh ${glucoseUnit.label}",
+                                text = suggestion,
                                 color = MaterialTheme.colorScheme.onBackground,
-                                fontSize = 13.sp
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium
                             )
-                            val currentLine = buildString {
-                                append("Current: ${glucoseUnit.format(guidance.currentBgMgdl)} ${guidance.trendArrow}")
-                                if (guidance.iob > 0.0) append("  \u00B7  IOB ${"%.1f".format(guidance.iob)}u")
-                            }
-                            Text(currentLine, color = MaterialTheme.colorScheme.onBackground, fontSize = 13.sp)
-
-                            for (reason in guidance.reasons) {
-                                Spacer(Modifier.height(4.dp))
-                                Text(reason.message, color = MaterialTheme.colorScheme.outline, fontSize = 12.sp)
-                            }
-                            if (guidance.suggestions.isNotEmpty()) {
-                                Spacer(Modifier.height(8.dp))
-                                for (suggestion in guidance.suggestions) {
-                                    Text(
-                                        text = suggestion,
-                                        color = MaterialTheme.colorScheme.onBackground,
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                }
-                            }
                         }
                     }
-                } else {
-                    val dateFmt = remember { SimpleDateFormat("EEE d MMM", Locale.getDefault()) }
-                    val timeFmt = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
-                    val dateStr = dateFmt.format(Date(event.startTime))
-                    val timeRange = "${timeFmt.format(Date(event.startTime))}\u2013${timeFmt.format(Date(event.endTime))}"
-                    val durationMin = ((event.endTime - event.startTime) / MS_PER_MINUTE).toInt()
-                    val categoryName = event.category.displayName
-                    val targetLow = glucoseUnit.format(event.metabolicProfile.defaultTargetLowMgdl.toDouble())
-                    val targetHigh = glucoseUnit.format(event.metabolicProfile.defaultTargetHighMgdl.toDouble())
-
-                    Text(
-                        text = event.title,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = "$dateStr \u00B7 $timeRange \u00B7 ${durationMin}min",
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        StatChip(label = stringResource(R.string.exercise_planned_category), value = categoryName)
-                        StatChip(label = stringResource(R.string.exercise_planned_target), value = "$targetLow\u2013$targetHigh")
-                    }
-                    Spacer(Modifier.height(12.dp))
-                    Text(
-                        text = stringResource(R.string.exercise_no_bg_data),
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                 }
             }
+        } else {
+            val dateFmt = remember { SimpleDateFormat("EEE d MMM", Locale.getDefault()) }
+            val timeFmt = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
+            val dateStr = dateFmt.format(Date(event.startTime))
+            val timeRange = "${timeFmt.format(Date(event.startTime))}\u2013${timeFmt.format(Date(event.endTime))}"
+            val durationMin = ((event.endTime - event.startTime) / MS_PER_MINUTE).toInt()
+            val categoryName = event.category.displayName
+            val targetLow = glucoseUnit.format(event.metabolicProfile.defaultTargetLowMgdl.toDouble())
+            val targetHigh = glucoseUnit.format(event.metabolicProfile.defaultTargetHighMgdl.toDouble())
+
+            Text(
+                text = event.title,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = "$dateStr \u00B7 $timeRange \u00B7 ${durationMin}min",
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                StatChip(label = stringResource(R.string.exercise_planned_category), value = categoryName)
+                StatChip(label = stringResource(R.string.exercise_planned_target), value = "$targetLow\u2013$targetHigh")
+            }
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = stringResource(R.string.exercise_no_bg_data),
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
