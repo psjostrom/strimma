@@ -876,7 +876,7 @@ internal fun PlannedWorkoutSheet(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-            }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
