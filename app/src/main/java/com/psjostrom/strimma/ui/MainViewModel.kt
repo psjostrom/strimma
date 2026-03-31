@@ -30,6 +30,9 @@ import com.psjostrom.strimma.network.FollowerStatus
 import com.psjostrom.strimma.network.LibreLinkUpFollower
 import com.psjostrom.strimma.network.NightscoutFollower
 import com.psjostrom.strimma.network.NightscoutPuller
+import com.psjostrom.strimma.notification.AlertManager
+import com.psjostrom.strimma.tidepool.TidepoolAuthManager
+import android.content.Intent
 import com.psjostrom.strimma.data.meal.MealAnalyzer
 import com.psjostrom.strimma.data.meal.MealTimeSlotConfig
 import com.psjostrom.strimma.network.TreatmentSyncer
@@ -56,7 +59,8 @@ class MainViewModel @Inject constructor(
     private val nightscoutPuller: NightscoutPuller,
     private val treatmentSyncer: TreatmentSyncer,
     private val calendarReader: CalendarReader,
-    val mealAnalyzer: MealAnalyzer
+    val mealAnalyzer: MealAnalyzer,
+    private val tidepoolAuthManager: TidepoolAuthManager
 ) : ViewModel() {
 
     companion object {
@@ -252,6 +256,36 @@ class MainViewModel @Inject constructor(
         val tau = IOBComputer.tauForInsulinType(insulinType, customDIA)
         IOBComputer.computeIOB(treatments, System.currentTimeMillis(), tau)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+
+    // Tidepool
+    val tidepoolEnabled: StateFlow<Boolean> = settings.tidepoolEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    val tidepoolOnlyWhileCharging: StateFlow<Boolean> = settings.tidepoolOnlyWhileCharging
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    val tidepoolOnlyWhileWifi: StateFlow<Boolean> = settings.tidepoolOnlyWhileWifi
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    val tidepoolLastUploadTime: StateFlow<Long> = settings.tidepoolLastUploadTime
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0L)
+    val tidepoolLastError: StateFlow<String> = settings.tidepoolLastError
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
+
+    fun setTidepoolEnabled(enabled: Boolean) = viewModelScope.launch { settings.setTidepoolEnabled(enabled) }
+    fun setTidepoolOnlyWhileCharging(enabled: Boolean) =
+        viewModelScope.launch { settings.setTidepoolOnlyWhileCharging(enabled) }
+    fun setTidepoolOnlyWhileWifi(enabled: Boolean) =
+        viewModelScope.launch { settings.setTidepoolOnlyWhileWifi(enabled) }
+
+    fun isTidepoolLoggedIn(): Boolean = tidepoolAuthManager.isLoggedIn()
+
+    private val tidepoolEnvironment: StateFlow<String> = settings.tidepoolEnvironment
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "PRODUCTION")
+
+    fun buildTidepoolAuthIntent(): Intent =
+        tidepoolAuthManager.buildAuthIntent(tidepoolEnvironment.value)
+
+    fun tidepoolLogout() {
+        viewModelScope.launch { tidepoolAuthManager.logout() }
+    }
 
     val exerciseSessions: StateFlow<List<StoredExerciseSession>> = exerciseDao.getAllSessions()
         .map { sessions ->
