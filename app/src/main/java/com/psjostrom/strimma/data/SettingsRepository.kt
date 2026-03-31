@@ -253,7 +253,7 @@ class SettingsRepository @Inject constructor(
 
     fun getNightscoutSecret(): String = encryptedPrefs.getString(KEY_NIGHTSCOUT_SECRET, "") ?: ""
     fun setNightscoutSecret(secret: String) {
-        encryptedPrefs.edit().putString(KEY_NIGHTSCOUT_SECRET, secret).apply()
+        encryptedPrefs.edit { putString(KEY_NIGHTSCOUT_SECRET, secret) }
         _secretVersion.value++
     }
 
@@ -295,7 +295,7 @@ class SettingsRepository @Inject constructor(
     suspend fun setGlucoseSource(source: GlucoseSource) {
         dataStore.edit { it[KEY_GLUCOSE_SOURCE] = source.name }
         context.getSharedPreferences(SYNC_PREFS, Context.MODE_PRIVATE)
-            .edit().putString(KEY_GLUCOSE_SOURCE_SYNC, source.name).apply()
+            .edit { putString(KEY_GLUCOSE_SOURCE_SYNC, source.name) }
     }
     fun getGlucoseSourceSync(): GlucoseSource {
         val name = context.getSharedPreferences(SYNC_PREFS, Context.MODE_PRIVATE)
@@ -354,7 +354,7 @@ class SettingsRepository @Inject constructor(
 
     fun getWebServerSecret(): String = encryptedPrefs.getString(KEY_WEB_SERVER_SECRET, "") ?: ""
     fun setWebServerSecret(secret: String) {
-        encryptedPrefs.edit().putString(KEY_WEB_SERVER_SECRET, secret).apply()
+        encryptedPrefs.edit { putString(KEY_WEB_SERVER_SECRET, secret) }
     }
 
     val startOnBoot: Flow<Boolean> = dataStore.data.map { it[KEY_START_ON_BOOT] ?: true }

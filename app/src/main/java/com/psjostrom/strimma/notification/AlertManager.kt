@@ -411,7 +411,7 @@ class AlertManager @Inject constructor(
     }
 
     fun snooze(alertId: Int) {
-        snoozePrefs.edit().putLong(alertId.toString(), System.currentTimeMillis() + SNOOZE_DURATION_MS).apply()
+        snoozePrefs.edit { putLong(alertId.toString(), System.currentTimeMillis() + SNOOZE_DURATION_MS) }
         notificationManager.cancel(alertId)
         DebugLog.log("Alert $alertId snoozed for 30 min")
     }
@@ -455,14 +455,14 @@ class AlertManager @Inject constructor(
         pauseExpiryMs(snoozePrefs, category)
 
     private fun clearSnooze(alertId: Int) {
-        snoozePrefs.edit().remove(alertId.toString()).apply()
+        snoozePrefs.edit { remove(alertId.toString()) }
     }
 
     private fun isSnoozed(alertId: Int, now: Long): Boolean {
         val until = snoozePrefs.getLong(alertId.toString(), 0L)
         if (until == 0L) return false
         if (now >= until) {
-            snoozePrefs.edit().remove(alertId.toString()).apply()
+            snoozePrefs.edit { remove(alertId.toString()) }
             return false
         }
         return true

@@ -159,11 +159,12 @@ fun MainScreen(
             }
             Box(modifier = Modifier.fillMaxWidth()) {
                 BgHeader(
-                    latestReading, bgLow, bgHigh, glucoseUnit, crossing, followerStatus, iob, treatments, iobTauMinutes,
+                    latestReading, bgLow, bgHigh, glucoseUnit, followerStatus,
+                    modifier = Modifier.fillMaxWidth(),
+                    crossing = crossing, iob = iob, treatments = treatments, iobTauMinutes = iobTauMinutes,
                     pauseLowExpiryMs = pauseLowExpiryMs,
                     pauseHighExpiryMs = pauseHighExpiryMs,
-                    onPausePillClick = { showPauseSheet = true },
-                    modifier = Modifier.fillMaxWidth()
+                    onPausePillClick = { showPauseSheet = true }
                 )
                 IconButton(
                     onClick = { showPauseSheet = true },
@@ -257,14 +258,15 @@ fun MainScreen(
 @Composable
 private fun BgHeader(
     reading: GlucoseReading?, bgLow: Float, bgHigh: Float,
-    glucoseUnit: GlucoseUnit, crossing: ThresholdCrossing? = null,
-    followerStatus: FollowerStatus, iob: Double = 0.0,
+    glucoseUnit: GlucoseUnit, followerStatus: FollowerStatus,
+    modifier: Modifier = Modifier,
+    crossing: ThresholdCrossing? = null,
+    iob: Double = 0.0,
     treatments: List<Treatment> = emptyList(),
     iobTauMinutes: Double = 55.0,
     pauseLowExpiryMs: Long? = null,
     pauseHighExpiryMs: Long? = null,
-    onPausePillClick: () -> Unit = {},
-    modifier: Modifier = Modifier
+    onPausePillClick: () -> Unit = {}
 ) {
     var minutesAgo by remember { mutableIntStateOf(0) }
 

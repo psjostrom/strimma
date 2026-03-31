@@ -87,7 +87,6 @@ android {
         warningsAsErrors = true
         abortOnError = true
         checkDependencies = true
-        baseline = file("lint-baseline.xml")
     }
 
     packaging {
@@ -101,7 +100,6 @@ android {
 detekt {
     config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
     buildUponDefaultConfig = true
-    baseline = file("$rootDir/config/detekt/baseline.xml")
 }
 
 tasks.register<JacocoReport>("jacocoTestReport") {
@@ -134,7 +132,7 @@ dependencies {
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.tooling.preview)
     implementation(libs.compose.material3)
-    implementation("androidx.compose.material:material-icons-extended")
+    implementation(libs.compose.material.icons.extended)
     debugImplementation(libs.compose.ui.tooling)
 
     implementation(libs.room.runtime)
