@@ -21,8 +21,6 @@
     <string name="main_prediction_high">H\u00F6gt om %1$d min</string>
     <string name="main_iob_value">IOB %1$.1fU</string>
     <string name="main_follower_connecting">F\u00F6ljer \u00B7 ansluter\u2026</string>
-    <string name="main_follower_seconds_ago">F\u00F6ljer \u00B7 %1$ds sedan</string>
-    <string name="main_follower_minutes_ago">F\u00F6ljer \u00B7 %1$dm sedan</string>
     <string name="main_follower_lost">F\u00F6ljer \u00B7 anslutning tappad</string>
     <string name="main_follower_lost_minutes">F\u00F6ljer \u00B7 anslutning tappad %1$dm</string>
     <string name="main_iob_breakdown_title">IOB-f\u00F6rdelning</string>
