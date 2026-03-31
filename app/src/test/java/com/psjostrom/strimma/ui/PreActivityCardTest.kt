@@ -3,7 +3,6 @@ package com.psjostrom.strimma.ui
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.calendar.AssessmentReason
 import com.psjostrom.strimma.data.calendar.GuidanceState
 import com.psjostrom.strimma.data.calendar.MetabolicProfile
@@ -49,7 +48,7 @@ class PreActivityCardTest {
     @Test
     fun `displays badge and title with time`() {
         composeRule.setContent {
-            PreActivityCard(state = state(), glucoseUnit = GlucoseUnit.MMOL, onClick = {})
+            PreActivityCard(state = state(), onClick = {})
         }
         composeRule.onNodeWithText("READY").assertExists()
         composeRule.onNodeWithText("Easy Run in", substring = true).assertExists()
@@ -58,7 +57,7 @@ class PreActivityCardTest {
     @Test
     fun `displays HOLD ON badge for WAIT readiness`() {
         composeRule.setContent {
-            PreActivityCard(state = state(readiness = ReadinessLevel.WAIT), glucoseUnit = GlucoseUnit.MMOL, onClick = {})
+            PreActivityCard(state = state(readiness = ReadinessLevel.WAIT), onClick = {})
         }
         composeRule.onNodeWithText("HOLD ON").assertExists()
     }
@@ -66,7 +65,7 @@ class PreActivityCardTest {
     @Test
     fun `displays HEADS UP badge for CAUTION readiness`() {
         composeRule.setContent {
-            PreActivityCard(state = state(readiness = ReadinessLevel.CAUTION), glucoseUnit = GlucoseUnit.MMOL, onClick = {})
+            PreActivityCard(state = state(readiness = ReadinessLevel.CAUTION), onClick = {})
         }
         composeRule.onNodeWithText("HEADS UP").assertExists()
     }
@@ -76,7 +75,6 @@ class PreActivityCardTest {
         composeRule.setContent {
             PreActivityCard(
                 state = state(suggestions = listOf("Eat 20g carbs")),
-                glucoseUnit = GlucoseUnit.MMOL,
                 onClick = {}
             )
         }
@@ -88,7 +86,6 @@ class PreActivityCardTest {
         composeRule.setContent {
             PreActivityCard(
                 state = state(reasons = listOf(AssessmentReason(ReadinessLevel.CAUTION, "BG is falling"))),
-                glucoseUnit = GlucoseUnit.MMOL,
                 onClick = {}
             )
         }
@@ -103,7 +100,6 @@ class PreActivityCardTest {
                     suggestions = listOf("Eat 20g carbs"),
                     reasons = listOf(AssessmentReason(ReadinessLevel.CAUTION, "BG is falling"))
                 ),
-                glucoseUnit = GlucoseUnit.MMOL,
                 onClick = {}
             )
         }
@@ -114,7 +110,7 @@ class PreActivityCardTest {
     fun `click triggers callback`() {
         var clicked = false
         composeRule.setContent {
-            PreActivityCard(state = state(), glucoseUnit = GlucoseUnit.MMOL, onClick = { clicked = true })
+            PreActivityCard(state = state(), onClick = { clicked = true })
         }
         composeRule.onNodeWithText("READY").performClick()
         assertTrue("onClick should fire", clicked)

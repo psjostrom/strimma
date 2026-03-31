@@ -207,7 +207,6 @@ fun MainScreen(
             if (guidance is GuidanceState.WorkoutApproaching) {
                 PreActivityCard(
                     state = guidance,
-                    glucoseUnit = glucoseUnit,
                     onClick = { showGuidanceSheet = true }
                 )
                 Spacer(modifier = Modifier.height(8.dp))

@@ -19,7 +19,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.MS_PER_MINUTE
 import com.psjostrom.strimma.data.calendar.GuidanceState
 import com.psjostrom.strimma.data.calendar.ReadinessLevel
@@ -38,7 +37,6 @@ private const val MINUTES_PER_HOUR = 60
 @Composable
 fun PreActivityCard(
     state: GuidanceState.WorkoutApproaching,
-    glucoseUnit: GlucoseUnit,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
