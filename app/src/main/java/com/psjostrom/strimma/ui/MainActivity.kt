@@ -112,7 +112,12 @@ class MainActivity : ComponentActivity() {
 
     private val tidepoolAuthLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
-    ) { /* Auth handled by TidepoolAuthActivity via redirect */ }
+    ) { result ->
+        val data = result.data ?: return@registerForActivityResult
+        lifecycleScope.launch {
+            viewModelRef?.handleTidepoolAuthResult(data)
+        }
+    }
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -549,8 +554,6 @@ class MainActivity : ComponentActivity() {
                     composable("settings/data") {
                         val webServerEnabled by viewModel.webServerEnabled.collectAsState()
                         val tidepoolEnabled by viewModel.tidepoolEnabled.collectAsState()
-                        val tidepoolOnlyWhileCharging by viewModel.tidepoolOnlyWhileCharging.collectAsState()
-                        val tidepoolOnlyWhileWifi by viewModel.tidepoolOnlyWhileWifi.collectAsState()
                         val tidepoolLastUploadTime by viewModel.tidepoolLastUploadTime.collectAsState()
                         val tidepoolLastError by viewModel.tidepoolLastError.collectAsState()
                         DataSettings(
@@ -562,15 +565,11 @@ class MainActivity : ComponentActivity() {
                             onWebServerSecretChange = viewModel::setWebServerSecret,
                             tidepoolEnabled = tidepoolEnabled,
                             onTidepoolEnabledChange = viewModel::setTidepoolEnabled,
-                            isTidepoolLoggedIn = viewModel.isTidepoolLoggedIn(),
+                            isTidepoolLoggedIn = viewModel.tidepoolLoggedIn.collectAsState().value,
                             onTidepoolLogin = {
                                 tidepoolAuthLauncher.launch(viewModel.buildTidepoolAuthIntent())
                             },
                             onTidepoolLogout = viewModel::tidepoolLogout,
-                            tidepoolOnlyWhileCharging = tidepoolOnlyWhileCharging,
-                            onTidepoolOnlyWhileChargingChange = viewModel::setTidepoolOnlyWhileCharging,
-                            tidepoolOnlyWhileWifi = tidepoolOnlyWhileWifi,
-                            onTidepoolOnlyWhileWifiChange = viewModel::setTidepoolOnlyWhileWifi,
                             tidepoolLastUploadTime = tidepoolLastUploadTime,
                             tidepoolLastError = tidepoolLastError,
                             onExportReadings = {

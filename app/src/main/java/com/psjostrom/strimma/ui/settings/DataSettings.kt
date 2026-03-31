@@ -27,10 +27,6 @@ fun DataSettings(
     isTidepoolLoggedIn: Boolean,
     onTidepoolLogin: () -> Unit,
     onTidepoolLogout: () -> Unit,
-    tidepoolOnlyWhileCharging: Boolean,
-    onTidepoolOnlyWhileChargingChange: (Boolean) -> Unit,
-    tidepoolOnlyWhileWifi: Boolean,
-    onTidepoolOnlyWhileWifiChange: (Boolean) -> Unit,
     tidepoolLastUploadTime: Long,
     tidepoolLastError: String,
     onExportSettings: () -> Unit,
@@ -138,30 +134,6 @@ fun DataSettings(
                     ) {
                         Text("Login with Tidepool")
                     }
-                }
-
-                HorizontalDivider(color = outlineVar)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("Only while charging", color = onBg, fontSize = 14.sp)
-                    Switch(
-                        checked = tidepoolOnlyWhileCharging,
-                        onCheckedChange = onTidepoolOnlyWhileChargingChange
-                    )
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("Only on Wi-Fi", color = onBg, fontSize = 14.sp)
-                    Switch(
-                        checked = tidepoolOnlyWhileWifi,
-                        onCheckedChange = onTidepoolOnlyWhileWifiChange
-                    )
                 }
 
                 if (tidepoolLastError.isNotBlank()) {
