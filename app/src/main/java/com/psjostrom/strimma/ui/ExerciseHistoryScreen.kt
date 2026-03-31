@@ -763,7 +763,7 @@ private fun ExerciseCard(
 }
 
 @Composable
-private fun PlannedWorkoutSheet(
+internal fun PlannedWorkoutSheet(
     event: WorkoutEvent,
     guidance: GuidanceState?,
     glucoseUnit: GlucoseUnit,

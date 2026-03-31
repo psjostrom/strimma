@@ -104,6 +104,7 @@ fun MainScreen(
     var zoomScale by remember { mutableFloatStateOf(1f) }
 
     var showPauseSheet by remember { mutableStateOf(false) }
+    var showGuidanceSheet by remember { mutableStateOf(false) }
 
     // Exercise detail sheet state
     var selectedExercise by remember { mutableStateOf<StoredExerciseSession?>(null) }
@@ -206,9 +207,19 @@ fun MainScreen(
             if (guidance is GuidanceState.WorkoutApproaching) {
                 PreActivityCard(
                     state = guidance,
-                    glucoseUnit = glucoseUnit
+                    glucoseUnit = glucoseUnit,
+                    onClick = { showGuidanceSheet = true }
                 )
                 Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            if (showGuidanceSheet && guidance is GuidanceState.WorkoutApproaching) {
+                PlannedWorkoutSheet(
+                    event = guidance.event,
+                    guidance = guidance,
+                    glucoseUnit = glucoseUnit,
+                    onDismiss = { showGuidanceSheet = false }
+                )
             }
 
             val cardShape = RoundedCornerShape(12.dp)

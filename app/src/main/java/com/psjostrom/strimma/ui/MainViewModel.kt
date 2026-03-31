@@ -314,8 +314,28 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch { settings.setExerciseTarget(category, low, high) }
 
     init {
+        // React to calendarId changes from DataStore — fixes race where
+        // the init poll runs before DataStore emits the real value
+        viewModelScope.launch {
+            workoutCalendarId.collect { calId ->
+                _cachedEvent.value = try {
+                    if (calId >= 0) {
+                        val lookaheadMs = workoutLookaheadHours.value.toLong() * MS_PER_HOUR
+                        calendarReader.getNextWorkout(calId, lookaheadMs)
+                    } else null
+                } catch (
+                    @Suppress("TooGenericExceptionCaught")
+                    e: Exception
+                ) {
+                    DebugLog.log("Calendar poll failed: ${e.message}")
+                    null
+                }
+            }
+        }
+        // Background poll for calendar changes (events added/removed externally)
         viewModelScope.launch {
             while (currentCoroutineContext().isActive) {
+                delay(MS_PER_MINUTE)
                 try {
                     val calId = workoutCalendarId.value
                     _cachedEvent.value = if (calId >= 0) {
@@ -329,7 +349,6 @@ class MainViewModel @Inject constructor(
                     DebugLog.log("Calendar poll failed: ${e.message}")
                     _cachedEvent.value = null
                 }
-                delay(MS_PER_MINUTE)
             }
         }
 
