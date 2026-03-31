@@ -66,7 +66,7 @@ leakcanary = { module = "com.squareup.leakcanary:leakcanary-android", version.re
 
 health-connect = { module = "androidx.health.connect:connect-client", version.ref = "health-connect" }
 
-bottomsheetdialog-compose = { module = "com.holix.android:bottomsheetdialog-compose", version = "1.5.1" }
+bottomsheetdialog-compose = { module = "com.holix.android:bottomsheetdialog-compose", version = "1.6.0" }
 
 junit = { module = "junit:junit", version = "4.13.2" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
