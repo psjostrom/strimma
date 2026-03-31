@@ -20,7 +20,7 @@ Android blocks notification access for sideloaded apps by default. Three steps a
 !!! info "About the scary warning"
     Android shows a strong warning when you grant notification access: *"This app will be able to read all your notifications."* This is because Android's notification access is all-or-nothing — there's no way to grant access to only specific apps' notifications.
 
-    **What Strimma actually does:** It only reads notifications from a specific list of known CGM app packages (Dexcom, Libre, CamAPS FX, etc.). All other notifications are ignored — Strimma never reads your messages, emails, or other app notifications. The full list of monitored apps is in [Supported CGM Apps](../data-sources/supported-apps.md), and you can verify this in the [source code](https://github.com/psjostrom/Strimma).
+    **What Strimma actually does:** It only reads notifications from a specific list of known CGM app packages (Dexcom, Libre, CamAPS FX, etc.). All other notifications are ignored — Strimma never reads your messages, emails, or other app notifications. The full list of monitored apps is in [Supported CGM Apps](../data-sources/supported-apps.md), and you can verify this in the [source code](https://github.com/psjostrom/strimma).
 
 !!! tip "If notification access gets revoked"
     Android may revoke notification access after system updates, app updates, or battery optimization events. If Strimma suddenly stops receiving data, check this setting first:

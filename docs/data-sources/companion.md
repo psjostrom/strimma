@@ -64,7 +64,7 @@ Strimma automatically ignores duplicate readings. If your CGM app updates its no
     1. Check that notification access is granted: **Android Settings > Special app access > Notification access > Strimma**
     2. Check that your CGM app is posting notifications (some apps let you disable them)
     3. Check the debug log (**Settings > Debug Log**) for messages about received or rejected notifications
-    4. If your CGM app isn't in the [Supported Apps](supported-apps.md) list, please [open an issue](https://github.com/psjostrom/Strimma/issues)
+    4. If your CGM app isn't in the [Supported Apps](supported-apps.md) list, please [open an issue](https://github.com/psjostrom/strimma/issues)
 
 !!! question "Values look wrong"
-    Check the debug log for the raw text Strimma extracted from the notification. If you find a parsing issue, [open an issue](https://github.com/psjostrom/Strimma/issues) with the debug log snippet.
+    Check the debug log for the raw text Strimma extracted from the notification. If you find a parsing issue, [open an issue](https://github.com/psjostrom/strimma/issues) with the debug log snippet.

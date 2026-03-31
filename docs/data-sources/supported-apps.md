@@ -62,7 +62,7 @@ Strimma can read glucose from the following apps in **Companion mode**.
 If your CGM app shows glucose in a notification but isn't listed above:
 
 1. It might still work — try it and check the **Debug Log** (Settings > Debug Log) for messages
-2. If it doesn't work, [open an issue](https://github.com/psjostrom/Strimma/issues) on GitHub with:
+2. If it doesn't work, [open an issue](https://github.com/psjostrom/strimma/issues) on GitHub with:
     - The app name
     - A screenshot of the notification
     - Whether the app shows glucose in mmol/L or mg/dL

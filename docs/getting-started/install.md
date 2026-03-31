@@ -6,7 +6,7 @@ Strimma is distributed as an APK from GitHub Releases. It is not on Google Play.
 
 ## Download
 
-1. Open [Strimma Releases](https://github.com/psjostrom/Strimma/releases) on your Android phone
+1. Open [Strimma Releases](https://github.com/psjostrom/strimma/releases) on your Android phone
 2. Find the latest release
 3. Under **Assets**, tap the `.apk` file to download
 4. When prompted, tap **Install**
@@ -32,7 +32,7 @@ Strimma is distributed as an APK from GitHub Releases. It is not on Google Play.
 To update, download the latest release APK and install it over the existing version. Your settings and data are preserved — Android keeps them as long as the signing key matches.
 
 !!! tip "Check for updates"
-    Watch the [Strimma repository](https://github.com/psjostrom/Strimma) on GitHub to get notified of new releases.
+    Watch the [Strimma repository](https://github.com/psjostrom/strimma) on GitHub to get notified of new releases.
 
 ---
 
@@ -42,7 +42,7 @@ To update, download the latest release APK and install it over the existing vers
 - **Architecture:** arm64, arm32, x86_64
 - **Tested on:** Pixel 9 Pro (Android 16)
 
-Strimma should work on any Android 13+ device. If you encounter issues on your device, please [open an issue](https://github.com/psjostrom/Strimma/issues).
+Strimma should work on any Android 13+ device. If you encounter issues on your device, please [open an issue](https://github.com/psjostrom/strimma/issues).
 
 ---
 

@@ -105,9 +105,9 @@ You can also receive glucose via **xDrip Broadcast** (from xDrip+, Juggluco, AAP
 
 ## Open Source
 
-Strimma is free, open-source software licensed under [GPLv3](https://github.com/psjostrom/Strimma/blob/main/LICENSE). No ads, no tracking, no data collection. Your glucose data stays on your device and your Nightscout server.
+Strimma is free, open-source software licensed under [GPLv3](https://github.com/psjostrom/strimma/blob/main/LICENSE). No ads, no tracking, no data collection. Your glucose data stays on your device and your Nightscout server.
 
-[View on GitHub :fontawesome-brands-github:](https://github.com/psjostrom/Strimma){ .md-button }
+[View on GitHub :fontawesome-brands-github:](https://github.com/psjostrom/strimma){ .md-button }
 
 ---
 
