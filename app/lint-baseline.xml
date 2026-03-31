@@ -8,7 +8,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/psjostrom/strimma/service/StrimmaService.kt"
-            line="125"
+            line="153"
             column="13"/>
     </issue>
 
@@ -19,7 +19,7 @@
         errorLine2="    ~~~~~~~~">
         <location
             file="src/main/java/com/psjostrom/strimma/ui/MainScreen.kt"
-            line="455"
+            line="278"
             column="5"/>
     </issue>
 
@@ -30,7 +30,7 @@
         errorLine2="                             ~~~~~">
         <location
             file="src/main/AndroidManifest.xml"
-            line="25"
+            line="28"
             column="30"/>
     </issue>
 
@@ -42,13 +42,24 @@
     </issue>
 
     <issue
+        id="UnusedResources"
+        message="The resource `R.string.exercise_metabolic_profile_hint` appears to be unused"
+        errorLine1="    &lt;string name=&quot;exercise_metabolic_profile_hint&quot;>BG response type — determines target range. Detected from activity type or heart rate.&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="431"
+            column="13"/>
+    </issue>
+
+    <issue
         id="UseKtx"
         message="Use the KTX extension function `SharedPreferences.edit` instead?"
         errorLine1="        snoozePrefs.edit().putLong(alertId.toString(), System.currentTimeMillis() + SNOOZE_DURATION_MS).apply()"
         errorLine2="        ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/psjostrom/strimma/notification/AlertManager.kt"
-            line="304"
+            line="414"
             column="9"/>
     </issue>
 
@@ -59,7 +70,7 @@
         errorLine2="        ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/psjostrom/strimma/notification/AlertManager.kt"
-            line="310"
+            line="458"
             column="9"/>
     </issue>
 
@@ -70,7 +81,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/psjostrom/strimma/notification/AlertManager.kt"
-            line="317"
+            line="465"
             column="13"/>
     </issue>
 
@@ -81,7 +92,7 @@
         errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/psjostrom/strimma/notification/GraphRenderer.kt"
-            line="83"
+            line="78"
             column="22"/>
     </issue>
 
@@ -92,7 +103,7 @@
         errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/psjostrom/strimma/notification/NotificationHelper.kt"
-            line="179"
+            line="199"
             column="22"/>
     </issue>
 
@@ -103,7 +114,7 @@
         errorLine2="        ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/psjostrom/strimma/data/SettingsRepository.kt"
-            line="199"
+            line="256"
             column="9"/>
     </issue>
 
@@ -114,18 +125,7 @@
         errorLine2="        ^">
         <location
             file="src/main/java/com/psjostrom/strimma/data/SettingsRepository.kt"
-            line="237"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="        encryptedPrefs.edit().putString(KEY_FOLLOWER_SECRET, secret).apply()"
-        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/psjostrom/strimma/data/SettingsRepository.kt"
-            line="254"
+            line="297"
             column="9"/>
     </issue>
 
@@ -136,7 +136,7 @@
         errorLine2="        ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/psjostrom/strimma/data/SettingsRepository.kt"
-            line="283"
+            line="357"
             column="9"/>
     </issue>
 
@@ -147,7 +147,7 @@
         errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="build.gradle.kts"
-            line="134"
+            line="137"
             column="20"/>
     </issue>
 
@@ -180,7 +180,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/layout/notification_expanded.xml"
-            line="21"
+            line="20"
             column="13"/>
     </issue>
 
@@ -191,7 +191,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/layout/notification_expanded.xml"
-            line="30"
+            line="29"
             column="13"/>
     </issue>
 
@@ -202,7 +202,7 @@
         errorLine2="        ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/layout/notification_expanded.xml"
-            line="41"
+            line="40"
             column="9"/>
     </issue>
 
