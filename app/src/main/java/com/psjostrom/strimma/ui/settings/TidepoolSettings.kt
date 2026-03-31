@@ -2,6 +2,8 @@ package com.psjostrom.strimma.ui.settings
 
 import android.text.format.DateUtils
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,6 +30,17 @@ fun TidepoolSettings(
     val onBg = MaterialTheme.colorScheme.onBackground
     val outline = MaterialTheme.colorScheme.outline
     val error = MaterialTheme.colorScheme.error
+    var showConsentDialog by remember { mutableStateOf(false) }
+
+    if (showConsentDialog) {
+        TidepoolConsentDialog(
+            onAccept = {
+                showConsentDialog = false
+                onLogin()
+            },
+            onDismiss = { showConsentDialog = false }
+        )
+    }
 
     SettingsScaffold(title = "Tidepool", onBack = onBack) {
         SettingsSection("Account") {
@@ -50,7 +63,7 @@ fun TidepoolSettings(
                 Text("Connected", color = InRange, fontSize = 12.sp)
             } else {
                 OutlinedButton(
-                    onClick = onLogin,
+                    onClick = { showConsentDialog = true },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Login with Tidepool")
@@ -98,4 +111,38 @@ fun TidepoolSettings(
             }
         }
     }
+}
+
+@Composable
+private fun TidepoolConsentDialog(
+    onAccept: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Connect to Tidepool") },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                Text(
+                    "Strimma is requesting access to your Tidepool account. " +
+                        "Strimma wants to use this access to upload data to your Tidepool account.\n\n" +
+                        "Any data uploaded to Tidepool is subject to Tidepool\u2019s Privacy Policy " +
+                        "and Terms of Use.\n\n" +
+                        "You may revoke access at any time by disconnecting your Tidepool account " +
+                        "in Strimma Settings \u2192 Tidepool \u2192 Disconnect.",
+                    fontSize = 14.sp
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onAccept) {
+                Text("Accept")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
