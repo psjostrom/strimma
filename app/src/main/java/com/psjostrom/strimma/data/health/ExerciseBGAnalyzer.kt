@@ -39,8 +39,8 @@ data class ExerciseBGContext(
 class ExerciseBGAnalyzer @Inject constructor() {
 
     companion object {
-        private const val PRE_WINDOW_MINUTES = 30L
-        private const val POST_WINDOW_HOURS = 4L
+        internal const val PRE_WINDOW_MINUTES = 30L
+        internal const val POST_WINDOW_HOURS = 4L
         private const val BUCKET_MINUTES = 10L
         private const val MIN_READINGS_DURING = 2
         private const val TREND_THRESHOLD = 1.0 // mg/dL per minute

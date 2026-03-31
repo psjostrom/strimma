@@ -38,6 +38,7 @@ import com.psjostrom.strimma.data.health.StoredExerciseSession
 import com.psjostrom.strimma.data.health.Trend
 import com.psjostrom.strimma.graph.computeYRange
 import com.psjostrom.strimma.ui.theme.AboveHigh
+import com.psjostrom.strimma.ui.theme.DarkSurfaceCard
 import com.psjostrom.strimma.ui.theme.BelowLow
 import com.psjostrom.strimma.ui.theme.ExerciseDefault
 import com.psjostrom.strimma.ui.theme.InRange
@@ -132,7 +133,7 @@ fun ExerciseDetailSheet(
                     val noValue = stringResource(R.string.exercise_detail_no_value)
 
                     // Stats grid — key numbers at a glance
-                    StatsRow(bgContext, glucoseUnit, noValue)
+                    StatsRow(bgContext, glucoseUnit, bgLow, noValue)
 
                     Spacer(Modifier.height(16.dp))
 
@@ -214,7 +215,7 @@ fun ExerciseDetailSheet(
 }
 
 @Composable
-private fun StatsRow(bgContext: ExerciseBGContext, glucoseUnit: GlucoseUnit, noValue: String) {
+private fun StatsRow(bgContext: ExerciseBGContext, glucoseUnit: GlucoseUnit, bgLow: Double, noValue: String) {
     val trendArrow = when (bgContext.entryTrend) {
         Trend.RISING -> "\u2197"
         Trend.FALLING -> "\u2198"
@@ -232,7 +233,7 @@ private fun StatsRow(bgContext: ExerciseBGContext, glucoseUnit: GlucoseUnit, noV
         StatBlock(
             label = stringResource(R.string.exercise_detail_min_bg),
             value = bgContext.minBG?.let { glucoseUnit.format(it) } ?: noValue,
-            valueColor = bgContext.minBG?.let { if (it < 70) BelowLow else null }
+            valueColor = bgContext.minBG?.let { if (it < bgLow) BelowLow else null }
         )
         bgContext.avgHR?.let {
             StatBlock(
@@ -266,7 +267,6 @@ private fun StatBlock(
     }
 }
 
-@Suppress("LongMethod") // Canvas drawing with coordinate math
 @Composable
 private fun ExerciseBGGraph(
     readings: List<GlucoseReading>,
@@ -286,7 +286,7 @@ private fun ExerciseBGGraph(
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(8.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant
+        color = DarkSurfaceCard
     ) {
         Canvas(modifier = Modifier.fillMaxSize().padding(4.dp)) {
             val sorted = readings.sortedBy { it.ts }
@@ -316,37 +316,21 @@ private fun ExerciseBGGraph(
             // Exercise band
             val bandX1 = xFor(session.startTime).coerceIn(pad, pad + w)
             val bandX2 = xFor(session.endTime).coerceIn(pad, pad + w)
-            drawRect(
-                color = exerciseBandColor,
-                topLeft = Offset(bandX1, pad),
-                size = Size(bandX2 - bandX1, h)
-            )
+            drawRect(exerciseBandColor, topLeft = Offset(bandX1, pad), size = Size(bandX2 - bandX1, h))
             drawLine(exerciseBorderColor, Offset(bandX1, pad), Offset(bandX1, pad + h), strokeWidth = 1.5f)
             drawLine(exerciseBorderColor, Offset(bandX2, pad), Offset(bandX2, pad + h), strokeWidth = 1.5f)
 
-            // In-range zone
+            // In-range zone + threshold lines
             val zoneLowY = yFor(bgLow).coerceIn(pad, pad + h)
             val zoneHighY = yFor(bgHigh).coerceIn(pad, pad + h)
-            drawRect(
-                color = Color(0x0C56CCF2),
-                topLeft = Offset(pad, zoneHighY),
-                size = Size(w, zoneLowY - zoneHighY)
-            )
-
-            // Threshold lines
+            drawRect(InRange.copy(alpha = 0.05f), topLeft = Offset(pad, zoneHighY), size = Size(w, zoneLowY - zoneHighY))
             drawLine(
-                color = lowColor.copy(alpha = 0.4f),
-                start = Offset(pad, zoneLowY),
-                end = Offset(pad + w, zoneLowY),
-                strokeWidth = 1f,
-                pathEffect = thresholdDash
+                lowColor.copy(alpha = 0.4f), Offset(pad, zoneLowY),
+                Offset(pad + w, zoneLowY), strokeWidth = 1f, pathEffect = thresholdDash
             )
             drawLine(
-                color = highColor.copy(alpha = 0.4f),
-                start = Offset(pad, zoneHighY),
-                end = Offset(pad + w, zoneHighY),
-                strokeWidth = 1f,
-                pathEffect = thresholdDash
+                highColor.copy(alpha = 0.4f), Offset(pad, zoneHighY),
+                Offset(pad + w, zoneHighY), strokeWidth = 1f, pathEffect = thresholdDash
             )
 
             // BG dots + lines
@@ -361,9 +345,9 @@ private fun ExerciseBGGraph(
                     else -> dotColor
                 }
                 if (i > 0) {
-                    drawLine(color = c.copy(alpha = 0.5f), start = Offset(prevX, prevY), end = Offset(x, y), strokeWidth = 1.5f)
+                    drawLine(c.copy(alpha = 0.5f), Offset(prevX, prevY), Offset(x, y), strokeWidth = 1.5f)
                 }
-                drawCircle(color = c, radius = 2.5f, center = Offset(x, y))
+                drawCircle(c, radius = 2.5f, center = Offset(x, y))
                 prevX = x
                 prevY = y
             }

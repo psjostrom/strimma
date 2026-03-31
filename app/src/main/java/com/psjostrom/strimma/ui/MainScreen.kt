@@ -37,6 +37,7 @@ import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.Direction
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.IOBComputer
+import com.psjostrom.strimma.data.health.ExerciseBGAnalyzer
 import com.psjostrom.strimma.data.calendar.GuidanceState
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.Treatment
@@ -123,8 +124,8 @@ fun MainScreen(
 
     if (selectedExercise != null && bgContextLoaded) {
         val session = selectedExercise!!
-        val preStart = session.startTime - 30 * 60_000L
-        val postEnd = session.endTime + 4 * 3600_000L
+        val preStart = session.startTime - ExerciseBGAnalyzer.PRE_WINDOW_MINUTES * 60_000L
+        val postEnd = session.endTime + ExerciseBGAnalyzer.POST_WINDOW_HOURS * 3600_000L
         val exerciseReadings = readings.filter { it.ts in preStart..postEnd }
         ExerciseDetailSheet(
             session = session,
