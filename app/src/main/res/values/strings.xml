@@ -16,6 +16,12 @@
     <string name="common_content_desc_share_log">Share log</string>
 
 
+    <!-- Bottom Navigation -->
+    <string name="nav_home">BG</string>
+    <string name="nav_exercise">Exercise</string>
+    <string name="nav_stats">Stats</string>
+    <string name="nav_settings">Settings</string>
+
     <!-- Main Screen -->
     <string name="main_waiting_for_reading">Waiting for first glucose reading…</string>
     <string name="main_just_now">Just now</string>

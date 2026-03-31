@@ -14,7 +14,26 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.WaterDrop
+import androidx.compose.material.icons.outlined.BarChart
+import androidx.compose.material.icons.outlined.FitnessCenter
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.WaterDrop
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.IOBComputer
 import androidx.core.content.ContextCompat
@@ -23,6 +42,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.psjostrom.strimma.network.FollowerStatus
 import com.psjostrom.strimma.receiver.GlucoseNotificationListener
@@ -163,7 +183,101 @@ class MainActivity : ComponentActivity() {
                 val iob by viewModel.iob.collectAsState()
                 val exerciseSessions by viewModel.exerciseSessions.collectAsState()
                 val guidanceState by viewModel.guidanceState.collectAsState()
-                NavHost(navController, startDestination = startDest) {
+
+                val navBackStackEntry by navController.currentBackStackEntryAsState()
+                val currentRoute = navBackStackEntry?.destination?.route
+                val topLevelRoutes = setOf("main", "exercise", "stats", "settings")
+                val showBottomBar = currentRoute in topLevelRoutes
+
+                Scaffold(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    bottomBar = {
+                        if (showBottomBar) {
+                            NavigationBar(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                            ) {
+                                NavigationBarItem(
+                                    selected = currentRoute == "main",
+                                    onClick = {
+                                        navController.navigate("main") {
+                                            popUpTo("main") { inclusive = true }
+                                            launchSingleTop = true
+                                        }
+                                    },
+                                    icon = {
+                                        Icon(
+                                            if (currentRoute == "main") Icons.Filled.WaterDrop
+                                            else Icons.Outlined.WaterDrop,
+                                            contentDescription = null
+                                        )
+                                    },
+                                    label = { Text(stringResource(R.string.nav_home)) }
+                                )
+                                NavigationBarItem(
+                                    selected = currentRoute == "exercise",
+                                    onClick = {
+                                        navController.navigate("exercise") {
+                                            popUpTo("main") { saveState = true }
+                                            launchSingleTop = true
+                                            restoreState = true
+                                        }
+                                    },
+                                    icon = {
+                                        Icon(
+                                            if (currentRoute == "exercise") Icons.Filled.FitnessCenter
+                                            else Icons.Outlined.FitnessCenter,
+                                            contentDescription = null
+                                        )
+                                    },
+                                    label = { Text(stringResource(R.string.nav_exercise)) }
+                                )
+                                NavigationBarItem(
+                                    selected = currentRoute == "stats",
+                                    onClick = {
+                                        navController.navigate("stats") {
+                                            popUpTo("main") { saveState = true }
+                                            launchSingleTop = true
+                                            restoreState = true
+                                        }
+                                    },
+                                    icon = {
+                                        Icon(
+                                            if (currentRoute == "stats") Icons.Filled.BarChart
+                                            else Icons.Outlined.BarChart,
+                                            contentDescription = null
+                                        )
+                                    },
+                                    label = { Text(stringResource(R.string.nav_stats)) }
+                                )
+                                NavigationBarItem(
+                                    selected = currentRoute == "settings",
+                                    onClick = {
+                                        navController.navigate("settings") {
+                                            popUpTo("main") { saveState = true }
+                                            launchSingleTop = true
+                                            restoreState = true
+                                        }
+                                    },
+                                    icon = {
+                                        Icon(
+                                            if (currentRoute == "settings") Icons.Filled.Settings
+                                            else Icons.Outlined.Settings,
+                                            contentDescription = null
+                                        )
+                                    },
+                                    label = { Text(stringResource(R.string.nav_settings)) }
+                                )
+                            }
+                        }
+                    }
+                ) { innerPadding ->
+                NavHost(
+                    navController,
+                    startDestination = startDest,
+                    modifier = Modifier
+                        .padding(innerPadding)
+                        .consumeWindowInsets(innerPadding)
+                ) {
                     composable("setup") {
                         val setupViewModel: SetupViewModel = hiltViewModel()
                         val setupStep by viewModel.setupStep.collectAsState()
@@ -245,22 +359,11 @@ class MainActivity : ComponentActivity() {
                             pauseHighExpiryMs = pauseHighExpiryMs,
                             onPauseAlerts = alertsViewModel::pauseAlerts,
                             onCancelPause = alertsViewModel::cancelAlertPause,
-                            onComputeBGContext = viewModel::computeExerciseBGContext,
-                            onSettingsClick = {
-                                navController.navigate("settings") {
-                                    launchSingleTop = true
-                                }
-                            },
-                            onExerciseClick = {
-                                navController.navigate("exercise") {
-                                    launchSingleTop = true
-                                }
-                            }
+                            onComputeBGContext = viewModel::computeExerciseBGContext
                         )
                     }
                     composable("exercise") {
                         ExerciseHistoryScreen(
-                            onBack = { navController.popBackStack() },
                             onNavigateToExerciseSettings = {
                                 navController.navigate("settings/exercise") {
                                     launchSingleTop = true
@@ -275,7 +378,6 @@ class MainActivity : ComponentActivity() {
                                     launchSingleTop = true
                                 }
                             },
-                            onBack = { navController.popBackStack() },
                             nightscoutConfigured = nightscoutConfigured
                         )
                     }
@@ -537,13 +639,13 @@ class MainActivity : ComponentActivity() {
                             tauMinutes = viewModel.currentTauMinutes(),
                             mealAnalyzer = viewModel.mealAnalyzer,
                             mealTimeSlotConfig = viewModel.mealTimeSlotConfig.collectAsState().value,
-                            onExportCsv = viewModel::exportCsv,
-                            onBack = { navController.popBackStack() }
+                            onExportCsv = viewModel::exportCsv
                         )
                     }
                     composable("debug") {
                         DebugScreen(onBack = { navController.popBackStack() })
                     }
+                }
                 }
             }
         }

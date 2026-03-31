@@ -13,6 +13,12 @@
     <string name="common_content_desc_export">Exportar</string>
     <string name="common_content_desc_share_log">Compartir registro</string>
 
+    <!-- Bottom Navigation -->
+    <string name="nav_home">BG</string>
+    <string name="nav_exercise">Ejercicio</string>
+    <string name="nav_stats">Estad\u00EDsticas</string>
+    <string name="nav_settings">Ajustes</string>
+
     <!-- Main Screen -->
     <string name="main_waiting_for_reading">Esperando la primera lectura de glucosa\u2026</string>
     <string name="main_just_now">Ahora</string>
