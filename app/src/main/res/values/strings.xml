@@ -10,11 +10,16 @@
     <string name="common_sound">Sound</string>
     <string name="common_no_data">No data</string>
 
-    <string name="common_content_desc_settings">Settings</string>
     <string name="common_content_desc_back">Back</string>
     <string name="common_content_desc_export">Export</string>
     <string name="common_content_desc_share_log">Share log</string>
 
+
+    <!-- Bottom Navigation -->
+    <string name="nav_home">BG</string>
+    <string name="nav_exercise">Exercise</string>
+    <string name="nav_stats">Stats</string>
+    <string name="nav_settings">Settings</string>
 
     <!-- Main Screen -->
     <string name="main_waiting_for_reading">Waiting for first glucose reading…</string>
@@ -43,8 +48,6 @@
     <string name="settings_notifications_subtitle">Graph range, prediction</string>
     <string name="settings_alerts">Alerts</string>
     <string name="settings_alerts_subtitle">Low, high, stale alerts</string>
-    <string name="settings_statistics">Statistics</string>
-    <string name="settings_statistics_subtitle">Metrics, AGP, meals</string>
     <string name="settings_general">General</string>
     <string name="settings_general_subtitle">Boot, battery, about</string>
     <string name="settings_sharing">Sharing</string>

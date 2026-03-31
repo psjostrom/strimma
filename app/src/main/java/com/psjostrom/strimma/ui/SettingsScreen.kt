@@ -16,7 +16,6 @@ import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Sensors
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -33,7 +32,7 @@ import com.psjostrom.strimma.R
 @Composable
 fun SettingsScreen(
     onNavigate: (String) -> Unit,
-    onBack: () -> Unit,
+    onBack: (() -> Unit)? = null,
     nightscoutConfigured: Boolean = false
 ) {
     val bg = MaterialTheme.colorScheme.background
@@ -46,8 +45,13 @@ fun SettingsScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.settings_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_content_desc_back))
+                    if (onBack != null) {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.common_content_desc_back),
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -111,15 +115,6 @@ fun SettingsScreen(
                     title = stringResource(R.string.settings_alerts),
                     subtitle = stringResource(R.string.settings_alerts_subtitle),
                     onClick = { onNavigate("settings/alerts") }
-                )
-            }
-
-            SettingsMenuGroup(surfVar) {
-                SettingsMenuItem(
-                    icon = Icons.Outlined.BarChart,
-                    title = stringResource(R.string.settings_statistics),
-                    subtitle = stringResource(R.string.settings_statistics_subtitle),
-                    onClick = { onNavigate("stats") }
                 )
             }
 

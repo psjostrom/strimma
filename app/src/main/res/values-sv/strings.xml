@@ -8,10 +8,15 @@
     <string name="common_sound">Ljud</string>
     <string name="common_no_data">Ingen data</string>
 
-    <string name="common_content_desc_settings">Inst\u00E4llningar</string>
     <string name="common_content_desc_back">Tillbaka</string>
     <string name="common_content_desc_export">Exportera</string>
     <string name="common_content_desc_share_log">Dela logg</string>
+
+    <!-- Bottom Navigation -->
+    <string name="nav_home">BG</string>
+    <string name="nav_exercise">Tr\u00E4ning</string>
+    <string name="nav_stats">Statistik</string>
+    <string name="nav_settings">Inst\u00E4llningar</string>
 
     <!-- Main Screen -->
     <string name="main_waiting_for_reading">V\u00E4ntar p\u00E5 f\u00F6rsta glukosv\u00E4rdet\u2026</string>
@@ -404,8 +409,6 @@
     <string name="pause_high_paused">Höga larm pausade</string>
     <string name="pause_countdown">Pausad · %1$s</string>
     <string name="pause_low_warning">Inkluderar akut lågt-larm</string>
-    <string name="settings_statistics">Statistik</string>
-    <string name="settings_statistics_subtitle">Mätvärden, AGP, måltider</string>
     <string name="settings_sharing">Delning</string>
     <string name="settings_sharing_subtitle">Broadcast, webbserver, export</string>
     <string name="settings_meal_slots_title">Måltidstider</string>

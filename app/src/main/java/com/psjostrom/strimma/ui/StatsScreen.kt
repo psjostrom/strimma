@@ -71,7 +71,7 @@ fun StatsScreen(
     mealAnalyzer: MealAnalyzer,
     mealTimeSlotConfig: MealTimeSlotConfig,
     onExportCsv: suspend (Int) -> String,
-    onBack: () -> Unit
+    onBack: (() -> Unit)? = null
 ) {
     val bg = MaterialTheme.colorScheme.background
     val onBg = MaterialTheme.colorScheme.onBackground
@@ -99,8 +99,13 @@ fun StatsScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.stats_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_content_desc_back))
+                    if (onBack != null) {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.common_content_desc_back),
+                            )
+                        }
                     }
                 },
                 actions = {
