@@ -26,20 +26,20 @@ class GraphColorsTest {
 
     @Test
     fun `below low returns red`() {
-        assertEquals(CANVAS_LOW, canvasColorFor(70.0, bgLow, bgHigh))
-        assertEquals(CANVAS_LOW, canvasColorFor(36.0, bgLow, bgHigh))
+        assertEquals(CANVAS_DANGER, canvasColorFor(70.0, bgLow, bgHigh))
+        assertEquals(CANVAS_DANGER, canvasColorFor(36.0, bgLow, bgHigh))
     }
 
     @Test
     fun `critical high returns red not orange`() {
-        assertEquals(CANVAS_LOW, canvasColorFor(234.0, bgLow, bgHigh))
-        assertEquals(CANVAS_LOW, canvasColorFor(360.0, bgLow, bgHigh))
+        assertEquals(CANVAS_DANGER, canvasColorFor(234.0, bgLow, bgHigh))
+        assertEquals(CANVAS_DANGER, canvasColorFor(360.0, bgLow, bgHigh))
     }
 
     @Test
     fun `critical low returns red`() {
-        assertEquals(CANVAS_LOW, canvasColorFor(54.0, bgLow, bgHigh))
-        assertEquals(CANVAS_LOW, canvasColorFor(18.0, bgLow, bgHigh))
+        assertEquals(CANVAS_DANGER, canvasColorFor(54.0, bgLow, bgHigh))
+        assertEquals(CANVAS_DANGER, canvasColorFor(18.0, bgLow, bgHigh))
     }
 
     @Test

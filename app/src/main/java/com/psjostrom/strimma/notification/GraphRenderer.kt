@@ -11,7 +11,7 @@ import com.psjostrom.strimma.graph.computeYAxisLabels
 import com.psjostrom.strimma.graph.computeYRange
 import com.psjostrom.strimma.graph.CANVAS_EXERCISE
 import com.psjostrom.strimma.graph.CANVAS_HIGH
-import com.psjostrom.strimma.graph.CANVAS_LOW
+import com.psjostrom.strimma.graph.CANVAS_DANGER
 import com.psjostrom.strimma.graph.CRITICAL_HIGH
 import com.psjostrom.strimma.graph.CRITICAL_LOW
 
@@ -120,7 +120,7 @@ object GraphRenderer {
         canvas.drawLine(marginLeft, lowY, width - marginRight, lowY, thresholdPaint)
         canvas.drawLine(marginLeft, highY, width - marginRight, highY, thresholdPaint)
 
-        thresholdPaint.color = CANVAS_LOW
+        thresholdPaint.color = CANVAS_DANGER
         thresholdPaint.pathEffect = null
         canvas.drawLine(marginLeft, yFor(CRITICAL_LOW), width - marginRight, yFor(CRITICAL_LOW), thresholdPaint)
         canvas.drawLine(marginLeft, yFor(CRITICAL_HIGH), width - marginRight, yFor(CRITICAL_HIGH), thresholdPaint)
