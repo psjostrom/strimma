@@ -37,6 +37,18 @@ class NotificationHelper @Inject constructor(
         private const val EXPANDED_GRAPH_WIDTH = 800
         private const val EXPANDED_GRAPH_HEIGHT = 400
 
+        fun formatDeltaLine(
+            baseDelta: String,
+            crossingText: String?,
+            iobText: String?,
+            sinceText: String?
+        ): String = listOfNotNull(
+            baseDelta.ifEmpty { null },
+            crossingText,
+            iobText,
+            sinceText
+        ).joinToString(" · ")
+
         // Icon dimensions
         private const val ICON_SIZE = 96
         private const val ICON_TEXT_SIZE_INITIAL = 96f
@@ -97,11 +109,11 @@ class NotificationHelper @Inject constructor(
                 }
             }
             val iobText = if (iob > 0.0) context.getString(R.string.notif_iob, "%.1f".format(iob)) else null
-            val deltaText = listOfNotNull(
-                baseDelta.ifEmpty { null },
-                crossingText,
-                iobText
-            ).joinToString(" · ")
+            val minutesAgo = ((System.currentTimeMillis() - reading.ts) / 60_000).toInt()
+            val sinceText = if (minutesAgo >= 0) {
+                context.getString(R.string.notif_since, minutesAgo)
+            } else null
+            val deltaText = formatDeltaLine(baseDelta, crossingText, iobText, sinceText)
 
             val finalDeltaText = if (workoutText != null) {
                 listOfNotNull(deltaText.ifEmpty { null }, workoutText).joinToString(" · ")
