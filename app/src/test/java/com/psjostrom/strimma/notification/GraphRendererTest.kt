@@ -4,7 +4,7 @@ import android.graphics.Color
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.graph.CANVAS_HIGH
 import com.psjostrom.strimma.graph.CANVAS_IN_RANGE
-import com.psjostrom.strimma.graph.CANVAS_LOW
+import com.psjostrom.strimma.graph.CANVAS_DANGER
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
