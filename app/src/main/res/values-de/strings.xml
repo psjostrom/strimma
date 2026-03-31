@@ -383,7 +383,6 @@
     <string name="exercise_lookahead_subtitle">Wie weit voraus die Geplant-Ansicht nach Trainings sucht</string>
     <string name="exercise_trigger_subtitle">Wann die Bereitschaftskarte auf dem Hauptbildschirm erscheint</string>
     <string name="exercise_hc_write_disabled_hint">Erteile zuerst Health Connect-Berechtigungen</string>
-    <string name="exercise_metabolic_profile_hint">BG-Reaktionstyp \u2014 bestimmt den Zielbereich. Erkannt aus Aktivit\u00E4tstyp oder Puls.</string>
 
     <!-- Pre-activity guidance -->
     <string name="workout_settings_title">Trainingsplan</string>

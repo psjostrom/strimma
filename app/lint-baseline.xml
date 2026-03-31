@@ -42,17 +42,6 @@
     </issue>
 
     <issue
-        id="UnusedResources"
-        message="The resource `R.string.exercise_metabolic_profile_hint` appears to be unused"
-        errorLine1="    &lt;string name=&quot;exercise_metabolic_profile_hint&quot;>BG response type — determines target range. Detected from activity type or heart rate.&lt;/string>"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/strings.xml"
-            line="431"
-            column="13"/>
-    </issue>
-
-    <issue
         id="UseKtx"
         message="Use the KTX extension function `SharedPreferences.edit` instead?"
         errorLine1="        snoozePrefs.edit().putLong(alertId.toString(), System.currentTimeMillis() + SNOOZE_DURATION_MS).apply()"
@@ -147,7 +136,7 @@
         errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="build.gradle.kts"
-            line="137"
+            line="138"
             column="20"/>
     </issue>
 

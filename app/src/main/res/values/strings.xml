@@ -428,7 +428,6 @@
     <string name="exercise_lookahead_subtitle">How far ahead the Planned tab scans for workouts</string>
     <string name="exercise_trigger_subtitle">When the readiness card appears on the main screen</string>
     <string name="exercise_hc_write_disabled_hint">Grant Health Connect permissions first</string>
-    <string name="exercise_metabolic_profile_hint">BG response type — determines target range. Detected from activity type or heart rate.</string>
 
     <!-- Patterns tab -->
     <string name="exercise_tab_patterns">Patterns</string>

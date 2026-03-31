@@ -386,7 +386,6 @@
     <string name="exercise_lookahead_subtitle">Hur l\u00E5ngt fram Planerade-fliken s\u00F6ker efter tr\u00E4ningspass</string>
     <string name="exercise_trigger_subtitle">N\u00E4r beredskapskort visas p\u00E5 huvudsk\u00E4rmen</string>
     <string name="exercise_hc_write_disabled_hint">Bevilja Health Connect-beh\u00F6righeter f\u00F6rst</string>
-    <string name="exercise_metabolic_profile_hint">BG-responstyp \u2014 best\u00E4mmer m\u00E5lomr\u00E5de. Detekteras fr\u00E5n aktivitetstyp eller puls.</string>
 
     <!-- Pre-activity guidance -->
     <string name="workout_settings_title">Träningsschema</string>

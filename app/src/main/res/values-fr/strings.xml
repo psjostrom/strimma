@@ -383,7 +383,6 @@
     <string name="exercise_lookahead_subtitle">Jusqu\'\u00E0 quand l\'onglet Planifi\u00E9s cherche des entra\u00EEnements</string>
     <string name="exercise_trigger_subtitle">Quand la carte de pr\u00E9paration appara\u00EEt sur l\'\u00E9cran principal</string>
     <string name="exercise_hc_write_disabled_hint">Accordez d\'abord les autorisations Health Connect</string>
-    <string name="exercise_metabolic_profile_hint">Type de r\u00E9ponse BG \u2014 d\u00E9termine la plage cible. D\u00E9tect\u00E9 par type d\'activit\u00E9 ou fr\u00E9quence cardiaque.</string>
 
     <!-- Pre-activity guidance -->
     <string name="workout_settings_title">Programme d\'entraînement</string>

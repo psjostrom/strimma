@@ -383,7 +383,6 @@
     <string name="exercise_lookahead_subtitle">Cu\u00E1nto tiempo adelante busca entrenamientos la pesta\u00F1a Planificados</string>
     <string name="exercise_trigger_subtitle">Cu\u00E1ndo aparece la tarjeta de preparaci\u00F3n en la pantalla principal</string>
     <string name="exercise_hc_write_disabled_hint">Primero otorga los permisos de Health Connect</string>
-    <string name="exercise_metabolic_profile_hint">Tipo de respuesta de BG \u2014 determina el rango objetivo. Detectado por tipo de actividad o frecuencia card\u00EDaca.</string>
 
     <!-- Pre-activity guidance -->
     <string name="workout_settings_title">Horario de entrenamiento</string>
