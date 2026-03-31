@@ -80,6 +80,7 @@ class TidepoolAuthManager @Inject constructor(
             REDIRECT_URI.toUri()
         )
             .setScopes(SCOPES.split(" "))
+            .setPrompt("login")
             .build()
 
         return authService.getAuthorizationRequestIntent(request)
@@ -232,7 +233,7 @@ class TidepoolAuthManager @Inject constructor(
      * Returns the data API base URL for the given environment.
      */
     fun getApiBase(environment: String): String = when (environment.uppercase()) {
-        "INTEGRATION" -> "https://api.integration.tidepool.org"
+        "INTEGRATION" -> "https://external.integration.tidepool.org"
         else -> "https://api.tidepool.org"
     }
 
