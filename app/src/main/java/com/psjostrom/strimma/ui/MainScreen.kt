@@ -1248,7 +1248,7 @@ private fun dotColor(mgdl: Double, bgLow: Double, bgHigh: Double): Color =
     when (bgStatusFor(mgdl, bgLow, bgHigh)) {
         BgStatus.IN_RANGE -> InRange
         BgStatus.HIGH -> AboveHigh
-        BgStatus.LOW -> BelowLow
+        BgStatus.DANGER -> BelowLow
     }
 
 internal const val GRAPH_MARGIN_TOP = 16f
