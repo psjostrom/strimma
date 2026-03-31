@@ -54,7 +54,8 @@ class TidepoolClient @Inject constructor() {
             }
 
             if (!response.status.isSuccess()) {
-                DebugLog.log(message = "Tidepool getExistingDataset HTTP ${response.status.value}: $fullUrl")
+                val body = response.bodyAsText().take(MAX_ERROR_LENGTH * 2)
+                DebugLog.log(message = "Tidepool getExistingDataset HTTP ${response.status.value}: $body")
                 return null
             }
 
@@ -92,7 +93,8 @@ class TidepoolClient @Inject constructor() {
             }
 
             if (!response.status.isSuccess()) {
-                DebugLog.log(message = "Tidepool createDataset HTTP ${response.status.value}: $fullUrl")
+                val body = response.bodyAsText().take(MAX_ERROR_LENGTH * 2)
+                DebugLog.log(message = "Tidepool createDataset HTTP ${response.status.value}: $body")
                 return null
             }
 

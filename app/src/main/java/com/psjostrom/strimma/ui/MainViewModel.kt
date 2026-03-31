@@ -260,31 +260,46 @@ class MainViewModel @Inject constructor(
     // Tidepool
     val tidepoolEnabled: StateFlow<Boolean> = settings.tidepoolEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
-    val tidepoolOnlyWhileCharging: StateFlow<Boolean> = settings.tidepoolOnlyWhileCharging
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
-    val tidepoolOnlyWhileWifi: StateFlow<Boolean> = settings.tidepoolOnlyWhileWifi
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
     val tidepoolLastUploadTime: StateFlow<Long> = settings.tidepoolLastUploadTime
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0L)
     val tidepoolLastError: StateFlow<String> = settings.tidepoolLastError
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
 
     fun setTidepoolEnabled(enabled: Boolean) = viewModelScope.launch { settings.setTidepoolEnabled(enabled) }
-    fun setTidepoolOnlyWhileCharging(enabled: Boolean) =
-        viewModelScope.launch { settings.setTidepoolOnlyWhileCharging(enabled) }
-    fun setTidepoolOnlyWhileWifi(enabled: Boolean) =
-        viewModelScope.launch { settings.setTidepoolOnlyWhileWifi(enabled) }
 
-    fun isTidepoolLoggedIn(): Boolean = tidepoolAuthManager.isLoggedIn()
+    private val _tidepoolLoggedIn = MutableStateFlow(tidepoolAuthManager.isLoggedIn())
+    val tidepoolLoggedIn: StateFlow<Boolean> = _tidepoolLoggedIn
 
     private val tidepoolEnvironment: StateFlow<String> = settings.tidepoolEnvironment
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "PRODUCTION")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "INTEGRATION")
 
     fun buildTidepoolAuthIntent(): Intent =
         tidepoolAuthManager.buildAuthIntent(tidepoolEnvironment.value)
 
+    suspend fun handleTidepoolAuthResult(intent: Intent) {
+        val success = tidepoolAuthManager.handleAuthResponse(intent)
+        if (!success) {
+            settings.setTidepoolLastError("Login failed")
+            return
+        }
+
+        val userId = tidepoolAuthManager.fetchUserId()
+        if (userId == null) {
+            settings.setTidepoolLastError("Failed to fetch user ID")
+            tidepoolAuthManager.logout()
+            return
+        }
+
+        settings.setTidepoolUserId(userId)
+        settings.setTidepoolLastError("")
+        _tidepoolLoggedIn.value = true
+    }
+
     fun tidepoolLogout() {
-        viewModelScope.launch { tidepoolAuthManager.logout() }
+        if (!_tidepoolLoggedIn.compareAndSet(expect = true, update = false)) return
+        viewModelScope.launch {
+            tidepoolAuthManager.logout()
+        }
     }
 
     val exerciseSessions: StateFlow<List<StoredExerciseSession>> = exerciseDao.getAllSessions()

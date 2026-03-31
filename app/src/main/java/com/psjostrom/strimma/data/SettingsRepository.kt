@@ -398,7 +398,7 @@ class SettingsRepository @Inject constructor(
     val tidepoolEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_TIDEPOOL_ENABLED] ?: false }
     suspend fun setTidepoolEnabled(enabled: Boolean) { dataStore.edit { it[KEY_TIDEPOOL_ENABLED] = enabled } }
 
-    val tidepoolEnvironment: Flow<String> = dataStore.data.map { it[KEY_TIDEPOOL_ENVIRONMENT] ?: "PRODUCTION" }
+    val tidepoolEnvironment: Flow<String> = dataStore.data.map { it[KEY_TIDEPOOL_ENVIRONMENT] ?: "INTEGRATION" }
     suspend fun setTidepoolEnvironment(env: String) { dataStore.edit { it[KEY_TIDEPOOL_ENVIRONMENT] = env } }
 
     val tidepoolOnlyWhileCharging: Flow<Boolean> = dataStore.data.map { it[KEY_TIDEPOOL_ONLY_WHILE_CHARGING] ?: false }
