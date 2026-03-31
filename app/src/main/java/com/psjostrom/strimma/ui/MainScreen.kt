@@ -9,8 +9,6 @@ import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.NotificationsOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -73,7 +71,6 @@ import kotlinx.coroutines.delay
 
 private const val MINIMAP_WINDOW_MS = 24L * 3600_000L
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
     latestReading: GlucoseReading?,
@@ -90,8 +87,6 @@ fun MainScreen(
     exerciseSessions: List<StoredExerciseSession> = emptyList(),
     guidanceState: GuidanceState = GuidanceState.NoWorkout,
     onComputeBGContext: (suspend (StoredExerciseSession) -> ExerciseBGContext?)? = null,
-    onSettingsClick: () -> Unit,
-    onExerciseClick: () -> Unit = {},
     pauseLowExpiryMs: Long? = null,
     pauseHighExpiryMs: Long? = null,
     onPauseAlerts: (AlertCategory, Long) -> Unit = { _, _ -> },
@@ -104,6 +99,7 @@ fun MainScreen(
     var zoomScale by remember { mutableFloatStateOf(1f) }
 
     var showPauseSheet by remember { mutableStateOf(false) }
+    var showGuidanceSheet by remember { mutableStateOf(false) }
 
     // Exercise detail sheet state
     var selectedExercise by remember { mutableStateOf<StoredExerciseSession?>(null) }
@@ -150,38 +146,6 @@ fun MainScreen(
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { },
-                actions = {
-                    IconButton(onClick = { showPauseSheet = true }) {
-                        Icon(
-                            Icons.Outlined.NotificationsOff,
-                            contentDescription = stringResource(R.string.pause_alerts),
-                            tint = if (pauseLowExpiryMs != null || pauseHighExpiryMs != null)
-                                InRange else MaterialTheme.colorScheme.outline
-                        )
-                    }
-                    IconButton(onClick = onExerciseClick) {
-                        Icon(
-                            Icons.Default.FitnessCenter,
-                            contentDescription = stringResource(R.string.settings_exercise),
-                            tint = MaterialTheme.colorScheme.outline
-                        )
-                    }
-                    IconButton(onClick = onSettingsClick) {
-                        Icon(
-                            Icons.Default.Settings,
-                            contentDescription = stringResource(R.string.common_content_desc_settings),
-                            tint = MaterialTheme.colorScheme.outline
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
-            )
-        },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
@@ -193,12 +157,26 @@ fun MainScreen(
             val crossing = remember(readings, bgLow, bgHigh, predictionMinutes) {
                 PredictionComputer.compute(readings, predictionMinutes, bgLow.toDouble(), bgHigh.toDouble())?.crossing
             }
-            BgHeader(
-                latestReading, bgLow, bgHigh, glucoseUnit, crossing, followerStatus, iob, treatments, iobTauMinutes,
-                pauseLowExpiryMs = pauseLowExpiryMs,
-                pauseHighExpiryMs = pauseHighExpiryMs,
-                onPausePillClick = { showPauseSheet = true }
-            )
+            Box(modifier = Modifier.fillMaxWidth()) {
+                BgHeader(
+                    latestReading, bgLow, bgHigh, glucoseUnit, crossing, followerStatus, iob, treatments, iobTauMinutes,
+                    pauseLowExpiryMs = pauseLowExpiryMs,
+                    pauseHighExpiryMs = pauseHighExpiryMs,
+                    onPausePillClick = { showPauseSheet = true },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                IconButton(
+                    onClick = { showPauseSheet = true },
+                    modifier = Modifier.align(Alignment.TopEnd)
+                ) {
+                    Icon(
+                        Icons.Outlined.NotificationsOff,
+                        contentDescription = stringResource(R.string.pause_alerts),
+                        tint = if (pauseLowExpiryMs != null || pauseHighExpiryMs != null)
+                            InRange else MaterialTheme.colorScheme.outline
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -206,9 +184,18 @@ fun MainScreen(
             if (guidance is GuidanceState.WorkoutApproaching) {
                 PreActivityCard(
                     state = guidance,
-                    glucoseUnit = glucoseUnit
+                    onClick = { showGuidanceSheet = true }
                 )
                 Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            if (showGuidanceSheet && guidance is GuidanceState.WorkoutApproaching) {
+                PlannedWorkoutSheet(
+                    event = guidance.event,
+                    guidance = guidance,
+                    glucoseUnit = glucoseUnit,
+                    onDismiss = { showGuidanceSheet = false }
+                )
             }
 
             val cardShape = RoundedCornerShape(12.dp)
@@ -276,7 +263,8 @@ private fun BgHeader(
     iobTauMinutes: Double = 55.0,
     pauseLowExpiryMs: Long? = null,
     pauseHighExpiryMs: Long? = null,
-    onPausePillClick: () -> Unit = {}
+    onPausePillClick: () -> Unit = {},
+    modifier: Modifier = Modifier
 ) {
     var minutesAgo by remember { mutableIntStateOf(0) }
 
@@ -302,8 +290,7 @@ private fun BgHeader(
     }
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
+        modifier = modifier
             .padding(vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -524,14 +511,14 @@ fun GlucoseGraph(
     windowMs: Long,
     viewportEnd: Long,
     zoomScale: Float,
+    onViewportChange: (Long) -> Unit,
+    onZoomChange: (Float) -> Unit,
+    modifier: Modifier = Modifier,
     predictionMinutes: Int = 15,
     glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
     treatments: List<Treatment> = emptyList(),
     exerciseSessions: List<StoredExerciseSession> = emptyList(),
     onExerciseTap: (StoredExerciseSession) -> Unit = {},
-    onViewportChange: (Long) -> Unit,
-    onZoomChange: (Float) -> Unit,
-    modifier: Modifier = Modifier
 ) {
     val predictionMs = predictionMinutes * 60_000L
     var selectedReading by remember { mutableStateOf<GlucoseReading?>(null) }

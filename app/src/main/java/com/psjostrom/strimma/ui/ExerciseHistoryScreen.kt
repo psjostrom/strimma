@@ -206,7 +206,7 @@ class ExerciseHistoryViewModel @Inject constructor(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExerciseHistoryScreen(
-    onBack: () -> Unit,
+    onBack: (() -> Unit)? = null,
     onNavigateToExerciseSettings: () -> Unit = {},
     viewModel: ExerciseHistoryViewModel = hiltViewModel()
 ) {
@@ -287,11 +287,13 @@ fun ExerciseHistoryScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.exercise_history_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.common_content_desc_back)
-                        )
+                    if (onBack != null) {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.common_content_desc_back)
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -763,7 +765,7 @@ private fun ExerciseCard(
 }
 
 @Composable
-private fun PlannedWorkoutSheet(
+internal fun PlannedWorkoutSheet(
     event: WorkoutEvent,
     guidance: GuidanceState?,
     glucoseUnit: GlucoseUnit,

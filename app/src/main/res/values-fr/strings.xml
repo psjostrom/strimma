@@ -8,10 +8,15 @@
     <string name="common_sound">Son</string>
     <string name="common_no_data">Pas de donn\u00E9es</string>
 
-    <string name="common_content_desc_settings">Param\u00E8tres</string>
     <string name="common_content_desc_back">Retour</string>
     <string name="common_content_desc_export">Exporter</string>
     <string name="common_content_desc_share_log">Partager le journal</string>
+
+    <!-- Bottom Navigation -->
+    <string name="nav_home">BG</string>
+    <string name="nav_exercise">Exercice</string>
+    <string name="nav_stats">Statistiques</string>
+    <string name="nav_settings">Param\u00E8tres</string>
 
     <!-- Main Screen -->
     <string name="main_waiting_for_reading">En attente de la premi\u00E8re glyc\u00E9mie\u2026</string>
@@ -405,8 +410,6 @@
     <string name="pause_countdown">Suspendu · %1$s</string>
     <string name="pause_low_warning">Inclut l\u0027alerte bas urgent</string>
 
-    <string name="settings_statistics">Statistiques</string>
-    <string name="settings_statistics_subtitle">Métriques, AGP, repas</string>
     <string name="settings_sharing">Partage</string>
     <string name="settings_sharing_subtitle">Broadcast, serveur web, export</string>
     <string name="settings_meal_slots_title">Créneaux de repas</string>

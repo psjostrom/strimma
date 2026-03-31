@@ -8,10 +8,15 @@
     <string name="common_sound">Ton</string>
     <string name="common_no_data">Keine Daten</string>
 
-    <string name="common_content_desc_settings">Einstellungen</string>
     <string name="common_content_desc_back">Zur\u00FCck</string>
     <string name="common_content_desc_export">Exportieren</string>
     <string name="common_content_desc_share_log">Protokoll teilen</string>
+
+    <!-- Bottom Navigation -->
+    <string name="nav_home">BG</string>
+    <string name="nav_exercise">Training</string>
+    <string name="nav_stats">Statistik</string>
+    <string name="nav_settings">Einstellungen</string>
 
     <!-- Main Screen -->
     <string name="main_waiting_for_reading">Warte auf ersten Glukosewert\u2026</string>
@@ -405,8 +410,6 @@
     <string name="pause_countdown">Pausiert · %1$s</string>
     <string name="pause_low_warning">Einschließlich Akut-tief-Alarm</string>
 
-    <string name="settings_statistics">Statistik</string>
-    <string name="settings_statistics_subtitle">Messwerte, AGP, Mahlzeiten</string>
     <string name="settings_sharing">Teilen</string>
     <string name="settings_sharing_subtitle">Broadcast, Webserver, Export</string>
     <string name="settings_meal_slots_title">Mahlzeiten-Zeitfenster</string>
