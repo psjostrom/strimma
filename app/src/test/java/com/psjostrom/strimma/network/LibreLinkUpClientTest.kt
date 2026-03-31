@@ -62,22 +62,7 @@ class LibreLinkUpClientTest {
                         "isHigh": false,
                         "isLow": false
                     },
-                    "glucoseItem": {
-                        "FactoryTimestamp": "3/31/2026 6:13:25 AM",
-                        "Timestamp": "3/31/2026 8:13:25 AM",
-                        "type": 1,
-                        "ValueInMgPerDl": 120,
-                        "TrendArrow": 4,
-                        "Value": 6.7,
-                        "isHigh": false,
-                        "isLow": false,
-                        "MeasurementColor": 1
-                    },
-                    "patientDevice": {
-                        "did": "device-789",
-                        "dtid": 40068,
-                        "v": "3.6.6"
-                    },
+                    "patientDevice": {"did": "device-789", "dtid": 40068, "v": "3.6.6"},
                     "created": 1774897016
                 }],
                 "ticket": {
