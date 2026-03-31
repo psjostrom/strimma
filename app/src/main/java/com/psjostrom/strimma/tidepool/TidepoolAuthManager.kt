@@ -25,6 +25,7 @@ import net.openid.appauth.AuthorizationService
 import net.openid.appauth.AuthorizationServiceConfiguration
 import net.openid.appauth.ResponseTypeValues
 import net.openid.appauth.TokenRequest
+import kotlin.coroutines.cancellation.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
@@ -138,6 +139,8 @@ class TidepoolAuthManager @Inject constructor(
             val userInfo = response.body<UserInfoResponse>()
             DebugLog.log(message = "Tidepool userinfo fetched, sub=${userInfo.sub.take(LOG_ID_PREFIX_LENGTH)}...")
             userInfo.sub
+        } catch (e: CancellationException) {
+            throw e
         } catch (
             @Suppress("TooGenericExceptionCaught") // Network boundary
             e: Exception
@@ -153,13 +156,21 @@ class TidepoolAuthManager @Inject constructor(
     fun isLoggedIn(): Boolean = settings.getTidepoolRefreshToken().isNotBlank()
 
     /**
-     * Clears stored tokens and attempts best-effort revocation.
+     * Clears all stored tokens and user-specific state.
+     * Call [clearUserData] from a coroutine to clean up DataStore keys.
      */
     fun logout() {
         accessToken = null
         accessTokenExpiry = 0L
         settings.setTidepoolRefreshToken("")
         DebugLog.log(message = "Tidepool logged out")
+    }
+
+    /** Clears DataStore-backed user state (userId, datasetId, error). */
+    suspend fun clearUserData() {
+        settings.setTidepoolUserId("")
+        settings.setTidepoolDatasetId("")
+        settings.setTidepoolLastError("")
     }
 
     private suspend fun refreshAccessToken(): String? = refreshMutex.withLock {

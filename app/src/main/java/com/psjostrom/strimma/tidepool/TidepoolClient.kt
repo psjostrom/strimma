@@ -10,6 +10,7 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
+import kotlin.coroutines.cancellation.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -59,6 +60,8 @@ class TidepoolClient @Inject constructor() {
 
             val datasets = response.body<List<DatasetResponse>>()
             datasets.firstOrNull()?.uploadId
+        } catch (e: CancellationException) {
+            throw e
         } catch (
             @Suppress("TooGenericExceptionCaught") // Network boundary — Ktor can throw any exception type
             e: Exception
@@ -95,6 +98,8 @@ class TidepoolClient @Inject constructor() {
 
             val datasetResponse = response.body<DatasetResponse>()
             datasetResponse.uploadId
+        } catch (e: CancellationException) {
+            throw e
         } catch (
             @Suppress("TooGenericExceptionCaught") // Network boundary — Ktor can throw any exception type
             e: Exception
@@ -130,6 +135,8 @@ class TidepoolClient @Inject constructor() {
             }
 
             true
+        } catch (e: CancellationException) {
+            throw e
         } catch (
             @Suppress("TooGenericExceptionCaught") // Network boundary — Ktor can throw any exception type
             e: Exception

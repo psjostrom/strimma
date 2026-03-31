@@ -12,8 +12,10 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlin.coroutines.cancellation.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -57,6 +59,11 @@ class TidepoolUploader @Inject constructor(
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    /** Cancels the upload scope. Called from StrimmaService.onDestroy(). */
+    fun stop() {
+        scope.cancel()
+    }
 
     /**
      * Called when a new glucose reading arrives.
@@ -110,24 +117,35 @@ class TidepoolUploader @Inject constructor(
         doUpload()
     }
 
+    @Suppress("TooGenericExceptionCaught") // Top-level safety net for background upload
     private suspend fun doUpload() {
-        val token = authManager.getValidAccessToken()
-        if (token == null) {
-            DebugLog.log(message = "Tidepool upload: no valid token")
-            return
+        try {
+            val token = authManager.getValidAccessToken()
+            if (token == null) {
+                if (!authManager.isLoggedIn()) {
+                    settings.setTidepoolLastError("Session expired. Please log in again.")
+                }
+                DebugLog.log(message = "Tidepool upload: no valid token")
+                return
+            }
+
+            val environment = settings.tidepoolEnvironment.first()
+            val baseUrl = authManager.getApiBase(environment)
+
+            val userId = settings.tidepoolUserId.first()
+            if (userId.isBlank()) {
+                DebugLog.log(message = "Tidepool upload: no user ID")
+                return
+            }
+
+            val datasetId = getOrCreateDataset(baseUrl, userId, token) ?: return
+            uploadChunk(baseUrl, datasetId, token)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            DebugLog.log(message = "Tidepool upload error: ${e.javaClass.simpleName}: ${e.message?.take(80)}")
+            settings.setTidepoolLastError("Upload error: ${e.message?.take(50)}")
         }
-
-        val environment = settings.tidepoolEnvironment.first()
-        val baseUrl = authManager.getApiBase(environment)
-
-        val userId = settings.tidepoolUserId.first()
-        if (userId.isBlank()) {
-            DebugLog.log(message = "Tidepool upload: no user ID")
-            return
-        }
-
-        val datasetId = getOrCreateDataset(baseUrl, userId, token) ?: return
-        uploadChunk(baseUrl, datasetId, token)
     }
 
     private suspend fun getOrCreateDataset(baseUrl: String, userId: String, token: String): String? {
@@ -177,7 +195,6 @@ class TidepoolUploader @Inject constructor(
 
         if (readings.isEmpty()) {
             settings.setTidepoolLastUploadEnd(chunkEnd)
-            settings.setTidepoolLastUploadTime(now)
             return
         }
 
@@ -191,7 +208,8 @@ class TidepoolUploader @Inject constructor(
             DebugLog.log(message = "Tidepool upload: ${records.size} records uploaded")
         } else {
             settings.setTidepoolLastError("Upload failed")
-            DebugLog.log(message = "Tidepool upload: failed to upload ${records.size} records")
+            settings.setTidepoolDatasetId("")
+            DebugLog.log(message = "Tidepool upload: failed to upload ${records.size} records, cleared dataset ID")
         }
     }
 

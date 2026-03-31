@@ -279,6 +279,7 @@ class StrimmaService : Service() {
         pruneJob?.cancel()
         localWebServer.stop()
         pusher.stop()
+        tidepoolUploader.stop()
         scope.cancel()
         super.onDestroy()
     }

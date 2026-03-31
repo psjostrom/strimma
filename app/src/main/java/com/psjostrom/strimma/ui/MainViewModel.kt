@@ -283,7 +283,10 @@ class MainViewModel @Inject constructor(
     fun buildTidepoolAuthIntent(): Intent =
         tidepoolAuthManager.buildAuthIntent(tidepoolEnvironment.value)
 
-    fun tidepoolLogout() = tidepoolAuthManager.logout()
+    fun tidepoolLogout() {
+        tidepoolAuthManager.logout()
+        viewModelScope.launch { tidepoolAuthManager.clearUserData() }
+    }
 
     val exerciseSessions: StateFlow<List<StoredExerciseSession>> = exerciseDao.getAllSessions()
         .map { sessions ->

@@ -36,12 +36,25 @@ class TidepoolAuthActivity : ComponentActivity() {
 
         lifecycleScope.launch(Dispatchers.IO) {
             val success = authManager.handleAuthResponse(redirectIntent)
-            if (success) {
-                authManager.fetchUserId()?.let { userId ->
-                    settings.setTidepoolUserId(userId)
-                    DebugLog.log(message = "Tidepool auth complete, userId=${userId.take(LOG_ID_PREFIX_LENGTH)}...")
-                }
+            if (!success) {
+                settings.setTidepoolLastError("Login failed")
+                finish()
+                return@launch
             }
+
+            val userId = authManager.fetchUserId()
+            if (userId == null) {
+                settings.setTidepoolLastError("Failed to fetch user ID")
+                authManager.logout()
+                authManager.clearUserData()
+                DebugLog.log(message = "Tidepool auth: token obtained but fetchUserId failed, logged out")
+                finish()
+                return@launch
+            }
+
+            settings.setTidepoolUserId(userId)
+            settings.setTidepoolLastError("")
+            DebugLog.log(message = "Tidepool auth complete, userId=${userId.take(LOG_ID_PREFIX_LENGTH)}...")
             finish()
         }
     }
