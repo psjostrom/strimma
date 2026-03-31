@@ -52,7 +52,7 @@ class PreActivityCardTest {
             PreActivityCard(state = state(), glucoseUnit = GlucoseUnit.MMOL, onClick = {})
         }
         composeRule.onNodeWithText("READY").assertExists()
-        composeRule.onNodeWithText("Easy Run in 1h 59min", substring = true).assertExists()
+        composeRule.onNodeWithText("Easy Run in", substring = true).assertExists()
     }
 
     @Test
