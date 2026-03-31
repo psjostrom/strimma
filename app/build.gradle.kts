@@ -175,5 +175,7 @@ dependencies {
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.ktor.client.mock)
     testImplementation(libs.compose.ui.test.junit4)
+    testImplementation(libs.hilt.android.testing)
+    kspTest(libs.hilt.compiler)
     debugImplementation(libs.compose.ui.test.manifest)
 }

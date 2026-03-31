@@ -103,47 +103,7 @@ class CalendarReader @Inject constructor(
         }
 
     suspend fun getNextWorkout(calendarId: Long, lookaheadMs: Long): WorkoutEvent? =
-        withContext(Dispatchers.IO) {
-            val now = System.currentTimeMillis()
-            val end = now + lookaheadMs
-            val projection = arrayOf(
-                CalendarContract.Events._ID,
-                CalendarContract.Events.TITLE,
-                CalendarContract.Events.DTSTART,
-                CalendarContract.Events.DTEND
-            )
-            val selection = "${CalendarContract.Events.CALENDAR_ID} = ? AND " +
-                "${CalendarContract.Events.DTSTART} > ? AND " +
-                "${CalendarContract.Events.DTSTART} <= ?"
-            val args = arrayOf(calendarId.toString(), now.toString(), end.toString())
-            try {
-                context.contentResolver.query(
-                    CalendarContract.Events.CONTENT_URI,
-                    projection, selection, args,
-                    "${CalendarContract.Events.DTSTART} ASC"
-                )?.use { cursor ->
-                    if (cursor.moveToFirst()) {
-                        val title = cursor.getString(
-                            cursor.getColumnIndexOrThrow(CalendarContract.Events.TITLE)
-                        ) ?: ""
-                        val startTime = cursor.getLong(
-                            cursor.getColumnIndexOrThrow(CalendarContract.Events.DTSTART)
-                        )
-                        val endTime = cursor.getLong(
-                            cursor.getColumnIndexOrThrow(CalendarContract.Events.DTEND)
-                        )
-                        val category = ExerciseCategory.fromTitle(title)
-                        val profile = MetabolicProfile.fromKeywords(title) ?: category.defaultMetabolicProfile
-                        return@withContext WorkoutEvent(
-                            title, startTime, endTime, category, profile, calendarId
-                        )
-                    }
-                }
-            } catch (e: SecurityException) {
-                DebugLog.log("Calendar access denied: ${e.message}")
-            }
-            null
-        }
+        getUpcomingWorkouts(calendarId, lookaheadMs).firstOrNull()
 
     fun requestCalendarSync() {
         val projection = arrayOf(
