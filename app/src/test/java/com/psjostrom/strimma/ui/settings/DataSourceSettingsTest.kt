@@ -30,15 +30,18 @@ class DataSourceSettingsTest {
                 glucoseSource = glucoseSource,
                 nightscoutUrl = "https://ns.example.com",
                 nightscoutSecret = "secret123",
-                followerUrl = "",
-                followerSecret = "",
                 followerPollSeconds = 60,
+                lluEmail = "",
+                lluPassword = "",
                 onGlucoseSourceChange = onGlucoseSourceChange,
                 onNightscoutUrlChange = {},
                 onNightscoutSecretChange = {},
-                onFollowerUrlChange = {},
-                onFollowerSecretChange = {},
                 onFollowerPollSecondsChange = {},
+                onLluEmailChange = {},
+                onLluPasswordChange = {},
+                isNotificationAccessGranted = true,
+                onOpenNotificationAccess = {},
+                onPullFromNightscout = {},
                 onBack = onBack
             )
         }
@@ -54,6 +57,7 @@ class DataSourceSettingsTest {
         composeRule.onNodeWithText("Companion Mode").assertExists()
         composeRule.onNodeWithText("xDrip Broadcast").assertExists()
         composeRule.onNodeWithText("Nightscout Follower").assertExists()
+        composeRule.onNodeWithText("LibreLinkUp").assertExists()
     }
 
     @Test
@@ -72,22 +76,38 @@ class DataSourceSettingsTest {
     }
 
     @Test
-    fun `companion mode shows nightscout push section`() {
+    fun `shows nightscout section for all modes`() {
         render(glucoseSource = GlucoseSource.COMPANION)
         composeRule.onNodeWithText("Nightscout URL").assertExists()
         composeRule.onNodeWithText("API Secret").assertExists()
     }
 
     @Test
-    fun `follower mode shows following section with poll interval`() {
+    fun `follower mode shows nightscout section and poll settings`() {
         render(glucoseSource = GlucoseSource.NIGHTSCOUT_FOLLOWER)
+        composeRule.onNodeWithText("Nightscout URL").assertExists()
+        composeRule.onNodeWithText("API Secret").assertExists()
         composeRule.onNodeWithText("Poll Interval: 60s").assertExists()
     }
 
     @Test
-    fun `follower mode hides nightscout push section`() {
-        render(glucoseSource = GlucoseSource.NIGHTSCOUT_FOLLOWER)
-        composeRule.onNodeWithText("Base URL only — no /api path").assertDoesNotExist()
+    fun `librelinkup mode shows credential fields`() {
+        render(glucoseSource = GlucoseSource.LIBRELINKUP)
+        composeRule.onNodeWithText("Email").assertExists()
+        composeRule.onNodeWithText("Password").assertExists()
+    }
+
+    @Test
+    fun `librelinkup mode shows nightscout section`() {
+        render(glucoseSource = GlucoseSource.LIBRELINKUP)
+        composeRule.onNodeWithText("Nightscout URL").assertExists()
+        composeRule.onNodeWithText("API Secret").assertExists()
+    }
+
+    @Test
+    fun `librelinkup mode does not show follower poll interval`() {
+        render(glucoseSource = GlucoseSource.LIBRELINKUP)
+        composeRule.onNodeWithText("Poll Interval: 60s").assertDoesNotExist()
     }
 
     @Test

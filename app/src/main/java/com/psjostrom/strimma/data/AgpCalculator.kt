@@ -1,5 +1,6 @@
 package com.psjostrom.strimma.data
 
+import com.psjostrom.strimma.graph.CRITICAL_LOW
 import java.util.Calendar
 import java.util.TimeZone
 import kotlin.math.sqrt
@@ -37,11 +38,11 @@ object AgpCalculator {
     const val AGP_DAYS = 14
     private const val BUCKET_MINUTES = 15
     private const val BUCKETS_PER_DAY = 24 * 60 / BUCKET_MINUTES
-    private const val MS_PER_MINUTE = 60_000L
+
     private const val PERCENT = 100.0
 
     // ADA fixed thresholds (mg/dL)
-    const val VERY_LOW = 54.0
+    const val VERY_LOW = CRITICAL_LOW
     const val LOW = 70.0
     const val HIGH = 180.0
     const val VERY_HIGH = 250.0

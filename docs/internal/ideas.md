@@ -1,39 +1,34 @@
 # Strimma — Ideas
 
-**Updated:** 2026-03-24
+**Updated:** 2026-03-29
 
 ---
 
 ## Next
 
-### AGP Report (Ambulatory Glucose Profile)
+### Insulin Sensitivity & I:C Ratio Analysis
 
-ADA-endorsed standard for presenting CGM data to clinicians. 14-day composite glucose profile showing median + percentile bands (25th/75th, 5th/95th) by time of day, plus standardized metrics block (TIR breakdown, GMI, CV%, mean glucose, sensor active %). PDF export for sharing with your endo.
+Strimma has per-meal carbs, insulin dose, and resulting BG curve — enough to infer insulin-to-carb ratios and insulin sensitivity from historical data. Currently not computed. Could enable:
+- **I:C ratio estimation** — observe actual BG response per gram of carb given the insulin dose. Identify meals where the ratio was off.
+- **Insulin sensitivity factor (ISF)** — how much 1U of insulin drops BG, derived from correction boluses.
+- **Expected vs actual excursion** — compare predicted BG rise (from carbs/insulin/ISF) against observed. Flag outliers.
 
-Strimma already computes TIR, GMI, CV%, and coverage. AGP adds the composite profile chart that clinicians know how to read.
+Note: Strimma doesn't do insulin dosing — these would be observational insights, not recommendations. Useful for the user to bring to their endo or adjust pump settings.
 
-### Health Connect Integration
+### Basal IOB & Temp Basal Utilization
 
-Read exercise sessions + heart rate from any fitness app (Garmin, Samsung Health, Fitbit, Strava, etc.). Write glucose readings so other health apps can see them. Framework module on Android 14+, needs Health Connect app from Play Store on Android 13. Foundation for exercise-BG features.
+Strimma already fetches and stores temp basal treatments from Nightscout (CamAPS FX generates ~288/day). Currently unused — IOB is bolus-only. Could use temp basals for:
+- **Accurate IOB** — integrate basal rate deviations (actual vs profile) into IOB model. Current bolus-only IOB underestimates insulin on board for pump users.
+- **Insulin stats** — TDD split (basal vs bolus), insulin-to-carb ratios in meal analysis.
+- **Basal visualization** — rate changes on main graph or meal sparklines.
 
-### Exercise-BG Context
-
-For each exercise session from Health Connect, compute the complete BG arc. Inspired by Springa's `runBGContext` analysis, all local.
-
-- **Pre-activity:** 30-min BG trend (linear regression), entry BG, entry stability
-- **During:** min BG, max drop rate, drop per 10-min bucket
-- **Post-activity:** nadir BG within 2h, time to stable, post-activity hypo flag
-
-Exercise markers on graph (colored bands at activity start/end, tap for detail card). Activity history list with BG context summaries.
+Requires a reference "profile basal" rate to compute deviations, or treating each temp basal as absolute delivery.
 
 ---
 
 ## Parked
 
 Deferred until there's demand or hardware.
-
-- **Per-category exercise stats** — group activities by type, show average drop rate / typical nadir by starting BG band and entry slope. Needs enough activity data to be meaningful.
-- **Pre-activity guidance** — current BG + trend → readiness assessment. Needs exercise-BG context first.
 - **Direct BLE: Dexcom G7/ONE+** — direct connection without official app. Complex, well-documented protocol.
 - **Direct BLE: Libre 2/2+** — requires out-of-process algorithm (OOP2).
 - **Direct BLE: Libre 3** — most complex, sensor bonds exclusively to one app.
@@ -53,6 +48,7 @@ Deferred until there's demand or hardware.
 
 ## Completed
 
+- Health Connect integration — read exercise sessions + heart rate from any fitness app (Garmin, Samsung Health, Fitbit, Strava, etc.); write glucose readings so other health apps can see them
 - Glucose alerts (urgent low, low, high, urgent high, stale) with per-alarm notification channels
 - Predictive alerts (low soon, high soon) with threshold crossing detection
 - 30-minute prediction (dampened velocity extrapolation)
@@ -72,12 +68,19 @@ Deferred until there's demand or hardware.
 - File-based debug logging with 7-day rotation + share
 - i18n (English, Swedish, Spanish, French, German)
 - GPL v3 license, GitHub releases with signed APKs, README
+- AGP Report (14-day composite glucose profile with percentile bands, standardized metrics, ADA-endorsed format)
+- Exercise-BG Context (pre/during/post BG arc analysis for Health Connect exercise sessions, sparklines, detail sheets)
+- Workout Schedule — Calendar integration (Android CalendarProvider, calendar picker, planned workouts list with pull-to-refresh)
+- Pre-activity Guidance (readiness assessment card with IOB-aware carb recommendations, compound risk detection, forecast integration)
+- Exercise stats with metabolic profiles — aggregate BG patterns by activity category and intensity
+- Per-meal postprandial analysis (TIR, peak excursion, time-to-peak, recovery, iAUC, IOB at meal, sparkline graphs, AGP-style aggregate profile)
+- Pause alerts by category
 
 ---
 
 ## Rejected
 
-- **Pump integration** (630G/640G/670G) — AAPS handles closed-loop control
+- **Pump integration** - Very interesting, but not possible with the available APIs at the moment
 - **Tizen/Pebble watch support** — low demand
 - **Speech recognition** — niche
 - **QR code settings export** — JSON export is the modern equivalent

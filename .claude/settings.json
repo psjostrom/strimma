@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "input=$(cat); file=$(echo \"$input\" | jq -r '.tool_input.file_path // empty'); if echo \"$file\" | grep -qE 'lint-baseline\\.xml|detekt-baseline\\.xml'; then echo '{\"decision\":\"block\",\"reason\":\"HARD RULE: Never update lint baselines to make CI pass. Fix the actual lint errors instead.\"}'; else echo '{\"decision\":\"approve\"}'; fi",
+            "timeout": 3000
+          }
+        ]
+      }
+    ]
+  }
+}

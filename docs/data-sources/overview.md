@@ -1,6 +1,6 @@
 # Data Sources
 
-Strimma supports three ways to receive glucose data. You choose one in **Settings > Data Source**.
+Strimma supports four ways to receive glucose data. You choose one in **Settings > Data Source**.
 
 ![Data source settings](../screenshots/data-source.png){ width="300" }
 
@@ -14,7 +14,7 @@ Strimma reads glucose values from your CGM app's notifications. This is the prim
 
 **Pros:**
 
-- Works with 60+ CGM apps out of the box
+- Works with 50+ CGM app variants out of the box
 - No extra configuration beyond notification access
 - No interference with your CGM app or closed-loop system
 - No separate Bluetooth connection needed
@@ -55,16 +55,33 @@ Strimma polls a remote Nightscout server for glucose readings.
 
 ---
 
+## LibreLinkUp Mode
+
+Strimma polls Abbott's LibreLinkUp sharing API for glucose readings from Libre 3 sensors.
+
+**How it works:** You enter your LibreLinkUp credentials in Strimma. Strimma polls the LibreLinkUp API every 60 seconds, retrieves glucose readings, and processes them — no third-party apps beyond the Libre 3 app required.
+
+**Pros:**
+
+- Direct connection to Abbott's cloud — no notification parsing or intermediary apps
+- Automatic regional API detection (EU, US, AU, etc.)
+- Supports Nightscout push (unlike Nightscout Follower)
+- Simple setup — just email and password
+
+**See:** [LibreLinkUp](librelinkup.md) for details.
+
+---
+
 ## Comparison
 
-| Feature | Companion | xDrip Broadcast | Nightscout Follower |
-|---------|-----------|-----------------|---------------------|
-| Needs CGM app on phone | Yes | Depends on source app | No |
-| Needs Nightscout server | No (optional for push) | No (optional for push) | Yes |
-| Latency | Near-instant | Near-instant | Poll interval (30s–5m) |
-| Push to Nightscout | Yes | Yes | No (already on NS) |
-| Supported CGM apps | 60+ | Any xDrip-compatible | Any Nightscout-connected |
-| Best for | Most users | xDrip+/AAPS/Juggluco users | Caregivers, remote monitoring |
+| Feature | Companion | xDrip Broadcast | Nightscout Follower | LibreLinkUp |
+|---------|-----------|-----------------|---------------------|-------------|
+| Needs CGM app on phone | Yes | Depends on source app | No | Yes (Libre 3) |
+| Needs Nightscout server | No (optional for push) | No (optional for push) | Yes | No (optional for push) |
+| Latency | Near-instant | Near-instant | Poll interval (30s–5m) | ~60s |
+| Push to Nightscout | Yes | Yes | No (already on NS) | Yes |
+| Supported CGM apps | 50+ variants | Any xDrip-compatible | Any Nightscout-connected | Libre 3 only |
+| Best for | Most users | xDrip+/AAPS/Juggluco users | Caregivers, remote monitoring | Libre 3 users without third-party apps |
 
 ---
 

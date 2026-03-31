@@ -91,6 +91,7 @@ nav:
   - Getting Started:
     - Install Strimma: getting-started/install.md
     - Initial Setup: getting-started/setup.md
+    - Notification Access: getting-started/notification-access.md
     - Your First Reading: getting-started/first-reading.md
   - User Guide:
     - Main Screen: guide/main-screen.md
@@ -101,12 +102,14 @@ nav:
     - Treatments & IOB: guide/treatments.md
     - Statistics: guide/statistics.md
     - Home Screen Widget: guide/widget.md
+    - Exercise & BG Analysis: guide/exercise.md
     - All Settings: guide/settings.md
   - Data Sources:
     - Overview: data-sources/overview.md
     - Companion Mode: data-sources/companion.md
     - xDrip Broadcast: data-sources/xdrip-broadcast.md
     - Nightscout Follower: data-sources/nightscout-follower.md
+    - LibreLinkUp: data-sources/librelinkup.md
     - Supported CGM Apps: data-sources/supported-apps.md
   - Nightscout:
     - What is Nightscout?: nightscout/overview.md
@@ -115,6 +118,7 @@ nav:
   - Integrations:
     - xDrip Broadcast Output: integrations/xdrip-broadcast.md
     - Local Web Server: integrations/web-server.md
+    - Health Connect: integrations/health-connect.md
     - Garmin Watches: integrations/garmin.md
   - Reference:
     - Units (mmol/L vs mg/dL): reference/units.md

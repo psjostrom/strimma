@@ -14,6 +14,7 @@ import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.Direction
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseUnit
+import com.psjostrom.strimma.data.health.StoredExerciseSession
 import com.psjostrom.strimma.graph.CrossingType
 import com.psjostrom.strimma.graph.PredictionComputer
 import com.psjostrom.strimma.ui.MainActivity
@@ -63,7 +64,9 @@ class NotificationHelper @Inject constructor(
         graphWindowMs: Long = GRAPH_WINDOW_MS,
         predictionMinutes: Int = 10,
         glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
-        iob: Double = 0.0
+        iob: Double = 0.0,
+        exerciseSessions: List<StoredExerciseSession> = emptyList(),
+        workoutText: String? = null
     ): android.app.Notification {
         val contentIntent = PendingIntent.getActivity(
             context, 0,
@@ -80,7 +83,7 @@ class NotificationHelper @Inject constructor(
             .setColor(ContextCompat.getColor(context, R.color.brand_accent))
 
         if (reading != null) {
-            val direction = try { Direction.valueOf(reading.direction) } catch (_: Exception) { Direction.NONE }
+            val direction = Direction.parse(reading.direction)
             val bgText = glucoseUnit.format(reading.sgv)
             val baseDelta = reading.delta?.let {
                 glucoseUnit.formatDeltaCompact(it)
@@ -100,11 +103,15 @@ class NotificationHelper @Inject constructor(
                 iobText
             ).joinToString(" · ")
 
+            val finalDeltaText = if (workoutText != null) {
+                listOfNotNull(deltaText.ifEmpty { null }, workoutText).joinToString(" · ")
+            } else deltaText
+
             builder.setSmallIcon(createBgIcon(bgText))
-            val notifText = arrayOf(bgText, direction.arrow, deltaText)
+            val notifText = arrayOf(bgText, direction.arrow, finalDeltaText)
             attachGraphViews(
                 builder, recentReadings, bgLow, bgHigh,
-                graphWindowMs, predictionMinutes, notifText
+                graphWindowMs, predictionMinutes, notifText, exerciseSessions
             )
         } else {
             builder.setSmallIcon(createBgIcon("--"))
@@ -123,7 +130,8 @@ class NotificationHelper @Inject constructor(
         bgHigh: Double,
         graphWindowMs: Long,
         predictionMinutes: Int,
-        text: Array<String>
+        text: Array<String>,
+        exerciseSessions: List<StoredExerciseSession> = emptyList()
     ) {
         val (bgText, arrow, deltaText) = text
         val collapsed = RemoteViews(context.packageName, R.layout.notification_collapsed)
@@ -133,7 +141,8 @@ class NotificationHelper @Inject constructor(
         val miniGraph = GraphRenderer.render(
             recentReadings, COLLAPSED_GRAPH_WIDTH, COLLAPSED_GRAPH_HEIGHT,
             bgLow, bgHigh, graphWindowMs, compact = true,
-            predictionMinutes = predictionMinutes
+            predictionMinutes = predictionMinutes,
+            exerciseSessions = exerciseSessions
         )
         collapsed.setImageViewBitmap(R.id.iv_graph, miniGraph)
         builder.setCustomContentView(collapsed)
@@ -145,7 +154,8 @@ class NotificationHelper @Inject constructor(
         val bigGraph = GraphRenderer.render(
             recentReadings, EXPANDED_GRAPH_WIDTH, EXPANDED_GRAPH_HEIGHT,
             bgLow, bgHigh, graphWindowMs,
-            predictionMinutes = predictionMinutes
+            predictionMinutes = predictionMinutes,
+            exerciseSessions = exerciseSessions
         )
         expanded.setImageViewBitmap(R.id.iv_graph, bigGraph)
         builder.setCustomBigContentView(expanded)
@@ -159,9 +169,15 @@ class NotificationHelper @Inject constructor(
         graphWindowMs: Long = GRAPH_WINDOW_MS,
         predictionMinutes: Int = 10,
         glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
-        iob: Double = 0.0
+        iob: Double = 0.0,
+        exerciseSessions: List<StoredExerciseSession> = emptyList(),
+        workoutText: String? = null
     ) {
-        val notification = buildNotification(reading, recentReadings, bgLow, bgHigh, graphWindowMs, predictionMinutes, glucoseUnit, iob)
+        val notification = buildNotification(
+            reading, recentReadings, bgLow, bgHigh,
+            graphWindowMs, predictionMinutes, glucoseUnit, iob, exerciseSessions,
+            workoutText
+        )
         notificationManager.notify(NOTIFICATION_ID, notification)
     }
 

@@ -22,54 +22,16 @@ fun DataSettings(
     webServerSecret: String,
     onWebServerEnabledChange: (Boolean) -> Unit,
     onWebServerSecretChange: (String) -> Unit,
-    onStats: () -> Unit,
     onExportSettings: () -> Unit,
+    onExportReadings: () -> Unit,
     onImportSettings: () -> Unit,
-    onPullFromNightscout: (Int) -> Unit,
     onBack: () -> Unit
 ) {
     val onBg = MaterialTheme.colorScheme.onBackground
     val outline = MaterialTheme.colorScheme.outline
     val outlineVar = MaterialTheme.colorScheme.outlineVariant
 
-
     SettingsScaffold(title = stringResource(R.string.settings_data_title), onBack = onBack) {
-        SettingsSection(stringResource(R.string.settings_data_views)) {
-            OutlinedButton(
-                onClick = onStats,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(stringResource(R.string.settings_data_statistics))
-            }
-        }
-
-        SettingsSection(stringResource(R.string.settings_data_nightscout)) {
-            Text(stringResource(R.string.settings_data_pull), color = onBg, fontSize = 14.sp)
-            Text(
-                stringResource(R.string.settings_data_pull_desc),
-                color = outline,
-                fontSize = 12.sp
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                listOf(
-                    7 to stringResource(R.string.settings_data_pull_7d),
-                    14 to stringResource(R.string.settings_data_pull_14d),
-                    30 to stringResource(R.string.settings_data_pull_30d)
-                ).forEach { (days, label) ->
-                    OutlinedButton(
-                        onClick = { onPullFromNightscout(days) },
-                        modifier = Modifier.weight(1f),
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
-                    ) {
-                        Text(label, fontSize = 13.sp, maxLines = 1)
-                    }
-                }
-            }
-        }
-
         SettingsSection(stringResource(R.string.settings_data_integration)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -121,6 +83,12 @@ fun DataSettings(
         }
 
         SettingsSection(stringResource(R.string.settings_data_backup)) {
+            OutlinedButton(
+                onClick = onExportReadings,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(stringResource(R.string.settings_data_export_readings))
+            }
             OutlinedButton(
                 onClick = onExportSettings,
                 modifier = Modifier.fillMaxWidth()

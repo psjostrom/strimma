@@ -1,20 +1,21 @@
 # Initial Setup
 
-When you first open Strimma, it needs a few permissions to work properly. The app will guide you through each one.
+Strimma includes a setup wizard that walks you through permissions and data source configuration on first launch. This page describes what each step does — useful if you need to reconfigure later or troubleshoot permissions.
 
 ---
 
-## Step 1: Notification Access
+## Step 1: Notification Access (Companion Mode)
 
-Strimma reads glucose values from your CGM app's notifications. Without this permission, Strimma can't see any data.
+If you selected **Companion** as your data source, Strimma needs notification access to read glucose from your CGM app's notifications. The setup wizard guides you through this with buttons that open the right settings screens.
 
-1. Strimma will prompt you to enable notification access
-2. You'll be taken to Android's **Notification access** settings
-3. Find **Strimma** in the list and toggle it **on**
-4. Android will show a warning dialog — read it and confirm
+Android blocks notification access for sideloaded apps by default. Three steps are needed:
 
-!!! warning "Required permission"
-    This is the core permission Strimma needs. Without notification access, no glucose data will appear.
+1. **Open notification settings and try to enable Strimma.** Android will block it — this is expected.
+2. **Open Strimma's app info**, tap the **⋮** menu in the top right, then tap **"Allow restricted settings"**. You may need to confirm with your fingerprint or PIN.
+3. **Open notification settings again** and enable Strimma. It will work this time. Android will show a warning dialog — read it and tap **Allow**.
+
+!!! warning "Required for Companion mode"
+    Without notification access, Companion mode cannot receive glucose data. Other data sources (xDrip Broadcast, Nightscout Follower, LibreLinkUp) do not need this permission.
 
 !!! info "About the scary warning"
     Android shows a strong warning when you grant notification access: *"This app will be able to read all your notifications."* This is because Android's notification access is all-or-nothing — there's no way to grant access to only specific apps' notifications.
@@ -42,7 +43,7 @@ Android aggressively kills background apps to save battery. Strimma needs to run
 2. Tap **Allow** to let Strimma run in the background without restrictions
 
 !!! info "Battery impact"
-    Strimma uses very little battery — it passively listens for notifications and wakes briefly to process each reading. Most users see negligible battery impact.
+    Strimma uses very little battery. In Companion and xDrip Broadcast modes it passively listens for incoming data; in Follower and LibreLinkUp modes it polls at configurable intervals. Most users see negligible battery impact.
 
 ---
 
@@ -59,13 +60,14 @@ Tap **Allow** when prompted.
 
 ## Step 4: Choose Your Data Source
 
-Go to **Settings > Data Source** and select how Strimma receives glucose data:
+The setup wizard asks you to choose how Strimma receives glucose data. You can also change this later in **Settings > Data Source**.
 
 | Mode | Best for | How it works |
 |------|----------|-------------|
 | **Companion** (default) | Most users | Reads glucose from your CGM app's notification |
 | **xDrip Broadcast** | xDrip+/Juggluco/AAPS users | Receives glucose from apps that broadcast in xDrip format |
 | **Nightscout Follower** | Caregivers, remote monitoring | Polls a remote Nightscout server for readings |
+| **LibreLinkUp** | Libre 3 users without notification access | Reads glucose from Abbott's LibreLinkUp cloud |
 
 Most users should leave this on **Companion**. See [Data Sources](../data-sources/overview.md) for details on each mode.
 
@@ -85,6 +87,6 @@ Strimma will immediately start pushing readings. See [Nightscout Push Setup](../
 
 ## You're Ready
 
-Open your CGM app (CamAPS FX, Dexcom, LibreLink, etc.) and wait for its next glucose notification. Strimma will pick it up within seconds.
+If you're using **Companion mode**, open your CGM app and wait for its next glucose notification — Strimma will pick it up within seconds. For other data sources, Strimma will start receiving data automatically once configured.
 
 Proceed to [Your First Reading](first-reading.md) to see what to expect.

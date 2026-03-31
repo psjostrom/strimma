@@ -18,13 +18,13 @@ graph LR
     C -->|Extract BG| D[Process & Store]
 ```
 
-Strimma automatically detects whether the notification shows glucose in mmol/L or mg/dL and converts as needed. Values are validated to be in the physiological range (2.8–27.8 mmol/L / 51–500 mg/dL) — anything outside this is ignored.
+Strimma automatically detects whether the notification shows glucose in mmol/L or mg/dL and converts as needed. Values outside the range 51–500 mg/dL (2.8–27.8 mmol/L) are ignored.
 
 ---
 
 ## Supported Apps
 
-Strimma recognizes notifications from 60+ CGM app variants across all major manufacturers:
+Strimma recognizes notifications from 50+ CGM app variants across all major manufacturers:
 
 - **Dexcom** — G6, G7, ONE, D1+, Stelo (all regional variants)
 - **Abbott** — Libre 2, Libre 3, LibreLink

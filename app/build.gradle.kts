@@ -37,8 +37,8 @@ android {
         applicationId = "com.psjostrom.strimma"
         minSdk = 33 // Only targets devices still receiving security updates — this is medical data
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.5.1"
+        versionCode = 2
+        versionName = "0.9.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -163,6 +163,7 @@ dependencies {
 
     implementation(libs.androidx.appcompat)
     implementation(libs.appauth)
+    implementation(libs.health.connect)
 
     debugImplementation(libs.leakcanary)
 

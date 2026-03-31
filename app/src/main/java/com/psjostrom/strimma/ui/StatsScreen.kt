@@ -1,6 +1,5 @@
 package com.psjostrom.strimma.ui
 
-import android.content.Intent
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -21,7 +20,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.FileProvider
 import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.AgpCalculator
 import com.psjostrom.strimma.data.AgpResult
@@ -30,13 +28,15 @@ import com.psjostrom.strimma.data.GlucoseStats
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.HbA1cUnit
 import com.psjostrom.strimma.data.StatsCalculator
+import com.psjostrom.strimma.data.Treatment
+import com.psjostrom.strimma.data.meal.MealAnalyzer
+import com.psjostrom.strimma.data.meal.MealTimeSlotConfig
 import com.psjostrom.strimma.ui.theme.AboveHigh
 import com.psjostrom.strimma.ui.theme.BelowLow
 import com.psjostrom.strimma.ui.theme.InRange
 import com.psjostrom.strimma.ui.theme.VeryHigh
 import com.psjostrom.strimma.ui.theme.VeryLow
 import kotlinx.coroutines.launch
-import java.io.File
 
 private const val HOURS_24 = 24
 private const val HOURS_7_DAYS = 168
@@ -45,6 +45,7 @@ private const val HOURS_30_DAYS = 720
 
 private const val TAB_METRICS = 0
 private const val TAB_AGP = 1
+private const val TAB_MEALS = 2
 
 @Composable
 private fun getPeriods() = listOf(
@@ -62,6 +63,13 @@ fun StatsScreen(
     glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
     hbA1cUnit: HbA1cUnit = HbA1cUnit.MMOL_MOL,
     onLoadReadings: suspend (Int) -> List<GlucoseReading>,
+    onLoadCarbTreatments: suspend (Long, Long) -> List<Treatment>,
+    onLoadAllTreatments: suspend (Long) -> List<Treatment>,
+    treatmentsSyncEnabled: Boolean = false,
+    nightscoutConfigured: Boolean = false,
+    tauMinutes: Double,
+    mealAnalyzer: MealAnalyzer,
+    mealTimeSlotConfig: MealTimeSlotConfig,
     onExportCsv: suspend (Int) -> String,
     onBack: () -> Unit
 ) {
@@ -101,19 +109,7 @@ fun StatsScreen(
                             scope.launch {
                                 val (hours, _) = periods[selectedPeriod]
                                 val csv = onExportCsv(hours)
-                                val file = File(context.cacheDir, "strimma_readings.csv")
-                                file.writeText(csv)
-                                val uri = FileProvider.getUriForFile(
-                                    context, "${context.packageName}.fileprovider", file
-                                )
-                                context.startActivity(Intent.createChooser(
-                                    Intent(Intent.ACTION_SEND).apply {
-                                        type = "text/csv"
-                                        putExtra(Intent.EXTRA_STREAM, uri)
-                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                    },
-                                    exportChooserTitle
-                                ))
+                                shareCsv(context, csv, exportChooserTitle)
                             }
                         }) {
                             Icon(Icons.Outlined.Share, contentDescription = stringResource(R.string.common_content_desc_export))
@@ -143,16 +139,23 @@ fun StatsScreen(
                 SegmentedButton(
                     selected = selectedTab == TAB_METRICS,
                     onClick = { selectedTab = TAB_METRICS },
-                    shape = SegmentedButtonDefaults.itemShape(0, 2)
+                    shape = SegmentedButtonDefaults.itemShape(0, 3)
                 ) {
                     Text(stringResource(R.string.stats_tab_metrics))
                 }
                 SegmentedButton(
                     selected = selectedTab == TAB_AGP,
                     onClick = { selectedTab = TAB_AGP },
-                    shape = SegmentedButtonDefaults.itemShape(1, 2)
+                    shape = SegmentedButtonDefaults.itemShape(1, 3)
                 ) {
                     Text(stringResource(R.string.stats_tab_agp))
+                }
+                SegmentedButton(
+                    selected = selectedTab == TAB_MEALS,
+                    onClick = { selectedTab = TAB_MEALS },
+                    shape = SegmentedButtonDefaults.itemShape(2, 3)
+                ) {
+                    Text(stringResource(R.string.stats_tab_meals))
                 }
             }
 
@@ -171,6 +174,22 @@ fun StatsScreen(
                     agpResult = agpResult,
                     glucoseUnit = glucoseUnit,
                     hbA1cUnit = hbA1cUnit
+                )
+                TAB_MEALS -> MealStatsTab(
+                    onLoadReadings = onLoadReadings,
+                    onLoadCarbTreatments = onLoadCarbTreatments,
+                    onLoadAllTreatments = onLoadAllTreatments,
+                    treatmentsSyncEnabled = treatmentsSyncEnabled,
+                    nightscoutConfigured = nightscoutConfigured,
+                    periods = periods,
+                    selectedPeriod = selectedPeriod,
+                    onPeriodChange = { selectedPeriod = it },
+                    bgLow = bgLow,
+                    bgHigh = bgHigh,
+                    glucoseUnit = glucoseUnit,
+                    tauMinutes = tauMinutes,
+                    analyzer = mealAnalyzer,
+                    timeSlotConfig = mealTimeSlotConfig
                 )
             }
 

@@ -1,12 +1,47 @@
 package com.psjostrom.strimma.data
 
+import kotlinx.coroutines.flow.first
 import kotlin.math.exp
+
+/**
+ * One-shot IOB fetch: reads current settings and treatments, returns IOB.
+ * Used by ExerciseHistoryViewModel for on-demand guidance.
+ */
+suspend fun fetchCurrentIOB(
+    settings: SettingsRepository,
+    treatmentDao: TreatmentDao,
+    now: Long = System.currentTimeMillis()
+): Double {
+    if (!settings.treatmentsSyncEnabled.first()) return 0.0
+    val insulinType = settings.insulinType.first()
+    val customDIA = settings.customDIA.first()
+    val tau = IOBComputer.tauForInsulinType(insulinType, customDIA)
+    val treatments = treatmentDao.insulinSince(now - IOBComputer.lookbackMs(tau))
+    return IOBComputer.computeIOB(treatments, now, tau)
+}
+
+/**
+ * Compute current IOB from already-resolved settings values.
+ * Used by StrimmaService (StateFlow.value) and LocalWebServer (Flow.first()).
+ */
+suspend fun computeCurrentIOB(
+    treatmentsSyncEnabled: Boolean,
+    insulinType: InsulinType,
+    customDIA: Float,
+    treatmentDao: TreatmentDao,
+    now: Long = System.currentTimeMillis()
+): Double {
+    if (!treatmentsSyncEnabled) return 0.0
+    val tau = IOBComputer.tauForInsulinType(insulinType, customDIA)
+    val treatments = treatmentDao.insulinSince(now - IOBComputer.lookbackMs(tau))
+    return IOBComputer.computeIOB(treatments, now, tau)
+}
 
 object IOBComputer {
 
     private const val MINUTES_PER_HOUR = 60.0
     private const val TAU_MULTIPLIER = 5.0
-    private const val MS_PER_MINUTE = 60_000.0
+
     private const val ROUNDING_FACTOR = 10.0
 
     /**
@@ -23,7 +58,7 @@ object IOBComputer {
     }
 
     fun lookbackMs(tauMinutes: Double): Long =
-        (TAU_MULTIPLIER * tauMinutes * MS_PER_MINUTE).toLong()
+        (TAU_MULTIPLIER * tauMinutes * MS_PER_MINUTE.toDouble()).toLong()
 
     fun iobForTreatment(dose: Double, minutesSince: Double, tauMinutes: Double): Double {
         val t = minutesSince / tauMinutes
@@ -48,7 +83,7 @@ object IOBComputer {
             if (treatment.createdAt < cutoff) continue
             if (treatment.createdAt > now) continue
 
-            val minutesSince = (now - treatment.createdAt) / MS_PER_MINUTE
+            val minutesSince = (now - treatment.createdAt) / MS_PER_MINUTE.toDouble()
             total += iobForTreatment(dose, minutesSince, tauMinutes)
         }
 

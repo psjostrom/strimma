@@ -1,6 +1,7 @@
 package com.psjostrom.strimma.network
 
 import com.psjostrom.strimma.data.DirectionComputer
+import com.psjostrom.strimma.data.MS_PER_MINUTE
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
@@ -25,25 +26,25 @@ sealed class FollowerStatus {
 
 private const val LOOKBACK_MINUTES = 15
 private const val DUPLICATE_THRESHOLD_MS = 3_000L
-private const val MINUTES_TO_MS = 60 * 1000L
 private const val SECONDS_TO_MS = 1000L
 private const val DELTA_ROUNDING_FACTOR = 10.0
 
 suspend fun processNightscoutEntry(
     entry: NightscoutEntryResponse,
     dao: ReadingDao,
-    directionComputer: DirectionComputer
+    directionComputer: DirectionComputer,
+    pushed: Int = 1
 ): GlucoseReading? {
     val sgv = entry.sgv ?: return null
     val ts = entry.date ?: return null
 
-    val recentReadings = dao.since(ts - LOOKBACK_MINUTES * MINUTES_TO_MS)
+    val recentReadings = dao.since(ts - LOOKBACK_MINUTES * MS_PER_MINUTE)
     val existing = recentReadings.find { kotlin.math.abs(it.ts - ts) < DUPLICATE_THRESHOLD_MS }
     if (existing != null) return null
 
     val tempReading = GlucoseReading(
         ts = ts, sgv = sgv,
-        direction = "NONE", delta = null, pushed = 1
+        direction = "NONE", delta = null, pushed = pushed
     )
     val (computedDirection, deltaMgdl) = directionComputer.compute(recentReadings, tempReading)
 
@@ -69,13 +70,11 @@ class NightscoutFollower @Inject constructor(
     companion object {
         private const val SEVEN_DAYS_MS = 7L * 24 * 60 * 60 * 1000
         private const val FETCH_COUNT = 2016
-        private const val MIN_VALID_SGV = 18
-        private const val MAX_VALID_SGV = 900
 
         fun filterValidEntries(entries: List<NightscoutEntryResponse>): List<NightscoutEntryResponse> {
             return entries
                 .filter { it.type == "sgv" && it.sgv != null && it.date != null }
-                .filter { it.sgv!! in MIN_VALID_SGV..MAX_VALID_SGV }
+                .filter { GlucoseReading.isValidSgv(it.sgv!!) }
                 .sortedBy { it.date }
         }
     }
@@ -84,8 +83,8 @@ class NightscoutFollower @Inject constructor(
         return scope.launch {
             _status.value = FollowerStatus.Connecting
 
-            val url = settings.followerUrl.first()
-            val secret = settings.getFollowerSecret()
+            val url = settings.nightscoutUrl.first()
+            val secret = settings.getNightscoutSecret()
             if (url.isBlank() || secret.isBlank()) {
                 DebugLog.log(message = "Follower: URL or secret empty")
                 _status.value = FollowerStatus.Idle

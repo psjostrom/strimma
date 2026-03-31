@@ -2,10 +2,14 @@ package com.psjostrom.strimma.notification
 
 import android.graphics.*
 import com.psjostrom.strimma.data.GlucoseReading
+import com.psjostrom.strimma.data.MS_PER_MINUTE
 import com.psjostrom.strimma.data.GlucoseUnit
+import com.psjostrom.strimma.data.health.StoredExerciseSession
 import com.psjostrom.strimma.graph.PredictionComputer
 import com.psjostrom.strimma.graph.canvasColorFor
+import com.psjostrom.strimma.graph.computeYAxisLabels
 import com.psjostrom.strimma.graph.computeYRange
+import com.psjostrom.strimma.graph.CANVAS_EXERCISE
 import com.psjostrom.strimma.graph.CANVAS_HIGH
 import com.psjostrom.strimma.graph.CANVAS_LOW
 import com.psjostrom.strimma.graph.CRITICAL_HIGH
@@ -20,7 +24,9 @@ object GraphRenderer {
     private const val ZONE_LOW = 0x20FF4D6A.toInt()
     private const val ZONE_HIGH = 0x20FFB800.toInt()
     private const val ZONE_IN_RANGE = 0x1256CCF2.toInt()
-    private const val COLOR_AXIS_TEXT = 0xFFA898C0.toInt()
+    // Medium gray — notification graph bitmap is transparent (BG_COLOR), so it sits on the
+    // system notification surface which can be light or dark. Lavender was invisible on light.
+    private const val COLOR_AXIS_TEXT = 0xFF808080.toInt()
 
     // Margins
     private const val MARGIN_COMPACT = 4f
@@ -39,9 +45,8 @@ object GraphRenderer {
 
     // Time intervals
     private const val HOUR_IN_MS = 3600_000L
-    private const val MINUTE_IN_MS = 60_000L
-    private const val TIME_TICK_15_MIN = 15 * MINUTE_IN_MS
-    private const val TIME_TICK_30_MIN = 30 * MINUTE_IN_MS
+    private val TIME_TICK_15_MIN = 15 * MS_PER_MINUTE
+    private val TIME_TICK_30_MIN = 30 * MS_PER_MINUTE
 
     // Axis label dimensions
     private const val LABEL_TEXT_SIZE = 22f
@@ -50,17 +55,12 @@ object GraphRenderer {
     private const val LABEL_MARGIN_TOP = 8f
     private const val LABEL_MARGIN_BOTTOM = 8f
 
-    // Y-axis step thresholds (all in mg/dL now — yRange is in mg/dL)
-    private const val MGDL_Y_RANGE_THRESHOLD = 180.0
-    private const val MGDL_Y_STEP_LARGE = 50.0
-    private const val MGDL_Y_STEP_SMALL = 25.0
-    private const val MMOL_Y_RANGE_THRESHOLD = 180.0
-
     // Alpha values
     private const val PREDICTION_ALPHA = 128
+    private const val EXERCISE_FILL_ALPHA = 38
+    private const val EXERCISE_BORDER_ALPHA = 127
+    private const val EXERCISE_BORDER_WIDTH = 2f
 
-    // Gradient
-    private const val GRADIENT_HEIGHT_FRACTION = 0.45f
 
     @Suppress("CyclomaticComplexMethod", "LongMethod") // Sequential render pipeline
     fun render(
@@ -72,14 +72,15 @@ object GraphRenderer {
         windowMs: Long,
         compact: Boolean = false,
         predictionMinutes: Int = 10,
-        glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL
+        glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
+        exerciseSessions: List<StoredExerciseSession> = emptyList()
     ): Bitmap {
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         canvas.drawColor(BG_COLOR)
 
         val now = System.currentTimeMillis()
-        val predictionMs = predictionMinutes * MINUTE_IN_MS
+        val predictionMs = predictionMinutes * MS_PER_MINUTE
         val endTime = now + predictionMs
         val startTime = endTime - windowMs - predictionMs
 
@@ -124,6 +125,35 @@ object GraphRenderer {
         canvas.drawLine(marginLeft, yFor(CRITICAL_LOW), width - marginRight, yFor(CRITICAL_LOW), thresholdPaint)
         canvas.drawLine(marginLeft, yFor(CRITICAL_HIGH), width - marginRight, yFor(CRITICAL_HIGH), thresholdPaint)
 
+        // Exercise bands (rendered before dots/lines so BG data draws on top)
+        if (exerciseSessions.isNotEmpty()) {
+            val exercisePaint = Paint().apply {
+                color = CANVAS_EXERCISE
+                alpha = EXERCISE_FILL_ALPHA
+                style = Paint.Style.FILL
+            }
+            val exerciseBorderPaint = Paint().apply {
+                color = CANVAS_EXERCISE
+                alpha = EXERCISE_BORDER_ALPHA
+                strokeWidth = EXERCISE_BORDER_WIDTH
+                style = Paint.Style.STROKE
+            }
+            for (session in exerciseSessions) {
+                if (session.endTime < startTime || session.startTime > endTime) continue
+                val xStart = xFor(session.startTime).coerceIn(marginLeft, width - marginRight)
+                val xEnd = xFor(session.endTime).coerceIn(marginLeft, width - marginRight)
+                if (xEnd <= xStart) continue
+
+                canvas.drawRect(xStart, marginTop, xEnd, marginTop + plotHeight, exercisePaint)
+                if (xFor(session.startTime) >= marginLeft) {
+                    canvas.drawLine(xStart, marginTop, xStart, marginTop + plotHeight, exerciseBorderPaint)
+                }
+                if (xFor(session.endTime) <= width - marginRight) {
+                    canvas.drawLine(xEnd, marginTop, xEnd, marginTop + plotHeight, exerciseBorderPaint)
+                }
+            }
+        }
+
         if (visible.isEmpty()) return bitmap
 
         // Readings
@@ -155,28 +185,28 @@ object GraphRenderer {
         if (prediction != null) {
             val predPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 style = Paint.Style.FILL
-                color = Color.WHITE
-                alpha = PREDICTION_ALPHA
             }
             val predLinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 strokeWidth = LINE_WIDTH
                 style = Paint.Style.STROKE
                 pathEffect = DashPathEffect(floatArrayOf(DASH_LENGTH, DASH_LENGTH), 0f)
-                color = Color.WHITE
-                alpha = PREDICTION_ALPHA
             }
             var prevPx = xFor(prediction.anchorTs)
             var prevPy = yFor(prediction.anchorMgdl)
             for (pt in prediction.points) {
-                val px = xFor(prediction.anchorTs + pt.minuteOffset * MINUTE_IN_MS)
+                val px = xFor(prediction.anchorTs + pt.minuteOffset * MS_PER_MINUTE)
                 val py = yFor(pt.mgdl)
                 if (px > width - marginRight) break
+                val predColor = canvasColorFor(pt.mgdl, bgLow, bgHigh)
+                predLinePaint.color = predColor
+                predLinePaint.alpha = PREDICTION_ALPHA
+                predPaint.color = predColor
+                predPaint.alpha = PREDICTION_ALPHA
                 canvas.drawLine(prevPx, prevPy, px, py, predLinePaint)
                 canvas.drawCircle(px, py, dotR * COMPACT_DOT_SCALE, predPaint)
                 prevPx = px
                 prevPy = py
             }
-
         }
 
         // Axis labels (skip for compact)
@@ -199,36 +229,12 @@ object GraphRenderer {
             }
 
             textPaint.textAlign = Paint.Align.RIGHT
-            val yStep = if (glucoseUnit == GlucoseUnit.MGDL) {
-                if (yr.range > MGDL_Y_RANGE_THRESHOLD) MGDL_Y_STEP_LARGE else MGDL_Y_STEP_SMALL
-            } else {
-                if (yr.range > MMOL_Y_RANGE_THRESHOLD) 2.0 * GlucoseUnit.MGDL_FACTOR else GlucoseUnit.MGDL_FACTOR
-            }
-            var yLabel = Math.ceil(yr.yMin / yStep) * yStep
-            while (yLabel <= yr.yMax) {
-                val y = yFor(yLabel)
+            for (label in computeYAxisLabels(yr, glucoseUnit)) {
+                val y = yFor(label.mgdl)
                 if (y > marginTop + LABEL_MARGIN_TOP && y < height - marginBottom - LABEL_MARGIN_BOTTOM) {
-                    val labelText = if (glucoseUnit == GlucoseUnit.MGDL) {
-                        "%.0f".format(yLabel)
-                    } else {
-                        "%.0f".format(yLabel / GlucoseUnit.MGDL_FACTOR)
-                    }
-                    canvas.drawText(labelText, marginLeft - LABEL_Y_OFFSET, y + LABEL_X_OFFSET, textPaint)
+                    canvas.drawText(label.text, marginLeft - LABEL_Y_OFFSET, y + LABEL_X_OFFSET, textPaint)
                 }
-                yLabel += yStep
             }
-        }
-
-        // Top gradient for widget text readability (compact only)
-        if (compact) {
-            val gradientPaint = Paint().apply {
-                shader = LinearGradient(
-                    0f, 0f, 0f, height * GRADIENT_HEIGHT_FRACTION,
-                    0xE0000000.toInt(), 0x00000000,
-                    Shader.TileMode.CLAMP
-                )
-            }
-            canvas.drawRect(0f, 0f, width.toFloat(), height * GRADIENT_HEIGHT_FRACTION, gradientPaint)
         }
 
         return bitmap

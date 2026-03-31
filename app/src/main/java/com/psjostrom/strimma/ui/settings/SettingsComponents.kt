@@ -94,6 +94,39 @@ fun SettingsSection(
 }
 
 @Composable
+fun PullDataSection(
+    title: String,
+    description: String,
+    onPull: (Int) -> Unit
+) {
+    val onBg = MaterialTheme.colorScheme.onBackground
+    val outline = MaterialTheme.colorScheme.outline
+
+    SettingsSection(stringResource(R.string.settings_data_nightscout)) {
+        Text(title, color = onBg, fontSize = 14.sp)
+        Text(description, color = outline, fontSize = 12.sp)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            listOf(
+                7 to stringResource(R.string.settings_data_pull_7d),
+                14 to stringResource(R.string.settings_data_pull_14d),
+                30 to stringResource(R.string.settings_data_pull_30d)
+            ).forEach { (days, label) ->
+                OutlinedButton(
+                    onClick = { onPull(days) },
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
+                ) {
+                    Text(label, fontSize = 13.sp, maxLines = 1)
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun AlertBlock(
     label: String,
     enabled: Boolean,

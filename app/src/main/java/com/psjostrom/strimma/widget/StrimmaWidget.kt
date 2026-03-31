@@ -24,10 +24,12 @@ import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.Direction
+import com.psjostrom.strimma.data.MS_PER_MINUTE
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.StrimmaDatabase
+import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.notification.GraphRenderer
 import com.psjostrom.strimma.ui.MainActivity
 import kotlinx.coroutines.flow.first
@@ -38,11 +40,12 @@ class StrimmaWidget : GlanceAppWidget() {
         val KEY_OPACITY = floatPreferencesKey("opacity")
         val KEY_GRAPH_MINUTES = intPreferencesKey("graph_minutes")
         val KEY_SHOW_PREDICTION = booleanPreferencesKey("show_prediction")
+        val KEY_LIGHT_MODE = booleanPreferencesKey("light_mode")
+        val KEY_COLOR_CODED = booleanPreferencesKey("color_coded")
 
-        private const val MS_PER_MINUTE = 60_000L
-        private const val MAX_WINDOW_MS = 180 * MS_PER_MINUTE // 3h — largest selectable graph window
+        private val MAX_WINDOW_MS = 180 * MS_PER_MINUTE // 3h — largest selectable graph window
         private const val DEFAULT_PREDICTION_MINUTES = 5
-        const val STALE_THRESHOLD_MINUTES = 10
+        val STALE_THRESHOLD_MINUTES = AlertManager.STALE_THRESHOLD_MINUTES
     }
 
     override val stateDefinition = PreferencesGlanceStateDefinition
@@ -65,6 +68,8 @@ class StrimmaWidget : GlanceAppWidget() {
             val opacity = state[KEY_OPACITY] ?: WidgetSettingsRepository.DEFAULT_OPACITY
             val graphMinutes = state[KEY_GRAPH_MINUTES] ?: WidgetSettingsRepository.DEFAULT_GRAPH_MINUTES
             val showPrediction = state[KEY_SHOW_PREDICTION] ?: WidgetSettingsRepository.DEFAULT_SHOW_PREDICTION
+            val lightMode = state[KEY_LIGHT_MODE] ?: WidgetSettingsRepository.DEFAULT_LIGHT_MODE
+            val colorCoded = state[KEY_COLOR_CODED] ?: WidgetSettingsRepository.DEFAULT_COLOR_CODED
             val graphWindowMs = graphMinutes * MS_PER_MINUTE
             val predictionMinutes = if (showPrediction) DEFAULT_PREDICTION_MINUTES else 0
 
@@ -81,7 +86,7 @@ class StrimmaWidget : GlanceAppWidget() {
                 predictionMinutes = predictionMinutes
             )
 
-            WidgetContent(latest, bgLow, bgHigh, graphBitmap, opacity, glucoseUnit)
+            WidgetContent(latest, bgLow, bgHigh, graphBitmap, opacity, glucoseUnit, lightMode, colorCoded)
         }
     }
 }
@@ -93,26 +98,36 @@ private fun WidgetContent(
     bgHigh: Float,
     graphBitmap: Bitmap,
     opacity: Float,
-    glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL
+    glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
+    lightMode: Boolean = false,
+    colorCoded: Boolean = false
 ) {
     val ctx = LocalContext.current
     val staleColor = ColorProvider(Color(0xFF6A5F80))
-
-    val statusColor = when {
-        reading == null -> staleColor
-        reading.sgv < bgLow -> ColorProvider(Color(0xFFFF4D6A))
-        reading.sgv > bgHigh -> ColorProvider(Color(0xFFFFB800))
-        else -> ColorProvider(Color(0xFF56CCF2))
-    }
 
     val minutesAgo = if (reading != null) {
         ((System.currentTimeMillis() - reading.ts) / 60_000).toInt()
     } else -1
     val isStale = minutesAgo > StrimmaWidget.STALE_THRESHOLD_MINUTES
-    val textColor = if (isStale) staleColor else statusColor
+
+    val textColor = when {
+        isStale || reading == null -> staleColor
+        colorCoded -> when {
+            reading.sgv < bgLow -> ColorProvider(Color(0xFFFF4D6A))
+            reading.sgv > bgHigh -> ColorProvider(Color(0xFFFFB800))
+            else -> ColorProvider(Color(0xFF56CCF2))
+        }
+        lightMode -> ColorProvider(Color(0xFF18151F))  // LightTextPrimary
+        else -> ColorProvider(Color.White)
+    }
+    val subtitleColor = when {
+        isStale -> staleColor
+        lightMode -> ColorProvider(Color(0xFF6A5F80))  // LightTextSecondary
+        else -> ColorProvider(Color.White)
+    }
 
     val direction = reading?.let {
-        try { Direction.valueOf(it.direction) } catch (_: Exception) { Direction.NONE }
+        Direction.parse(it.direction)
     } ?: Direction.NONE
 
     val bgValue = reading?.let { glucoseUnit.format(it.sgv) } ?: "--"
@@ -124,7 +139,11 @@ private fun WidgetContent(
     }
     val subtitle = if (deltaText.isNotEmpty()) "$deltaText · $timeText" else timeText
 
-    val bgColor = Color(0xFF111018).copy(alpha = opacity)
+    val bgColor = if (lightMode) {
+        Color(0xFFF4F2F7).copy(alpha = opacity)  // LightBg
+    } else {
+        Color(0xFF111018).copy(alpha = opacity)
+    }
 
     // Graph always shown as background, text overlaid — works at any size including 2×1
     Box(
@@ -164,7 +183,7 @@ private fun WidgetContent(
             Text(
                 text = subtitle,
                 style = TextStyle(
-                    color = if (isStale) staleColor else ColorProvider(Color.White),
+                    color = subtitleColor,
                     fontSize = 13.sp
                 )
             )

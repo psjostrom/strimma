@@ -4,6 +4,7 @@ import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.Treatment
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
@@ -12,10 +13,14 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import java.security.MessageDigest
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -57,23 +62,89 @@ class NightscoutClient @Inject constructor() {
 
     companion object {
         private const val HTTP_NOT_FOUND = 404
-        private const val MAX_ERROR_LENGTH = 80
+        const val MAX_ERROR_LENGTH = 80
+        private const val DEFAULT_TREATMENT_COUNT = 100
+        private const val REQUEST_TIMEOUT_MS = 30_000L
+        private const val SOCKET_TIMEOUT_MS = 30_000L
+
+        val ISO_FORMATTER: DateTimeFormatter = DateTimeFormatter
+            .ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+            .withZone(ZoneOffset.UTC)
+
+        fun sha1Hex(input: String): String =
+            MessageDigest.getInstance("SHA-1")
+                .digest(input.toByteArray(Charsets.UTF_8))
+                .joinToString("") { "%02x".format(it) }
+
+        fun normalizeUrl(raw: String): String {
+            val trimmed = raw.trim().trimEnd('/')
+            if (trimmed.isBlank()) return ""
+            return if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+                trimmed
+            } else {
+                "https://$trimmed"
+            }
+        }
 
         fun buildFetchUrl(baseUrl: String, since: Long, count: Int, before: Long? = null): String {
-            val base = "${baseUrl.trimEnd('/')}/api/v1/entries.json?find[date][\$gt]=$since&count=$count"
+            val normalized = normalizeUrl(baseUrl)
+            val base = "$normalized/api/v1/entries.json?find[date][\$gt]=$since&count=$count"
             return if (before != null) "$base&find[date][\$lt]=$before" else base
         }
     }
 
     private val client = HttpClient(CIO) {
+        install(HttpTimeout) {
+            requestTimeoutMillis = REQUEST_TIMEOUT_MS
+            socketTimeoutMillis = SOCKET_TIMEOUT_MS
+        }
         install(ContentNegotiation) {
             json(Json { ignoreUnknownKeys = true })
         }
     }
 
-    private val isoFormatter: DateTimeFormatter = DateTimeFormatter
-        .ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-        .withZone(ZoneOffset.UTC)
+    private val isoFormatter get() = ISO_FORMATTER
+
+    data class ConnectionTestResult(
+        val success: Boolean,
+        val serverName: String? = null,
+        val error: String? = null
+    )
+
+    suspend fun testConnection(baseUrl: String, apiSecret: String): ConnectionTestResult {
+        if (baseUrl.isBlank()) return ConnectionTestResult(false, error = "URL is empty")
+        if (apiSecret.isBlank()) return ConnectionTestResult(false, error = "API secret is empty")
+
+        val hashedSecret = hashSecret(apiSecret)
+        val statusUrl = "${normalizeUrl(baseUrl)}/api/v1/status.json"
+
+        return try {
+            val response = client.get(statusUrl) { header("api-secret", hashedSecret) }
+            if (response.status.isSuccess()) {
+                val body = response.bodyAsText()
+                val name = try {
+                    Json.parseToJsonElement(body)
+                        .jsonObject["settings"]
+                        ?.jsonObject?.get("customTitle")
+                        ?.jsonPrimitive?.contentOrNull
+                } catch (_: kotlinx.serialization.SerializationException) { null }
+                  catch (_: IllegalArgumentException) { null }
+                ConnectionTestResult(true, serverName = name)
+            } else {
+                ConnectionTestResult(false, error = "HTTP ${response.status.value}")
+            }
+        } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+            throw e
+        } catch (
+            @Suppress("TooGenericExceptionCaught") // Network boundary
+            e: Exception
+        ) {
+            com.psjostrom.strimma.receiver.DebugLog.log(
+                message = "Connection test error: ${e.message?.take(MAX_ERROR_LENGTH)}"
+            )
+            ConnectionTestResult(false, error = e.message?.take(MAX_ERROR_LENGTH) ?: "Connection failed")
+        }
+    }
 
     suspend fun pushReadings(
         baseUrl: String,
@@ -94,7 +165,7 @@ class NightscoutClient @Inject constructor() {
         }
 
         return try {
-            val fullUrl = "${baseUrl.trimEnd('/')}/api/v1/entries"
+            val fullUrl = "${normalizeUrl(baseUrl)}/api/v1/entries"
             val response = client.post(fullUrl) {
                 contentType(ContentType.Application.Json)
                 header("api-secret", hashedSecret)
@@ -106,6 +177,8 @@ class NightscoutClient @Inject constructor() {
                 )
             }
             response.status.isSuccess()
+        } catch (e: CancellationException) {
+            throw e
         } catch (
             @Suppress("TooGenericExceptionCaught") // Network boundary — Ktor can throw any exception type
             e: Exception
@@ -141,6 +214,8 @@ class NightscoutClient @Inject constructor() {
             } else {
                 response.body<List<NightscoutEntryResponse>>()
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (
             @Suppress("TooGenericExceptionCaught") // Network boundary — Ktor can throw any exception type
             e: Exception
@@ -155,15 +230,14 @@ class NightscoutClient @Inject constructor() {
     suspend fun fetchTreatments(
         baseUrl: String,
         secret: String,
-        since: Long
+        since: Long,
+        count: Int = DEFAULT_TREATMENT_COUNT
     ): List<Treatment> {
         if (baseUrl.isBlank() || secret.isBlank()) return emptyList()
 
         val hashedSecret = hashSecret(secret)
         val sinceIso = isoFormatter.format(Instant.ofEpochMilli(since))
-        // count=100 is sufficient for bolus/carb events in 6h. Aggressive looping systems
-        // may generate more temp basals, but those aren't rendered on the graph.
-        val fullUrl = "${baseUrl.trimEnd('/')}/api/v1/treatments.json?find[created_at][\$gte]=$sinceIso&count=100"
+        val fullUrl = "${normalizeUrl(baseUrl)}/api/v1/treatments.json?find[created_at][\$gte]=$sinceIso&count=$count"
 
         return try {
             val response = client.get(fullUrl) {
@@ -200,6 +274,8 @@ class NightscoutClient @Inject constructor() {
                     fetchedAt = now
                 )
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (
             @Suppress("TooGenericExceptionCaught") // Network boundary — Ktor can throw any exception type
             e: Exception
@@ -223,16 +299,8 @@ class NightscoutClient @Inject constructor() {
         }
     }
 
-    private fun generateTreatmentId(createdAt: String, eventType: String, insulin: Double?, carbs: Double?): String {
-        val raw = "$createdAt|$eventType|$insulin|$carbs"
-        return MessageDigest.getInstance("SHA-1")
-            .digest(raw.toByteArray(Charsets.UTF_8))
-            .joinToString("") { "%02x".format(it) }
-    }
+    private fun generateTreatmentId(createdAt: String, eventType: String, insulin: Double?, carbs: Double?): String =
+        sha1Hex("$createdAt|$eventType|$insulin|$carbs")
 
-    private fun hashSecret(secret: String): String {
-        return MessageDigest.getInstance("SHA-1")
-            .digest(secret.toByteArray(Charsets.UTF_8))
-            .joinToString("") { "%02x".format(it) }
-    }
+    private fun hashSecret(secret: String): String = sha1Hex(secret)
 }

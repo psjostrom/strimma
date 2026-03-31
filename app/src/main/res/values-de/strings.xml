@@ -7,13 +7,14 @@
     <string name="common_export">Exportieren</string>
     <string name="common_sound">Ton</string>
     <string name="common_no_data">Keine Daten</string>
-    <string name="common_content_desc_statistics">Statistik</string>
+
     <string name="common_content_desc_settings">Einstellungen</string>
     <string name="common_content_desc_back">Zur\u00FCck</string>
     <string name="common_content_desc_export">Exportieren</string>
     <string name="common_content_desc_share_log">Protokoll teilen</string>
 
     <!-- Main Screen -->
+    <string name="main_waiting_for_reading">Warte auf ersten Glukosewert\u2026</string>
     <string name="main_just_now">Gerade eben</string>
     <string name="main_min_ago">Vor %1$d Min.</string>
     <string name="main_prediction_low">Tief in %1$d Min.</string>
@@ -42,9 +43,7 @@
     <string name="settings_alerts">Alarme</string>
     <string name="settings_alerts_subtitle">Tief-, Hoch- und veraltete Daten-Alarme</string>
     <string name="settings_general">Allgemein</string>
-    <string name="settings_general_subtitle">Autostart, Sprache, Akku, \u00DCber</string>
-    <string name="settings_data">Daten</string>
-    <string name="settings_data_subtitle">Statistik, Export, Nightscout-Abruf</string>
+    <string name="settings_general_subtitle">Autostart, Akku, \u00DCber</string>
     <string name="settings_debug_log">Fehlerprotokoll</string>
 
     <!-- General Settings -->
@@ -56,8 +55,7 @@
     <string name="settings_general_battery_desc">Strimma muss von der Akkuoptimierung ausgenommen werden, um zuverl\u00E4ssig im Hintergrund zu laufen</string>
     <string name="settings_general_battery_button">Akkueinstellungen \u00F6ffnen</string>
     <string name="settings_general_battery_allowed">Strimma ist von der Akkuoptimierung ausgenommen</string>
-    <string name="settings_general_language">Sprache</string>
-    <string name="settings_general_language_system_desc">Telefonsprache verwenden</string>
+
     <string name="settings_general_about">\u00DCber</string>
     <string name="settings_general_version">Version</string>
     <string name="settings_general_build">Build</string>
@@ -65,14 +63,15 @@
     <!-- Data Source Settings -->
     <string name="settings_source_title">Datenquelle</string>
     <string name="settings_source_section">Quelle</string>
-    <string name="settings_source_nightscout_push">Nightscout Push</string>
+    <string name="settings_source_notification_access">Benachrichtigungszugriff</string>
+    <string name="settings_source_notification_granted">Gewährt</string>
+    <string name="settings_source_notification_not_granted">Nicht gewährt — tippen um Einstellungen zu öffnen</string>
+    <string name="settings_source_nightscout">Nightscout</string>
     <string name="settings_source_nightscout_url">Nightscout-URL</string>
     <string name="settings_source_url_placeholder">https://dein-nightscout.example.com</string>
     <string name="settings_source_url_hint">Nur Basis-URL \u2014 kein /api-Pfad</string>
     <string name="settings_source_api_secret">API-Geheimnis</string>
-    <string name="settings_source_following">Folgen</string>
-    <string name="settings_source_follower_url_placeholder">https://nightscout.example.com</string>
-    <string name="settings_source_follower_url_hint">Der Nightscout-Server zum Folgen</string>
+    <string name="settings_source_poll_settings">Follower-Einstellungen</string>
     <string name="settings_source_poll_interval">Abfrageintervall: %1$ds</string>
     <string name="settings_source_poll_explanation">Wie oft nach neuen Messwerten gesucht wird. Niedrigere Werte erfassen Aktualisierungen schneller, verbrauchen aber mehr Akku. CGM-Messwerte kommen normalerweise alle 5 Minuten.</string>
     <string name="settings_source_companion_label">Begleitmodus</string>
@@ -81,12 +80,17 @@
     <string name="settings_source_xdrip_desc">xDrip-kompatible BG-\u00DCbertragungen empfangen</string>
     <string name="settings_source_follower_label">Nightscout-Follower</string>
     <string name="settings_source_follower_desc">Einem entfernten Nightscout-Server folgen</string>
+    <string name="settings_source_llu_desc">\u00DCber Abbotts LibreLinkUp-Freigabe folgen</string>
+    <string name="settings_source_llu_email">E-Mail</string>
+    <string name="settings_source_llu_password">Passwort</string>
+    <string name="settings_source_llu_hint">Verwende deine LibreLinkUp-Zugangsdaten (Follower). Die Freigabe muss zuerst in der Libre 3-App aktiviert werden.</string>
 
     <!-- Treatments Settings -->
     <string name="settings_treatments_title">Behandlungen</string>
     <string name="settings_treatments_section">Behandlungen</string>
     <string name="settings_treatments_sync">Behandlungen synchronisieren</string>
     <string name="settings_treatments_sync_desc">Bolus-, Kohlenhydrat- und Basaldaten f\u00FCr IOB-Anzeige abrufen</string>
+    <string name="settings_treatments_requires_ns">Behandlungsdaten erfordern eine Nightscout-Verbindung. Konfigurieren Sie eine Nightscout-URL und ein Passwort unter Datenquelle, um diese Funktion zu aktivieren.</string>
     <string name="settings_treatments_insulin_type">Insulintyp</string>
     <string name="settings_treatments_custom_dia">Benutzerdefinierte DIA (Stunden)</string>
     <string name="settings_treatments_dia_hint">Insulinwirkdauer, 2\u201310 Stunden</string>
@@ -136,8 +140,6 @@
 
     <!-- Data Settings -->
     <string name="settings_data_title">Daten</string>
-    <string name="settings_data_views">Ansichten</string>
-    <string name="settings_data_statistics">Statistik</string>
     <string name="settings_data_nightscout">Nightscout</string>
     <string name="settings_data_pull">Von Nightscout abrufen</string>
     <string name="settings_data_pull_desc">Glukoseverlauf von deinem Nightscout-Server herunterladen</string>
@@ -151,6 +153,7 @@
     <string name="settings_data_web_server_desc">BG-Daten auf Port 17580 f\u00FCr Zifferbl\u00E4tter und Apps bereitstellen</string>
     <string name="settings_data_api_secret">API-Geheimnis</string>
     <string name="settings_data_backup">Sicherung</string>
+    <string name="settings_data_export_readings">Messwerte exportieren (CSV)</string>
     <string name="settings_data_export_settings">Einstellungen exportieren</string>
     <string name="settings_data_import_settings">Einstellungen importieren</string>
 
@@ -212,6 +215,10 @@
     <string name="alert_predicted">Vorhergesagt %1$s</string>
     <string name="alert_stale_title">Keine Daten</string>
     <string name="alert_stale_body">Keine Glukosemessung seit 10+ Minuten</string>
+    <string name="alert_push_fail_title">Upload fehlgeschlagen</string>
+    <string name="alert_push_fail_body">Glukose-Uploads schlagen seit 15+ Minuten fehl. Nightscout-Einstellungen pr\u00FCfen.</string>
+    <string name="alert_channel_push_fail">Upload-Fehler</string>
+    <string name="alert_channel_push_fail_desc">Glukose-Uploads schlagen l\u00E4ngere Zeit fehl</string>
     <string name="alert_snooze">Snooze 30 Min.</string>
 
     <!-- Foreground Notification -->
@@ -227,18 +234,190 @@
     <string name="widget_config_title">Widget-Einstellungen</string>
     <string name="widget_config_graph_range">Diagrammbereich</string>
     <string name="widget_config_show_prediction">Vorhersage anzeigen</string>
+    <string name="widget_config_light_mode">Heller Hintergrund</string>
+    <string name="widget_config_color_coded">Farbcodierter BG</string>
     <string name="widget_config_background">Hintergrund</string>
     <string name="widget_config_opacity">%1$d%%</string>
     <string name="widget_config_background_hint">Steuert nur den Hintergrund \u2014 Diagramm und Werte bleiben voll sichtbar</string>
+
+    <!-- Exercise Settings -->
+    <string name="settings_exercise">Training</string>
+    <string name="settings_exercise_subtitle">Health Connect, Trainingshistorie</string>
+    <string name="exercise_settings_title">Training</string>
+    <string name="exercise_hc_status_connected">Verbunden</string>
+    <string name="exercise_hc_status_permissions">Berechtigungen erforderlich</string>
+    <string name="exercise_hc_status_not_installed">Nicht installiert</string>
+    <string name="exercise_hc_status_not_supported">Nicht unterst\u00FCtzt</string>
+    <string name="exercise_hc_status_label">Health Connect</string>
+    <string name="exercise_hc_install_prompt">Aus dem Play Store installieren</string>
+    <string name="exercise_hc_write_toggle">Glukose in Health Connect schreiben</string>
+    <string name="exercise_hc_write_subtitle">Glukosemesswerte mit anderen Gesundheitsapps teilen</string>
+    <string name="exercise_hc_last_sync">Letzte Synchronisierung</string>
+    <string name="exercise_hc_last_sync_never">Nie</string>
+
+    <!-- Exercise types -->
+    <string name="exercise_type_running">Lauf</string>
+    <string name="exercise_type_walking">Gehen</string>
+    <string name="exercise_type_cycling">Radfahren</string>
+    <string name="exercise_type_swimming">Schwimmen</string>
+    <string name="exercise_type_hiking">Wandern</string>
+    <string name="exercise_type_strength">Kraft</string>
+    <string name="exercise_type_yoga">Yoga</string>
+    <string name="exercise_type_rowing">Rudern</string>
+    <string name="exercise_type_skiing">Skifahren</string>
+    <string name="exercise_type_climbing">Klettern</string>
+    <string name="exercise_type_martial_arts">Kampfsport</string>
+    <string name="exercise_type_other">Training</string>
+
+    <!-- Exercise Detail -->
+    <string name="exercise_detail_before">VORHER</string>
+    <string name="exercise_detail_during">W\u00C4HREND</string>
+    <string name="exercise_detail_after">NACHHER (4H)</string>
+    <string name="exercise_detail_entry_bg">Start-BG</string>
+    <string name="exercise_detail_min_bg">Tiefster w\u00E4hrend</string>
+    <string name="exercise_detail_lowest_bg">Tiefster danach</string>
+    <string name="exercise_detail_avg_hr">\u00D8 HF</string>
+    <string name="exercise_detail_max_hr">Max HF</string>
+    <string name="exercise_detail_steps">Schritte</string>
+    <string name="exercise_detail_calories">Kalorien</string>
+    <string name="exercise_detail_highest_bg">H\u00F6chster danach</string>
+    <string name="exercise_detail_total_drop">Gesamt-BG-Abfall</string>
+    <string name="exercise_detail_post_hypo">Tief nach Training</string>
+    <string name="exercise_detail_no_data">Nicht gen\u00FCgend Glukosedaten</string>
+    <string name="exercise_detail_no_value">\u2014</string>
+    <string name="exercise_history_title">Training</string>
+    <string name="exercise_history_empty_title">Noch keine Trainingseinheiten</string>
+    <string name="exercise_history_empty">Strimma liest Workouts aus Health Connect. Verbinde und erteile Berechtigungen, um deine Trainings hier zu sehen.</string>
+    <string name="exercise_history_empty_button">Health Connect verbinden</string>
+    <string name="hc_rationale_title">Health Connect-Berechtigungen</string>
+    <string name="hc_rationale_body">Strimma nutzt Health Connect, um Trainingseinheiten, Herzfrequenz, Schritte und Kalorien zu lesen und zu zeigen, wie Training den Blutzucker beeinflusst. Optional kann Strimma Glukosewerte schreiben, damit andere Gesundheits-Apps sie sehen k\u00F6nnen.</string>
 
     <!-- Activity (dialogs, toasts) -->
     <string name="activity_settings_imported">Einstellungen importiert</string>
     <string name="activity_import_failed">Import fehlgeschlagen: %1$s</string>
     <string name="activity_export_dialog_title">Einstellungen exportieren</string>
     <string name="activity_export_dialog_message">Die Exportdatei enth\u00E4lt deine Nightscout-Geheimnisse im Klartext. Teile sie nur mit vertrauensw\u00FCrdigen Apps.</string>
+    <string name="activity_export_readings_chooser">Messwerte exportieren</string>
     <string name="activity_export_chooser">Einstellungen exportieren</string>
     <string name="activity_export_failed">Export fehlgeschlagen: %1$s</string>
     <string name="activity_pull_progress">Lade %1$d Tage von Nightscout\u2026</string>
     <string name="activity_pull_success">%1$d Messwerte geladen</string>
     <string name="activity_pull_failed">Abruf fehlgeschlagen: %1$s</string>
+
+    <!-- Setup Wizard -->
+    <string name="setup_welcome_title">Willkommen bei Strimma</string>
+    <string name="setup_welcome_body">Dein CGM-Begleiter. Echtzeit-Glukose, smarte Alarme, Nightscout-Sync. Lass uns loslegen.</string>
+    <string name="setup_welcome_item_source">Wähle, wie Strimma deine Glukosedaten erhält</string>
+    <string name="setup_welcome_item_nightscout">Mit Nightscout verbinden (optional)</string>
+    <string name="setup_welcome_item_alerts">Alarmschwellen einstellen</string>
+    <string name="setup_welcome_item_permissions">Erforderliche Berechtigungen erteilen</string>
+    <string name="setup_units_title">Einheit</string>
+    <string name="setup_units_mmol">mmol/L</string>
+    <string name="setup_units_mgdl">mg/dL</string>
+    <string name="setup_units_mmol_desc">Verwendet in den meisten Teilen Europas, Großbritannien, Kanada, Australien</string>
+    <string name="setup_units_mgdl_desc">Verwendet in den USA, Japan und vielen anderen Ländern</string>
+    <string name="setup_source_title">Datenquelle</string>
+    <string name="setup_source_companion_desc">Liest Glukose aus den Benachrichtigungen deiner CGM-App. Funktioniert mit Dexcom, Libre, CamAPS, Juggluco, xDrip+ und über 50 weiteren.</string>
+    <string name="setup_source_xdrip_desc">Empfängt Glukose über xDrip-kompatible Übertragung. Verwende dies, wenn deine CGM-App xDrip-Übertragung unterstützt.</string>
+    <string name="setup_source_follower_desc">Folgt einem entfernten Nightscout-Server. Verwende dies, um die Glukose einer anderen Person zu überwachen.</string>
+    <string name="setup_source_llu_desc">Liest Glukose aus Abbotts LibreLinkUp-Cloud. Erfordert ein LibreLinkUp-Follower-Konto.</string>
+    <string name="setup_source_access_granted">Benachrichtigungszugriff gewährt</string>
+    <string name="setup_source_notif_guide_intro">Android erfordert einige Schritte, um den Benachrichtigungszugriff für sidegeloadete Apps zu gewähren. Das ist normal.</string>
+    <string name="setup_source_notif_learn_more">Warum wird das benötigt?</string>
+    <string name="setup_no_browser">Kein Browser verfügbar</string>
+    <string name="setup_source_guide_step1">Öffne die Benachrichtigungseinstellungen und versuche Strimma zu aktivieren. Android blockiert es \u2014 das ist erwartet.</string>
+    <string name="setup_source_guide_step1_button">Benachrichtigungseinstellungen öffnen</string>
+    <string name="setup_source_guide_step2">Öffne Strimmas App-Info, tippe auf das \u22EE-Menü oben rechts, dann auf \"Eingeschränkte Einstellungen zulassen\".</string>
+    <string name="setup_source_step1_button">App-Info öffnen</string>
+    <string name="setup_source_guide_step3">Öffne die Benachrichtigungseinstellungen erneut und aktiviere Strimma. Diesmal funktioniert es.</string>
+    <string name="setup_source_guide_step3_button">Benachrichtigungszugriff aktivieren</string>
+    <string name="setup_alerts_title">Alarme</string>
+    <string name="setup_alerts_footer">Du kannst diese jederzeit in Einstellungen \u203A Alarme ändern</string>
+    <string name="setup_permissions_title">Berechtigungen</string>
+    <string name="setup_permissions_notifications">Benachrichtigungen</string>
+    <string name="setup_permissions_notifications_desc">Erforderlich für Glukoseanzeige und Alarme</string>
+    <string name="setup_permissions_battery">Akkuoptimierung</string>
+    <string name="setup_permissions_battery_desc">Erforderlich für zuverlässigen Hintergrundbetrieb</string>
+    <string name="setup_permissions_notif_access">Benachrichtigungszugriff</string>
+    <string name="setup_permissions_notif_access_desc">Erforderlich zum Lesen von CGM-App-Benachrichtigungen</string>
+    <string name="setup_permissions_grant">Erteilen</string>
+    <string name="setup_permissions_granted">Erteilt</string>
+    <string name="setup_permissions_battery_warning">Strimma funktioniert möglicherweise nicht zuverlässig ohne Ausnahme von der Akkuoptimierung</string>
+    <string name="setup_start">Strimma starten</string>
+    <string name="setup_next">Weiter</string>
+    <string name="setup_back">Zurück</string>
+
+    <!-- Exercise tabs -->
+    <string name="exercise_tab_planned">Geplant</string>
+    <string name="exercise_tab_completed">Abgeschlossen</string>
+    <string name="exercise_connect_title">Trainingskalender verbinden</string>
+    <string name="exercise_connect_subtitle">Sieh kommende Trainings und erhalte BG-Empfehlungen vor jedem Training. Verwende einen Kalender, der nur Trainings enthält — Strimma behandelt jedes Ereignis als Trainingseinheit.</string>
+    <string name="exercise_connect_button">Kalender verbinden</string>
+    <string name="exercise_planned_empty">Keine kommenden Trainings im verbundenen Kalender gefunden.</string>
+    <string name="exercise_planned_category">Kategorie</string>
+    <string name="exercise_planned_target">Ziel-BG</string>
+    <string name="exercise_no_bg_data">Keine aktuellen BG-Daten für Empfehlungen verfügbar.</string>
+    <string name="exercise_no_calendars">Keine Kalender auf diesem Gerät gefunden.</string>
+    <string name="exercise_calendar_missing_hint">Kalender nicht gefunden? Gehe zu Einstellungen → Passwörter \u0026 Konten → dein Google-Konto → Kontosynchronisierung und schalte Kalender aus und wieder ein.</string>
+
+    <!-- Patterns tab -->
+    <string name="exercise_tab_patterns">Muster</string>
+    <string name="exercise_patterns_empty_title">Noch keine Muster</string>
+    <string name="exercise_patterns_empty">Trainiere weiter mit Strimma. Nach einigen Einheiten desselben Typs siehst du hier deine pers\u00F6nlichen BG-Muster.</string>
+    <string name="exercise_patterns_by_activity">Nach Aktivit\u00E4t</string>
+    <string name="exercise_patterns_by_profile">Nach Profil</string>
+    <string name="exercise_patterns_low_risk">NIEDRIGES RISIKO</string>
+    <string name="exercise_patterns_some_risk">ETWAS RISIKO</string>
+    <string name="exercise_patterns_high_risk">HOHES RISIKO</string>
+    <string name="exercise_patterns_drop_summary">BG sinkt normalerweise um etwa %1$s</string>
+    <string name="exercise_patterns_went_low">Unterzuckerung %1$d von %2$d</string>
+    <string name="exercise_patterns_never_low">Nie unterzuckert</string>
+    <string name="exercise_patterns_tip_high_risk">Versuche mit h\u00F6herem BG, mehr Kohlenhydraten oder weniger IOB zu starten</string>
+    <string name="exercise_patterns_tip_some_risk">Pr\u00FCfe die Start-BG-Verteilung unten \u2014 manche Startwerte funktionieren besser</string>
+
+    <string name="exercise_lookahead_subtitle">Wie weit voraus die Geplant-Ansicht nach Trainings sucht</string>
+    <string name="exercise_trigger_subtitle">Wann die Bereitschaftskarte auf dem Hauptbildschirm erscheint</string>
+    <string name="exercise_hc_write_disabled_hint">Erteile zuerst Health Connect-Berechtigungen</string>
+    <string name="exercise_metabolic_profile_hint">BG-Reaktionstyp \u2014 bestimmt den Zielbereich. Erkannt aus Aktivit\u00E4tstyp oder Puls.</string>
+
+    <!-- Pre-activity guidance -->
+    <string name="workout_settings_title">Trainingsplan</string>
+    <string name="workout_calendar_label">Kalender</string>
+    <string name="workout_calendar_none">(keine)</string>
+    <string name="workout_calendar_picker_title">Kalender auswählen</string>
+    <string name="stats_tab_meals">Mahlzeiten</string>
+    <string name="stats_meals_treatments_disabled">Die Mahlzeitenanalyse erfordert die Behandlungssynchronisation. Aktivieren Sie diese unter Einstellungen \u2192 Behandlungen, um zu sehen, wie Ihre Mahlzeiten Ihren Blutzucker beeinflussen.</string>
+    <string name="stats_meals_requires_ns">Die Mahlzeitenanalyse erfordert eine Nightscout-Verbindung. Konfigurieren Sie eine Nightscout-URL und ein Passwort unter Einstellungen \u2192 Datenquelle, um die Behandlungssynchronisation zu aktivieren.</string>
+
+    <!-- Alert pause -->
+    <string name="pause_alerts">Alarme pausieren</string>
+    <string name="pause_low_alerts">Tief-Alarme</string>
+    <string name="pause_high_alerts">Hoch-Alarme</string>
+    <string name="pause_duration_30m">30m</string>
+    <string name="pause_duration_1h">1h</string>
+    <string name="pause_duration_1_5h">1,5h</string>
+    <string name="pause_duration_2h">2h</string>
+    <string name="pause_duration_3h">3h</string>
+    <string name="pause_cancel">Abbrechen</string>
+    <string name="pause_low_active">Tief-Alarme pausiert · %1$s</string>
+    <string name="pause_high_active">Hoch-Alarme pausiert · %1$s</string>
+    <string name="pause_low_paused">Tief-Alarme pausiert</string>
+    <string name="pause_high_paused">Hoch-Alarme pausiert</string>
+    <string name="pause_countdown">Pausiert · %1$s</string>
+    <string name="pause_low_warning">Einschließlich Akut-tief-Alarm</string>
+
+    <string name="settings_statistics">Statistik</string>
+    <string name="settings_statistics_subtitle">Messwerte, AGP, Mahlzeiten</string>
+    <string name="settings_sharing">Teilen</string>
+    <string name="settings_sharing_subtitle">Broadcast, Webserver, Export</string>
+    <string name="settings_meal_slots_title">Mahlzeiten-Zeitfenster</string>
+    <string name="settings_meal_slots_desc">Legen Sie fest, wann die Zeitfenster für Frühstück, Mittag- und Abendessen beginnen und enden. Mahlzeiten außerhalb dieser Fenster werden als Snack klassifiziert.</string>
+    <string name="meal_slot_breakfast">Frühstück</string>
+    <string name="meal_slot_lunch">Mittagessen</string>
+    <string name="meal_slot_dinner">Abendessen</string>
+    <string name="settings_data_pull_treatments">Behandlungen abrufen</string>
+    <string name="settings_data_pull_treatments_desc">Bolus-, Kohlenhydrat- und Basalverlauf von Nightscout herunterladen</string>
+    <string name="activity_pull_treatments_progress">Abruf von %1$d Tagen Behandlungen…</string>
+    <string name="activity_pull_treatments_success">%1$d Behandlungen abgerufen</string>
+    <string name="activity_pull_treatments_failed">Behandlungsabruf fehlgeschlagen: %1$s</string>
 </resources>

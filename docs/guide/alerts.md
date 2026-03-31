@@ -6,7 +6,7 @@ Strimma can alert you with sound and vibration when your glucose crosses configu
 
 ## Alert Types
 
-Strimma has **seven** alert types, each with its own Android notification channel so you can customize the sound and vibration for each one independently.
+Strimma has **eight** alert types, each with its own Android notification channel so you can customize the sound and vibration for each one independently.
 
 ### Glucose Threshold Alerts
 
@@ -24,11 +24,12 @@ Strimma has **seven** alert types, each with its own Android notification channe
 | **Low Soon** | Predicted to cross low threshold within prediction window | No | Gentle |
 | **High Soon** | Predicted to cross high threshold within prediction window | No | Gentle |
 
-### Data Freshness Alert
+### System Alerts
 
 | Alert | Trigger | Bypasses DND | Vibration |
 |-------|---------|-------------|-----------|
 | **Stale Data** | No reading received for 10+ minutes | No | Gentle |
+| **Push Failed** | Nightscout push failed after retries | No | Gentle |
 
 ---
 
@@ -49,6 +50,24 @@ Each alert has a **30-minute snooze**. When an alert fires, the notification inc
 - Snooze applies to one alert type — snoozing Low doesn't affect Urgent Low
 - After 30 minutes, the alert can fire again if the condition persists
 - Snooze state is stored locally and survives app restarts
+
+---
+
+## Pause by Category
+
+You can pause entire alert categories for a custom duration — useful during exercise or known post-meal spikes.
+
+| Category | Pauses These Alerts |
+|----------|-------------------|
+| **Low** | Urgent Low, Low, Low Soon |
+| **High** | Urgent High, High, High Soon |
+
+- Set a custom duration when pausing
+- The pause auto-clears when the duration expires
+- Pause state survives app restarts
+
+!!! note "Snooze vs Pause"
+    **Snooze** silences a single alert type for 30 minutes. **Pause** silences an entire category (all low alerts or all high alerts) for a duration you choose.
 
 ---
 

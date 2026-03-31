@@ -18,22 +18,47 @@ Strimma stands on the shoulders of the incredible [xDrip+](https://github.com/Ni
 
 </div>
 
+<div class="grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 1.5rem 0;" markdown>
+
+![Exercise graph](screenshots/exercise-graph.png){ width="100%" }
+
+![Exercise history](screenshots/exercise-history.png){ width="100%" }
+
+![Exercise detail](screenshots/exercise-detail.png){ width="100%" }
+
+</div>
+
+<div class="grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 1.5rem 0;" markdown>
+
+![Pre-activity guidance](screenshots/pre-activity-guidance.png){ width="100%" }
+
+![AGP report](screenshots/agp-report.png){ width="100%" }
+
+![Meal analysis](screenshots/meal-analysis-lunch.png){ width="100%" }
+
+</div>
+
 ## What Strimma Does
 
-- **Receives glucose three ways** — reads notifications from 60+ CGM apps (Dexcom, Libre, CamAPS FX, etc.), receives xDrip-compatible broadcasts (from xDrip+, Juggluco, AAPS), or follows a remote Nightscout server. See [Data Sources](data-sources/overview.md).
+- **Receives glucose four ways** — reads notifications from 50+ CGM app variants (Dexcom, Libre, CamAPS FX, etc.), receives xDrip-compatible broadcasts (from xDrip+, Juggluco, AAPS), follows a remote Nightscout server, or reads from Abbott's LibreLinkUp cloud. See [Data Sources](data-sources/overview.md).
 - **Shows your BG at a glance** — large, color-coded number with direction arrow, delta, and trend graph in your notification bar.
-- **Configurable alerts** — low, high, urgent low, urgent high, and stale-data alerts, each with its own notification channel. Urgent alerts bypass Do Not Disturb by default; any alert can be configured to bypass DND via Android's notification settings.
+- **Configurable alerts** — eight alert types (urgent low, low, high, urgent high, low soon, high soon, stale data, push failed), each with its own notification channel. Urgent alerts bypass Do Not Disturb by default; any alert can be configured to bypass DND via Android's notification settings. Alerts can be paused by category (Low or High) for a custom duration.
 - **Predicts where you're heading** — shows "Low in X min" or "High in X min" warnings before you cross your thresholds.
 - **Pushes to Nightscout** — automatic, immediate upload to any Nightscout-compatible server. Offline-resilient — readings queue and retry.
-- **Tracks treatments and IOB** — fetches bolus and carb data from Nightscout, computes insulin on board with your insulin type's curve.
+- **Tracks treatments and IOB** — fetches bolus and carb data from Nightscout (30-day retention), computes insulin on board with your insulin type's curve.
+- **Per-meal postprandial analysis** — analyzes glucose response to each meal: TIR, peak excursion, recovery time, IOB at meal. Aggregate postprandial profile with AGP-style percentile bands. Configurable meal time slots.
 - **Follows a remote Nightscout** — for caregivers, partners, or parents who need to see someone else's glucose remotely.
 - **Works with watches and other apps** — broadcasts xDrip-compatible intents, runs a local web server, integrates with Garmin watchfaces.
+- **Exercise-BG analysis** — reads exercise sessions from Health Connect (Garmin, Samsung Health, etc.), overlays exercise bands on the glucose graph, and shows before/during/after BG breakdown with post-exercise hypo detection.
+- **Exercise stats** — aggregate BG patterns across sessions grouped by activity type (Running, Cycling, Strength, etc.) and metabolic profile (Aerobic, Resistance, High-Intensity). Hypo rate, average entry BG, drop rate, recovery patterns.
+- **Pre-activity guidance** — readiness card before scheduled workouts. Evaluates current BG, trend, IOB, and 30-min forecast. Generates carb recommendations adjusted for IOB and time until workout. Compound risk detection (falling BG + low-ish starting point + upcoming exercise).
+- **Workout schedule** — reads planned workouts from your Android calendar. Shows upcoming sessions with pre-activity status so you can prepare.
 
 ---
 
 ## How It Works
 
-Strimma supports three data sources. Most users use **Companion mode**, which reads glucose from your CGM app's notification:
+Strimma supports four data sources. Most users use **Companion mode**, which reads glucose from your CGM app's notification:
 
 ```mermaid
 graph LR
@@ -45,7 +70,7 @@ graph LR
     C -->|Broadcast| G[Watches & Apps]
 ```
 
-You can also receive glucose via **xDrip Broadcast** (from xDrip+, Juggluco, AAPS, or GlucoDataHandler) or **Nightscout Follower** mode (for remote monitoring). See [Data Sources](data-sources/overview.md) for all three options.
+You can also receive glucose via **xDrip Broadcast** (from xDrip+, Juggluco, AAPS, or GlucoDataHandler), **Nightscout Follower** mode (for remote monitoring), or **LibreLinkUp** (Abbott's cloud for Libre 3 users). See [Data Sources](data-sources/overview.md) for all options.
 
 ---
 
@@ -61,15 +86,19 @@ You can also receive glucose via **xDrip Broadcast** (from xDrip+, Juggluco, AAP
 ## Quick Start
 
 1. **[Install Strimma](getting-started/install.md)** — download from GitHub Releases
-2. **[Set up permissions](getting-started/setup.md)** — grant notification access and battery optimization exemption
-3. **[See your first reading](getting-started/first-reading.md)** — open your CGM app and watch the data flow
+2. **[Set up permissions](getting-started/setup.md)** — choose your data source and grant required permissions
+3. **[See your first reading](getting-started/first-reading.md)** — watch the data flow
 
 ---
 
 ## Requirements
 
 - Android 13 or newer (API 33+)
-- A CGM app that shows glucose in notifications (see [Supported Apps](data-sources/supported-apps.md))
+- A glucose data source — one of:
+    - A CGM app that shows glucose in notifications (see [Supported Apps](data-sources/supported-apps.md))
+    - An app that sends xDrip-compatible broadcasts (xDrip+, Juggluco, AAPS)
+    - A remote Nightscout server to follow
+    - A LibreLinkUp account (for Libre 3 users)
 - For Nightscout push: a Nightscout server URL and API secret
 
 ---

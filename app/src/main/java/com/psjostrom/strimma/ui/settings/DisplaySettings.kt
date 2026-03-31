@@ -24,13 +24,13 @@ fun DisplaySettings(
     graphWindowHours: Int,
     bgLow: Float,
     bgHigh: Float,
-    themeMode: String,
+    themeMode: ThemeMode,
     onGlucoseUnitChange: (GlucoseUnit) -> Unit,
     onHbA1cUnitChange: (HbA1cUnit) -> Unit,
     onGraphWindowChange: (Int) -> Unit,
     onBgLowChange: (Float) -> Unit,
     onBgHighChange: (Float) -> Unit,
-    onThemeModeChange: (String) -> Unit,
+    onThemeModeChange: (ThemeMode) -> Unit,
     onBack: () -> Unit
 ) {
     val onBg = MaterialTheme.colorScheme.onBackground
@@ -107,8 +107,8 @@ fun DisplaySettings(
             SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                 ThemeMode.entries.forEachIndexed { index, mode ->
                     SegmentedButton(
-                        selected = themeMode == mode.name,
-                        onClick = { onThemeModeChange(mode.name) },
+                        selected = themeMode == mode,
+                        onClick = { onThemeModeChange(mode) },
                         shape = SegmentedButtonDefaults.itemShape(index, ThemeMode.entries.size),
                     ) {
                         Text(stringResource(mode.labelRes))

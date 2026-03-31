@@ -10,12 +10,14 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Sensors
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -32,7 +34,8 @@ import com.psjostrom.strimma.R
 @Composable
 fun SettingsScreen(
     onNavigate: (String) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    nightscoutConfigured: Boolean = false
 ) {
     val bg = MaterialTheme.colorScheme.background
     val onBg = MaterialTheme.colorScheme.onBackground
@@ -73,12 +76,21 @@ fun SettingsScreen(
                     subtitle = stringResource(R.string.settings_data_source_subtitle),
                     onClick = { onNavigate("settings/data-source") }
                 )
+                if (nightscoutConfigured) {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    SettingsMenuItem(
+                        icon = Icons.Default.Medication,
+                        title = stringResource(R.string.settings_treatments),
+                        subtitle = stringResource(R.string.settings_treatments_subtitle),
+                        onClick = { onNavigate("settings/treatments") }
+                    )
+                }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 SettingsMenuItem(
-                    icon = Icons.Default.Medication,
-                    title = stringResource(R.string.settings_treatments),
-                    subtitle = stringResource(R.string.settings_treatments_subtitle),
-                    onClick = { onNavigate("settings/treatments") }
+                    icon = Icons.Default.FitnessCenter,
+                    title = stringResource(R.string.settings_exercise),
+                    subtitle = stringResource(R.string.settings_exercise_subtitle),
+                    onClick = { onNavigate("settings/exercise") }
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 SettingsMenuItem(
@@ -105,6 +117,15 @@ fun SettingsScreen(
 
             SettingsMenuGroup(surfVar) {
                 SettingsMenuItem(
+                    icon = Icons.Outlined.BarChart,
+                    title = stringResource(R.string.settings_statistics),
+                    subtitle = stringResource(R.string.settings_statistics_subtitle),
+                    onClick = { onNavigate("stats") }
+                )
+            }
+
+            SettingsMenuGroup(surfVar) {
+                SettingsMenuItem(
                     icon = Icons.Default.Settings,
                     title = stringResource(R.string.settings_general),
                     subtitle = stringResource(R.string.settings_general_subtitle),
@@ -112,9 +133,9 @@ fun SettingsScreen(
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 SettingsMenuItem(
-                    icon = Icons.Default.Storage,
-                    title = stringResource(R.string.settings_data),
-                    subtitle = stringResource(R.string.settings_data_subtitle),
+                    icon = Icons.Default.Share,
+                    title = stringResource(R.string.settings_sharing),
+                    subtitle = stringResource(R.string.settings_sharing_subtitle),
                     onClick = { onNavigate("settings/data") }
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)

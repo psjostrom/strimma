@@ -2,6 +2,16 @@
 # Pre-commit hook: run detekt for fast local feedback.
 # Full test + lint suite runs in CI.
 
+# Verify SSH agent is reachable for commit signing
+if [ "$(git config commit.gpgsign)" = "true" ]; then
+    if ! ssh-add -l >/dev/null 2>&1; then
+        echo ""
+        echo "❌ SSH agent not available — commits would be unsigned."
+        echo "   Run: ssh-add ~/.ssh/id_ed25519"
+        exit 1
+    fi
+fi
+
 echo "Running detekt..."
 ./gradlew detekt --daemon 2>/dev/null
 

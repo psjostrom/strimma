@@ -103,3 +103,7 @@ app/release.keystore
 .claude.local.md
 .claude/worktrees/
 site/
+
+# Git worktrees
+.worktrees/
+.superpowers/

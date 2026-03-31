@@ -7,13 +7,14 @@
     <string name="common_export">Exportera</string>
     <string name="common_sound">Ljud</string>
     <string name="common_no_data">Ingen data</string>
-    <string name="common_content_desc_statistics">Statistik</string>
+
     <string name="common_content_desc_settings">Inst\u00E4llningar</string>
     <string name="common_content_desc_back">Tillbaka</string>
     <string name="common_content_desc_export">Exportera</string>
     <string name="common_content_desc_share_log">Dela logg</string>
 
     <!-- Main Screen -->
+    <string name="main_waiting_for_reading">V\u00E4ntar p\u00E5 f\u00F6rsta glukosv\u00E4rdet\u2026</string>
     <string name="main_just_now">Just nu</string>
     <string name="main_min_ago">%1$d min sedan</string>
     <string name="main_prediction_low">L\u00E5gt om %1$d min</string>
@@ -42,9 +43,7 @@
     <string name="settings_alerts">Larm</string>
     <string name="settings_alerts_subtitle">L\u00E5gt, h\u00F6gt, gammal data-larm</string>
     <string name="settings_general">Allm\u00E4nt</string>
-    <string name="settings_general_subtitle">Uppstart, spr\u00E5k, batteri, om</string>
-    <string name="settings_data">Data</string>
-    <string name="settings_data_subtitle">Statistik, export, Nightscout-h\u00E4mtning</string>
+    <string name="settings_general_subtitle">Uppstart, batteri, om</string>
     <string name="settings_debug_log">Fels\u00F6kningslogg</string>
 
     <!-- General Settings -->
@@ -56,8 +55,7 @@
     <string name="settings_general_battery_desc">Strimma m\u00E5ste undantas fr\u00E5n batterioptimering f\u00F6r att k\u00F6ra tillf\u00F6rlitligt i bakgrunden</string>
     <string name="settings_general_battery_button">\u00D6ppna batteriinst\u00E4llningar</string>
     <string name="settings_general_battery_allowed">Strimma \u00E4r undantagen fr\u00E5n batterioptimering</string>
-    <string name="settings_general_language">Spr\u00E5k</string>
-    <string name="settings_general_language_system_desc">Anv\u00E4nd telefonens spr\u00E5k</string>
+
     <string name="settings_general_about">Om</string>
     <string name="settings_general_version">Version</string>
     <string name="settings_general_build">Bygge</string>
@@ -65,14 +63,15 @@
     <!-- Data Source Settings -->
     <string name="settings_source_title">Datak\u00E4lla</string>
     <string name="settings_source_section">K\u00E4lla</string>
-    <string name="settings_source_nightscout_push">Nightscout Push</string>
+    <string name="settings_source_notification_access">Notifieringsåtkomst</string>
+    <string name="settings_source_notification_granted">Beviljad</string>
+    <string name="settings_source_notification_not_granted">Ej beviljad — tryck för att öppna inställningar</string>
+    <string name="settings_source_nightscout">Nightscout</string>
     <string name="settings_source_nightscout_url">Nightscout-URL</string>
     <string name="settings_source_url_placeholder">https://din-nightscout.example.com</string>
     <string name="settings_source_url_hint">Bara bas-URL \u2014 ingen /api-s\u00F6kv\u00E4g</string>
     <string name="settings_source_api_secret">API-hemlighet</string>
-    <string name="settings_source_following">F\u00F6ljer</string>
-    <string name="settings_source_follower_url_placeholder">https://nightscout.example.com</string>
-    <string name="settings_source_follower_url_hint">Nightscout-servern att f\u00F6lja</string>
+    <string name="settings_source_poll_settings">Följarinställningar</string>
     <string name="settings_source_poll_interval">Pollintervall: %1$ds</string>
     <string name="settings_source_poll_explanation">Hur ofta nya avl\u00E4sningar kontrolleras. L\u00E4gre v\u00E4rden f\u00E5ngar uppdateringar snabbare men drar mer batteri. CGM-avl\u00E4sningar kommer vanligtvis var 5:e minut.</string>
     <string name="settings_source_companion_label">Kompanjonl\u00E4ge</string>
@@ -81,12 +80,17 @@
     <string name="settings_source_xdrip_desc">Ta emot xDrip-kompatibla BG-s\u00E4ndningar</string>
     <string name="settings_source_follower_label">Nightscout-f\u00F6ljare</string>
     <string name="settings_source_follower_desc">F\u00F6lj en fj\u00E4rr-Nightscout-server</string>
+    <string name="settings_source_llu_desc">F\u00F6lj via Abbotts LibreLinkUp-delning</string>
+    <string name="settings_source_llu_email">E-post</string>
+    <string name="settings_source_llu_password">L\u00F6senord</string>
+    <string name="settings_source_llu_hint">Anv\u00E4nd dina LibreLinkUp-uppgifter (f\u00F6ljare). Delning m\u00E5ste vara aktiverad i Libre 3-appen f\u00F6rst.</string>
 
     <!-- Treatments Settings -->
     <string name="settings_treatments_title">Behandlingar</string>
     <string name="settings_treatments_section">Behandlingar</string>
     <string name="settings_treatments_sync">Synka behandlingar</string>
     <string name="settings_treatments_sync_desc">H\u00E4mta bolus-, kolhydrat- och basaldata f\u00F6r IOB-visning</string>
+    <string name="settings_treatments_requires_ns">Behandlingsdata kr\u00E4ver en Nightscout-anslutning. Konfigurera en Nightscout-URL och hemlighet under Datak\u00E4lla f\u00F6r att aktivera denna funktion.</string>
     <string name="settings_treatments_insulin_type">Insulintyp</string>
     <string name="settings_treatments_custom_dia">Anpassad DIA (timmar)</string>
     <string name="settings_treatments_dia_hint">Insulinets verkningstid, 2\u201310 timmar</string>
@@ -136,8 +140,6 @@
 
     <!-- Data Settings -->
     <string name="settings_data_title">Data</string>
-    <string name="settings_data_views">Vyer</string>
-    <string name="settings_data_statistics">Statistik</string>
     <string name="settings_data_nightscout">Nightscout</string>
     <string name="settings_data_pull">H\u00E4mta fr\u00E5n Nightscout</string>
     <string name="settings_data_pull_desc">Ladda ner glukoshistorik fr\u00E5n din Nightscout-server</string>
@@ -151,6 +153,7 @@
     <string name="settings_data_web_server_desc">Servera BG-data p\u00E5 port 17580 f\u00F6r urtavlor och appar</string>
     <string name="settings_data_api_secret">API-hemlighet</string>
     <string name="settings_data_backup">S\u00E4kerhetskopia</string>
+    <string name="settings_data_export_readings">Exportera avl\u00E4sningar (CSV)</string>
     <string name="settings_data_export_settings">Exportera inst\u00E4llningar</string>
     <string name="settings_data_import_settings">Importera inst\u00E4llningar</string>
 
@@ -168,6 +171,9 @@
 
     <!-- Stats Tabs -->
     <string name="stats_tab_metrics">M\u00E4tv\u00E4rden</string>
+    <string name="stats_tab_meals">M\u00E5ltider</string>
+    <string name="stats_meals_treatments_disabled">M\u00E5ltidsanalys kr\u00E4ver behandlingssynk. Aktivera det i Inst\u00E4llningar \u2192 Behandlingar f\u00F6r att se hur dina m\u00E5ltider p\u00E5verkar ditt blodsocker.</string>
+    <string name="stats_meals_requires_ns">M\u00E5ltidsanalys kr\u00E4ver en Nightscout-anslutning. Konfigurera en Nightscout-URL och hemlighet under Inst\u00E4llningar \u2192 Datak\u00E4lla f\u00F6r att aktivera behandlingssynk.</string>
 
     <!-- AGP -->
     <string name="agp_title">Ambulatorisk glukosprofil</string>
@@ -212,6 +218,10 @@
     <string name="alert_predicted">F\u00F6rutsp\u00E5tt %1$s</string>
     <string name="alert_stale_title">Ingen data</string>
     <string name="alert_stale_body">Ingen glukosavl\u00E4sning p\u00E5 10+ minuter</string>
+    <string name="alert_push_fail_title">Uppladdning misslyckas</string>
+    <string name="alert_push_fail_body">Glukosuppladdning har misslyckats i 15+ minuter. Kontrollera Nightscout-inst\u00E4llningarna.</string>
+    <string name="alert_channel_push_fail">Uppladdningsfel</string>
+    <string name="alert_channel_push_fail_desc">Glukosuppladdning misslyckas under l\u00E4ngre tid</string>
     <string name="alert_snooze">Snooze 30 min</string>
 
     <!-- Foreground Notification -->
@@ -227,18 +237,186 @@
     <string name="widget_config_title">Widgetinst\u00E4llningar</string>
     <string name="widget_config_graph_range">Grafintervall</string>
     <string name="widget_config_show_prediction">Visa prediktion</string>
+    <string name="widget_config_light_mode">Ljus bakgrund</string>
+    <string name="widget_config_color_coded">F\u00E4rgkodad BG</string>
     <string name="widget_config_background">Bakgrund</string>
     <string name="widget_config_opacity">%1$d%%</string>
     <string name="widget_config_background_hint">Styr bara bakgrunden \u2014 graf och v\u00E4rden syns alltid fullt</string>
+
+    <!-- Exercise Settings -->
+    <string name="settings_exercise">Tr\u00E4ning</string>
+    <string name="settings_exercise_subtitle">Health Connect, tr\u00E4ningshistorik</string>
+    <string name="exercise_settings_title">Tr\u00E4ning</string>
+    <string name="exercise_hc_status_connected">Ansluten</string>
+    <string name="exercise_hc_status_permissions">Beh\u00F6righeter kr\u00E4vs</string>
+    <string name="exercise_hc_status_not_installed">Inte installerad</string>
+    <string name="exercise_hc_status_not_supported">St\u00F6ds inte</string>
+    <string name="exercise_hc_status_label">Health Connect</string>
+    <string name="exercise_hc_install_prompt">Installera fr\u00E5n Play Butik</string>
+    <string name="exercise_hc_write_toggle">Skriv glukos till Health Connect</string>
+    <string name="exercise_hc_write_subtitle">Dela glukosavl\u00E4sningar med andra h\u00E4lsoappar</string>
+    <string name="exercise_hc_last_sync">Senaste synk</string>
+    <string name="exercise_hc_last_sync_never">Aldrig</string>
+
+    <!-- Exercise types -->
+    <string name="exercise_type_running">L\u00F6pning</string>
+    <string name="exercise_type_walking">Promenad</string>
+    <string name="exercise_type_cycling">Cykling</string>
+    <string name="exercise_type_swimming">Simning</string>
+    <string name="exercise_type_hiking">Vandring</string>
+    <string name="exercise_type_strength">Styrka</string>
+    <string name="exercise_type_yoga">Yoga</string>
+    <string name="exercise_type_rowing">Rodd</string>
+    <string name="exercise_type_skiing">Skid\u00E5kning</string>
+    <string name="exercise_type_climbing">Kl\u00E4ttring</string>
+    <string name="exercise_type_martial_arts">Kampsport</string>
+    <string name="exercise_type_other">Tr\u00E4ning</string>
+
+    <!-- Exercise Detail -->
+    <string name="exercise_detail_before">F\u00D6RE</string>
+    <string name="exercise_detail_during">UNDER</string>
+    <string name="exercise_detail_after">EFTER (4T)</string>
+    <string name="exercise_detail_entry_bg">Start-BG</string>
+    <string name="exercise_detail_min_bg">L\u00E4gsta under</string>
+    <string name="exercise_detail_lowest_bg">L\u00E4gsta efter</string>
+    <string name="exercise_detail_avg_hr">Snitt HF</string>
+    <string name="exercise_detail_max_hr">Max HF</string>
+    <string name="exercise_detail_steps">Steg</string>
+    <string name="exercise_detail_calories">Kalorier</string>
+    <string name="exercise_detail_highest_bg">H\u00F6gsta efter</string>
+    <string name="exercise_detail_total_drop">Totalt BG-fall</string>
+    <string name="exercise_detail_post_hypo">L\u00E5gt efter tr\u00E4ning</string>
+    <string name="exercise_detail_no_data">Inte tillr\u00E4ckligt med glukosdata</string>
+    <string name="exercise_detail_no_value">\u2014</string>
+    <string name="exercise_history_title">Tr\u00E4ning</string>
+    <string name="exercise_history_empty_title">Inga tr\u00E4ningspass \u00E4nnu</string>
+    <string name="exercise_history_empty">Strimma l\u00E4ser tr\u00E4ningspass fr\u00E5n Health Connect. Anslut och bevilja beh\u00F6righeter f\u00F6r att se dina tr\u00E4ningar h\u00E4r.</string>
+    <string name="exercise_history_empty_button">Anslut Health Connect</string>
+    <string name="hc_rationale_title">Health Connect-beh\u00F6righeter</string>
+    <string name="hc_rationale_body">Strimma anv\u00E4nder Health Connect f\u00F6r att l\u00E4sa dina tr\u00E4ningspass, puls, steg och kalorier f\u00F6r att visa hur tr\u00E4ning p\u00E5verkar ditt blodsocker. Valfritt kan Strimma skriva glukosvärden s\u00E5 att andra h\u00E4lsoappar kan se dem.</string>
 
     <!-- Activity (dialogs, toasts) -->
     <string name="activity_settings_imported">Inst\u00E4llningar importerade</string>
     <string name="activity_import_failed">Import misslyckades: %1$s</string>
     <string name="activity_export_dialog_title">Exportera inst\u00E4llningar</string>
     <string name="activity_export_dialog_message">Exportfilen inneh\u00E5ller dina Nightscout-hemligheter i klartext. Dela den bara med appar du litar p\u00E5.</string>
+    <string name="activity_export_readings_chooser">Exportera avl\u00E4sningar</string>
     <string name="activity_export_chooser">Exportera inst\u00E4llningar</string>
     <string name="activity_export_failed">Export misslyckades: %1$s</string>
     <string name="activity_pull_progress">H\u00E4mtar %1$d dagar fr\u00E5n Nightscout\u2026</string>
     <string name="activity_pull_success">H\u00E4mtade %1$d avl\u00E4sningar</string>
     <string name="activity_pull_failed">H\u00E4mtning misslyckades: %1$s</string>
+
+    <!-- Setup Wizard -->
+    <string name="setup_welcome_title">Välkommen till Strimma</string>
+    <string name="setup_welcome_body">Din CGM-kompanjon. Realtidsglukos, smarta larm, Nightscout-synk. Låt oss komma igång.</string>
+    <string name="setup_welcome_item_source">Välj hur Strimma hämtar din glukosdata</string>
+    <string name="setup_welcome_item_nightscout">Anslut till Nightscout (valfritt)</string>
+    <string name="setup_welcome_item_alerts">Ställ in dina larmtrösklar</string>
+    <string name="setup_welcome_item_permissions">Bevilja nödvändiga behörigheter</string>
+    <string name="setup_units_title">Enhet</string>
+    <string name="setup_units_mmol">mmol/L</string>
+    <string name="setup_units_mgdl">mg/dL</string>
+    <string name="setup_units_mmol_desc">Används i större delen av Europa, Storbritannien, Kanada, Australien</string>
+    <string name="setup_units_mgdl_desc">Används i USA, Japan och många andra länder</string>
+    <string name="setup_source_title">Datakälla</string>
+    <string name="setup_source_companion_desc">Läser glukos från din CGM-apps aviseringar. Fungerar med Dexcom, Libre, CamAPS, Juggluco, xDrip+ och 50+ fler.</string>
+    <string name="setup_source_xdrip_desc">Tar emot glukos via xDrip-kompatibel sändning. Använd om din CGM-app stöder xDrip-sändning.</string>
+    <string name="setup_source_follower_desc">Följer en fjärr-Nightscout-server. Använd för att övervaka någon annans glukos.</string>
+    <string name="setup_source_llu_desc">Läser glukos från Abbotts LibreLinkUp-moln. Kräver ett LibreLinkUp-följarkonto.</string>
+    <string name="setup_source_access_granted">Aviseringsåtkomst beviljad</string>
+    <string name="setup_source_notif_guide_intro">Android kräver några steg för att bevilja aviseringsåtkomst för sidladdade appar. Detta är normalt.</string>
+    <string name="setup_source_notif_learn_more">Varför behövs detta?</string>
+    <string name="setup_no_browser">Ingen webbläsare tillgänglig</string>
+    <string name="setup_source_guide_step1">Öppna aviseringsinställningar och försök aktivera Strimma. Android blockerar det \u2014 det är förväntat.</string>
+    <string name="setup_source_guide_step1_button">Öppna aviseringsinställningar</string>
+    <string name="setup_source_guide_step2">Öppna Strimmas appinfo, tryck på \u22EE-menyn uppe till höger, tryck sedan på \"Tillåt begränsade inställningar\".</string>
+    <string name="setup_source_step1_button">Öppna appinfo</string>
+    <string name="setup_source_guide_step3">Öppna aviseringsinställningar igen och aktivera Strimma. Det fungerar den här gången.</string>
+    <string name="setup_source_guide_step3_button">Aktivera aviseringsåtkomst</string>
+    <string name="setup_alerts_title">Larm</string>
+    <string name="setup_alerts_footer">Du kan ändra dessa när som helst i Inställningar \u203A Larm</string>
+    <string name="setup_permissions_title">Behörigheter</string>
+    <string name="setup_permissions_notifications">Aviseringar</string>
+    <string name="setup_permissions_notifications_desc">Krävs för glukosvisning och larm</string>
+    <string name="setup_permissions_battery">Batterioptimering</string>
+    <string name="setup_permissions_battery_desc">Krävs för tillförlitlig bakgrundsdrift</string>
+    <string name="setup_permissions_notif_access">Aviseringsåtkomst</string>
+    <string name="setup_permissions_notif_access_desc">Krävs för att läsa CGM-appars aviseringar</string>
+    <string name="setup_permissions_grant">Bevilja</string>
+    <string name="setup_permissions_granted">Beviljad</string>
+    <string name="setup_permissions_battery_warning">Strimma kanske inte fungerar tillförlitligt utan undantag från batterioptimering</string>
+    <string name="setup_start">Starta Strimma</string>
+    <string name="setup_next">Nästa</string>
+    <string name="setup_back">Tillbaka</string>
+
+    <!-- Exercise tabs -->
+    <string name="exercise_tab_planned">Planerade</string>
+    <string name="exercise_tab_completed">Genomförda</string>
+    <string name="exercise_connect_title">Koppla träningskalender</string>
+    <string name="exercise_connect_subtitle">Se kommande träningspass och få BG-vägledning innan varje pass. Använd en kalender som bara innehåller träning — Strimma behandlar varje händelse som ett träningspass.</string>
+    <string name="exercise_connect_button">Koppla kalender</string>
+    <string name="exercise_planned_empty">Inga kommande träningspass hittades i den kopplade kalendern.</string>
+    <string name="exercise_planned_category">Kategori</string>
+    <string name="exercise_planned_target">Mål-BG</string>
+    <string name="exercise_no_bg_data">Ingen aktuell BG-data tillgänglig för vägledning.</string>
+    <string name="exercise_no_calendars">Inga kalendrar hittades på enheten.</string>
+    <string name="exercise_calendar_missing_hint">Hittar du inte din kalender? Gå till Inställningar → Lösenord \u0026 konton → ditt Google-konto → Kontosynkronisering och stäng av och slå på Kalender.</string>
+
+    <!-- Patterns tab -->
+    <string name="exercise_tab_patterns">M\u00F6nster</string>
+    <string name="exercise_patterns_empty_title">Inga m\u00F6nster \u00E4nnu</string>
+    <string name="exercise_patterns_empty">Forts\u00E4tt tr\u00E4na med Strimma ig\u00E5ng. Efter n\u00E5gra pass av samma typ ser du dina personliga BG-m\u00F6nster h\u00E4r.</string>
+    <string name="exercise_patterns_by_activity">Per aktivitet</string>
+    <string name="exercise_patterns_by_profile">Per profil</string>
+    <string name="exercise_patterns_low_risk">L\u00C5G RISK</string>
+    <string name="exercise_patterns_some_risk">VISS RISK</string>
+    <string name="exercise_patterns_high_risk">H\u00D6G RISK</string>
+    <string name="exercise_patterns_drop_summary">BG sjunker vanligtvis ungef\u00E4r %1$s</string>
+    <string name="exercise_patterns_went_low">Blev l\u00E5gt %1$d av %2$d</string>
+    <string name="exercise_patterns_never_low">Blev aldrig l\u00E5gt</string>
+    <string name="exercise_patterns_tip_high_risk">F\u00F6rs\u00F6k starta med h\u00F6gre BG, mer kolhydrater eller mindre IOB</string>
+    <string name="exercise_patterns_tip_some_risk">Kolla start-BG-f\u00F6rdelningen nedan \u2014 vissa startv\u00E4rden kan fungera b\u00E4ttre</string>
+
+    <string name="exercise_lookahead_subtitle">Hur l\u00E5ngt fram Planerade-fliken s\u00F6ker efter tr\u00E4ningspass</string>
+    <string name="exercise_trigger_subtitle">N\u00E4r beredskapskort visas p\u00E5 huvudsk\u00E4rmen</string>
+    <string name="exercise_hc_write_disabled_hint">Bevilja Health Connect-beh\u00F6righeter f\u00F6rst</string>
+    <string name="exercise_metabolic_profile_hint">BG-responstyp \u2014 best\u00E4mmer m\u00E5lomr\u00E5de. Detekteras fr\u00E5n aktivitetstyp eller puls.</string>
+
+    <!-- Pre-activity guidance -->
+    <string name="workout_settings_title">Träningsschema</string>
+    <string name="workout_calendar_label">Kalender</string>
+    <string name="workout_calendar_none">(ingen)</string>
+    <string name="workout_calendar_picker_title">Välj kalender</string>
+
+    <!-- Alert pause -->
+    <string name="pause_alerts">Pausa larm</string>
+    <string name="pause_low_alerts">Låga larm</string>
+    <string name="pause_high_alerts">Höga larm</string>
+    <string name="pause_duration_30m">30m</string>
+    <string name="pause_duration_1h">1h</string>
+    <string name="pause_duration_1_5h">1,5h</string>
+    <string name="pause_duration_2h">2h</string>
+    <string name="pause_duration_3h">3h</string>
+    <string name="pause_cancel">Avbryt</string>
+    <string name="pause_low_active">Låga larm pausade · %1$s</string>
+    <string name="pause_high_active">Höga larm pausade · %1$s</string>
+    <string name="pause_low_paused">Låga larm pausade</string>
+    <string name="pause_high_paused">Höga larm pausade</string>
+    <string name="pause_countdown">Pausad · %1$s</string>
+    <string name="pause_low_warning">Inkluderar akut lågt-larm</string>
+    <string name="settings_statistics">Statistik</string>
+    <string name="settings_statistics_subtitle">Mätvärden, AGP, måltider</string>
+    <string name="settings_sharing">Delning</string>
+    <string name="settings_sharing_subtitle">Broadcast, webbserver, export</string>
+    <string name="settings_meal_slots_title">Måltidstider</string>
+    <string name="settings_meal_slots_desc">Justera när frukost, lunch och middag börjar och slutar. Måltider utanför dessa tider klassificeras som mellanmål.</string>
+    <string name="meal_slot_breakfast">Frukost</string>
+    <string name="meal_slot_lunch">Lunch</string>
+    <string name="meal_slot_dinner">Middag</string>
+    <string name="settings_data_pull_treatments">Hämta behandlingar</string>
+    <string name="settings_data_pull_treatments_desc">Ladda ner bolus-, kolhydrat- och basalhistorik från Nightscout</string>
+    <string name="activity_pull_treatments_progress">Hämtar %1$d dagars behandlingar…</string>
+    <string name="activity_pull_treatments_success">%1$d behandlingar hämtade</string>
+    <string name="activity_pull_treatments_failed">Behandlingshämtning misslyckades: %1$s</string>
 </resources>

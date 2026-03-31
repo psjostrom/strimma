@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import com.psjostrom.strimma.ui.theme.ThemeMode
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -27,7 +28,7 @@ private object MgdlSettingsMigration : DataMigration<Preferences> {
         floatPreferencesKey("alert_urgent_high")
     )
     private val KEY_VERSION = intPreferencesKey("settings_version")
-    private const val MGDL_FACTOR = 18.0182f
+    private val MGDL_FACTOR = GlucoseUnit.MGDL_FACTOR.toFloat()
 
     override suspend fun shouldMigrate(currentData: Preferences): Boolean {
         return (currentData[KEY_VERSION] ?: 0) < 2
@@ -45,9 +46,33 @@ private object MgdlSettingsMigration : DataMigration<Preferences> {
     override suspend fun cleanUp() { /* Nothing to clean up — one-shot migration */ }
 }
 
+// Detects existing users by checking for keys that only they would have.
+// Safe regardless of migration ordering — does not depend on map emptiness.
+private object SetupCompletedMigration : DataMigration<Preferences> {
+    private val KEY = booleanPreferencesKey("setup_completed")
+    private val EXISTING_USER_KEYS = listOf(
+        stringPreferencesKey("glucose_unit"),
+        stringPreferencesKey("glucose_source"),
+        stringPreferencesKey("nightscout_url")
+    )
+
+    override suspend fun shouldMigrate(currentData: Preferences): Boolean {
+        return KEY !in currentData.asMap()
+    }
+
+    override suspend fun migrate(currentData: Preferences): Preferences {
+        val mutable = currentData.toMutablePreferences()
+        // Existing users (have app-specific settings) skip wizard; fresh installs see it
+        mutable[KEY] = EXISTING_USER_KEYS.any { it in currentData.asMap() }
+        return mutable.toPreferences()
+    }
+
+    override suspend fun cleanUp() { /* One-shot migration */ }
+}
+
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
     name = "settings",
-    produceMigrations = { listOf(MgdlSettingsMigration) }
+    produceMigrations = { listOf(SetupCompletedMigration, MgdlSettingsMigration) }
 )
 
 @Suppress("TooManyFunctions") // One getter+setter per setting
@@ -57,19 +82,48 @@ class SettingsRepository @Inject constructor(
     private val widgetSettingsRepository: WidgetSettingsRepository
 ) {
     private val dataStore = context.dataStore
+    private val _secretVersion = kotlinx.coroutines.flow.MutableStateFlow(0)
+    val secretVersion: kotlinx.coroutines.flow.StateFlow<Int> = _secretVersion
 
+    private val _credentialsLost = kotlinx.coroutines.flow.MutableStateFlow(false)
+    val credentialsLost: kotlinx.coroutines.flow.StateFlow<Boolean> = _credentialsLost
+
+    fun clearCredentialsLostFlag() { _credentialsLost.value = false }
+
+    @Suppress("TooGenericExceptionCaught") // Keystore corruption throws various exception types
     private val encryptedPrefs by lazy {
+        try {
+            createEncryptedPrefs()
+        } catch (e: Exception) {
+            com.psjostrom.strimma.receiver.DebugLog.log(
+                "EncryptedSharedPreferences corrupted, recreating: ${e.javaClass.simpleName}"
+            )
+            context.deleteSharedPreferences(ENCRYPTED_PREFS_NAME)
+            _credentialsLost.value = true
+            try {
+                createEncryptedPrefs()
+            } catch (e2: Exception) {
+                com.psjostrom.strimma.receiver.DebugLog.log(
+                    "EncryptedSharedPreferences unrecoverable, falling back to plain: ${e2.javaClass.simpleName}"
+                )
+                context.getSharedPreferences(ENCRYPTED_PREFS_NAME, Context.MODE_PRIVATE)
+            }
+        }
+    }
+
+    private fun createEncryptedPrefs(): android.content.SharedPreferences {
         val masterKey = MasterKey.Builder(context)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
             .build()
-        EncryptedSharedPreferences.create(
-            context, "strimma_secrets", masterKey,
+        return EncryptedSharedPreferences.create(
+            context, ENCRYPTED_PREFS_NAME, masterKey,
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         )
     }
 
     companion object {
+        private const val ENCRYPTED_PREFS_NAME = "strimma_secrets"
         private val KEY_NIGHTSCOUT_URL = stringPreferencesKey("nightscout_url")
         private val KEY_GRAPH_WINDOW_HOURS = intPreferencesKey("graph_window_hours")
         private val KEY_BG_LOW = floatPreferencesKey("bg_low")
@@ -96,9 +150,10 @@ class SettingsRepository @Inject constructor(
         private const val SYNC_PREFS = "strimma_sync"
         private const val KEY_GLUCOSE_SOURCE_SYNC = "glucose_source"
 
-        private val KEY_FOLLOWER_URL = stringPreferencesKey("follower_url")
         private val KEY_FOLLOWER_POLL_SECONDS = intPreferencesKey("follower_poll_seconds")
-        private const val KEY_FOLLOWER_SECRET = "follower_secret"
+
+        private const val KEY_LLU_EMAIL = "llu_email"
+        private const val KEY_LLU_PASSWORD = "llu_password"
 
         private val KEY_TREATMENTS_SYNC_ENABLED = booleanPreferencesKey("treatments_sync_enabled")
         private val KEY_INSULIN_TYPE = stringPreferencesKey("insulin_type")
@@ -110,7 +165,41 @@ class SettingsRepository @Inject constructor(
         private val KEY_HBA1C_UNIT = stringPreferencesKey("hba1c_unit")
         private val KEY_START_ON_BOOT = booleanPreferencesKey("start_on_boot")
         private const val KEY_START_ON_BOOT_SYNC = "start_on_boot"
-        private val KEY_LANGUAGE = stringPreferencesKey("language")
+
+
+        private val KEY_HC_WRITE_ENABLED = booleanPreferencesKey("hc_write_enabled")
+        private val KEY_HC_LAST_SYNC = longPreferencesKey("hc_last_sync")
+        private val KEY_HC_CHANGES_TOKEN = stringPreferencesKey("hc_changes_token")
+
+        private val KEY_SETUP_COMPLETED = booleanPreferencesKey("setup_completed")
+        private val KEY_SETUP_STEP = intPreferencesKey("setup_step")
+
+        // Workout BG targets stored in mg/dL, converted at display time via GlucoseUnit
+        private val KEY_WORKOUT_CALENDAR_ID = longPreferencesKey("workout_calendar_id")
+        private val KEY_WORKOUT_CALENDAR_NAME = stringPreferencesKey("workout_calendar_name")
+        private val KEY_WORKOUT_LOOKAHEAD_HOURS = intPreferencesKey("workout_lookahead_hours")
+        private val KEY_WORKOUT_TRIGGER_MINUTES = intPreferencesKey("workout_trigger_minutes")
+        // Legacy keys — read by migrateLegacyTarget* for backward-compatible fallback
+        private val KEY_WORKOUT_EASY_LOW = floatPreferencesKey("workout_easy_low")
+        private val KEY_WORKOUT_EASY_HIGH = floatPreferencesKey("workout_easy_high")
+        private val KEY_WORKOUT_STRENGTH_LOW = floatPreferencesKey("workout_strength_low")
+        private val KEY_WORKOUT_STRENGTH_HIGH = floatPreferencesKey("workout_strength_high")
+
+        // Exercise target keys (keyed by ExerciseCategory.name)
+        private fun exerciseTargetLowKey(name: String) = floatPreferencesKey("exercise_target_low_$name")
+        private fun exerciseTargetHighKey(name: String) = floatPreferencesKey("exercise_target_high_$name")
+        private val KEY_MAX_HEART_RATE = intPreferencesKey("max_heart_rate")
+
+        // Meal time slot boundaries (minutes from midnight)
+        private val KEY_MEAL_BREAKFAST_START = intPreferencesKey("meal_breakfast_start")
+        private val KEY_MEAL_BREAKFAST_END = intPreferencesKey("meal_breakfast_end")
+        private val KEY_MEAL_LUNCH_START = intPreferencesKey("meal_lunch_start")
+        private val KEY_MEAL_LUNCH_END = intPreferencesKey("meal_lunch_end")
+        private val KEY_MEAL_DINNER_START = intPreferencesKey("meal_dinner_start")
+        private val KEY_MEAL_DINNER_END = intPreferencesKey("meal_dinner_end")
+
+        private const val DEFAULT_WORKOUT_LOOKAHEAD_HOURS = 3
+        private const val DEFAULT_WORKOUT_TRIGGER_MINUTES = 120
 
         private val KEY_TIDEPOOL_ENABLED = booleanPreferencesKey("tidepool_enabled")
         private val KEY_TIDEPOOL_ENVIRONMENT = stringPreferencesKey("tidepool_environment")
@@ -125,16 +214,17 @@ class SettingsRepository @Inject constructor(
 
         // Settings defaults (mg/dL)
         private const val DEFAULT_GRAPH_WINDOW_HOURS = 4
-        private const val DEFAULT_BG_LOW = 72f
-        private const val DEFAULT_BG_HIGH = 180f
+        const val DEFAULT_BG_LOW = 72f
+        const val DEFAULT_BG_HIGH = 180f
         private const val DEFAULT_ALERT_LOW = 72f
         private const val DEFAULT_ALERT_HIGH = 180f
         private const val DEFAULT_ALERT_URGENT_LOW = 54f
         private const val DEFAULT_ALERT_URGENT_HIGH = 234f
-        private const val DEFAULT_NOTIF_GRAPH_MINUTES = 60
-        private const val DEFAULT_PREDICTION_MINUTES = 15
+        const val DEFAULT_NOTIF_GRAPH_MINUTES = 60
+        const val DEFAULT_PREDICTION_MINUTES = 15
         private const val DEFAULT_FOLLOWER_POLL_SECONDS = 60
         private const val DEFAULT_CUSTOM_DIA_FLOAT = 5.0f
+        private const val MINUTES_PER_DAY = 1440
     }
 
     val nightscoutUrl: Flow<String> = dataStore.data.map { it[KEY_NIGHTSCOUT_URL] ?: "" }
@@ -155,17 +245,7 @@ class SettingsRepository @Inject constructor(
     val alertHighSoonEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_HIGH_SOON_ENABLED] ?: true }
 
     suspend fun setNightscoutUrl(url: String) {
-        dataStore.edit { it[KEY_NIGHTSCOUT_URL] = normalizeUrl(url) }
-    }
-
-    private fun normalizeUrl(raw: String): String {
-        val trimmed = raw.trim().trimEnd('/')
-        if (trimmed.isBlank()) return ""
-        return if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-            trimmed
-        } else {
-            "https://$trimmed"
-        }
+        dataStore.edit { it[KEY_NIGHTSCOUT_URL] = url.trim() }
     }
     suspend fun setGraphWindowHours(hours: Int) { dataStore.edit { it[KEY_GRAPH_WINDOW_HOURS] = hours } }
     suspend fun setBgLow(value: Float) { dataStore.edit { it[KEY_BG_LOW] = value } }
@@ -174,6 +254,7 @@ class SettingsRepository @Inject constructor(
     fun getNightscoutSecret(): String = encryptedPrefs.getString(KEY_NIGHTSCOUT_SECRET, "") ?: ""
     fun setNightscoutSecret(secret: String) {
         encryptedPrefs.edit().putString(KEY_NIGHTSCOUT_SECRET, secret).apply()
+        _secretVersion.value++
     }
 
     suspend fun setAlertLowEnabled(enabled: Boolean) { dataStore.edit { it[KEY_ALERT_LOW_ENABLED] = enabled } }
@@ -188,8 +269,10 @@ class SettingsRepository @Inject constructor(
     suspend fun setAlertLowSoonEnabled(enabled: Boolean) { dataStore.edit { it[KEY_ALERT_LOW_SOON_ENABLED] = enabled } }
     suspend fun setAlertHighSoonEnabled(enabled: Boolean) { dataStore.edit { it[KEY_ALERT_HIGH_SOON_ENABLED] = enabled } }
 
-    val themeMode: Flow<String> = dataStore.data.map { it[KEY_THEME_MODE] ?: "System" }
-    suspend fun setThemeMode(mode: String) { dataStore.edit { it[KEY_THEME_MODE] = mode } }
+    val themeMode: Flow<ThemeMode> = dataStore.data.map {
+        try { ThemeMode.valueOf(it[KEY_THEME_MODE] ?: "System") } catch (_: Exception) { ThemeMode.System }
+    }
+    suspend fun setThemeMode(mode: ThemeMode) { dataStore.edit { it[KEY_THEME_MODE] = mode.name } }
 
     val notifGraphMinutes: Flow<Int> = dataStore.data.map { it[KEY_NOTIF_GRAPH_MINUTES] ?: DEFAULT_NOTIF_GRAPH_MINUTES }
     suspend fun setNotifGraphMinutes(minutes: Int) { dataStore.edit { it[KEY_NOTIF_GRAPH_MINUTES] = minutes } }
@@ -220,15 +303,17 @@ class SettingsRepository @Inject constructor(
         return try { GlucoseSource.valueOf(name) } catch (_: Exception) { GlucoseSource.COMPANION }
     }
 
-    val followerUrl: Flow<String> = dataStore.data.map { it[KEY_FOLLOWER_URL] ?: "" }
-    suspend fun setFollowerUrl(url: String) { dataStore.edit { it[KEY_FOLLOWER_URL] = url } }
-
     val followerPollSeconds: Flow<Int> = dataStore.data.map { it[KEY_FOLLOWER_POLL_SECONDS] ?: DEFAULT_FOLLOWER_POLL_SECONDS }
     suspend fun setFollowerPollSeconds(seconds: Int) { dataStore.edit { it[KEY_FOLLOWER_POLL_SECONDS] = seconds } }
 
-    fun getFollowerSecret(): String = encryptedPrefs.getString(KEY_FOLLOWER_SECRET, "") ?: ""
-    fun setFollowerSecret(secret: String) {
-        encryptedPrefs.edit().putString(KEY_FOLLOWER_SECRET, secret).apply()
+    fun getLluEmail(): String = encryptedPrefs.getString(KEY_LLU_EMAIL, "") ?: ""
+    fun setLluEmail(email: String) {
+        encryptedPrefs.edit { putString(KEY_LLU_EMAIL, email) }
+    }
+
+    fun getLluPassword(): String = encryptedPrefs.getString(KEY_LLU_PASSWORD, "") ?: ""
+    fun setLluPassword(password: String) {
+        encryptedPrefs.edit { putString(KEY_LLU_PASSWORD, password) }
     }
 
     val treatmentsSyncEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_TREATMENTS_SYNC_ENABLED] ?: false }
@@ -241,6 +326,28 @@ class SettingsRepository @Inject constructor(
 
     val customDIA: Flow<Float> = dataStore.data.map { it[KEY_CUSTOM_DIA] ?: DEFAULT_CUSTOM_DIA_FLOAT }
     suspend fun setCustomDIA(hours: Float) { dataStore.edit { it[KEY_CUSTOM_DIA] = hours } }
+
+    // Meal time slot boundaries (minutes from midnight)
+    val mealBreakfastStart: Flow<Int> = dataStore.data.map { it[KEY_MEAL_BREAKFAST_START] ?: 360 }
+    val mealBreakfastEnd: Flow<Int> = dataStore.data.map { it[KEY_MEAL_BREAKFAST_END] ?: 600 }
+    val mealLunchStart: Flow<Int> = dataStore.data.map { it[KEY_MEAL_LUNCH_START] ?: 690 }
+    val mealLunchEnd: Flow<Int> = dataStore.data.map { it[KEY_MEAL_LUNCH_END] ?: 870 }
+    val mealDinnerStart: Flow<Int> = dataStore.data.map { it[KEY_MEAL_DINNER_START] ?: 1020 }
+    val mealDinnerEnd: Flow<Int> = dataStore.data.map { it[KEY_MEAL_DINNER_END] ?: 1260 }
+
+    suspend fun setMealSlotBoundary(key: String, minutes: Int) {
+        if (minutes < 0 || minutes >= MINUTES_PER_DAY) return
+        val prefKey = when (key) {
+            "breakfast_start" -> KEY_MEAL_BREAKFAST_START
+            "breakfast_end" -> KEY_MEAL_BREAKFAST_END
+            "lunch_start" -> KEY_MEAL_LUNCH_START
+            "lunch_end" -> KEY_MEAL_LUNCH_END
+            "dinner_start" -> KEY_MEAL_DINNER_START
+            "dinner_end" -> KEY_MEAL_DINNER_END
+            else -> return
+        }
+        dataStore.edit { it[prefKey] = minutes }
+    }
 
     val webServerEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_WEB_SERVER_ENABLED] ?: false }
     suspend fun setWebServerEnabled(enabled: Boolean) { dataStore.edit { it[KEY_WEB_SERVER_ENABLED] = enabled } }
@@ -261,8 +368,26 @@ class SettingsRepository @Inject constructor(
             .getBoolean(KEY_START_ON_BOOT_SYNC, true)
     }
 
-    val language: Flow<String> = dataStore.data.map { it[KEY_LANGUAGE] ?: "" }
-    suspend fun setLanguage(tag: String) { dataStore.edit { it[KEY_LANGUAGE] = tag } }
+
+    val hcWriteEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_HC_WRITE_ENABLED] ?: false }
+    suspend fun setHcWriteEnabled(enabled: Boolean) { dataStore.edit { it[KEY_HC_WRITE_ENABLED] = enabled } }
+
+    val hcLastSync: Flow<Long> = dataStore.data.map { it[KEY_HC_LAST_SYNC] ?: 0L }
+    suspend fun setHcLastSync(timestamp: Long) { dataStore.edit { it[KEY_HC_LAST_SYNC] = timestamp } }
+
+    suspend fun getHcChangesToken(): String? = dataStore.data.first()[KEY_HC_CHANGES_TOKEN]
+    suspend fun setHcChangesToken(token: String?) {
+        dataStore.edit {
+            if (token != null) it[KEY_HC_CHANGES_TOKEN] = token
+            else it.remove(KEY_HC_CHANGES_TOKEN)
+        }
+    }
+
+    val setupCompleted: Flow<Boolean> = dataStore.data.map { it[KEY_SETUP_COMPLETED] ?: false }
+    suspend fun setSetupCompleted(completed: Boolean) { dataStore.edit { it[KEY_SETUP_COMPLETED] = completed } }
+
+    val setupStep: Flow<Int> = dataStore.data.map { it[KEY_SETUP_STEP] ?: 0 }
+    suspend fun setSetupStep(step: Int) { dataStore.edit { it[KEY_SETUP_STEP] = step } }
 
     val hbA1cUnit: Flow<HbA1cUnit> = dataStore.data.map {
         try { HbA1cUnit.valueOf(it[KEY_HBA1C_UNIT] ?: "MMOL_MOL") } catch (_: Exception) { HbA1cUnit.MMOL_MOL }
@@ -302,6 +427,77 @@ class SettingsRepository @Inject constructor(
         encryptedPrefs.edit { putString(KEY_TIDEPOOL_REFRESH_TOKEN, token) }
     }
 
+    val workoutCalendarId: Flow<Long> = dataStore.data.map { it[KEY_WORKOUT_CALENDAR_ID] ?: -1L }
+    suspend fun setWorkoutCalendarId(id: Long) { dataStore.edit { it[KEY_WORKOUT_CALENDAR_ID] = id } }
+
+    val workoutCalendarName: Flow<String> = dataStore.data.map { it[KEY_WORKOUT_CALENDAR_NAME] ?: "" }
+    suspend fun setWorkoutCalendarName(name: String) { dataStore.edit { it[KEY_WORKOUT_CALENDAR_NAME] = name } }
+
+    val workoutLookaheadHours: Flow<Int> = dataStore.data.map {
+        it[KEY_WORKOUT_LOOKAHEAD_HOURS] ?: DEFAULT_WORKOUT_LOOKAHEAD_HOURS
+    }
+    suspend fun setWorkoutLookaheadHours(hours: Int) { dataStore.edit { it[KEY_WORKOUT_LOOKAHEAD_HOURS] = hours } }
+
+    val workoutTriggerMinutes: Flow<Int> = dataStore.data.map {
+        it[KEY_WORKOUT_TRIGGER_MINUTES] ?: DEFAULT_WORKOUT_TRIGGER_MINUTES
+    }
+    suspend fun setWorkoutTriggerMinutes(minutes: Int) { dataStore.edit { it[KEY_WORKOUT_TRIGGER_MINUTES] = minutes } }
+
+    val maxHeartRate: Flow<Int?> = dataStore.data.map { it[KEY_MAX_HEART_RATE] }
+    suspend fun setMaxHeartRate(hr: Int?) {
+        dataStore.edit {
+            if (hr != null) it[KEY_MAX_HEART_RATE] = hr
+            else it.remove(KEY_MAX_HEART_RATE)
+        }
+    }
+
+    fun exerciseTargetLow(category: com.psjostrom.strimma.data.health.ExerciseCategory): Flow<Float> =
+        dataStore.data.map { prefs ->
+            prefs[exerciseTargetLowKey(category.name)]
+                ?: migrateLegacyTargetLow(prefs, category)
+                ?: category.defaultMetabolicProfile.defaultTargetLowMgdl
+        }
+
+    fun exerciseTargetHigh(category: com.psjostrom.strimma.data.health.ExerciseCategory): Flow<Float> =
+        dataStore.data.map { prefs ->
+            prefs[exerciseTargetHighKey(category.name)]
+                ?: migrateLegacyTargetHigh(prefs, category)
+                ?: category.defaultMetabolicProfile.defaultTargetHighMgdl
+        }
+
+    suspend fun setExerciseTarget(
+        category: com.psjostrom.strimma.data.health.ExerciseCategory,
+        low: Float,
+        high: Float
+    ) {
+        dataStore.edit {
+            it[exerciseTargetLowKey(category.name)] = low
+            it[exerciseTargetHighKey(category.name)] = high
+        }
+    }
+
+    private fun migrateLegacyTargetLow(
+        prefs: androidx.datastore.preferences.core.Preferences,
+        category: com.psjostrom.strimma.data.health.ExerciseCategory
+    ): Float? = when (category) {
+        com.psjostrom.strimma.data.health.ExerciseCategory.RUNNING ->
+            prefs[KEY_WORKOUT_EASY_LOW]
+        com.psjostrom.strimma.data.health.ExerciseCategory.STRENGTH ->
+            prefs[KEY_WORKOUT_STRENGTH_LOW]
+        else -> null
+    }
+
+    private fun migrateLegacyTargetHigh(
+        prefs: androidx.datastore.preferences.core.Preferences,
+        category: com.psjostrom.strimma.data.health.ExerciseCategory
+    ): Float? = when (category) {
+        com.psjostrom.strimma.data.health.ExerciseCategory.RUNNING ->
+            prefs[KEY_WORKOUT_EASY_HIGH]
+        com.psjostrom.strimma.data.health.ExerciseCategory.STRENGTH ->
+            prefs[KEY_WORKOUT_STRENGTH_HIGH]
+        else -> null
+    }
+
     @Suppress("CyclomaticComplexMethod") // Flat serialization of all settings
     suspend fun exportToJson(): String {
         val prefs = dataStore.data.first()
@@ -329,20 +525,20 @@ class SettingsRepository @Inject constructor(
             put("hba1c_unit", prefs[KEY_HBA1C_UNIT] ?: "MMOL_MOL")
             put("bg_broadcast_enabled", prefs[KEY_BG_BROADCAST_ENABLED] ?: false)
             put("glucose_source", prefs[KEY_GLUCOSE_SOURCE] ?: "COMPANION")
-            put("follower_url", prefs[KEY_FOLLOWER_URL] ?: "")
             put("follower_poll_seconds", prefs[KEY_FOLLOWER_POLL_SECONDS] ?: DEFAULT_FOLLOWER_POLL_SECONDS)
             put("treatments_sync_enabled", prefs[KEY_TREATMENTS_SYNC_ENABLED] ?: false)
             put("insulin_type", prefs[KEY_INSULIN_TYPE] ?: "FIASP")
             put("custom_dia", prefs[KEY_CUSTOM_DIA]?.toDouble() ?: DEFAULT_CUSTOM_DIA_HOURS)
             put("web_server_enabled", prefs[KEY_WEB_SERVER_ENABLED] ?: false)
             put("start_on_boot", prefs[KEY_START_ON_BOOT] ?: true)
-            put("language", prefs[KEY_LANGUAGE] ?: "")
+            put("hc_write_enabled", prefs[KEY_HC_WRITE_ENABLED] ?: false)
         }
 
         val secrets = JSONObject().apply {
             put("nightscout_secret", getNightscoutSecret())
-            put("follower_secret", getFollowerSecret())
             put("web_server_secret", getWebServerSecret())
+            put("llu_email", getLluEmail())
+            put("llu_password", getLluPassword())
         }
 
         return JSONObject().apply {
@@ -366,7 +562,7 @@ class SettingsRepository @Inject constructor(
         }
 
         dataStore.edit { prefs ->
-            if (settings.has("nightscout_url")) prefs[KEY_NIGHTSCOUT_URL] = settings.getString("nightscout_url")
+            if (settings.has("nightscout_url")) prefs[KEY_NIGHTSCOUT_URL] = settings.getString("nightscout_url").trim()
             if (settings.has("graph_window_hours")) prefs[KEY_GRAPH_WINDOW_HOURS] = settings.getInt("graph_window_hours")
             if (settings.has("bg_low")) prefs[KEY_BG_LOW] = importThreshold("bg_low")
             if (settings.has("bg_high")) prefs[KEY_BG_HIGH] = importThreshold("bg_high")
@@ -390,14 +586,13 @@ class SettingsRepository @Inject constructor(
             if (settings.has("hba1c_unit")) prefs[KEY_HBA1C_UNIT] = settings.getString("hba1c_unit")
             if (settings.has("bg_broadcast_enabled")) prefs[KEY_BG_BROADCAST_ENABLED] = settings.getBoolean("bg_broadcast_enabled")
             if (settings.has("glucose_source")) prefs[KEY_GLUCOSE_SOURCE] = settings.getString("glucose_source")
-            if (settings.has("follower_url")) prefs[KEY_FOLLOWER_URL] = settings.getString("follower_url")
             if (settings.has("follower_poll_seconds")) prefs[KEY_FOLLOWER_POLL_SECONDS] = settings.getInt("follower_poll_seconds")
             if (settings.has("treatments_sync_enabled")) prefs[KEY_TREATMENTS_SYNC_ENABLED] = settings.getBoolean("treatments_sync_enabled")
             if (settings.has("insulin_type")) prefs[KEY_INSULIN_TYPE] = settings.getString("insulin_type")
             if (settings.has("custom_dia")) prefs[KEY_CUSTOM_DIA] = settings.getDouble("custom_dia").toFloat()
             if (settings.has("web_server_enabled")) prefs[KEY_WEB_SERVER_ENABLED] = settings.getBoolean("web_server_enabled")
             if (settings.has("start_on_boot")) prefs[KEY_START_ON_BOOT] = settings.getBoolean("start_on_boot")
-            if (settings.has("language")) prefs[KEY_LANGUAGE] = settings.getString("language")
+            if (settings.has("hc_write_enabled")) prefs[KEY_HC_WRITE_ENABLED] = settings.getBoolean("hc_write_enabled")
 
             // Sync to SharedPreferences atomically with DataStore edit
             val sourceName = settings.optString("glucose_source", "COMPANION")
@@ -412,8 +607,9 @@ class SettingsRepository @Inject constructor(
         if (root.has("secrets")) {
             val secrets = root.getJSONObject("secrets")
             if (secrets.has("nightscout_secret")) setNightscoutSecret(secrets.getString("nightscout_secret"))
-            if (secrets.has("follower_secret")) setFollowerSecret(secrets.getString("follower_secret"))
             if (secrets.has("web_server_secret")) setWebServerSecret(secrets.getString("web_server_secret"))
+            if (secrets.has("llu_email")) setLluEmail(secrets.getString("llu_email"))
+            if (secrets.has("llu_password")) setLluPassword(secrets.getString("llu_password"))
         }
 
         if (root.has("widget")) {

@@ -27,8 +27,12 @@ val AboveHigh = Color(0xFFFFB800)
 val BelowLow = Color(0xFFFF4D6A)
 val Stale = Color(0xFF6A5F80)
 
+// --- TIR rating color ---
+val TirGood = Color(0xFF4ADE80)
+
 // --- Semantic tinted backgrounds (dark) ---
 val TintInRange = Color(0xFF152535)
+val TintGood = Color(0xFF1A3A2A)
 val TintWarning = Color(0xFF35280E)
 val TintDanger = Color(0xFF351525)
 
@@ -44,6 +48,9 @@ val VeryHigh = Color(0xFFEF6C00)
 // --- Treatment marker colors ---
 val BolusBlue = Color(0xFF5B8DEF)
 val CarbGreen = Color(0xFF4CAF50)
+
+// --- Exercise marker color ---
+val ExerciseDefault = Color(0xFF8B8BBA)
 
 // Graph tooltip/canvas colors for dark graph surfaces (graphs always render dark)
 val GraphTooltipBg = Color(0xE6181520)

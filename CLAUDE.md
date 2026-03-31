@@ -21,6 +21,8 @@ xDrip+/Juggluco/AAPS → broadcast → XdripBroadcastReceiver (XDRIP_BROADCAST)
                                     ↓
 Remote Nightscout → polling → NightscoutFollower (NIGHTSCOUT_FOLLOWER)
                                     ↓
+LibreLinkUp (Abbott API) → polling → LibreLinkUpFollower (LIBRELINKUP)
+                                    ↓
   → StrimmaService → Room DB → NightscoutPusher → Nightscout /api/v1/entries
                    → NotificationHelper (graph bitmap)
                    → AlertManager (urgent low/low/high/urgent high/stale)
@@ -32,6 +34,7 @@ Single-module app. Hilt DI. All async via Coroutines/Flow.
 ## Project Structure
 
 - `data/` — Room entities, DAO, settings, direction computation, unit conversion, data source selection, statistics
+- `data/meal/` — Per-meal postprandial analysis: MealAnalyzer, MealStatsCalculator, MealAgpCalculator, time slot config, carb size bucketing
 - `graph/` — Shared graph logic (colors, Y-range computation, critical thresholds) + weighted least-squares prediction with endpoint anchoring
 - `network/` — Nightscout HTTP client, push logic (Ktor, `/api/v1/entries`), and follower mode (polling)
 - `notification/` — Foreground notification (collapsed/expanded with graph bitmap), alert manager
@@ -79,4 +82,4 @@ When a merge or push fails, ALWAYS check CI status (`gh pr checks`) and read the
 
 ## Spec
 
-Full spec in `docs/internal/spec.md`. Ideas and wishlist in `docs/internal/wishlist.md`. CGM app landscape in `docs/internal/cgm-landscape.md`.
+Full spec in `docs/internal/spec.md`. Ideas in `docs/internal/ideas.md`. CGM app landscape in `docs/internal/cgm-landscape.md`.

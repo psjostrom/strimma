@@ -17,8 +17,17 @@ interface TreatmentDao {
     @Query("SELECT * FROM treatments WHERE insulin IS NOT NULL AND createdAt >= :timestamp ORDER BY createdAt ASC")
     suspend fun insulinSince(timestamp: Long): List<Treatment>
 
+    @Query(
+        "SELECT * FROM treatments WHERE carbs IS NOT NULL AND carbs > 0 " +
+            "AND createdAt >= :start AND createdAt <= :end ORDER BY createdAt ASC"
+    )
+    suspend fun carbsInRange(start: Long, end: Long): List<Treatment>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(treatments: List<Treatment>)
+
+    @Query("SELECT MAX(fetchedAt) FROM treatments")
+    suspend fun latestFetchedAt(): Long?
 
     @Query("DELETE FROM treatments WHERE createdAt < :timestamp")
     suspend fun deleteOlderThan(timestamp: Long)

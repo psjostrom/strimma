@@ -1,6 +1,7 @@
 package com.psjostrom.strimma.graph
 
 import com.psjostrom.strimma.data.GlucoseReading
+import com.psjostrom.strimma.data.MS_PER_MINUTE
 import kotlin.math.abs
 import kotlin.math.exp
 
@@ -24,7 +25,7 @@ data class Prediction(
 object PredictionComputer {
 
     private const val LOOKBACK_MS = 12 * 60_000L
-    private const val MS_PER_MINUTE = 60_000.0
+
     private const val MGDL_FLOOR = 18.0
     private const val MGDL_CEILING = 540.0
     // Exponential decay rate: at t=-12 (oldest), weight ≈ 0.015 (vs 1.0 at t=0).
@@ -49,7 +50,7 @@ object PredictionComputer {
         val anchor = recent.last()
         val anchorMgdl = anchor.sgv.toDouble()
         // Normalize to minutes relative to anchor for numerical stability
-        val points = recent.map { (it.ts - anchor.ts).toDouble() / MS_PER_MINUTE to it.sgv.toDouble() }
+        val points = recent.map { (it.ts - anchor.ts).toDouble() / MS_PER_MINUTE.toDouble() to it.sgv.toDouble() }
 
         val velocity = fitWeightedVelocity(points) ?: return null
         if (abs(velocity) > MAX_VELOCITY) return null  // sensor artifact
@@ -76,7 +77,7 @@ object PredictionComputer {
      * Weighted linear regression slope = weighted velocity (mg/dL per minute).
      * Exponential decay weighting emphasizes recent readings.
      */
-    internal fun fitWeightedVelocity(points: List<Pair<Double, Double>>): Double? {
+    fun fitWeightedVelocity(points: List<Pair<Double, Double>>): Double? {
         if (points.size < 2) return null
         val weighted = points.map { (t, y) -> Triple(t, y, weightFor(t)) }
         var sw = 0.0; var swt = 0.0; var swy = 0.0; var swtt = 0.0; var swty = 0.0
@@ -86,6 +87,23 @@ object PredictionComputer {
         val denom = sw * swtt - swt * swt
         if (denom == 0.0) return null
         return (sw * swty - swt * swy) / denom
+    }
+
+    /**
+     * Compute current velocity (mg/dL per minute) from recent readings.
+     * Returns null if fewer than 2 readings in the lookback window.
+     */
+    fun currentVelocity(readings: List<GlucoseReading>): Double? {
+        val now = readings.maxOfOrNull { it.ts } ?: return null
+        val recent = readings.filter { it.ts >= now - LOOKBACK_MS }.sortedBy { it.ts }
+        if (recent.size < 2) return null
+
+        val anchor = recent.last()
+        val points = recent.map {
+            (it.ts - anchor.ts).toDouble() / MS_PER_MINUTE.toDouble() to it.sgv.toDouble()
+        }
+        val velocity = fitWeightedVelocity(points) ?: return null
+        return if (abs(velocity) > MAX_VELOCITY) null else velocity
     }
 
     private fun findCrossing(
