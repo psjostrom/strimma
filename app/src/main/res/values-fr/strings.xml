@@ -227,6 +227,7 @@
     <string name="notif_low_crossing">Bas %1$dm</string>
     <string name="notif_high_crossing">Haut %1$dm</string>
     <string name="notif_iob">IOB %1$s</string>
+    <string name="notif_since">%1$dm</string>
 
     <!-- Widget -->
     <string name="widget_now">maint.</string>
