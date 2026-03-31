@@ -29,6 +29,9 @@
     <string name="main_follower_lost">F\u00F6ljer \u00B7 anslutning tappad</string>
     <string name="main_follower_lost_minutes">F\u00F6ljer \u00B7 anslutning tappad %1$dm</string>
     <string name="main_iob_breakdown_title">IOB-f\u00F6rdelning</string>
+    <string name="main_iob_clears_in">Borta om ~%1$s</string>
+    <string name="main_iob_active_boluses">AKTIVA BOLUSAR</string>
+    <string name="main_iob_remaining">%1$.1fU kvar</string>
     <string name="main_no_active_treatments">Inga aktiva insulinbehandlingar</string>
     <string name="main_bolus_label">%1$.1fU</string>
     <string name="main_carb_label">%1$.0fg</string>

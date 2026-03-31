@@ -26,7 +26,10 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChanged
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -119,10 +122,17 @@ fun MainScreen(
     }
 
     if (selectedExercise != null && bgContextLoaded) {
+        val session = selectedExercise!!
+        val preStart = session.startTime - 30 * 60_000L
+        val postEnd = session.endTime + 4 * 3600_000L
+        val exerciseReadings = readings.filter { it.ts in preStart..postEnd }
         ExerciseDetailSheet(
-            session = selectedExercise!!,
+            session = session,
             bgContext = selectedBGContext,
+            readings = exerciseReadings,
             glucoseUnit = glucoseUnit,
+            bgLow = bgLow.toDouble(),
+            bgHigh = bgHigh.toDouble(),
             onDismiss = { selectedExercise = null }
         )
     }
@@ -377,7 +387,7 @@ private fun BgHeader(
                 )
             }
             if (showIobDetail) {
-                IobDetailDialog(treatments, iobTauMinutes, onDismiss = { showIobDetail = false })
+                IobDetailSheet(treatments, iobTauMinutes, onDismiss = { showIobDetail = false })
             }
         }
 
@@ -446,59 +456,223 @@ private fun BgHeader(
 }
 
 @Composable
-private fun IobDetailDialog(treatments: List<Treatment>, tauMinutes: Double, onDismiss: () -> Unit) {
+private fun IobDetailSheet(treatments: List<Treatment>, tauMinutes: Double, onDismiss: () -> Unit) {
     val now = System.currentTimeMillis()
     val cutoff = now - IOBComputer.lookbackMs(tauMinutes)
     val timeFmt = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
-    // Show treatments with insulin still contributing to IOB
     val insulinTreatments = treatments
         .filter { (it.insulin ?: 0.0) > 0.0 && it.createdAt in cutoff..now }
         .sortedByDescending { it.createdAt }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_ok)) }
-        },
-        title = { Text(stringResource(R.string.main_iob_breakdown_title)) },
-        text = {
-            if (insulinTreatments.isEmpty()) {
-                Text(stringResource(R.string.main_no_active_treatments))
-            } else {
-                Column {
-                    insulinTreatments.forEach { t ->
-                        val dose = t.insulin ?: return@forEach
-                        val minutesSince = (now - t.createdAt) / 60_000.0
-                        val remainingIob = IOBComputer.iobForTreatment(dose, minutesSince, tauMinutes)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
+    val currentIob = IOBComputer.computeIOB(treatments, now, tauMinutes)
+
+    // Compute decay curve points (every 5 min for 5*tau)
+    val decayStepMs = 5 * 60_000L
+    val decayEndMs = IOBComputer.lookbackMs(tauMinutes)
+    val decayPoints = (0..decayEndMs step decayStepMs).map { offset ->
+        val futureMs = now + offset
+        offset to IOBComputer.computeIOB(treatments, futureMs, tauMinutes)
+    }
+
+    // Trim tail at clear point (IOB < 0.1u) + one extra point for the zero line
+    val clearIndex = decayPoints.indexOfFirst { it.second < 0.1 }
+    val trimmedPoints = if (clearIndex > 0) decayPoints.take(clearIndex + 1) else decayPoints
+    val clearTimeMinutes = if (clearIndex > 0) decayPoints[clearIndex].first / 60_000L else null
+
+    StrimmaBottomSheet(onDismiss = onDismiss) {
+        // Hero IOB
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Bottom
+        ) {
+            Column {
+                Text(
+                    text = stringResource(R.string.main_iob_breakdown_title),
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        text = "%.1f".format(currentIob),
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = InRange
+                    )
+                    Text(
+                        text = "U",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = InRange,
+                        modifier = Modifier.padding(start = 2.dp)
+                    )
+                }
+            }
+            if (clearTimeMinutes != null && clearTimeMinutes > 0) {
+                val hours = clearTimeMinutes / 60
+                val mins = clearTimeMinutes % 60
+                val clearText = when {
+                    hours > 0 && mins > 0 -> "${hours}h ${mins}min"
+                    hours > 0 -> "${hours}h"
+                    else -> "${mins}min"
+                }
+                Text(
+                    text = stringResource(R.string.main_iob_clears_in, clearText),
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        // Decay curve
+        if (trimmedPoints.size >= 2 && currentIob > 0.0) {
+            IobDecayCurve(
+                points = trimmedPoints,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
+            )
+            Spacer(Modifier.height(16.dp))
+        }
+
+        // Treatment rows
+        if (insulinTreatments.isNotEmpty()) {
+            Text(
+                text = stringResource(R.string.main_iob_active_boluses),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 1.5.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(6.dp))
+            insulinTreatments.forEach { t ->
+                val dose = t.insulin ?: return@forEach
+                val minutesSince = (now - t.createdAt) / 60_000.0
+                val remainingIob = IOBComputer.iobForTreatment(dose, minutesSince, tauMinutes)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "${timeFmt.format(java.util.Date(t.createdAt))}  \u00B7  " +
+                                stringResource(R.string.main_bolus_label, dose),
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = stringResource(R.string.main_iob_remaining, remainingIob),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = InRange
+                        )
+                    }
+                    t.carbs?.let { carbs ->
+                        if (carbs > 0.0) {
                             Text(
-                                text = timeFmt.format(java.util.Date(t.createdAt)),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontSize = 14.sp
-                            )
-                            val parts = mutableListOf(stringResource(R.string.main_bolus_label, dose))
-                            t.carbs?.let { if (it > 0.0) parts.add(stringResource(R.string.main_carb_label, it)) }
-                            Text(
-                                text = parts.joinToString("  "),
-                                fontSize = 14.sp
-                            )
-                            Text(
-                                text = stringResource(R.string.main_bolus_label, remainingIob),
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = InRange
+                                text = stringResource(R.string.main_carb_label, carbs),
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
                 }
             }
         }
-    )
+    }
+}
+
+@Composable
+private fun IobDecayCurve(
+    points: List<Pair<Long, Double>>,
+    modifier: Modifier = Modifier
+) {
+    val lineColor = InRange
+    val fillColor = InRange.copy(alpha = 0.1f)
+    val gridColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f)
+    val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val textMeasurer = rememberTextMeasurer()
+    val labelStyle = TextStyle(fontSize = 10.sp, color = labelColor)
+
+    val maxTimeMs = points.last().first
+
+    Canvas(modifier = modifier) {
+        val maxIob = points.maxOf { it.second }.toFloat().coerceAtLeast(0.5f)
+        val maxTime = maxTimeMs.toFloat()
+        if (maxTime <= 0f) return@Canvas
+
+        val leftPad = 20f
+        val bottomPad = 20f
+        val pad = 4f
+        val w = size.width - leftPad - pad
+        val h = size.height - pad - bottomPad
+
+        fun xFor(timeMs: Long) = leftPad + (timeMs.toFloat() / maxTime) * w
+        fun yFor(iob: Double) = pad + ((maxIob - iob.toFloat()) / maxIob) * h
+
+        // Y-axis labels + grid lines (every 1U up to 4, every 2U above)
+        val maxInt = maxIob.toInt()
+        val yStep = if (maxInt > 4) 2 else 1
+        for (v in 0..maxInt step yStep) {
+            val y = yFor(v.toDouble())
+            val label = "$v"
+            val result = textMeasurer.measure(label, labelStyle)
+            drawText(result, topLeft = Offset(leftPad - result.size.width - 4f, y - result.size.height / 2f))
+            if (v > 0) {
+                drawLine(gridColor, Offset(leftPad, y), Offset(leftPad + w, y), strokeWidth = 1f)
+            }
+        }
+
+        // X-axis: labels at whole hours
+        val clockFmt = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+        val nowMs = System.currentTimeMillis()
+        val hourMs = 3600_000L
+        val firstHour = ((nowMs / hourMs) + 1) * hourMs
+        var tickMs = firstHour
+        while (tickMs <= nowMs + maxTime.toLong()) {
+            val offsetMs = tickMs - nowMs
+            val x = xFor(offsetMs)
+            val label = clockFmt.format(java.util.Date(tickMs))
+            val result = textMeasurer.measure(label, labelStyle)
+            val labelX = (x - result.size.width / 2f).coerceIn(leftPad, leftPad + w - result.size.width)
+            drawText(result, topLeft = Offset(labelX, pad + h + 2f))
+            tickMs += hourMs
+        }
+
+        // Fill area under curve
+        val path = androidx.compose.ui.graphics.Path().apply {
+            moveTo(xFor(points.first().first), yFor(points.first().second))
+            for (p in points.drop(1)) {
+                lineTo(xFor(p.first), yFor(p.second))
+            }
+            lineTo(xFor(points.last().first), pad + h)
+            lineTo(xFor(points.first().first), pad + h)
+            close()
+        }
+        drawPath(path, fillColor)
+
+        // Draw the curve line
+        var prevX = 0f
+        var prevY = 0f
+        for ((i, p) in points.withIndex()) {
+            val x = xFor(p.first)
+            val y = yFor(p.second)
+            if (i > 0) {
+                drawLine(lineColor, Offset(prevX, prevY), Offset(x, y), strokeWidth = 2f)
+            }
+            prevX = x
+            prevY = y
+        }
+
+        // Start dot
+        drawCircle(lineColor, radius = 3.5f, center = Offset(xFor(points.first().first), yFor(points.first().second)))
+    }
 }
 
 // --- Main graph ---

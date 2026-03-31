@@ -17,8 +17,7 @@ class CategoryStatsCalculatorTest {
         lowestBG: Int? = 110,
         highestBG: Int? = 160,
         postExerciseHypo: Boolean = false,
-        avgHR: Int? = null,
-        bgCoverage: Double = 90.0
+        avgHR: Int? = null
     ) = ExerciseBGContext(
         entryBG = entryBG,
         entryTrend = Trend.STABLE,
@@ -34,8 +33,7 @@ class CategoryStatsCalculatorTest {
         avgHR = avgHR,
         maxHR = avgHR?.let { it + 20 },
         totalSteps = null,
-        activeCalories = null,
-        bgCoveragePercent = bgCoverage
+        activeCalories = null
     )
 
     private fun session(

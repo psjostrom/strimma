@@ -32,6 +32,9 @@
     <string name="main_follower_lost">Following · connection lost</string>
     <string name="main_follower_lost_minutes">Following · connection lost %1$dm</string>
     <string name="main_iob_breakdown_title">IOB Breakdown</string>
+    <string name="main_iob_clears_in">Clears in ~%1$s</string>
+    <string name="main_iob_active_boluses">ACTIVE BOLUSES</string>
+    <string name="main_iob_remaining">%1$.1fU remaining</string>
     <string name="main_no_active_treatments">No active insulin treatments</string>
     <string name="main_bolus_label">%1$.1fU</string>
     <string name="main_carb_label">%1$.0fg</string>
