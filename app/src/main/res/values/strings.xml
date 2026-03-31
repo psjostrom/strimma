@@ -24,8 +24,6 @@
     <string name="main_prediction_high">High in %1$d min</string>
     <string name="main_iob_value">IOB %1$.1fU</string>
     <string name="main_follower_connecting">Following · connecting…</string>
-    <string name="main_follower_seconds_ago">Following · %1$ds ago</string>
-    <string name="main_follower_minutes_ago">Following · %1$dm ago</string>
     <string name="main_follower_lost">Following · connection lost</string>
     <string name="main_follower_lost_minutes">Following · connection lost %1$dm</string>
     <string name="main_iob_breakdown_title">IOB Breakdown</string>

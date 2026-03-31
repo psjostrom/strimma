@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -122,15 +123,16 @@ class LibreLinkUpFollower @Inject constructor(
         item: LluGlucoseItem,
         onNewReading: suspend (GlucoseReading) -> Unit
     ): Boolean {
-        if (!GlucoseReading.isValidSgv(item.value)) {
+        val sgv = item.valueInMgPerDl
+        if (!GlucoseReading.isValidSgv(sgv)) {
             DebugLog.log(
-                message = "LLU: rejected SGV ${item.value} " +
+                message = "LLU: rejected SGV $sgv " +
                     "(outside ${GlucoseReading.MIN_VALID_SGV}–${GlucoseReading.MAX_VALID_SGV})",
             )
             return false
         }
         val ts = parseLluTimestamp(item.factoryTimestamp) ?: return false
-        val entry = NightscoutEntryResponse(sgv = item.value, date = ts, type = "sgv")
+        val entry = NightscoutEntryResponse(sgv = sgv, date = ts, type = "sgv")
         val reading = processNightscoutEntry(entry, dao, directionComputer, pushed = 0) ?: return false
         onNewReading(reading)
         return true
@@ -165,8 +167,8 @@ class LibreLinkUpFollower @Inject constructor(
         // unlike Timestamp which uses regional formats (EU day-first vs US month-first).
         // We still support both 12h and 24h variants as observed in the API.
         private val FORMATS = listOf(
-            DateTimeFormatter.ofPattern("M/d/yyyy h:mm:ss a"),  // 12h with AM/PM
-            DateTimeFormatter.ofPattern("M/d/yyyy H:mm:ss")     // 24h
+            DateTimeFormatter.ofPattern("M/d/yyyy h:mm:ss a", Locale.US),  // 12h with AM/PM
+            DateTimeFormatter.ofPattern("M/d/yyyy H:mm:ss", Locale.US)     // 24h
         )
 
         fun parseLluTimestamp(timestamp: String): Long? {

@@ -21,8 +21,6 @@
     <string name="main_prediction_high">Haut dans %1$d min</string>
     <string name="main_iob_value">IOB %1$.1fU</string>
     <string name="main_follower_connecting">Suivi \u00B7 connexion\u2026</string>
-    <string name="main_follower_seconds_ago">Suivi \u00B7 il y a %1$ds</string>
-    <string name="main_follower_minutes_ago">Suivi \u00B7 il y a %1$dm</string>
     <string name="main_follower_lost">Suivi \u00B7 connexion perdue</string>
     <string name="main_follower_lost_minutes">Suivi \u00B7 connexion perdue %1$dm</string>
     <string name="main_iob_breakdown_title">D\u00E9tail IOB</string>
