@@ -46,7 +46,6 @@ class TidepoolAuthActivity : ComponentActivity() {
             if (userId == null) {
                 settings.setTidepoolLastError("Failed to fetch user ID")
                 authManager.logout()
-                authManager.clearUserData()
                 DebugLog.log(message = "Tidepool auth: token obtained but fetchUserId failed, logged out")
                 finish()
                 return@launch

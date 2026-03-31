@@ -157,20 +157,15 @@ class TidepoolAuthManager @Inject constructor(
 
     /**
      * Clears all stored tokens and user-specific state.
-     * Call [clearUserData] from a coroutine to clean up DataStore keys.
      */
-    fun logout() {
+    suspend fun logout() {
         accessToken = null
         accessTokenExpiry = 0L
         settings.setTidepoolRefreshToken("")
-        DebugLog.log(message = "Tidepool logged out")
-    }
-
-    /** Clears DataStore-backed user state (userId, datasetId, error). */
-    suspend fun clearUserData() {
         settings.setTidepoolUserId("")
         settings.setTidepoolDatasetId("")
         settings.setTidepoolLastError("")
+        DebugLog.log(message = "Tidepool logged out")
     }
 
     private suspend fun refreshAccessToken(): String? = refreshMutex.withLock {

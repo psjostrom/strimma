@@ -37,6 +37,8 @@ class TidepoolUploader @Inject constructor(
         const val UPLOAD_BUFFER_MS = 15L * 60_000L    // 15 minutes
         private const val MAX_LOOKBACK_MS = 60L * 86_400_000L  // 2 months
         private const val RATE_LIMIT_MS = 20L * 60_000L        // 20 minutes
+        private const val MAX_LOG_ERROR_LENGTH = 80
+        private const val MAX_USER_ERROR_LENGTH = 50
 
         /**
          * Computes the end timestamp for the next upload chunk.
@@ -143,8 +145,8 @@ class TidepoolUploader @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            DebugLog.log(message = "Tidepool upload error: ${e.javaClass.simpleName}: ${e.message?.take(80)}")
-            settings.setTidepoolLastError("Upload error: ${e.message?.take(50)}")
+            DebugLog.log(message = "Tidepool upload error: ${e.javaClass.simpleName}: ${e.message?.take(MAX_LOG_ERROR_LENGTH)}")
+            settings.setTidepoolLastError("Upload error: ${e.message?.take(MAX_USER_ERROR_LENGTH)}")
         }
     }
 
