@@ -501,14 +501,14 @@ fun GlucoseGraph(
     windowMs: Long,
     viewportEnd: Long,
     zoomScale: Float,
+    onViewportChange: (Long) -> Unit,
+    onZoomChange: (Float) -> Unit,
+    modifier: Modifier = Modifier,
     predictionMinutes: Int = 15,
     glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
     treatments: List<Treatment> = emptyList(),
     exerciseSessions: List<StoredExerciseSession> = emptyList(),
     onExerciseTap: (StoredExerciseSession) -> Unit = {},
-    onViewportChange: (Long) -> Unit,
-    onZoomChange: (Float) -> Unit,
-    modifier: Modifier = Modifier
 ) {
     val predictionMs = predictionMinutes * 60_000L
     var selectedReading by remember { mutableStateOf<GlucoseReading?>(null) }

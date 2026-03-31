@@ -8,7 +8,6 @@
     <string name="common_sound">Sonido</string>
     <string name="common_no_data">Sin datos</string>
 
-    <string name="common_content_desc_settings">Ajustes</string>
     <string name="common_content_desc_back">Atr\u00E1s</string>
     <string name="common_content_desc_export">Exportar</string>
     <string name="common_content_desc_share_log">Compartir registro</string>
@@ -411,8 +410,6 @@
     <string name="pause_countdown">Pausado · %1$s</string>
     <string name="pause_low_warning">Incluye alerta de bajo urgente</string>
 
-    <string name="settings_statistics">Estadísticas</string>
-    <string name="settings_statistics_subtitle">Métricas, AGP, comidas</string>
     <string name="settings_sharing">Compartir</string>
     <string name="settings_sharing_subtitle">Broadcast, servidor web, exportar</string>
     <string name="settings_meal_slots_title">Horarios de comidas</string>
