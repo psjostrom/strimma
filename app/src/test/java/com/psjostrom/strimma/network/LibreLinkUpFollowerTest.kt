@@ -6,6 +6,7 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.util.Locale
 
 @RunWith(RobolectricTestRunner::class)
 class LibreLinkUpFollowerTest {
@@ -65,5 +66,32 @@ class LibreLinkUpFollowerTest {
         // M/d/yyyy: March 5, 2026 09:05:30 UTC
         val expected = LibreLinkUpFollower.parseLluTimestamp("3/5/2026 9:05:30 AM")
         assertEquals(expected, ts)
+    }
+
+    @Test
+    fun `parses AM-PM timestamps on non-English locale`() {
+        val original = Locale.getDefault()
+        try {
+            Locale.setDefault(Locale("sv", "SE"))
+            val ts = LibreLinkUpFollower.parseLluTimestamp("3/30/2026 6:52:24 PM")
+            assertNotNull("Should parse AM/PM even on Swedish locale", ts)
+
+            val ts2 = LibreLinkUpFollower.parseLluTimestamp("3/31/2026 12:02:24 AM")
+            assertNotNull("Should parse 12:xx AM on Swedish locale", ts2)
+        } finally {
+            Locale.setDefault(original)
+        }
+    }
+
+    @Test
+    fun `parses 24h timestamps on non-English locale`() {
+        val original = Locale.getDefault()
+        try {
+            Locale.setDefault(Locale("ja", "JP"))
+            val ts = LibreLinkUpFollower.parseLluTimestamp("3/30/2026 18:52:24")
+            assertNotNull("Should parse 24h format on Japanese locale", ts)
+        } finally {
+            Locale.setDefault(original)
+        }
     }
 }

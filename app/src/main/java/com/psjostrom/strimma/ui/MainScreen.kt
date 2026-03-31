@@ -436,16 +436,11 @@ private fun BgHeader(
             }
         }
 
-        if (followerStatus !is FollowerStatus.Idle) {
+        if (followerStatus is FollowerStatus.Connecting || followerStatus is FollowerStatus.Disconnected) {
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = when (followerStatus) {
                     is FollowerStatus.Connecting -> stringResource(R.string.main_follower_connecting)
-                    is FollowerStatus.Connected -> {
-                        val secsAgo = ((System.currentTimeMillis() - followerStatus.lastPollTs) / 1000).toInt()
-                        if (secsAgo < 60) stringResource(R.string.main_follower_seconds_ago, secsAgo)
-                        else stringResource(R.string.main_follower_minutes_ago, secsAgo / 60)
-                    }
                     is FollowerStatus.Disconnected -> {
                         val minsAgo = ((System.currentTimeMillis() - followerStatus.since) / 60_000).toInt()
                         if (minsAgo > 0) stringResource(R.string.main_follower_lost_minutes, minsAgo)

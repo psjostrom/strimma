@@ -16,19 +16,28 @@ LibreLinkUp mode polls Abbott's LibreLinkUp sharing API for glucose readings fro
 
 Before setting up LibreLinkUp in Strimma, you need:
 
-1. **A Libre 3 sensor** actively connected to the Libre 3 app
-2. **LibreLinkUp sharing enabled** in the Libre 3 app
-3. **A LibreLinkUp account** (created when you accept the sharing invitation)
+1. **A Libre 3 sensor** actively connected to the Libre 3 app, showing readings
+2. **LibreLinkUp sharing accepted** at least once (see first-time setup below)
 
-### Enable Sharing in Libre 3
+### First-Time Setup
+
+If you've never used LibreLinkUp before, you need to enable sharing once:
 
 1. Open the **Libre 3** app
-2. Go to **Menu > Connected Apps > LibreLinkUp**
+2. Go to **Menu > Connected Apps > LibreLinkUp > Manage**
 3. Tap **Add Connection** and enter the email address you want to use
-4. Check your email and **accept the invitation** to create or link a LibreLinkUp account
+4. Install the **LibreLinkUp** app from Google Play
+5. Sign in to LibreLinkUp and **accept the sharing invitation**
+6. Verify that readings appear in the LibreLinkUp app
+7. You can uninstall the LibreLinkUp app afterwards — Strimma talks directly to Abbott's API
 
-!!! warning "Use your follower credentials"
-    The credentials you enter in Strimma are your **LibreLinkUp (follower) account** credentials — the email and password you used when accepting the sharing invitation. These may differ from your Libre 3 app login.
+If you've already set up LibreLinkUp sharing previously, skip straight to configuring Strimma below.
+
+!!! tip "Same or different account?"
+    You can use the same email and password as your Libre 3 app, or a separate account — both work. The important thing is that the LibreLinkUp connection has been accepted at least once.
+
+!!! warning "Connected Apps unavailable?"
+    If "Connected Apps" gives an error saying "this feature is not currently available", you may have previously signed in on another device or third-party app. Log out of your account in the Libre 3 app and log back in — this forces all other sessions to disconnect. Then try Connected Apps again.
 
 ---
 
@@ -80,11 +89,10 @@ No manual configuration needed — region detection is transparent.
 
 ## Connection Status
 
-The main screen shows your LibreLinkUp connection status:
+When connected and receiving data, no status text is shown — the reading's own timestamp indicates freshness. Status only appears when something is wrong:
 
-- **Following · Xs ago** — connected, showing time since last successful poll
-- **Following · connecting...** — initial login in progress
-- **Following · connection lost Xm** — last poll failed, showing how long ago
+- **Connecting...** — initial login in progress
+- **Connection lost Xm** — last poll failed, showing how long ago
 
 ---
 
@@ -115,9 +123,9 @@ Strimma uses the `FactoryTimestamp` field from the LibreLinkUp API, which is alw
 ## Troubleshooting
 
 !!! question "No data appears"
-    - Verify sharing is enabled in the Libre 3 app (Menu > Connected Apps > LibreLinkUp)
-    - Verify you accepted the sharing invitation email
-    - Verify the email and password are your LibreLinkUp credentials (not your Libre 3 app login)
+    - Verify the LibreLinkUp app itself shows readings — if it doesn't, Strimma can't get them either
+    - Verify sharing is enabled in the Libre 3 app (Menu > Connected Apps > LibreLinkUp > Manage)
+    - Verify you accepted the sharing invitation in the LibreLinkUp app
     - Check the debug log for "LLU: bad credentials" or "LLU: no connections found"
 
 !!! question "Status shows 'connection lost'"

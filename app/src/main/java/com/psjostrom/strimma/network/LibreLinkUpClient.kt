@@ -50,7 +50,7 @@ data class LluConnectionsResponse(val status: Int = 0, val data: List<LluConnect
 
 @Serializable
 data class LluGlucoseItem(
-    @SerialName("Value") val value: Int = 0,
+    @SerialName("ValueInMgPerDl") val valueInMgPerDl: Int = 0,
     @SerialName("TrendArrow") val trendArrow: Int = 0,
     @SerialName("Timestamp") val timestamp: String = "",
     @SerialName("FactoryTimestamp") val factoryTimestamp: String = "",
@@ -105,7 +105,7 @@ class LibreLinkUpClient @Inject constructor() {
 
     companion object {
         private const val DEFAULT_BASE_URL = "https://api.libreview.io"
-        private const val CLIENT_VERSION = "4.12.0"
+        private const val CLIENT_VERSION = "4.16.0"
         private const val PRODUCT = "llu.android"
         private const val STATUS_BAD_CREDENTIALS = 2
         private const val STATUS_ACTION_REQUIRED = 4
