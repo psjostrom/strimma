@@ -48,6 +48,8 @@ android {
         ksp {
             arg("room.schemaLocation", "$projectDir/schemas")
         }
+
+        manifestPlaceholders["appAuthRedirectScheme"] = "strimma"
     }
 
     buildTypes {
@@ -159,6 +161,8 @@ dependencies {
     implementation(libs.glance.appwidget)
     implementation(libs.glance.material3)
 
+    implementation(libs.androidx.appcompat)
+    implementation(libs.appauth)
     implementation(libs.health.connect)
 
     debugImplementation(libs.leakcanary)
@@ -169,6 +173,7 @@ dependencies {
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.room.testing)
     testImplementation(libs.ktor.server.test.host)
+    testImplementation(libs.ktor.client.mock)
     testImplementation(libs.compose.ui.test.junit4)
     debugImplementation(libs.compose.ui.test.manifest)
 }

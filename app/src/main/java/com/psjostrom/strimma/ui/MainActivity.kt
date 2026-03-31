@@ -90,6 +90,10 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private val tidepoolAuthLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { /* Auth handled by TidepoolAuthActivity via redirect */ }
+
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { /* Service starts regardless */ }
@@ -442,6 +446,11 @@ class MainActivity : ComponentActivity() {
                     }
                     composable("settings/data") {
                         val webServerEnabled by viewModel.webServerEnabled.collectAsState()
+                        val tidepoolEnabled by viewModel.tidepoolEnabled.collectAsState()
+                        val tidepoolOnlyWhileCharging by viewModel.tidepoolOnlyWhileCharging.collectAsState()
+                        val tidepoolOnlyWhileWifi by viewModel.tidepoolOnlyWhileWifi.collectAsState()
+                        val tidepoolLastUploadTime by viewModel.tidepoolLastUploadTime.collectAsState()
+                        val tidepoolLastError by viewModel.tidepoolLastError.collectAsState()
                         DataSettings(
                             bgBroadcastEnabled = bgBroadcastEnabled,
                             onBgBroadcastEnabledChange = viewModel::setBgBroadcastEnabled,
@@ -449,6 +458,19 @@ class MainActivity : ComponentActivity() {
                             webServerSecret = viewModel.webServerSecret,
                             onWebServerEnabledChange = viewModel::setWebServerEnabled,
                             onWebServerSecretChange = viewModel::setWebServerSecret,
+                            tidepoolEnabled = tidepoolEnabled,
+                            onTidepoolEnabledChange = viewModel::setTidepoolEnabled,
+                            isTidepoolLoggedIn = viewModel.isTidepoolLoggedIn(),
+                            onTidepoolLogin = {
+                                tidepoolAuthLauncher.launch(viewModel.buildTidepoolAuthIntent())
+                            },
+                            onTidepoolLogout = viewModel::tidepoolLogout,
+                            tidepoolOnlyWhileCharging = tidepoolOnlyWhileCharging,
+                            onTidepoolOnlyWhileChargingChange = viewModel::setTidepoolOnlyWhileCharging,
+                            tidepoolOnlyWhileWifi = tidepoolOnlyWhileWifi,
+                            onTidepoolOnlyWhileWifiChange = viewModel::setTidepoolOnlyWhileWifi,
+                            tidepoolLastUploadTime = tidepoolLastUploadTime,
+                            tidepoolLastError = tidepoolLastError,
                             onExportReadings = {
                                 lifecycleScope.launch {
                                     val csv = viewModel.exportCsv(EXPORT_HOURS_30_DAYS)

@@ -90,6 +90,7 @@ class StrimmaService : Service() {
     @Inject lateinit var treatmentSyncer: TreatmentSyncer
     @Inject lateinit var treatmentDao: TreatmentDao
     @Inject lateinit var localWebServer: LocalWebServer
+    @Inject lateinit var tidepoolUploader: com.psjostrom.strimma.tidepool.TidepoolUploader
     @Inject lateinit var exerciseDao: ExerciseDao
     @Inject lateinit var exerciseSyncer: ExerciseSyncer
     @Inject lateinit var healthConnectManager: HealthConnectManager
@@ -209,6 +210,7 @@ class StrimmaService : Service() {
         exerciseSyncJob = exerciseSyncer.start(scope)
 
         pusher.pushPending()
+        tidepoolUploader.uploadPending()
         scope.launch { nightscoutPuller.pullIfEmpty() }
         scope.launch { updateNotification() }
         startPeriodicJobs()
@@ -220,6 +222,7 @@ class StrimmaService : Service() {
             while (isActive) {
                 delay(RETRY_INTERVAL_MINUTES * MS_PER_MINUTE)
                 pusher.pushPending()
+                tidepoolUploader.uploadPending()
             }
         }
         scope.launch {
@@ -276,6 +279,7 @@ class StrimmaService : Service() {
         pruneJob?.cancel()
         localWebServer.stop()
         pusher.stop()
+        tidepoolUploader.stop()
         scope.cancel()
         super.onDestroy()
     }
@@ -362,6 +366,7 @@ class StrimmaService : Service() {
         dao.insert(reading)
         DebugLog.log("Stored: ${reading.sgv} mg/dL ${direction.arrow}")
         pusher.pushReading(reading)
+        tidepoolUploader.onNewReading()
         updateNotification()
         // Reuse recentReadings + the newly inserted reading instead of re-querying
         val alertReadings = recentReadings + reading
