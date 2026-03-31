@@ -72,7 +72,7 @@ Strimma does not access your contacts, camera, microphone, location, or files.
 
 ## Open Source
 
-Strimma's entire source code is publicly available on [GitHub](https://github.com/psjostrom/Strimma) under the GPLv3 license. You can audit every line of code to verify these privacy claims.
+Strimma's entire source code is publicly available on [GitHub](https://github.com/psjostrom/strimma) under the GPLv3 license. You can audit every line of code to verify these privacy claims.
 
 ---
 

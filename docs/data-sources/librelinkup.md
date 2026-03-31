@@ -137,4 +137,4 @@ Strimma uses the `FactoryTimestamp` field from the LibreLinkUp API, which is alw
     LibreLinkUp mode has inherent latency: sensor → Libre 3 app → Abbott cloud → Strimma poll. The 60-second poll interval means readings can be up to 60 seconds older than in Companion mode. For most users, this is negligible — Libre 3 produces a reading every minute.
 
 !!! question "Region redirect keeps failing"
-    If you see "LLU: unknown region" in the debug log, your LibreLinkUp account may be in a region not yet mapped. [Open an issue](https://github.com/psjostrom/Strimma/issues) with the region code from the debug log.
+    If you see "LLU: unknown region" in the debug log, your LibreLinkUp account may be in a region not yet mapped. [Open an issue](https://github.com/psjostrom/strimma/issues) with the region code from the debug log.

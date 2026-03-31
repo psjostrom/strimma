@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/psjostrom/strimma/releases"><strong>Download</strong></a> · <a href="https://psjostrom.github.io/Strimma/"><strong>Docs</strong></a> · <a href="https://psjostrom.github.io/Strimma/getting-started/setup/"><strong>Setup Guide</strong></a>
+  <a href="https://github.com/psjostrom/strimma/releases"><strong>Download</strong></a> · <a href="https://psjostrom.github.io/strimma/"><strong>Docs</strong></a> · <a href="https://psjostrom.github.io/strimma/getting-started/setup/"><strong>Setup Guide</strong></a>
 </p>
 
 ## What It Does
@@ -83,7 +83,7 @@ Strimma sits alongside your CGM app and gives you a better glucose display, aler
 
 Download the latest APK from [GitHub Releases](https://github.com/psjostrom/strimma/releases) and install it. Requires Android 13+.
 
-A setup wizard walks you through permissions and data source configuration on first launch. See the [Setup Guide](https://psjostrom.github.io/Strimma/getting-started/setup/) for details.
+A setup wizard walks you through permissions and data source configuration on first launch. See the [Setup Guide](https://psjostrom.github.io/strimma/getting-started/setup/) for details.
 
 ## Development
 

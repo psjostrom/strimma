@@ -16,7 +16,7 @@ Yes. Strimma is free, open-source software licensed under GPLv3. No ads, no subs
 
 ### Is Strimma on Google Play?
 
-No. Strimma is distributed as APKs from [GitHub Releases](https://github.com/psjostrom/Strimma/releases).
+No. Strimma is distributed as APKs from [GitHub Releases](https://github.com/psjostrom/strimma/releases).
 
 ### Does Strimma replace my CGM app?
 
