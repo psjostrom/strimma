@@ -11,6 +11,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.IconCompat
 import com.psjostrom.strimma.R
+import com.psjostrom.strimma.data.MS_PER_MINUTE
 import com.psjostrom.strimma.data.Direction
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseUnit
@@ -109,7 +110,7 @@ class NotificationHelper @Inject constructor(
                 }
             }
             val iobText = if (iob > 0.0) context.getString(R.string.notif_iob, "%.1f".format(iob)) else null
-            val minutesAgo = ((System.currentTimeMillis() - reading.ts) / 60_000).toInt()
+            val minutesAgo = ((System.currentTimeMillis() - reading.ts) / MS_PER_MINUTE).toInt()
             val sinceText = if (minutesAgo >= 0) {
                 context.getString(R.string.notif_since, minutesAgo)
             } else null
