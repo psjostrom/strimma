@@ -11,6 +11,18 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "input=$(cat); file=$(echo \"$input\" | jq -r '.tool_input.file_path // empty'); if echo \"$file\" | grep -q 'app/src/.*\\.kt'; then if ! echo \"$file\" | grep -q '/docs/'; then echo 'DOCS CHECK: You edited a source file that may affect user-visible behavior. Before declaring done: grep docs/ for references to this feature, update affected docs, flag stale screenshots. See CLAUDE.md Documentation Updates rule.'; fi; fi",
+            "timeout": 3000
+          }
+        ]
+      }
     ]
   }
 }
