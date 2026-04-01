@@ -95,7 +95,7 @@ class ExerciseBGAnalyzerTest {
         assertEquals(Trend.STABLE, result.entryTrend)
         assertEquals(90, result.minBG)
         assertTrue(result.dropPer10Min.isNotEmpty())
-        assertTrue(result.bgCoveragePercent > 95.0)
+
         assertFalse(result.postExerciseHypo)
         assertEquals(90, result.lowestBG)
         assertEquals(90, result.highestBG) // flat post = same as lowest
@@ -128,21 +128,12 @@ class ExerciseBGAnalyzerTest {
     }
 
     @Test
-    fun `returns null when coverage below 50 percent`() {
-        // Session is 60 minutes but only 5 readings (1-min sensor = need 30 for 50%)
-        val sparse = listOf(
-            reading(0, 140),
-            reading(15, 130),
-            reading(30, 120),
-            reading(45, 110),
-            reading(60, 100)
-        )
-        // Need enough readings overall to infer 1-min interval
-        val background = flatReadings(-60, -1, 140)
+    fun `returns null when fewer than 2 readings during exercise`() {
+        val single = listOf(reading(0, 140))
 
         val result = analyzer.analyze(
             session = session(startMinutes = 0, endMinutes = 60),
-            readings = background + sparse,
+            readings = single,
             heartRateSamples = emptyList(),
             bgLowMgdl = 70.0
         )
@@ -210,7 +201,7 @@ class ExerciseBGAnalyzerTest {
         assertEquals(120, result.minBG)
         // Partial bucket still computed (readings exist in the 0-10 min window)
         assertEquals(1, result.dropPer10Min.size)
-        assertTrue(result.bgCoveragePercent > 95.0)
+
     }
 
     @Test
@@ -278,16 +269,12 @@ class ExerciseBGAnalyzerTest {
     }
 
     @Test
-    fun `boundary case exactly 50 percent coverage should not return null`() {
-        // 60-minute session with 1-min sensor interval. Need exactly 50% = 30 readings
-        // Provide background for interval inference + exactly 31 during readings (covers 0..30)
-        val pre = flatReadings(-30, -1, 140)
-        // 31 readings for a 60-min session = 31/61 ≈ 50.8% — just above 50%
-        val during = (0..30).map { reading(it.toLong(), 140 - it / 3) }
+    fun `exactly 2 readings during exercise should not return null`() {
+        val during = listOf(reading(0, 140), reading(60, 100))
 
         val result = analyzer.analyze(
             session = session(startMinutes = 0, endMinutes = 60),
-            readings = pre + during,
+            readings = during,
             heartRateSamples = emptyList(),
             bgLowMgdl = 70.0
         )
@@ -318,24 +305,6 @@ class ExerciseBGAnalyzerTest {
             assertTrue("Drop should be approximately 10, was $drop", drop in 8.0..12.0)
         }
         assertEquals(result.maxDropRate!!, result.dropPer10Min.max(), 0.01)
-    }
-
-    @Test
-    fun `5-minute sensor interval detected and coverage calculated correctly`() {
-        // Simulate Dexcom with 5-min readings
-        val pre = (0..5).map { reading(-30L + it * 5, 140) } // 6 readings, 5-min apart
-        // 60-minute session needs 12 readings at 5-min interval for ~100% coverage
-        val during = (0..12).map { reading(it * 5L, 130) }
-
-        val result = analyzer.analyze(
-            session = session(startMinutes = 0, endMinutes = 60),
-            readings = pre + during,
-            heartRateSamples = emptyList(),
-            bgLowMgdl = 70.0
-        )
-
-        assertNotNull(result)
-        assertTrue(result!!.bgCoveragePercent > 95.0)
     }
 
     @Test
@@ -413,19 +382,6 @@ class ExerciseBGAnalyzerTest {
     }
 
     @Test
-    fun `inferSensorInterval returns correct median`() {
-        // 1-minute interval readings
-        val oneMinReadings = flatReadings(0, 20, 140)
-        val interval = analyzer.inferSensorInterval(oneMinReadings)
-        assertEquals(60_000L, interval)
-
-        // 5-minute interval readings
-        val fiveMinReadings = (0..10).map { reading(it * 5L, 140) }
-        val interval5 = analyzer.inferSensorInterval(fiveMinReadings)
-        assertEquals(300_000L, interval5)
-    }
-
-    @Test
     fun `minBG reflects during-exercise low even when post-window dips lower`() {
         // Real-world scenario: BG is stable during run (stays ~150-130),
         // but crashes to 70 in the 4h post-exercise window (delayed hypo).
@@ -475,10 +431,20 @@ class ExerciseBGAnalyzerTest {
     }
 
     @Test
-    fun `inferSensorInterval returns null for insufficient readings`() {
-        val single = listOf(reading(0, 140))
-        assertNull(analyzer.inferSensorInterval(single))
+    fun `sparse during exercise with dense post window still shows analysis`() {
+        // Dexcom (5-min) during run, Libre 3 (1-min) in post-window.
+        val pre = (0..5).map { reading(-30L + it * 5, 140) }
+        val during = (0..8).map { reading(it * 5L, 140 - it * 5) }
+        val post = flatReadings(41, 280, 100)
 
-        assertNull(analyzer.inferSensorInterval(emptyList()))
+        val result = analyzer.analyze(
+            session = session(startMinutes = 0, endMinutes = 40),
+            readings = pre + during + post,
+            heartRateSamples = emptyList(),
+            bgLowMgdl = 70.0
+        )
+
+        assertNotNull(result)
+        assertEquals(100, result!!.minBG)
     }
 }

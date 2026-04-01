@@ -32,7 +32,9 @@
     <string name="main_follower_lost">Following · connection lost</string>
     <string name="main_follower_lost_minutes">Following · connection lost %1$dm</string>
     <string name="main_iob_breakdown_title">IOB Breakdown</string>
-    <string name="main_no_active_treatments">No active insulin treatments</string>
+    <string name="main_iob_clears_in">Clears in ~%1$s</string>
+    <string name="main_iob_active_boluses">ACTIVE BOLUSES</string>
+    <string name="main_iob_remaining">%1$.1fU remaining</string>
     <string name="main_bolus_label">%1$.1fU</string>
     <string name="main_carb_label">%1$.0fg</string>
 
@@ -332,7 +334,6 @@
     <string name="hc_rationale_body">Strimma uses Health Connect to read your exercise sessions, heart rate, steps, and calories to show how exercise affects your glucose. Optionally, Strimma can write glucose readings so other health apps can see them.</string>
 
     <!-- Exercise Detail -->
-    <string name="exercise_detail_before">BEFORE</string>
     <string name="exercise_detail_during">DURING</string>
     <string name="exercise_detail_after">AFTER (4H)</string>
     <string name="exercise_detail_entry_bg">Entry BG</string>
@@ -427,7 +428,6 @@
     <string name="exercise_lookahead_subtitle">How far ahead the Planned tab scans for workouts</string>
     <string name="exercise_trigger_subtitle">When the readiness card appears on the main screen</string>
     <string name="exercise_hc_write_disabled_hint">Grant Health Connect permissions first</string>
-    <string name="exercise_metabolic_profile_hint">BG response type — determines target range. Detected from activity type or heart rate.</string>
 
     <!-- Patterns tab -->
     <string name="exercise_tab_patterns">Patterns</string>
