@@ -150,7 +150,9 @@ class StrimmaService : Service() {
         startForeground(
             NotificationHelper.NOTIFICATION_ID,
             notificationHelper.buildNotification(null, emptyList(), DEFAULT_BG_LOW, DEFAULT_BG_HIGH),
-            android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+                android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+            else 0
         )
 
         DebugLog.log("Service started")

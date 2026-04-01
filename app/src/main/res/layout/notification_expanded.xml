@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
@@ -17,7 +18,7 @@
             android:textAppearance="@style/TextAppearance.Compat.Notification.Title"
             android:textSize="32sp"
             android:textStyle="bold"
-            android:text="--" />
+            tools:text="--" />
 
         <TextView
             android:id="@+id/tv_arrow"
@@ -26,7 +27,7 @@
             android:textAppearance="@style/TextAppearance.Compat.Notification.Title"
             android:textSize="32sp"
             android:layout_marginStart="6dp"
-            android:text="→" />
+            tools:text="→" />
 
     </LinearLayout>
 
@@ -37,7 +38,7 @@
         android:textAppearance="@style/TextAppearance.Compat.Notification.Info"
         android:textSize="16sp"
         android:layout_marginTop="4dp"
-        android:text="Δ --" />
+        tools:text="Δ --" />
 
     <ImageView
         android:id="@+id/iv_graph"
