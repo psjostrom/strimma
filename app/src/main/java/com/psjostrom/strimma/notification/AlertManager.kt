@@ -278,7 +278,6 @@ class AlertManager @Inject constructor(
                 fireAlert(ALERT_LOW_ID, CHANNEL_LOW, context.getString(R.string.alert_low_title), unit.formatWithUnit(mgdl))
             }
             notificationManager.cancel(ALERT_URGENT_LOW_ID)
-            clearSnooze(ALERT_URGENT_LOW_ID)
             return true
         }
 
@@ -314,7 +313,6 @@ class AlertManager @Inject constructor(
                 fireAlert(ALERT_HIGH_ID, CHANNEL_HIGH, context.getString(R.string.alert_high_title), unit.formatWithUnit(mgdl))
             }
             notificationManager.cancel(ALERT_URGENT_HIGH_ID)
-            clearSnooze(ALERT_URGENT_HIGH_ID)
             return true
         }
 
@@ -362,7 +360,6 @@ class AlertManager @Inject constructor(
             }
         } else {
             notificationManager.cancel(ALERT_LOW_SOON_ID)
-            if (alreadyLow) clearSnooze(ALERT_LOW_SOON_ID)
         }
 
         // High soon
@@ -376,7 +373,6 @@ class AlertManager @Inject constructor(
             }
         } else {
             notificationManager.cancel(ALERT_HIGH_SOON_ID)
-            if (alreadyHigh) clearSnooze(ALERT_HIGH_SOON_ID)
         }
     }
 
@@ -411,7 +407,16 @@ class AlertManager @Inject constructor(
     }
 
     fun snooze(alertId: Int) {
-        snoozePrefs.edit().putLong(alertId.toString(), System.currentTimeMillis() + SNOOZE_DURATION_MS).apply()
+        val category = when (alertId) {
+            ALERT_LOW_ID, ALERT_URGENT_LOW_ID, ALERT_LOW_SOON_ID -> AlertCategory.LOW
+            ALERT_HIGH_ID, ALERT_URGENT_HIGH_ID, ALERT_HIGH_SOON_ID -> AlertCategory.HIGH
+            else -> null
+        }
+        if (category != null) {
+            pauseAlertCategory(category, SNOOZE_DURATION_MS)
+        } else {
+            snoozePrefs.edit().putLong(alertId.toString(), System.currentTimeMillis() + SNOOZE_DURATION_MS).apply()
+        }
         notificationManager.cancel(alertId)
         DebugLog.log("Alert $alertId snoozed for 30 min")
     }
