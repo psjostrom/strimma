@@ -63,20 +63,20 @@ Strimma sits alongside your CGM app and gives you a better glucose display, aler
 
 <p align="center">
   <img src="docs/screenshots/main-screen.png" width="240" alt="Main screen with BG graph" />
+  <img src="docs/screenshots/iob-detail.png" width="240" alt="IOB breakdown with decay curve" />
   <img src="docs/screenshots/notification-expanded.png" width="240" alt="Expanded notification with graph" />
-  <img src="docs/screenshots/statistics.png" width="240" alt="Statistics" />
 </p>
 
 <p align="center">
   <img src="docs/screenshots/exercise-graph.png" width="240" alt="Exercise band on glucose graph" />
-  <img src="docs/screenshots/exercise-history.png" width="240" alt="Exercise history with BG stats" />
   <img src="docs/screenshots/exercise-detail.png" width="240" alt="Exercise detail with BG analysis" />
+  <img src="docs/screenshots/pre-activity-guidance.png" width="240" alt="Pre-activity guidance" />
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/pre-activity-guidance.png" width="240" alt="Pre-activity guidance card" />
   <img src="docs/screenshots/agp-report.png" width="240" alt="AGP report with TIR" />
   <img src="docs/screenshots/meal-analysis-lunch.png" width="240" alt="Meal postprandial analysis" />
+  <img src="docs/screenshots/settings.png" width="240" alt="Settings" />
 </p>
 
 ## Install
