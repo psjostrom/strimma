@@ -16,7 +16,7 @@ kotlin {
 
 android {
     namespace = "com.psjostrom.strimma"
-    compileSdk = 37
+    compileSdk = 36
 
     signingConfigs {
         create("release") {
@@ -36,7 +36,7 @@ android {
     defaultConfig {
         applicationId = "com.psjostrom.strimma"
         minSdk = 33 // Only targets devices still receiving security updates — this is medical data
-        targetSdk = 37
+        targetSdk = 36
         versionCode = 2
         versionName = "0.9.1"
 
@@ -87,6 +87,8 @@ android {
         warningsAsErrors = true
         abortOnError = true
         checkDependencies = true
+        // CI runner has SDK 37 but AGP 9.1.0 doesn't support compileSdk 37 yet
+        disable += "OldTargetApi"
     }
 
     packaging {
