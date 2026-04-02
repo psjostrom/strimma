@@ -1,6 +1,7 @@
 package com.psjostrom.strimma.notification
 
 import android.graphics.*
+import androidx.core.graphics.createBitmap
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.MS_PER_MINUTE
 import com.psjostrom.strimma.data.GlucoseUnit
@@ -75,7 +76,7 @@ object GraphRenderer {
         glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
         exerciseSessions: List<StoredExerciseSession> = emptyList()
     ): Bitmap {
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val bitmap = createBitmap(width, height)
         val canvas = Canvas(bitmap)
         canvas.drawColor(BG_COLOR)
 

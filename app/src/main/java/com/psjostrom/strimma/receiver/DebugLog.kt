@@ -24,8 +24,8 @@ object DebugLog {
     private val _entries = MutableStateFlow<List<String>>(emptyList())
     val entries: StateFlow<List<String>> = _entries
 
-    private val sdf = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
-    private val dateFmt = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    private fun timeFmt() = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+    private fun dateFmt() = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 
     private var logsDir: File? = null
 
@@ -35,14 +35,14 @@ object DebugLog {
     }
 
     fun log(message: String) {
-        val ts = sdf.format(Date())
+        val ts = timeFmt().format(Date())
         val entry = "$ts $message"
         _entries.value = (_entries.value + entry).takeLast(MAX_IN_MEMORY_ENTRIES)
         android.util.Log.d("StrimmaDebug", entry)
 
         logsDir?.let { dir ->
             try {
-                val file = File(dir, "strimma-${dateFmt.format(Date())}.log")
+                val file = File(dir, "strimma-${dateFmt().format(Date())}.log")
                 file.appendText("$entry\n")
             } catch (_: Exception) {
                 // Don't crash if logging fails
@@ -76,7 +76,7 @@ object DebugLog {
 
     fun currentLogFile(): File? {
         val dir = logsDir ?: return null
-        return File(dir, "strimma-${dateFmt.format(Date())}.log").takeIf { it.exists() }
+        return File(dir, "strimma-${dateFmt().format(Date())}.log").takeIf { it.exists() }
     }
 
     private fun pruneOldLogs() {

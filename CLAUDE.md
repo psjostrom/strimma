@@ -76,6 +76,16 @@ NEVER treat Strimma as a "single-user app" or use that as justification to cut c
 - xDrip+ retired — Strimma is the sole data source (validated equivalent coverage and accuracy)
 - `foregroundServiceType="specialUse"` (not connectedDevice — no direct BLE)
 
+## Documentation Updates (HARD GATE)
+
+Any user-visible change is not done until docs are checked. Before declaring work complete:
+
+1. **Grep `docs/` for references** to the changed feature (screen name, setting name, behavior). Update any doc pages that describe changed behavior.
+2. **If no docs exist** for a user-visible feature, write them. Match the structure and style of existing `docs/guide/` pages.
+3. **Grep affected doc pages for `screenshots/`** references. Flag any screenshot that may be stale: "Screenshot `X.png` may be stale — [reason]."
+
+Skip only for pure refactors with zero user-visible change.
+
 ## Git Workflow
 
 When a merge or push fails, ALWAYS check CI status (`gh pr checks`) and read the failure logs before retrying. Never blindly force or retry — diagnose the failure first.
