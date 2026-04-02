@@ -45,10 +45,10 @@ Alerts follow a priority system to avoid duplicate noise:
 
 ## Snooze
 
-Each alert has a **30-minute snooze**. When an alert fires, the notification includes a **Snooze** button. Tapping it silences that specific alert for 30 minutes.
+Each alert has a **30-minute snooze**. When an alert fires, the notification includes a **Snooze** button. Tapping it silences that alert and any less severe alerts in the same category for 30 minutes.
 
-- Snooze applies to one alert type — snoozing Low doesn't affect Urgent Low
-- After 30 minutes, the alert can fire again if the condition persists
+- Snoozing a lower-severity alert does not suppress higher-severity alerts — snoozing Low Soon doesn't affect Low or Urgent Low, and snoozing Low doesn't affect Urgent Low
+- After 30 minutes, alerts can fire again if the condition persists
 - Snooze state is stored locally and survives app restarts
 
 ---
@@ -67,7 +67,7 @@ You can pause entire alert categories for a custom duration — useful during ex
 - Pause state survives app restarts
 
 !!! note "Snooze vs Pause"
-    **Snooze** silences a single alert type for 30 minutes. **Pause** silences an entire category (all low alerts or all high alerts) for a duration you choose.
+    **Snooze** silences an alert and any less severe alerts in the same category for 30 minutes. **Pause** silences an entire category (all low alerts or all high alerts) for a duration you choose.
 
 ---
 

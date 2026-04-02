@@ -466,13 +466,13 @@ class AlertManager @Inject constructor(
                 _pauseLowExpiryMs.value = expiryMs
                 if (level >= ALERT_LEVEL_URGENT) notificationManager.cancel(ALERT_URGENT_LOW_ID)
                 if (level >= ALERT_LEVEL_REGULAR) notificationManager.cancel(ALERT_LOW_ID)
-                notificationManager.cancel(ALERT_LOW_SOON_ID)
+                if (level >= ALERT_LEVEL_SOON) notificationManager.cancel(ALERT_LOW_SOON_ID)
             }
             AlertCategory.HIGH -> {
                 _pauseHighExpiryMs.value = expiryMs
                 if (level >= ALERT_LEVEL_URGENT) notificationManager.cancel(ALERT_URGENT_HIGH_ID)
                 if (level >= ALERT_LEVEL_REGULAR) notificationManager.cancel(ALERT_HIGH_ID)
-                notificationManager.cancel(ALERT_HIGH_SOON_ID)
+                if (level >= ALERT_LEVEL_SOON) notificationManager.cancel(ALERT_HIGH_SOON_ID)
             }
         }
     }

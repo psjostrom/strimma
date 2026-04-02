@@ -130,6 +130,74 @@ class AlertManagerPauseTest {
         assertTrue("High should still be paused", AlertManager.isCategoryPaused(prefs, AlertCategory.HIGH))
     }
 
+    // --- Severity-aware pause tests ---
+
+    @Test
+    fun `pauseCategory stores level in prefs`() {
+        AlertManager.pauseCategory(prefs, AlertCategory.LOW, 3_600_000L, AlertManager.ALERT_LEVEL_SOON)
+
+        assertEquals(AlertManager.ALERT_LEVEL_SOON, prefs.getInt("pause_low_level", -1))
+    }
+
+    @Test
+    fun `pauseCategory defaults to URGENT level`() {
+        AlertManager.pauseCategory(prefs, AlertCategory.LOW, 3_600_000L)
+
+        assertEquals(AlertManager.ALERT_LEVEL_URGENT, prefs.getInt("pause_low_level", -1))
+    }
+
+    @Test
+    fun `isCategoryPausedAtLevel with SOON level blocks only SOON alerts`() {
+        AlertManager.pauseCategory(prefs, AlertCategory.LOW, 3_600_000L, AlertManager.ALERT_LEVEL_SOON)
+
+        assertTrue(AlertManager.isCategoryPausedAtLevel(prefs, AlertCategory.LOW, AlertManager.ALERT_LEVEL_SOON))
+        assertFalse(AlertManager.isCategoryPausedAtLevel(prefs, AlertCategory.LOW, AlertManager.ALERT_LEVEL_REGULAR))
+        assertFalse(AlertManager.isCategoryPausedAtLevel(prefs, AlertCategory.LOW, AlertManager.ALERT_LEVEL_URGENT))
+    }
+
+    @Test
+    fun `isCategoryPausedAtLevel with REGULAR level blocks SOON and REGULAR`() {
+        AlertManager.pauseCategory(prefs, AlertCategory.LOW, 3_600_000L, AlertManager.ALERT_LEVEL_REGULAR)
+
+        assertTrue(AlertManager.isCategoryPausedAtLevel(prefs, AlertCategory.LOW, AlertManager.ALERT_LEVEL_SOON))
+        assertTrue(AlertManager.isCategoryPausedAtLevel(prefs, AlertCategory.LOW, AlertManager.ALERT_LEVEL_REGULAR))
+        assertFalse(AlertManager.isCategoryPausedAtLevel(prefs, AlertCategory.LOW, AlertManager.ALERT_LEVEL_URGENT))
+    }
+
+    @Test
+    fun `isCategoryPausedAtLevel with URGENT level blocks all alerts`() {
+        AlertManager.pauseCategory(prefs, AlertCategory.LOW, 3_600_000L, AlertManager.ALERT_LEVEL_URGENT)
+
+        assertTrue(AlertManager.isCategoryPausedAtLevel(prefs, AlertCategory.LOW, AlertManager.ALERT_LEVEL_SOON))
+        assertTrue(AlertManager.isCategoryPausedAtLevel(prefs, AlertCategory.LOW, AlertManager.ALERT_LEVEL_REGULAR))
+        assertTrue(AlertManager.isCategoryPausedAtLevel(prefs, AlertCategory.LOW, AlertManager.ALERT_LEVEL_URGENT))
+    }
+
+    @Test
+    fun `isCategoryPausedAtLevel returns false when not paused`() {
+        assertFalse(AlertManager.isCategoryPausedAtLevel(prefs, AlertCategory.LOW, AlertManager.ALERT_LEVEL_SOON))
+    }
+
+    @Test
+    fun `isCategoryPausedAtLevel clears expired pause and returns false`() {
+        val expiredTime = System.currentTimeMillis() - 1000
+        prefs.edit().putLong("pause_low", expiredTime).putInt("pause_low_level", AlertManager.ALERT_LEVEL_URGENT).apply()
+
+        assertFalse(AlertManager.isCategoryPausedAtLevel(prefs, AlertCategory.LOW, AlertManager.ALERT_LEVEL_SOON))
+        assertEquals(0L, prefs.getLong("pause_low", 0L))
+        assertEquals(-1, prefs.getInt("pause_low_level", -1))
+    }
+
+    @Test
+    fun `cancelPause clears level key`() {
+        AlertManager.pauseCategory(prefs, AlertCategory.LOW, 3_600_000L, AlertManager.ALERT_LEVEL_REGULAR)
+
+        AlertManager.cancelPause(prefs, AlertCategory.LOW)
+
+        assertEquals(-1, prefs.getInt("pause_low_level", -1))
+        assertFalse(AlertManager.isCategoryPausedAtLevel(prefs, AlertCategory.LOW, AlertManager.ALERT_LEVEL_SOON))
+    }
+
     // --- Behavioral tests: verify gating pattern used by checkReading ---
 
     @Test
