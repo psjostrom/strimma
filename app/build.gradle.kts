@@ -87,8 +87,6 @@ android {
         warningsAsErrors = true
         abortOnError = true
         checkDependencies = true
-        // CI runner has SDK 37 but AGP 9.1.0 doesn't support compileSdk 37 yet
-        disable += "OldTargetApi"
     }
 
     packaging {
