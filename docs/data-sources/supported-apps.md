@@ -14,7 +14,6 @@ Strimma can read glucose from the following apps in **Companion mode**.
 
 ## Abbott / Libre
 
-- Libre 3
 - Libre 2 / LibreLink
 
 ## CamAPS FX

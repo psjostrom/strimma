@@ -6,7 +6,7 @@ LibreLinkUp mode polls Abbott's LibreLinkUp sharing API for glucose readings fro
 
 ## Who Is This For?
 
-- **Libre 3 users** who don't want to rely on notification parsing
+- **Libre 3 users** — Libre 3 notifications don't contain glucose values, so LibreLinkUp is the way to get Libre 3 data into Strimma
 - **Users without xDrip+ or Juggluco** — direct connection to Abbott's cloud
 - **Anyone sharing via LibreLinkUp** who wants Strimma's alerts, graph, and Nightscout push
 
