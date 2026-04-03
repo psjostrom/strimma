@@ -1,3 +1,5 @@
+@file:Suppress("TooManyFunctions") // Single-screen composables + drawing helpers
+
 package com.psjostrom.strimma.ui
 
 import android.icu.text.MeasureFormat
@@ -29,6 +31,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
@@ -399,47 +402,12 @@ private fun ExerciseBGGraph(
             )
 
             // Y-axis labels
-            val yPaint = android.graphics.Paint().apply {
-                color = labelArgb
-                textSize = fontSize
-                textAlign = android.graphics.Paint.Align.RIGHT
-                isAntiAlias = true
-            }
-            for (label in computeYAxisLabels(yRange, glucoseUnit)) {
-                val y = yFor(label.mgdl).coerceIn(padTop, padTop + h)
-                drawContext.canvas.nativeCanvas.drawText(
-                    label.text,
-                    padLeft - LABEL_GAP_DP * density,
-                    y + fontSize / LABEL_BASELINE_FRAC,
-                    yPaint
-                )
-            }
+            val yLabels = computeYAxisLabels(yRange, glucoseUnit)
+                .map { it.text to yFor(it.mgdl) }
+            drawYAxisLabels(yLabels, labelArgb, fontSize, padLeft, padTop, h)
 
             // X-axis labels
-            val xPaint = android.graphics.Paint().apply {
-                color = labelArgb
-                textSize = fontSize
-                textAlign = android.graphics.Paint.Align.CENTER
-                isAntiAlias = true
-            }
-            val timeFmt = SimpleDateFormat("HH:mm", Locale.getDefault())
-            val rangeMs = sorted.last().ts - sorted.first().ts
-            val count = when {
-                rangeMs < SHORT_RANGE_MINUTES * MS_PER_MINUTE -> LABEL_COUNT_SHORT
-                rangeMs < MEDIUM_RANGE_MINUTES * MS_PER_MINUTE -> LABEL_COUNT_MEDIUM
-                else -> LABEL_COUNT_LONG
-            }
-            val xLabelY = padTop + h + fontSize + X_LABEL_GAP_DP * density
-            for (i in 0 until count) {
-                val frac = i.toFloat() / (count - 1)
-                val ts = sorted.first().ts + (frac * rangeMs).toLong()
-                drawContext.canvas.nativeCanvas.drawText(
-                    timeFmt.format(Date(ts)),
-                    padLeft + frac * w,
-                    xLabelY,
-                    xPaint
-                )
-            }
+            drawXAxisLabels(sorted.first().ts, sorted.last().ts, labelArgb, fontSize, padLeft, padTop, w, h)
 
             // BG dots + lines
             var prevX = 0f
@@ -460,6 +428,68 @@ private fun ExerciseBGGraph(
                 prevY = y
             }
         }
+    }
+}
+
+private fun DrawScope.drawYAxisLabels(
+    labels: List<Pair<String, Float>>,
+    colorArgb: Int,
+    fontSize: Float,
+    padLeft: Float,
+    padTop: Float,
+    chartHeight: Float
+) {
+    val paint = android.graphics.Paint().apply {
+        color = colorArgb
+        textSize = fontSize
+        textAlign = android.graphics.Paint.Align.RIGHT
+        isAntiAlias = true
+    }
+    for ((text, y) in labels) {
+        val clampedY = y.coerceIn(padTop, padTop + chartHeight)
+        drawContext.canvas.nativeCanvas.drawText(
+            text,
+            padLeft - LABEL_GAP_DP * density,
+            clampedY + fontSize / LABEL_BASELINE_FRAC,
+            paint
+        )
+    }
+}
+
+@Suppress("LongParameterList") // Drawing function needs layout context
+private fun DrawScope.drawXAxisLabels(
+    startTs: Long,
+    endTs: Long,
+    colorArgb: Int,
+    fontSize: Float,
+    padLeft: Float,
+    padTop: Float,
+    chartWidth: Float,
+    chartHeight: Float
+) {
+    val paint = android.graphics.Paint().apply {
+        color = colorArgb
+        textSize = fontSize
+        textAlign = android.graphics.Paint.Align.CENTER
+        isAntiAlias = true
+    }
+    val timeFmt = SimpleDateFormat("HH:mm", Locale.getDefault())
+    val rangeMs = endTs - startTs
+    val count = when {
+        rangeMs < SHORT_RANGE_MINUTES * MS_PER_MINUTE -> LABEL_COUNT_SHORT
+        rangeMs < MEDIUM_RANGE_MINUTES * MS_PER_MINUTE -> LABEL_COUNT_MEDIUM
+        else -> LABEL_COUNT_LONG
+    }
+    val labelY = padTop + chartHeight + fontSize + X_LABEL_GAP_DP * density
+    for (i in 0 until count) {
+        val frac = i.toFloat() / (count - 1)
+        val ts = startTs + (frac * rangeMs).toLong()
+        drawContext.canvas.nativeCanvas.drawText(
+            timeFmt.format(Date(ts)),
+            padLeft + frac * chartWidth,
+            labelY,
+            paint
+        )
     }
 }
 
