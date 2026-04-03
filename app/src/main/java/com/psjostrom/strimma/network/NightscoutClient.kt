@@ -11,6 +11,7 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.contentOrNull
@@ -45,11 +46,10 @@ data class NightscoutEntryResponse(
 )
 
 @Serializable
-@Suppress("ConstructorParameterNaming")
 data class NightscoutTreatment(
-    val _id: String? = null,
+    @SerialName("_id") val id: String? = null,
     val eventType: String? = null,
-    val created_at: String? = null,
+    @SerialName("created_at") val createdAt: String? = null,
     val insulin: Double? = null,
     val carbs: Double? = null,
     val absolute: Double? = null,
@@ -258,10 +258,10 @@ class NightscoutClient @Inject constructor() {
             val nsTreatments = response.body<List<NightscoutTreatment>>()
             val now = System.currentTimeMillis()
             nsTreatments.mapNotNull { ns ->
-                val createdAtStr = ns.created_at ?: return@mapNotNull null
+                val createdAtStr = ns.createdAt ?: return@mapNotNull null
                 val eventType = ns.eventType ?: return@mapNotNull null
                 val createdAtMs = parseIsoTimestamp(createdAtStr) ?: return@mapNotNull null
-                val id = ns._id ?: generateTreatmentId(createdAtStr, eventType, ns.insulin, ns.carbs)
+                val id = ns.id ?: generateTreatmentId(createdAtStr, eventType, ns.insulin, ns.carbs)
                 Treatment(
                     id = id,
                     createdAt = createdAtMs,

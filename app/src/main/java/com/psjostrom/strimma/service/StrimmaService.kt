@@ -444,7 +444,6 @@ class StrimmaService : Service() {
                 )
                 val forecastBg = prediction?.points?.lastOrNull()?.mgdl
                 val targetLow = settings.exerciseTargetLow(event.category).first()
-                val targetHigh = settings.exerciseTargetHigh(event.category).first()
                 val result = com.psjostrom.strimma.data.calendar.PreActivityAssessor.assess(
                     currentBgMgdl = latest.sgv,
                     velocityMgdlPerMin = velocity,
@@ -452,7 +451,6 @@ class StrimmaService : Service() {
                     forecastBgAt30minMgdl = forecastBg,
                     timeToWorkoutMs = (event.startTime - now),
                     targetLowMgdl = targetLow,
-                    targetHighMgdl = targetHigh,
                     glucoseUnit = glucoseUnit.value
                 )
                 val actionText = when {

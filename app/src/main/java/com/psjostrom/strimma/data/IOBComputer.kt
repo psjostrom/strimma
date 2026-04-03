@@ -72,20 +72,12 @@ object IOBComputer {
      * where t = minutes since bolus, tau = insulin time constant.
      * Lookback window: 5 * tau minutes.
      */
-    @Suppress("LoopWithTooManyJumpStatements") // Filter-and-accumulate pattern
     fun computeIOB(treatments: List<Treatment>, now: Long, tauMinutes: Double): Double {
-        val lookbackMs = lookbackMs(tauMinutes)
-        val cutoff = now - lookbackMs
+        val cutoff = now - lookbackMs(tauMinutes)
 
-        var total = 0.0
-        for (treatment in treatments) {
-            val dose = treatment.insulin ?: continue
-            if (treatment.createdAt < cutoff) continue
-            if (treatment.createdAt > now) continue
-
-            val minutesSince = (now - treatment.createdAt) / MS_PER_MINUTE.toDouble()
-            total += iobForTreatment(dose, minutesSince, tauMinutes)
-        }
+        val total = treatments
+            .filter { it.insulin != null && it.createdAt in cutoff..now }
+            .sumOf { iobForTreatment(it.insulin!!, (now - it.createdAt) / MS_PER_MINUTE.toDouble(), tauMinutes) }
 
         return Math.round(total * ROUNDING_FACTOR) / ROUNDING_FACTOR
     }

@@ -33,7 +33,7 @@ object PreActivityAssessor {
         val carbRecommendation: CarbRecommendation?
     )
 
-    @Suppress("CyclomaticComplexMethod", "LongParameterList", "LongMethod") // Assessment has many independent dimensions by design
+    @Suppress("CyclomaticComplexMethod", "LongMethod") // Assessment has many independent dimensions by design
     fun assess(
         currentBgMgdl: Int,
         velocityMgdlPerMin: Double?,
@@ -41,7 +41,6 @@ object PreActivityAssessor {
         forecastBgAt30minMgdl: Double?,
         timeToWorkoutMs: Long,
         targetLowMgdl: Float,
-        @Suppress("UNUSED_PARAMETER") targetHighMgdl: Float,
         glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL
     ): AssessmentResult {
         val reasons = mutableListOf<AssessmentReason>()
