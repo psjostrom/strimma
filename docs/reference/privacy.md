@@ -6,7 +6,7 @@ Strimma takes your medical data seriously. Here's exactly what it does with your
 
 ## Data Collection
 
-**Strimma collects no data.** There is no analytics, no telemetry, no crash reporting, no usage tracking, and no network calls except to your own Nightscout server.
+**Strimma collects no data.** There is no analytics, no telemetry, no crash reporting, no usage tracking, and no network calls except to the servers you configure (Nightscout, LibreLinkUp, Tidepool).
 
 ---
 
@@ -39,6 +39,7 @@ Strimma only makes network requests to:
 1. **Your Nightscout server** (push URL) — to upload glucose readings
 2. **Your follower Nightscout server** (follower URL) — to download readings in Nightscout Follower mode
 3. **Abbott's LibreLinkUp API** — to download readings in LibreLinkUp mode (only if you configure LibreLinkUp credentials)
+4. **Tidepool** — to upload glucose readings to your Tidepool account (only if you configure Tidepool credentials)
 
 No other network connections are made. No data is sent to Strimma's developers, third-party services, or any other endpoint.
 

@@ -6,7 +6,7 @@
 
 <p align="center">
   Open-source Android CGM companion app.<br />
-  Reads glucose from 60+ CGM apps, displays with interactive graph and alerts, pushes to Nightscout.
+  Reads glucose from 60+ CGM apps, displays with interactive graph and alerts, pushes to Nightscout and Tidepool.
 </p>
 
 <p align="center">
@@ -47,6 +47,7 @@ Strimma sits alongside your CGM app and gives you a better glucose display, aler
 **Integration:**
 
 - Nightscout push via `/api/v1/entries` with retry and offline resilience
+- Tidepool upload — sync glucose readings to your Tidepool account
 - Treatment sync from Nightscout (30-day retention) — bolus/carb markers on graph, IOB computation with configurable insulin curves, per-meal analysis
 - xDrip-compatible BG broadcast for watches and other apps (AAPS, GDH)
 - Local web server for Garmin watchfaces and other LAN clients
