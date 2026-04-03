@@ -23,6 +23,7 @@ import javax.inject.Singleton
  * Orchestrates Tidepool data uploads.
  * Manages auth, dataset lifecycle, chunking, and rate limiting.
  */
+@Suppress("TooManyFunctions") // Upload lifecycle + debug entry point
 @Singleton
 class TidepoolUploader @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -93,9 +94,11 @@ class TidepoolUploader @Inject constructor(
      */
     fun forceUpload() {
         scope.launch {
-            DebugLog.log(message = "Tidepool forceUpload: enabled=${settings.tidepoolEnabled.first()}, loggedIn=${authManager.isLoggedIn()}")
-            if (!settings.tidepoolEnabled.first()) return@launch
-            if (!authManager.isLoggedIn()) return@launch
+            val enabled = settings.tidepoolEnabled.first()
+            val loggedIn = authManager.isLoggedIn()
+            DebugLog.log(message = "Tidepool forceUpload: enabled=$enabled, loggedIn=$loggedIn")
+            if (!enabled) return@launch
+            if (!loggedIn) return@launch
             doUpload()
         }
     }

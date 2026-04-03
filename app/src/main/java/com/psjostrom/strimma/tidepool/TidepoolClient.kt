@@ -132,7 +132,10 @@ class TidepoolClient @Inject constructor() {
             val root = json.parseToJsonElement(responseText).jsonObject
             val obj = root["data"]?.jsonObject ?: root
             (obj["uploadId"] ?: obj["id"])?.toString()?.trim('"')
-        } catch (e: Exception) {
+        } catch (e: kotlinx.serialization.SerializationException) {
+            DebugLog.log(message = "Tidepool parseUploadId error: ${e.message?.take(MAX_ERROR_LENGTH)}")
+            null
+        } catch (e: IllegalArgumentException) {
             DebugLog.log(message = "Tidepool parseUploadId error: ${e.message?.take(MAX_ERROR_LENGTH)}")
             null
         }
