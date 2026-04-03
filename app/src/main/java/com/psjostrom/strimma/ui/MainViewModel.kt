@@ -107,7 +107,6 @@ class MainViewModel @Inject constructor(
                 forecastBgAt30minMgdl = forecastBg,
                 timeToWorkoutMs = timeToWorkout,
                 targetLowMgdl = targetLow,
-                targetHighMgdl = targetHigh,
                 glucoseUnit = glucoseUnit
             )
 
