@@ -6,7 +6,7 @@
 
 <p align="center">
   Open-source Android CGM companion app.<br />
-  Reads glucose from 60+ CGM apps, displays with interactive graph and alerts, pushes to Nightscout.
+  Reads glucose from 50+ CGM apps, displays with interactive graph and alerts, pushes to Nightscout.
 </p>
 
 <p align="center">
@@ -125,6 +125,12 @@ All changes go through pull requests. PRs require signed commits, linear history
 ## Acknowledgments
 
 Strimma exists because of [xDrip+](https://github.com/NightscoutFoundation/xDrip). Its feature set, UI patterns, and data pipeline are directly inspired by xDrip+'s decade of pioneering work. The CGM package list in Companion Mode is based on xDrip+'s `UiBasedCollector.coOptedPackages`.
+
+## About the Author
+
+Strimma is built by [Per Sjöström](https://www.linkedin.com/in/persjostrom/), a software engineer with Type 1 diabetes. Strimma started as a personal tool to replace xDrip+ with something modern, and grew into an open-source project for anyone who wants better control over their CGM data.
+
+Per also builds [Springa](https://github.com/psjostrom/springa), a workout generator and BG management system that receives data from Strimma via the Nightscout API.
 
 ## License
 

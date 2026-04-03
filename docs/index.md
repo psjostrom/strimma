@@ -111,5 +111,11 @@ Strimma is free, open-source software licensed under [GPLv3](https://github.com/
 
 ---
 
+## About the Author
+
+Strimma is built by [Per Sjöström](https://www.linkedin.com/in/persjostrom/), a software engineer with Type 1 diabetes. What started as a personal tool to replace xDrip+ grew into an open-source project for anyone who wants better control over their CGM data.
+
+---
+
 !!! warning "Not a medical device"
     Strimma is an open-source display tool, not a medical device. It is not FDA or CE approved. Do not use Strimma as the sole basis for medical decisions. Always follow the guidance of your healthcare team and your official CGM app.
