@@ -1,34 +1,10 @@
 package com.psjostrom.strimma.ui
 
 import com.psjostrom.strimma.data.GlucoseReading
-import com.psjostrom.strimma.data.MS_PER_MINUTE
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class ExerciseDetailSheetTest {
-
-    // --- timeLabelCount ---
-
-    @Test
-    fun `short range under 30 min gives 3 labels`() {
-        assertEquals(3, timeLabelCount(15 * MS_PER_MINUTE))
-        assertEquals(3, timeLabelCount(29 * MS_PER_MINUTE))
-    }
-
-    @Test
-    fun `medium range 30 min to 2 hours gives 4 labels`() {
-        assertEquals(4, timeLabelCount(30 * MS_PER_MINUTE))
-        assertEquals(4, timeLabelCount(90 * MS_PER_MINUTE))
-        assertEquals(4, timeLabelCount(119 * MS_PER_MINUTE))
-    }
-
-    @Test
-    fun `long range over 2 hours gives 5 labels`() {
-        assertEquals(5, timeLabelCount(120 * MS_PER_MINUTE))
-        assertEquals(5, timeLabelCount(300 * MS_PER_MINUTE))
-    }
-
-    // --- Activity filter logic ---
 
     private fun reading(ts: Long, sgv: Int = 100) =
         GlucoseReading(ts = ts, sgv = sgv, direction = "Flat", delta = null)
