@@ -11,7 +11,6 @@ import org.junit.Test
 class PreActivityAssessorTest {
 
     private val targetLow = 126f  // 7 mmol/L
-    private val targetHigh = 162f // 9 mmol/L
     private val workoutInMs = 2 * 3600_000L
 
     private fun assess(
@@ -26,8 +25,7 @@ class PreActivityAssessorTest {
         iob = iob,
         forecastBgAt30minMgdl = forecastBgAt30min,
         timeToWorkoutMs = timeToWorkoutMs,
-        targetLowMgdl = targetLow,
-        targetHighMgdl = targetHigh
+        targetLowMgdl = targetLow
     )
 
     // --- BG Level ---
@@ -250,7 +248,6 @@ class PreActivityAssessorTest {
             forecastBgAt30minMgdl = 90.0,
             timeToWorkoutMs = workoutInMs,
             targetLowMgdl = targetLow,
-            targetHighMgdl = targetHigh,
             glucoseUnit = GlucoseUnit.MGDL
         )
         assertTrue(result.reasons.any { it.message.contains("Predicted") && it.message.contains("90") && it.message.contains("30 min") })

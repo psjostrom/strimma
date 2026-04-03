@@ -50,9 +50,6 @@ object DebugLog {
         }
     }
 
-    // Keep for backward compat — callers that pass context
-    fun log(@Suppress("UNUSED_PARAMETER") context: android.content.Context? = null, message: String) = log(message)
-
     private const val MAX_FILE_ENTRIES = 500
 
     fun readLogFiles(): List<String> {
