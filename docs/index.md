@@ -44,7 +44,7 @@ Strimma stands on the shoulders of the incredible [xDrip+](https://github.com/Ni
 - **Shows your BG at a glance** — large, color-coded number with direction arrow, delta, and trend graph in your notification bar.
 - **Configurable alerts** — eight alert types (urgent low, low, high, urgent high, low soon, high soon, stale data, push failed), each with its own notification channel. Urgent alerts bypass Do Not Disturb by default; any alert can be configured to bypass DND via Android's notification settings. Alerts can be paused by category (Low or High) for a custom duration.
 - **Predicts where you're heading** — shows "Low in X min" or "High in X min" warnings before you cross your thresholds.
-- **Pushes to Nightscout** — automatic, immediate upload to any Nightscout-compatible server. Offline-resilient — readings queue and retry.
+- **Pushes to Nightscout and Tidepool** — automatic, immediate upload to any Nightscout-compatible server or your Tidepool account. Offline-resilient — readings queue and retry.
 - **Tracks treatments and IOB** — fetches bolus and carb data from Nightscout (30-day retention), computes insulin on board with your insulin type's curve.
 - **Per-meal postprandial analysis** — analyzes glucose response to each meal: TIR, peak excursion, recovery time, IOB at meal. Aggregate postprandial profile with AGP-style percentile bands. Configurable meal time slots.
 - **Follows a remote Nightscout** — for caregivers, partners, or parents who need to see someone else's glucose remotely.
@@ -105,7 +105,7 @@ You can also receive glucose via **xDrip Broadcast** (from xDrip+, Juggluco, AAP
 
 ## Open Source
 
-Strimma is free, open-source software licensed under [GPLv3](https://github.com/psjostrom/strimma/blob/main/LICENSE). No ads, no tracking, no data collection. Your glucose data stays on your device and your Nightscout server.
+Strimma is free, open-source software licensed under [GPLv3](https://github.com/psjostrom/strimma/blob/main/LICENSE). No ads, no tracking, no data collection. Your glucose data stays on your device and the servers you configure.
 
 [View on GitHub :fontawesome-brands-github:](https://github.com/psjostrom/strimma){ .md-button }
 
