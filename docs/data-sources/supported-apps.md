@@ -14,7 +14,6 @@ Strimma can read glucose from the following apps in **Companion mode**.
 
 ## Abbott / Libre
 
-- Libre 3
 - Libre 2 / LibreLink
 
 ## CamAPS FX
@@ -82,7 +81,7 @@ If your CGM app isn't supported in Companion mode, you may be able to use [xDrip
 
     **Dexcom:** `com.dexcom.g6`, `com.dexcom.g7`, `com.dexcom.dexcomone`, `com.dexcom.d1plus`, `com.dexcom.stelo`, plus 11 regional G6 variants
 
-    **Abbott:** `com.freestylelibre3.app`, `com.freestylelibre3.app.de`, `com.freestylelibre.app`, `com.freestylelibre.app.de`
+    **Abbott:** `com.freestylelibre.app`, `com.freestylelibre.app.de` (Libre 3 packages are monitored but don't contain BG values — use [LibreLinkUp](librelinkup.md) instead)
 
     **CamAPS FX:** `com.camdiab.fx_alert.mmoll`, `.mgdl`, `.hx.mmoll`, `.hx.mgdl`, `.mmoll.ca`
 

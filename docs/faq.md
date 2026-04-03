@@ -8,7 +8,7 @@ Frequently asked questions about Strimma.
 
 ### What does "Strimma" mean?
 
-Strimma is a Swedish word meaning "streak" or "glimmer" — as in *en strimma hopp*, a glimmer of hope. It felt right for an app that helps you see where your glucose is going.
+Strimma is a Swedish word for a streak or thin band — the kind of line a CGM sensor draws across your day. *En strimma hopp* (a glimmer of hope) works too.
 
 ### Is Strimma free?
 
@@ -40,7 +40,7 @@ No. Strimma is Android-only. iOS doesn't allow apps to read other apps' notifica
 
 ### Which CGM systems does Strimma work with?
 
-Any CGM system with an Android app that shows glucose in a notification. This includes Dexcom G6/G7, Libre 2/3, CamAPS FX, Eversense, Medtronic Guardian, xDrip+, Juggluco, and many more. See the [full list](data-sources/supported-apps.md).
+Any CGM system with an Android app that shows glucose in a notification. This includes Dexcom G6/G7, Libre 2, CamAPS FX, Eversense, Medtronic Guardian, xDrip+, Juggluco, and many more. Libre 3 is supported via [LibreLinkUp mode](data-sources/librelinkup.md). See the [full list](data-sources/supported-apps.md).
 
 ### Does Strimma work with AndroidAPS / CamAPS FX / Loop?
 
@@ -76,7 +76,7 @@ No. Strimma works completely offline — it can display glucose from your CGM ap
 
 ### What Nightscout servers does Strimma work with?
 
-Any server that implements the Nightscout API. This includes the standard Nightscout project (cgm-remote-monitor), hosted Nightscout services, and custom implementations.
+Any server that implements the Nightscout API. This includes the standard Nightscout project (cgm-remote-monitor), hosted Nightscout services, and custom implementations like [Springa](https://github.com/psjostrom/springa).
 
 ### Can multiple people push to the same Nightscout?
 

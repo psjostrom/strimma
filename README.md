@@ -6,7 +6,7 @@
 
 <p align="center">
   Open-source Android CGM companion app.<br />
-  Reads glucose from 60+ CGM apps, displays with interactive graph and alerts, pushes to Nightscout.
+  Reads glucose from 50+ CGM apps, displays with interactive graph and alerts, pushes to Nightscout.
 </p>
 
 <p align="center">
@@ -19,7 +19,7 @@ Strimma sits alongside your CGM app and gives you a better glucose display, aler
 
 **Data sources** — pick what fits your setup:
 
-- **Companion Mode** — reads glucose from your CGM app's notification. Works with Dexcom, Libre, CamAPS FX, Juggluco, xDrip+, Medtronic, Eversense, and 50+ more.
+- **Companion Mode** — reads glucose from your CGM app's notification. Works with Dexcom, Libre 2, CamAPS FX, Juggluco, xDrip+, Medtronic, Eversense, and 50+ more.
 - **xDrip Broadcast** — receives data from apps that broadcast in xDrip format (AAPS, Juggluco, xDrip+).
 - **Nightscout Follower** — follows a remote Nightscout server. For caregivers and remote monitoring.
 - **LibreLinkUp** — reads glucose from Abbott's LibreLinkUp cloud. For Libre 3 users.

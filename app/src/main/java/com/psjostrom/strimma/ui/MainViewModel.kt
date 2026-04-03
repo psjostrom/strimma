@@ -32,6 +32,7 @@ import com.psjostrom.strimma.network.NightscoutFollower
 import com.psjostrom.strimma.network.NightscoutPuller
 import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.tidepool.TidepoolAuthManager
+import com.psjostrom.strimma.tidepool.TidepoolUploader
 import com.psjostrom.strimma.update.UpdateChecker
 import com.psjostrom.strimma.update.UpdateInstaller
 import com.psjostrom.strimma.update.UpdateInfo
@@ -65,6 +66,7 @@ class MainViewModel @Inject constructor(
     private val calendarReader: CalendarReader,
     val mealAnalyzer: MealAnalyzer,
     private val tidepoolAuthManager: TidepoolAuthManager,
+    private val tidepoolUploader: TidepoolUploader,
     private val updateChecker: UpdateChecker,
     private val updateInstaller: UpdateInstaller
 ) : ViewModel() {
@@ -307,6 +309,8 @@ class MainViewModel @Inject constructor(
             tidepoolAuthManager.logout()
         }
     }
+
+    fun tidepoolForceUpload() = tidepoolUploader.forceUpload()
 
     val exerciseSessions: StateFlow<List<StoredExerciseSession>> = exerciseDao.getAllSessions()
         .map { sessions ->

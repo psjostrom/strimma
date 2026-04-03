@@ -89,7 +89,7 @@ data class DatasetRequest(
 
 /**
  * Tidepool dataset creation response.
- * Contains the uploadId needed for subsequent data uploads.
+ * The API wraps the dataset in a "data" envelope: {"data": {"uploadId": "..."}}.
  */
 @Serializable
 data class DatasetResponse(

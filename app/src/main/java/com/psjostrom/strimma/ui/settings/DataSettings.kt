@@ -29,6 +29,7 @@ fun DataSettings(
     onTidepoolLogout: () -> Unit,
     tidepoolLastUploadTime: Long,
     tidepoolLastError: String,
+    onTidepoolForceUpload: () -> Unit,
     onExportSettings: () -> Unit,
     onExportReadings: () -> Unit,
     onImportSettings: () -> Unit,
@@ -145,6 +146,16 @@ fun DataSettings(
                         DateUtils.MINUTE_IN_MILLIS
                     )
                     Text("Last upload: $relative", color = outline, fontSize = 12.sp)
+                }
+
+                if (isTidepoolLoggedIn) {
+                    HorizontalDivider(color = outlineVar)
+                    OutlinedButton(
+                        onClick = onTidepoolForceUpload,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Force Upload Now")
+                    }
                 }
             }
         }

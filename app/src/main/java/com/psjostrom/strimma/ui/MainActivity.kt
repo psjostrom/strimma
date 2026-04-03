@@ -588,6 +588,7 @@ class MainActivity : ComponentActivity() {
                             onTidepoolLogout = viewModel::tidepoolLogout,
                             tidepoolLastUploadTime = tidepoolLastUploadTime,
                             tidepoolLastError = tidepoolLastError,
+                            onTidepoolForceUpload = viewModel::tidepoolForceUpload,
                             onExportReadings = {
                                 lifecycleScope.launch {
                                     val csv = viewModel.exportCsv(EXPORT_HOURS_30_DAYS)
