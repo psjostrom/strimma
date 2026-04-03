@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <!-- AGP 9.1.0 only supports compileSdk 36; lint compares against whatever SDK
+         is installed on the machine (including betas). Remove when AGP catches up. -->
+    <issue id="OldTargetApi" severity="ignore" />
+</lint>
