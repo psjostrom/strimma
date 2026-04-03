@@ -12,8 +12,8 @@ object TidepoolDateUtil {
     private const val MS_PER_MINUTE = 60_000
 
     /**
-     * Formats timestamp as UTC ISO8601 with Tidepool's required format:
-     * yyyy-MM-dd'T'HH:mm:ss.SSS0000Z
+     * Formats timestamp as UTC ISO8601:
+     * yyyy-MM-dd'T'HH:mm:ss.SSSZ
      */
     fun toUtcIso8601(timestamp: Long): String {
         val formatter = SimpleDateFormat(UTC_ISO8601_FORMAT, Locale.US).apply {

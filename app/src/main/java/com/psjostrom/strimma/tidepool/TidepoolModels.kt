@@ -92,11 +92,6 @@ data class DatasetRequest(
  * The API wraps the dataset in a "data" envelope: {"data": {"uploadId": "..."}}.
  */
 @Serializable
-data class DatasetResponseEnvelope(
-    val data: DatasetResponse? = null
-)
-
-@Serializable
 data class DatasetResponse(
     val uploadId: String? = null,
     val id: String? = null
