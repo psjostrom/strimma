@@ -25,7 +25,7 @@ Strimma is a **Nightscout-compatible client**. It can:
 3. **Follow remotely** — poll a Nightscout server for readings (follower mode)
 4. **Fetch treatments** — read bolus, carb, and basal data from Nightscout for IOB display
 
-Strimma fully complies with the Nightscout API specification. It works with **any Nightscout server** — the standard Nightscout project, Nightscout forks, or custom servers that implement the Nightscout API.
+Strimma fully complies with the Nightscout API specification. It works with **any Nightscout server** — the standard Nightscout project, Nightscout forks, or custom implementations like [Springa](https://github.com/psjostrom/springa).
 
 ---
 
