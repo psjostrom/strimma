@@ -7,13 +7,13 @@ import java.util.TimeZone
 
 object TidepoolDateUtil {
 
-    private const val UTC_ISO8601_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'0000Z'"
+    private const val UTC_ISO8601_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
     private const val LOCAL_NO_ZONE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss"
     private const val MS_PER_MINUTE = 60_000
 
     /**
-     * Formats timestamp as UTC ISO8601 with Tidepool's required format:
-     * yyyy-MM-dd'T'HH:mm:ss.SSS0000Z
+     * Formats timestamp as UTC ISO8601:
+     * yyyy-MM-dd'T'HH:mm:ss.SSSZ
      */
     fun toUtcIso8601(timestamp: Long): String {
         val formatter = SimpleDateFormat(UTC_ISO8601_FORMAT, Locale.US).apply {

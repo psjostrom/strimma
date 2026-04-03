@@ -70,6 +70,7 @@ class PreActivityGuidanceTest {
     @Inject lateinit var treatmentSyncer: TreatmentSyncer
     @Inject lateinit var mealAnalyzer: MealAnalyzer
     @Inject lateinit var tidepoolAuthManager: TidepoolAuthManager
+    @Inject lateinit var tidepoolUploader: com.psjostrom.strimma.tidepool.TidepoolUploader
 
     @Before
     fun setUp() {
@@ -106,7 +107,7 @@ class PreActivityGuidanceTest {
     private fun createViewModel() = MainViewModel(
         dao, treatmentDao, exerciseDao, exerciseBGAnalyzer, settings,
         nightscoutFollower, libreLinkUpFollower, nightscoutPuller,
-        treatmentSyncer, calendarReader, mealAnalyzer, tidepoolAuthManager
+        treatmentSyncer, calendarReader, mealAnalyzer, tidepoolAuthManager, tidepoolUploader
     )
 
     // --- CalendarReader delegation ---

@@ -32,6 +32,7 @@ import com.psjostrom.strimma.network.NightscoutFollower
 import com.psjostrom.strimma.network.NightscoutPuller
 import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.tidepool.TidepoolAuthManager
+import com.psjostrom.strimma.tidepool.TidepoolUploader
 import android.content.Intent
 import com.psjostrom.strimma.data.meal.MealAnalyzer
 import com.psjostrom.strimma.data.meal.MealTimeSlotConfig
@@ -60,7 +61,8 @@ class MainViewModel @Inject constructor(
     private val treatmentSyncer: TreatmentSyncer,
     private val calendarReader: CalendarReader,
     val mealAnalyzer: MealAnalyzer,
-    private val tidepoolAuthManager: TidepoolAuthManager
+    private val tidepoolAuthManager: TidepoolAuthManager,
+    private val tidepoolUploader: TidepoolUploader
 ) : ViewModel() {
 
     companion object {
@@ -301,6 +303,8 @@ class MainViewModel @Inject constructor(
             tidepoolAuthManager.logout()
         }
     }
+
+    fun tidepoolForceUpload() = tidepoolUploader.forceUpload()
 
     val exerciseSessions: StateFlow<List<StoredExerciseSession>> = exerciseDao.getAllSessions()
         .map { sessions ->
