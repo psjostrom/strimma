@@ -6,7 +6,7 @@
 
 <p align="center">
   Open-source Android CGM companion app.<br />
-  Reads glucose from 60+ CGM apps, displays with interactive graph and alerts, pushes to Nightscout.
+  Reads glucose from 60+ CGM apps, displays with interactive graph and alerts, pushes to Nightscout and Tidepool.
 </p>
 
 <p align="center">

@@ -182,6 +182,19 @@ Integrations and backup.
 | **Local Web Server** | Serve BG on port 17580 for watches and apps | Off |
 | **Web Server API Secret** | Secret for authenticating web server requests | Empty |
 
+### Tidepool
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| **Upload to Tidepool** | Sync CGM data to your Tidepool account | Off |
+| **Login with Tidepool** | Opens Tidepool's login page in your browser (OIDC with PKCE) | — |
+| **Force Upload Now** | Manually trigger an upload of recent readings | — |
+
+When enabled and logged in, Strimma uploads glucose readings to Tidepool in the background. This runs independently of Nightscout push — both can be active simultaneously.
+
+!!! info "Tidepool consent"
+    On first login, Strimma shows a consent dialog explaining that uploaded data is subject to Tidepool's Privacy Policy and Terms of Use. You can disconnect at any time.
+
 ### Backup
 
 | Action | Description |
