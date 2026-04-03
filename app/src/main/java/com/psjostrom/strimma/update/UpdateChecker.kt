@@ -8,7 +8,6 @@ import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
-import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.CoroutineScope
@@ -20,7 +19,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import org.json.JSONObject
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -35,6 +33,11 @@ private data class GitHubRelease(
 private data class GitHubAsset(
     val name: String,
     val browser_download_url: String
+)
+
+@Serializable
+private data class UpdateConfig(
+    val min_version: String? = null
 )
 
 @Singleton
@@ -57,7 +60,7 @@ class UpdateChecker @Inject constructor() {
 
     private var checkJob: Job? = null
 
-    private val client = HttpClient(CIO) {
+    internal var client: HttpClient = HttpClient(CIO) {
         install(HttpTimeout) {
             requestTimeoutMillis = REQUEST_TIMEOUT_MS
             socketTimeoutMillis = REQUEST_TIMEOUT_MS
@@ -81,7 +84,6 @@ class UpdateChecker @Inject constructor() {
     fun stop() {
         checkJob?.cancel()
         checkJob = null
-        client.close()
     }
 
     fun dismiss() {
@@ -116,9 +118,6 @@ class UpdateChecker @Inject constructor() {
                 apkUrl = apkAsset.browser_download_url,
                 isForced = isForced
             )
-            // Reset dismiss when a new forced update arrives
-            if (isForced) _dismissed.value = false
-
             DebugLog.log("Update available: $releaseVersion (forced=$isForced)")
         } catch (e: kotlin.coroutines.cancellation.CancellationException) {
             throw e
@@ -142,9 +141,8 @@ class UpdateChecker @Inject constructor() {
         return try {
             val response = client.get(UPDATE_JSON_URL)
             if (!response.status.isSuccess()) return null
-            val body = response.bodyAsText()
-            val json = JSONObject(body)
-            json.optString("min_version", null)
+            val config: UpdateConfig = response.body()
+            config.min_version
         } catch (e: kotlin.coroutines.cancellation.CancellationException) {
             throw e
         } catch (

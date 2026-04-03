@@ -53,47 +53,64 @@ class UpdateInstaller @Inject constructor(
 
                 val query = DownloadManager.Query().setFilterById(downloadId)
                 val cursor = dm.query(query)
-                if (cursor.moveToFirst()) {
-                    val statusIdx = cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS)
-                    if (cursor.getInt(statusIdx) == DownloadManager.STATUS_SUCCESSFUL) {
-                        _state.value = DownloadState.READY
-                        DebugLog.log("Update APK downloaded: $fileName")
-                        installApk(version)
-                    } else {
-                        _state.value = DownloadState.FAILED
-                        DebugLog.log("Update download failed")
+                try {
+                    if (cursor.moveToFirst()) {
+                        val statusIdx = cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS)
+                        if (cursor.getInt(statusIdx) == DownloadManager.STATUS_SUCCESSFUL) {
+                            _state.value = DownloadState.READY
+                            DebugLog.log("Update APK downloaded: $fileName")
+                            installApk(version)
+                        } else {
+                            _state.value = DownloadState.FAILED
+                            DebugLog.log("Update download failed")
+                        }
                     }
+                } catch (
+                    @Suppress("TooGenericExceptionCaught")
+                    e: Exception
+                ) {
+                    _state.value = DownloadState.FAILED
+                    DebugLog.log("Download query failed: ${e.message}")
+                } finally {
+                    cursor.close()
+                    unregisterReceiver()
                 }
-                cursor.close()
-                unregisterReceiver()
             }
         }
         context.registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED)
     }
 
+    @Suppress("TooGenericExceptionCaught") // System boundary (FileProvider, PackageInstaller)
     private fun installApk(version: String) {
         val fileName = "strimma-$version.apk"
-        val file = java.io.File(
-            context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),
-            fileName
-        )
+        val dir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+        if (dir == null) {
+            DebugLog.log("External files dir unavailable for install")
+            _state.value = DownloadState.FAILED
+            return
+        }
+        val file = java.io.File(dir, fileName)
         if (!file.exists()) {
             DebugLog.log("APK file not found: $fileName")
             _state.value = DownloadState.FAILED
             return
         }
 
-        val uri = FileProvider.getUriForFile(
-            context,
-            "${context.packageName}.fileprovider",
-            file
-        )
-
-        val intent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(uri, "application/vnd.android.package-archive")
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
+        try {
+            val uri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                file
+            )
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "application/vnd.android.package-archive")
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
+            }
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            DebugLog.log("Install failed: ${e.message}")
+            _state.value = DownloadState.FAILED
         }
-        context.startActivity(intent)
     }
 
     private fun cleanOldApks() {
