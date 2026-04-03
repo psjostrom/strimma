@@ -184,7 +184,7 @@ class UpdateCheckerTest {
     ]}"""
 
     companion object {
-        private val RELEASE_WITH_APK = """{"tag_name": "v2.0.0", "body": "Release notes", "assets": [
+        private const val RELEASE_WITH_APK = """{"tag_name": "v2.0.0", "body": "Release notes", "assets": [
             {"name": "strimma-2.0.0.apk", "browser_download_url": "https://github.com/test/strimma-2.0.0.apk"}
         ]}"""
     }

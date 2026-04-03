@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
@@ -24,7 +25,7 @@ import javax.inject.Singleton
 
 @Serializable
 private data class GitHubRelease(
-    val tag_name: String,
+    @SerialName("tag_name") val tagName: String,
     val body: String? = null,
     val assets: List<GitHubAsset> = emptyList()
 )
@@ -32,12 +33,12 @@ private data class GitHubRelease(
 @Serializable
 private data class GitHubAsset(
     val name: String,
-    val browser_download_url: String
+    @SerialName("browser_download_url") val downloadUrl: String
 )
 
 @Serializable
 private data class UpdateConfig(
-    val min_version: String? = null
+    @SerialName("min_version") val minVersion: String? = null
 )
 
 @Singleton
@@ -50,6 +51,7 @@ class UpdateChecker @Inject constructor() {
             "https://raw.githubusercontent.com/$GITHUB_REPO/main/update.json"
         private const val CHECK_INTERVAL_MS = 12L * 60 * 60 * 1000 // 12 hours
         private const val REQUEST_TIMEOUT_MS = 15_000L
+        private const val MAX_LOG_MESSAGE_LENGTH = 80
     }
 
     private val _updateInfo = MutableStateFlow<UpdateInfo?>(null)
@@ -96,7 +98,7 @@ class UpdateChecker @Inject constructor() {
             val release = fetchLatestRelease() ?: return
             val currentVersion = BuildConfig.VERSION_NAME
 
-            val releaseVersion = release.tag_name.removePrefix("v")
+            val releaseVersion = release.tagName.removePrefix("v")
             if (!VersionComparator.isOlderThan(currentVersion, releaseVersion)) {
                 _updateInfo.value = null
                 return
@@ -115,14 +117,14 @@ class UpdateChecker @Inject constructor() {
             _updateInfo.value = UpdateInfo(
                 version = releaseVersion,
                 changelog = release.body?.trim() ?: "",
-                apkUrl = apkAsset.browser_download_url,
+                apkUrl = apkAsset.downloadUrl,
                 isForced = isForced
             )
             DebugLog.log("Update available: $releaseVersion (forced=$isForced)")
         } catch (e: kotlin.coroutines.cancellation.CancellationException) {
             throw e
         } catch (e: Exception) {
-            DebugLog.log("Update check failed: ${e.message?.take(80)}")
+            DebugLog.log("Update check failed: ${e.message?.take(MAX_LOG_MESSAGE_LENGTH)}")
         }
     }
 
@@ -142,14 +144,14 @@ class UpdateChecker @Inject constructor() {
             val response = client.get(UPDATE_JSON_URL)
             if (!response.status.isSuccess()) return null
             val config: UpdateConfig = response.body()
-            config.min_version
+            config.minVersion
         } catch (e: kotlin.coroutines.cancellation.CancellationException) {
             throw e
         } catch (
             @Suppress("TooGenericExceptionCaught")
             e: Exception
         ) {
-            DebugLog.log("Failed to fetch update.json: ${e.message?.take(80)}")
+            DebugLog.log("Failed to fetch update.json: ${e.message?.take(MAX_LOG_MESSAGE_LENGTH)}")
             null
         }
     }
