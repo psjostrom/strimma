@@ -16,7 +16,7 @@ kotlin {
 
 android {
     namespace = "com.psjostrom.strimma"
-    compileSdk = 36
+    compileSdk = 37
 
     signingConfigs {
         create("release") {
@@ -36,7 +36,7 @@ android {
     defaultConfig {
         applicationId = "com.psjostrom.strimma"
         minSdk = 33 // Only targets devices still receiving security updates — this is medical data
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 2
         versionName = "0.10.0"
 
