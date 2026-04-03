@@ -5,8 +5,8 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.net.Uri
 import android.os.Environment
+import androidx.core.net.toUri
 import androidx.core.content.FileProvider
 import com.psjostrom.strimma.receiver.DebugLog
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -36,7 +36,7 @@ class UpdateInstaller @Inject constructor(
         _state.value = DownloadState.DOWNLOADING
         val fileName = "strimma-$version.apk"
 
-        val request = DownloadManager.Request(Uri.parse(apkUrl))
+        val request = DownloadManager.Request(apkUrl.toUri())
             .setTitle("Strimma $version")
             .setDescription("Downloading update...")
             .setDestinationInExternalFilesDir(context, Environment.DIRECTORY_DOWNLOADS, fileName)
