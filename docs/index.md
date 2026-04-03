@@ -111,9 +111,9 @@ Strimma is free, open-source software licensed under [GPLv3](https://github.com/
 
 ---
 
-## About the Author
+## Built By
 
-Strimma is built by [Per Sjöström](https://www.linkedin.com/in/persjostrom/), a software engineer with Type 1 diabetes. What started as a personal tool to replace xDrip+ grew into an open-source project for anyone who wants better control over their CGM data.
+Strimma is built by [Per Sjöström](https://www.linkedin.com/in/persjostrom/), a software engineer with Type 1 diabetes. What started as a personal tool to replace xDrip+ grew into an open-source project for anyone who wants better control over their CGM data. Per also builds [Springa](https://github.com/psjostrom/springa), a workout generator and BG management system that receives data from Strimma via the Nightscout API.
 
 ---
 

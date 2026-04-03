@@ -126,12 +126,6 @@ All changes go through pull requests. PRs require signed commits, linear history
 
 Strimma exists because of [xDrip+](https://github.com/NightscoutFoundation/xDrip). Its feature set, UI patterns, and data pipeline are directly inspired by xDrip+'s decade of pioneering work. The CGM package list in Companion Mode is based on xDrip+'s `UiBasedCollector.coOptedPackages`.
 
-## About the Author
-
-Strimma is built by [Per Sjöström](https://www.linkedin.com/in/persjostrom/), a software engineer with Type 1 diabetes. Strimma started as a personal tool to replace xDrip+ with something modern, and grew into an open-source project for anyone who wants better control over their CGM data.
-
-Per also builds [Springa](https://github.com/psjostrom/springa), a workout generator and BG management system that receives data from Strimma via the Nightscout API.
-
 ## License
 
 [GNU General Public License v3.0](LICENSE)
