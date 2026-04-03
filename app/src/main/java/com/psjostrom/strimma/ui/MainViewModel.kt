@@ -32,6 +32,10 @@ import com.psjostrom.strimma.network.NightscoutFollower
 import com.psjostrom.strimma.network.NightscoutPuller
 import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.tidepool.TidepoolAuthManager
+import com.psjostrom.strimma.update.UpdateChecker
+import com.psjostrom.strimma.update.UpdateInstaller
+import com.psjostrom.strimma.update.UpdateInfo
+import com.psjostrom.strimma.update.DownloadState
 import android.content.Intent
 import com.psjostrom.strimma.data.meal.MealAnalyzer
 import com.psjostrom.strimma.data.meal.MealTimeSlotConfig
@@ -60,7 +64,9 @@ class MainViewModel @Inject constructor(
     private val treatmentSyncer: TreatmentSyncer,
     private val calendarReader: CalendarReader,
     val mealAnalyzer: MealAnalyzer,
-    private val tidepoolAuthManager: TidepoolAuthManager
+    private val tidepoolAuthManager: TidepoolAuthManager,
+    private val updateChecker: UpdateChecker,
+    private val updateInstaller: UpdateInstaller
 ) : ViewModel() {
 
     companion object {
@@ -443,5 +449,16 @@ class MainViewModel @Inject constructor(
 
     suspend fun setMealSlotBoundary(key: String, minutes: Int) {
         settings.setMealSlotBoundary(key, minutes)
+    }
+
+    // Auto-update
+    val updateInfo: StateFlow<UpdateInfo?> = updateChecker.updateInfo
+    val updateDismissed: StateFlow<Boolean> = updateChecker.dismissed
+    val downloadState: StateFlow<DownloadState> = updateInstaller.state
+
+    fun dismissUpdate() = updateChecker.dismiss()
+
+    fun downloadUpdate(info: UpdateInfo) {
+        updateInstaller.download(info.apkUrl, info.version)
     }
 }

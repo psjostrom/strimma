@@ -20,6 +20,8 @@ import com.psjostrom.strimma.network.NightscoutPuller
 import com.psjostrom.strimma.network.TreatmentSyncer
 import com.psjostrom.strimma.testutil.FakeCalendarProvider
 import com.psjostrom.strimma.tidepool.TidepoolAuthManager
+import com.psjostrom.strimma.update.UpdateChecker
+import com.psjostrom.strimma.update.UpdateInstaller
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import dagger.hilt.android.testing.HiltTestApplication
@@ -70,6 +72,8 @@ class PreActivityGuidanceTest {
     @Inject lateinit var treatmentSyncer: TreatmentSyncer
     @Inject lateinit var mealAnalyzer: MealAnalyzer
     @Inject lateinit var tidepoolAuthManager: TidepoolAuthManager
+    @Inject lateinit var updateChecker: UpdateChecker
+    @Inject lateinit var updateInstaller: UpdateInstaller
 
     @Before
     fun setUp() {
@@ -106,7 +110,8 @@ class PreActivityGuidanceTest {
     private fun createViewModel() = MainViewModel(
         dao, treatmentDao, exerciseDao, exerciseBGAnalyzer, settings,
         nightscoutFollower, libreLinkUpFollower, nightscoutPuller,
-        treatmentSyncer, calendarReader, mealAnalyzer, tidepoolAuthManager
+        treatmentSyncer, calendarReader, mealAnalyzer, tidepoolAuthManager,
+        updateChecker, updateInstaller
     )
 
     // --- CalendarReader delegation ---

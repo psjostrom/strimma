@@ -32,6 +32,7 @@ import com.psjostrom.strimma.receiver.XdripBroadcastReceiver
 import com.psjostrom.strimma.data.calendar.CalendarReader
 import com.psjostrom.strimma.data.calendar.WorkoutEvent
 import com.psjostrom.strimma.receiver.WorkoutAlarmReceiver
+import com.psjostrom.strimma.update.UpdateChecker
 import com.psjostrom.strimma.webserver.LocalWebServer
 import android.app.AlarmManager
 import android.app.PendingIntent
@@ -95,6 +96,7 @@ class StrimmaService : Service() {
     @Inject lateinit var exerciseSyncer: ExerciseSyncer
     @Inject lateinit var healthConnectManager: HealthConnectManager
     @Inject lateinit var calendarReader: CalendarReader
+    @Inject lateinit var updateChecker: UpdateChecker
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var pruneJob: Job? = null
@@ -217,6 +219,7 @@ class StrimmaService : Service() {
         scope.launch { updateNotification() }
         startPeriodicJobs()
         startCalendarPoll()
+        updateChecker.start(scope)
     }
 
     private fun startPeriodicJobs() {
@@ -282,6 +285,7 @@ class StrimmaService : Service() {
         localWebServer.stop()
         pusher.stop()
         tidepoolUploader.stop()
+        updateChecker.stop()
         scope.cancel()
         super.onDestroy()
     }
