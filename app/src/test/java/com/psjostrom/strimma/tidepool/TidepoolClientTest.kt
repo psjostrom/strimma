@@ -96,7 +96,7 @@ class TidepoolClientTest {
             assertEquals(HttpMethod.Post, request.method)
 
             respond(
-                content = """{"uploadId": "ds-new"}""",
+                content = """{"data": {"uploadId": "ds-new", "id": "ds-new"}}""",
                 status = HttpStatusCode.OK,
                 headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             )

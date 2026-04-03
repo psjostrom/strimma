@@ -9,7 +9,9 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 import kotlin.coroutines.cancellation.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -25,9 +27,14 @@ class TidepoolClient @Inject constructor() {
         private const val MAX_ERROR_LENGTH = 80
     }
 
+    private val json = Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+    }
+
     private var httpClient: HttpClient = HttpClient(CIO) {
         install(ContentNegotiation) {
-            json(Json { ignoreUnknownKeys = true })
+            json(json)
         }
     }
 
@@ -86,6 +93,9 @@ class TidepoolClient @Inject constructor() {
 
         return try {
             val fullUrl = "${baseUrl.trimEnd('/')}/v1/users/$userId/data_sets"
+            val requestBody = json.encodeToString(datasetRequest)
+            DebugLog.log(message = "Tidepool createDataset body: $requestBody")
+
             val response = httpClient.post(fullUrl) {
                 contentType(ContentType.Application.Json)
                 header("x-tidepool-session-token", token)
@@ -98,8 +108,10 @@ class TidepoolClient @Inject constructor() {
                 return null
             }
 
-            val datasetResponse = response.body<DatasetResponse>()
-            datasetResponse.uploadId
+            val responseText = response.bodyAsText()
+            val uploadId = parseUploadId(responseText)
+            DebugLog.log(message = "Tidepool createDataset success: uploadId=$uploadId")
+            uploadId
         } catch (e: CancellationException) {
             throw e
         } catch (
@@ -107,6 +119,21 @@ class TidepoolClient @Inject constructor() {
             e: Exception
         ) {
             DebugLog.log(message = "Tidepool createDataset error: ${e.message?.take(MAX_ERROR_LENGTH)}")
+            null
+        }
+    }
+
+    /**
+     * Parses uploadId from the create-dataset response.
+     * Handles both envelope format {"data": {"uploadId": "..."}} and flat {"uploadId": "..."}.
+     */
+    private fun parseUploadId(responseText: String): String? {
+        return try {
+            val root = json.parseToJsonElement(responseText).jsonObject
+            val obj = root["data"]?.jsonObject ?: root
+            (obj["uploadId"] ?: obj["id"])?.toString()?.trim('"')
+        } catch (e: Exception) {
+            DebugLog.log(message = "Tidepool parseUploadId error: ${e.message?.take(MAX_ERROR_LENGTH)}")
             null
         }
     }

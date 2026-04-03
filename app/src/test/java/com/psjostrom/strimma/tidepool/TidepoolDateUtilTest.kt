@@ -6,11 +6,11 @@ import org.junit.Test
 class TidepoolDateUtilTest {
 
     @Test
-    fun `toUtcIso8601 produces string ending with 0000Z`() {
+    fun `toUtcIso8601 produces standard ISO8601 ending with Z`() {
         val timestamp = 1711234567890L // 2024-03-23T...
         val result = TidepoolDateUtil.toUtcIso8601(timestamp)
 
-        assertTrue("Should end with 0000Z", result.endsWith("0000Z"))
+        assertTrue("Should end with milliseconds + Z (e.g. .890Z)", result.matches(Regex(".*\\.\\d{3}Z$")))
     }
 
     @Test

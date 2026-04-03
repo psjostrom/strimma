@@ -7,7 +7,7 @@ import java.util.TimeZone
 
 object TidepoolDateUtil {
 
-    private const val UTC_ISO8601_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'0000Z'"
+    private const val UTC_ISO8601_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
     private const val LOCAL_NO_ZONE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss"
     private const val MS_PER_MINUTE = 60_000
 

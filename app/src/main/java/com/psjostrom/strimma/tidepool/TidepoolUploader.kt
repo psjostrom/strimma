@@ -87,6 +87,19 @@ class TidepoolUploader @Inject constructor(
         }
     }
 
+    /**
+     * Forces an upload attempt, bypassing rate limit and charging/wifi checks.
+     * Used for debugging.
+     */
+    fun forceUpload() {
+        scope.launch {
+            DebugLog.log(message = "Tidepool forceUpload: enabled=${settings.tidepoolEnabled.first()}, loggedIn=${authManager.isLoggedIn()}")
+            if (!settings.tidepoolEnabled.first()) return@launch
+            if (!authManager.isLoggedIn()) return@launch
+            doUpload()
+        }
+    }
+
     private suspend fun uploadIfReady() {
         // Check if Tidepool upload is enabled
         if (!settings.tidepoolEnabled.first()) {
@@ -188,6 +201,8 @@ class TidepoolUploader @Inject constructor(
         val storedLastEnd = settings.tidepoolLastUploadEnd.first()
         val lastEnd = clampLastUploadEnd(storedLastEnd, now)
         val chunkEnd = computeChunkEnd(lastEnd, now)
+
+        DebugLog.log(message = "Tidepool uploadChunk: lastEnd=$lastEnd, chunkEnd=$chunkEnd, now=$now")
 
         if (chunkEnd <= lastEnd) return
 
