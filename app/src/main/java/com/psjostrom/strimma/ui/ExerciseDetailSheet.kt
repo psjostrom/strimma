@@ -29,7 +29,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
@@ -311,6 +310,18 @@ private fun StatBlock(
 }
 
 private const val LABEL_FONT_SP = 11f
+private const val PAD_LEFT_DP = 28f
+private const val PAD_BOTTOM_DP = 18f
+private const val PAD_TOP_DP = 4f
+private const val PAD_RIGHT_DP = 20f
+private const val LABEL_GAP_DP = 6f
+private const val LABEL_BASELINE_FRAC = 3f
+private const val X_LABEL_GAP_DP = 4f
+private const val SHORT_RANGE_MINUTES = 30L
+private const val MEDIUM_RANGE_MINUTES = 120L
+private const val LABEL_COUNT_SHORT = 3
+private const val LABEL_COUNT_MEDIUM = 4
+private const val LABEL_COUNT_LONG = 5
 
 @Composable
 private fun ExerciseBGGraph(
@@ -354,16 +365,18 @@ private fun ExerciseBGGraph(
             if (sgvRange <= 0f) return@Canvas
 
             val fontSize = LABEL_FONT_SP * density
-            val padLeft = 28f * density
-            val padBottom = 18f * density
-            val padTop = 4f * density
-            val padRight = 20f * density
+            val padLeft = PAD_LEFT_DP * density
+            val padTop = PAD_TOP_DP * density
+            val padRight = PAD_RIGHT_DP * density
+            val padBottom = PAD_BOTTOM_DP * density
 
             val w = size.width - padLeft - padRight
             val h = size.height - padTop - padBottom
 
             fun xFor(ts: Long) = padLeft + ((ts - minTs) / tsRange) * w
             fun yFor(sgv: Double) = padTop + ((yHigh.toFloat() - sgv.toFloat()) / sgvRange) * h
+
+            val labelArgb = labelColor.toArgb()
 
             // Exercise band
             val bandX1 = xFor(session.startTime).coerceIn(padLeft, padLeft + w)
@@ -386,14 +399,47 @@ private fun ExerciseBGGraph(
             )
 
             // Y-axis labels
-            val yLabels = computeYAxisLabels(yRange, glucoseUnit)
-            drawAxisLabels(
-                yLabels.map { it.text to yFor(it.mgdl) },
-                labelColor, fontSize, padLeft, padTop, h
-            )
+            val yPaint = android.graphics.Paint().apply {
+                color = labelArgb
+                textSize = fontSize
+                textAlign = android.graphics.Paint.Align.RIGHT
+                isAntiAlias = true
+            }
+            for (label in computeYAxisLabels(yRange, glucoseUnit)) {
+                val y = yFor(label.mgdl).coerceIn(padTop, padTop + h)
+                drawContext.canvas.nativeCanvas.drawText(
+                    label.text,
+                    padLeft - LABEL_GAP_DP * density,
+                    y + fontSize / LABEL_BASELINE_FRAC,
+                    yPaint
+                )
+            }
 
             // X-axis labels
-            drawTimeLabels(sorted.first().ts, sorted.last().ts, labelColor, fontSize, padLeft, padTop, w, h)
+            val xPaint = android.graphics.Paint().apply {
+                color = labelArgb
+                textSize = fontSize
+                textAlign = android.graphics.Paint.Align.CENTER
+                isAntiAlias = true
+            }
+            val timeFmt = SimpleDateFormat("HH:mm", Locale.getDefault())
+            val rangeMs = sorted.last().ts - sorted.first().ts
+            val count = when {
+                rangeMs < SHORT_RANGE_MINUTES * MS_PER_MINUTE -> LABEL_COUNT_SHORT
+                rangeMs < MEDIUM_RANGE_MINUTES * MS_PER_MINUTE -> LABEL_COUNT_MEDIUM
+                else -> LABEL_COUNT_LONG
+            }
+            val xLabelY = padTop + h + fontSize + X_LABEL_GAP_DP * density
+            for (i in 0 until count) {
+                val frac = i.toFloat() / (count - 1)
+                val ts = sorted.first().ts + (frac * rangeMs).toLong()
+                drawContext.canvas.nativeCanvas.drawText(
+                    timeFmt.format(Date(ts)),
+                    padLeft + frac * w,
+                    xLabelY,
+                    xPaint
+                )
+            }
 
             // BG dots + lines
             var prevX = 0f
@@ -414,70 +460,6 @@ private fun ExerciseBGGraph(
                 prevY = y
             }
         }
-    }
-}
-
-private fun DrawScope.drawAxisLabels(
-    labels: List<Pair<String, Float>>,
-    color: Color,
-    fontSize: Float,
-    padLeft: Float,
-    padTop: Float,
-    chartHeight: Float
-) {
-    val paint = android.graphics.Paint().apply {
-        this.color = color.toArgb()
-        textSize = fontSize
-        textAlign = android.graphics.Paint.Align.RIGHT
-        isAntiAlias = true
-    }
-    for ((text, y) in labels) {
-        val clampedY = y.coerceIn(padTop, padTop + chartHeight)
-        drawContext.canvas.nativeCanvas.drawText(
-            text,
-            padLeft - 6f * density,
-            clampedY + fontSize / 3f,
-            paint
-        )
-    }
-}
-
-internal fun timeLabelCount(rangeMs: Long): Int = when {
-    rangeMs < 30 * MS_PER_MINUTE -> 3
-    rangeMs < 2 * 60 * MS_PER_MINUTE -> 4
-    else -> 5
-}
-
-private fun DrawScope.drawTimeLabels(
-    startTs: Long,
-    endTs: Long,
-    color: Color,
-    fontSize: Float,
-    padLeft: Float,
-    padTop: Float,
-    chartWidth: Float,
-    chartHeight: Float
-) {
-    val paint = android.graphics.Paint().apply {
-        this.color = color.toArgb()
-        textSize = fontSize
-        textAlign = android.graphics.Paint.Align.CENTER
-        isAntiAlias = true
-    }
-    val timeFmt = SimpleDateFormat("HH:mm", Locale.getDefault())
-    val rangeMs = endTs - startTs
-    val count = timeLabelCount(rangeMs)
-    val labelY = padTop + chartHeight + fontSize + 4f * density
-    for (i in 0 until count) {
-        val frac = i.toFloat() / (count - 1)
-        val ts = startTs + (frac * rangeMs).toLong()
-        val x = padLeft + frac * chartWidth
-        drawContext.canvas.nativeCanvas.drawText(
-            timeFmt.format(Date(ts)),
-            x,
-            labelY,
-            paint
-        )
     }
 }
 
