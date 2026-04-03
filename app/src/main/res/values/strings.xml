@@ -336,6 +336,8 @@
     <!-- Exercise Detail -->
     <string name="exercise_detail_during">DURING</string>
     <string name="exercise_detail_after">AFTER (4H)</string>
+    <string name="exercise_graph_activity">Activity</string>
+    <string name="exercise_graph_full">Full</string>
     <string name="exercise_detail_entry_bg">Entry BG</string>
     <string name="exercise_detail_min_bg">Lowest during</string>
     <string name="exercise_detail_lowest_bg">Lowest after</string>

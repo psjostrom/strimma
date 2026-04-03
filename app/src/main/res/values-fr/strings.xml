@@ -278,6 +278,8 @@
     <!-- Exercise Detail -->
     <string name="exercise_detail_during">PENDANT</string>
     <string name="exercise_detail_after">APR\u00C8S (4H)</string>
+    <string name="exercise_graph_activity">Activit\u00E9</string>
+    <string name="exercise_graph_full">Complet</string>
     <string name="exercise_detail_entry_bg">BG d\u2019entr\u00E9e</string>
     <string name="exercise_detail_min_bg">Plus bas pendant</string>
     <string name="exercise_detail_lowest_bg">Plus bas apr\u00E8s</string>

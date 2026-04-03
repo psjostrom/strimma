@@ -278,6 +278,8 @@
     <!-- Exercise Detail -->
     <string name="exercise_detail_during">W\u00C4HREND</string>
     <string name="exercise_detail_after">NACHHER (4H)</string>
+    <string name="exercise_graph_activity">Aktivit\u00E4t</string>
+    <string name="exercise_graph_full">Gesamt</string>
     <string name="exercise_detail_entry_bg">Start-BG</string>
     <string name="exercise_detail_min_bg">Tiefster w\u00E4hrend</string>
     <string name="exercise_detail_lowest_bg">Tiefster danach</string>
