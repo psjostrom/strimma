@@ -24,6 +24,8 @@ Tap any session to see the full before/during/after BG analysis:
 
 ![Exercise detail](../screenshots/exercise-detail.png){ width="300" }
 
+The BG graph shows glucose readings with the exercise period highlighted. Use the **Activity** / **Full** toggle to switch between viewing just the exercise window or the full context (30 min before + 4 hours after). The graph includes Y-axis BG labels (in your configured unit) and X-axis timestamps.
+
 **Before** — Entry BG and trend arrow (rising/falling/stable) from the 30 minutes before exercise started.
 
 **During** — Minimum BG, maximum drop rate per 10 minutes, average and max HR, steps, and calories.

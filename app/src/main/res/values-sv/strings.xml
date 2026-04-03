@@ -281,6 +281,8 @@
     <!-- Exercise Detail -->
     <string name="exercise_detail_during">UNDER</string>
     <string name="exercise_detail_after">EFTER (4T)</string>
+    <string name="exercise_graph_activity">Aktivitet</string>
+    <string name="exercise_graph_full">Allt</string>
     <string name="exercise_detail_entry_bg">Start-BG</string>
     <string name="exercise_detail_min_bg">L\u00E4gsta under</string>
     <string name="exercise_detail_lowest_bg">L\u00E4gsta efter</string>

@@ -13,17 +13,25 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -36,9 +44,9 @@ import com.psjostrom.strimma.data.health.ExerciseBGContext
 import com.psjostrom.strimma.data.health.ExerciseCategory
 import com.psjostrom.strimma.data.health.StoredExerciseSession
 import com.psjostrom.strimma.data.health.Trend
+import com.psjostrom.strimma.graph.computeYAxisLabels
 import com.psjostrom.strimma.graph.computeYRange
 import com.psjostrom.strimma.ui.theme.AboveHigh
-import com.psjostrom.strimma.ui.theme.DarkSurfaceCard
 import com.psjostrom.strimma.ui.theme.BelowLow
 import com.psjostrom.strimma.ui.theme.ExerciseDefault
 import com.psjostrom.strimma.ui.theme.InRange
@@ -108,15 +116,49 @@ fun ExerciseDetailSheet(
 
                 // BG Graph
                 if (readings.size >= 2) {
-                    ExerciseBGGraph(
-                        readings = readings,
-                        session = session,
-                        bgLow = bgLow,
-                        bgHigh = bgHigh,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(140.dp)
-                    )
+                    var showFullContext by remember { mutableStateOf(true) }
+                    val graphReadings = if (showFullContext) {
+                        readings
+                    } else {
+                        readings.filter { it.ts in session.startTime..session.endTime }
+                    }
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    ) {
+                        FilterChip(
+                            selected = !showFullContext,
+                            onClick = { showFullContext = false },
+                            label = { Text(stringResource(R.string.exercise_graph_activity), fontSize = 12.sp) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = ExerciseDefault.copy(alpha = 0.2f),
+                                selectedLabelColor = MaterialTheme.colorScheme.onSurface
+                            )
+                        )
+                        FilterChip(
+                            selected = showFullContext,
+                            onClick = { showFullContext = true },
+                            label = { Text(stringResource(R.string.exercise_graph_full), fontSize = 12.sp) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = ExerciseDefault.copy(alpha = 0.2f),
+                                selectedLabelColor = MaterialTheme.colorScheme.onSurface
+                            )
+                        )
+                    }
+
+                    if (graphReadings.size >= 2) {
+                        ExerciseBGGraph(
+                            readings = graphReadings,
+                            session = session,
+                            bgLow = bgLow,
+                            bgHigh = bgHigh,
+                            glucoseUnit = glucoseUnit,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(180.dp)
+                        )
+                    }
                     Spacer(Modifier.height(16.dp))
                 }
 
@@ -267,12 +309,15 @@ private fun StatBlock(
     }
 }
 
+private const val LABEL_FONT_SP = 11f
+
 @Composable
 private fun ExerciseBGGraph(
     readings: List<GlucoseReading>,
     session: StoredExerciseSession,
     bgLow: Double,
     bgHigh: Double,
+    glucoseUnit: GlucoseUnit,
     modifier: Modifier = Modifier
 ) {
     val dotColor = InRange
@@ -281,12 +326,13 @@ private fun ExerciseBGGraph(
     val exerciseBandColor = ExerciseDefault.copy(alpha = 0.15f)
     val exerciseBorderColor = ExerciseDefault.copy(alpha = 0.5f)
     val thresholdDash = PathEffect.dashPathEffect(floatArrayOf(6f, 6f))
-    val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
+    val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val cardColor = MaterialTheme.colorScheme.surfaceContainerHigh
 
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(8.dp),
-        color = DarkSurfaceCard
+        color = cardColor
     ) {
         Canvas(modifier = Modifier.fillMaxSize().padding(4.dp)) {
             val sorted = readings.sortedBy { it.ts }
@@ -306,32 +352,48 @@ private fun ExerciseBGGraph(
             val sgvRange = (yHigh - yLow).toFloat()
             if (sgvRange <= 0f) return@Canvas
 
-            val pad = 4f
-            val w = size.width - 2 * pad
-            val h = size.height - 2 * pad
+            val fontSize = LABEL_FONT_SP * density
+            val padLeft = 28f * density
+            val padBottom = 18f * density
+            val padTop = 4f * density
+            val padRight = 20f * density
 
-            fun xFor(ts: Long) = pad + ((ts - minTs) / tsRange) * w
-            fun yFor(sgv: Double) = pad + ((yHigh.toFloat() - sgv.toFloat()) / sgvRange) * h
+            val w = size.width - padLeft - padRight
+            val h = size.height - padTop - padBottom
+
+            fun xFor(ts: Long) = padLeft + ((ts - minTs) / tsRange) * w
+            fun yFor(sgv: Double) = padTop + ((yHigh.toFloat() - sgv.toFloat()) / sgvRange) * h
 
             // Exercise band
-            val bandX1 = xFor(session.startTime).coerceIn(pad, pad + w)
-            val bandX2 = xFor(session.endTime).coerceIn(pad, pad + w)
-            drawRect(exerciseBandColor, topLeft = Offset(bandX1, pad), size = Size(bandX2 - bandX1, h))
-            drawLine(exerciseBorderColor, Offset(bandX1, pad), Offset(bandX1, pad + h), strokeWidth = 1.5f)
-            drawLine(exerciseBorderColor, Offset(bandX2, pad), Offset(bandX2, pad + h), strokeWidth = 1.5f)
+            val bandX1 = xFor(session.startTime).coerceIn(padLeft, padLeft + w)
+            val bandX2 = xFor(session.endTime).coerceIn(padLeft, padLeft + w)
+            drawRect(exerciseBandColor, topLeft = Offset(bandX1, padTop), size = Size(bandX2 - bandX1, h))
+            drawLine(exerciseBorderColor, Offset(bandX1, padTop), Offset(bandX1, padTop + h), strokeWidth = 1.5f)
+            drawLine(exerciseBorderColor, Offset(bandX2, padTop), Offset(bandX2, padTop + h), strokeWidth = 1.5f)
 
             // In-range zone + threshold lines
-            val zoneLowY = yFor(bgLow).coerceIn(pad, pad + h)
-            val zoneHighY = yFor(bgHigh).coerceIn(pad, pad + h)
-            drawRect(InRange.copy(alpha = 0.05f), topLeft = Offset(pad, zoneHighY), size = Size(w, zoneLowY - zoneHighY))
+            val zoneLowY = yFor(bgLow).coerceIn(padTop, padTop + h)
+            val zoneHighY = yFor(bgHigh).coerceIn(padTop, padTop + h)
+            drawRect(InRange.copy(alpha = 0.05f), topLeft = Offset(padLeft, zoneHighY), size = Size(w, zoneLowY - zoneHighY))
             drawLine(
-                lowColor.copy(alpha = 0.4f), Offset(pad, zoneLowY),
-                Offset(pad + w, zoneLowY), strokeWidth = 1f, pathEffect = thresholdDash
+                lowColor.copy(alpha = 0.4f), Offset(padLeft, zoneLowY),
+                Offset(padLeft + w, zoneLowY), strokeWidth = 1f, pathEffect = thresholdDash
             )
             drawLine(
-                highColor.copy(alpha = 0.4f), Offset(pad, zoneHighY),
-                Offset(pad + w, zoneHighY), strokeWidth = 1f, pathEffect = thresholdDash
+                highColor.copy(alpha = 0.4f), Offset(padLeft, zoneHighY),
+                Offset(padLeft + w, zoneHighY), strokeWidth = 1f, pathEffect = thresholdDash
             )
+
+            // Y-axis labels
+            val yLabels = computeYAxisLabels(yRange, glucoseUnit)
+            drawAxisLabels(
+                yLabels.map { it.text to yFor(it.mgdl) },
+                labelColor, fontSize, padLeft, padTop, h,
+                axis = Axis.Y
+            )
+
+            // X-axis labels
+            drawTimeLabels(sorted.first().ts, sorted.last().ts, labelColor, fontSize, padLeft, padTop, w, h)
 
             // BG dots + lines
             var prevX = 0f
@@ -352,6 +414,78 @@ private fun ExerciseBGGraph(
                 prevY = y
             }
         }
+    }
+}
+
+private enum class Axis { X, Y }
+
+private fun toArgb(color: Color): Int = android.graphics.Color.argb(
+    (color.alpha * 255).toInt(),
+    (color.red * 255).toInt(),
+    (color.green * 255).toInt(),
+    (color.blue * 255).toInt()
+)
+
+private fun DrawScope.drawAxisLabels(
+    labels: List<Pair<String, Float>>,
+    color: Color,
+    fontSize: Float,
+    padLeft: Float,
+    padTop: Float,
+    chartHeight: Float,
+    axis: Axis
+) {
+    val paint = android.graphics.Paint().apply {
+        this.color = toArgb(color)
+        textSize = fontSize
+        textAlign = if (axis == Axis.Y) android.graphics.Paint.Align.RIGHT else android.graphics.Paint.Align.CENTER
+        isAntiAlias = true
+    }
+    for ((text, y) in labels) {
+        val clampedY = y.coerceIn(padTop, padTop + chartHeight)
+        drawContext.canvas.nativeCanvas.drawText(
+            text,
+            padLeft - 6f * density,
+            clampedY + fontSize / 3f,
+            paint
+        )
+    }
+}
+
+private fun DrawScope.drawTimeLabels(
+    startTs: Long,
+    endTs: Long,
+    color: Color,
+    fontSize: Float,
+    padLeft: Float,
+    padTop: Float,
+    chartWidth: Float,
+    chartHeight: Float
+) {
+    val paint = android.graphics.Paint().apply {
+        this.color = toArgb(color)
+        textSize = fontSize
+        textAlign = android.graphics.Paint.Align.CENTER
+        isAntiAlias = true
+    }
+    val timeFmt = SimpleDateFormat("HH:mm", Locale.getDefault())
+    val rangeMs = endTs - startTs
+    val count = when {
+        rangeMs < 30 * MS_PER_MINUTE -> 3
+        rangeMs < 2 * 60 * MS_PER_MINUTE -> 4
+        else -> 5
+    }
+    val labelY = padTop + chartHeight + fontSize + 4f * density
+    for (i in 0 until count) {
+        val frac = i.toFloat() / (count - 1)
+        val ts = startTs + (frac * rangeMs).toLong()
+        val x = padLeft + frac * chartWidth
+        drawContext.canvas.nativeCanvas.drawText(
+            timeFmt.format(Date(ts)),
+            x,
+            labelY,
+            paint
+        )
     }
 }
 

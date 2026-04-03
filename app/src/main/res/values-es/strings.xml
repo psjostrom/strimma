@@ -278,6 +278,8 @@
     <!-- Exercise Detail -->
     <string name="exercise_detail_during">DURANTE</string>
     <string name="exercise_detail_after">DESPU\u00C9S (4H)</string>
+    <string name="exercise_graph_activity">Actividad</string>
+    <string name="exercise_graph_full">Completo</string>
     <string name="exercise_detail_entry_bg">BG de inicio</string>
     <string name="exercise_detail_min_bg">M\u00EDnimo durante</string>
     <string name="exercise_detail_lowest_bg">M\u00EDnimo despu\u00E9s</string>
