@@ -46,6 +46,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.psjostrom.strimma.network.FollowerStatus
 import com.psjostrom.strimma.receiver.GlucoseNotificationListener
+import com.psjostrom.strimma.update.DownloadState
 import com.psjostrom.strimma.service.StrimmaService
 import com.psjostrom.strimma.ui.settings.AlertsSettings
 import com.psjostrom.strimma.ui.settings.AlertsViewModel
@@ -188,6 +189,21 @@ class MainActivity : ComponentActivity() {
                 val iob by viewModel.iob.collectAsState()
                 val exerciseSessions by viewModel.exerciseSessions.collectAsState()
                 val guidanceState by viewModel.guidanceState.collectAsState()
+
+                // Auto-update dialog
+                val updateInfo by viewModel.updateInfo.collectAsState()
+                val updateDismissed by viewModel.updateDismissed.collectAsState()
+                val downloadState by viewModel.downloadState.collectAsState()
+                updateInfo?.let { info ->
+                    if (!updateDismissed || info.isForced) {
+                        UpdateDialog(
+                            info = info,
+                            downloadState = downloadState,
+                            onUpdate = { viewModel.downloadUpdate(info) },
+                            onDismiss = { viewModel.dismissUpdate() }
+                        )
+                    }
+                }
 
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentRoute = navBackStackEntry?.destination?.route
