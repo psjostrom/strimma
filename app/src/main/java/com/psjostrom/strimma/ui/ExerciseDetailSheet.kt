@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -388,8 +389,7 @@ private fun ExerciseBGGraph(
             val yLabels = computeYAxisLabels(yRange, glucoseUnit)
             drawAxisLabels(
                 yLabels.map { it.text to yFor(it.mgdl) },
-                labelColor, fontSize, padLeft, padTop, h,
-                axis = Axis.Y
+                labelColor, fontSize, padLeft, padTop, h
             )
 
             // X-axis labels
@@ -417,28 +417,18 @@ private fun ExerciseBGGraph(
     }
 }
 
-private enum class Axis { X, Y }
-
-private fun toArgb(color: Color): Int = android.graphics.Color.argb(
-    (color.alpha * 255).toInt(),
-    (color.red * 255).toInt(),
-    (color.green * 255).toInt(),
-    (color.blue * 255).toInt()
-)
-
 private fun DrawScope.drawAxisLabels(
     labels: List<Pair<String, Float>>,
     color: Color,
     fontSize: Float,
     padLeft: Float,
     padTop: Float,
-    chartHeight: Float,
-    axis: Axis
+    chartHeight: Float
 ) {
     val paint = android.graphics.Paint().apply {
-        this.color = toArgb(color)
+        this.color = color.toArgb()
         textSize = fontSize
-        textAlign = if (axis == Axis.Y) android.graphics.Paint.Align.RIGHT else android.graphics.Paint.Align.CENTER
+        textAlign = android.graphics.Paint.Align.RIGHT
         isAntiAlias = true
     }
     for ((text, y) in labels) {
@@ -452,6 +442,12 @@ private fun DrawScope.drawAxisLabels(
     }
 }
 
+internal fun timeLabelCount(rangeMs: Long): Int = when {
+    rangeMs < 30 * MS_PER_MINUTE -> 3
+    rangeMs < 2 * 60 * MS_PER_MINUTE -> 4
+    else -> 5
+}
+
 private fun DrawScope.drawTimeLabels(
     startTs: Long,
     endTs: Long,
@@ -463,18 +459,14 @@ private fun DrawScope.drawTimeLabels(
     chartHeight: Float
 ) {
     val paint = android.graphics.Paint().apply {
-        this.color = toArgb(color)
+        this.color = color.toArgb()
         textSize = fontSize
         textAlign = android.graphics.Paint.Align.CENTER
         isAntiAlias = true
     }
     val timeFmt = SimpleDateFormat("HH:mm", Locale.getDefault())
     val rangeMs = endTs - startTs
-    val count = when {
-        rangeMs < 30 * MS_PER_MINUTE -> 3
-        rangeMs < 2 * 60 * MS_PER_MINUTE -> 4
-        else -> 5
-    }
+    val count = timeLabelCount(rangeMs)
     val labelY = padTop + chartHeight + fontSize + 4f * density
     for (i in 0 until count) {
         val frac = i.toFloat() / (count - 1)

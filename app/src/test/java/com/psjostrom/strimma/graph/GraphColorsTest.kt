@@ -88,4 +88,81 @@ class GraphColorsTest {
         val yr = computeYRange(listOf(108.0), bgLow, bgHigh)
         assertTrue(yr.range > 0)
     }
+
+    // --- computeYAxisLabels ---
+
+    @Test
+    fun `mgdl small range uses 25 step`() {
+        val yr = YRange(63.0, 189.0) // range=126, < 180
+        val labels = computeYAxisLabels(yr, com.psjostrom.strimma.data.GlucoseUnit.MGDL)
+        val values = labels.map { it.mgdl }
+        assertTrue(values.size >= 2)
+        for (i in 1 until values.size) {
+            assertEquals(25.0, values[i] - values[i - 1], 0.01)
+        }
+    }
+
+    @Test
+    fun `mgdl large range uses 50 step`() {
+        val yr = YRange(40.0, 300.0) // range=260, > 180
+        val labels = computeYAxisLabels(yr, com.psjostrom.strimma.data.GlucoseUnit.MGDL)
+        val values = labels.map { it.mgdl }
+        assertTrue(values.size >= 2)
+        for (i in 1 until values.size) {
+            assertEquals(50.0, values[i] - values[i - 1], 0.01)
+        }
+    }
+
+    @Test
+    fun `mgdl labels show integer text`() {
+        val yr = YRange(63.0, 189.0)
+        val labels = computeYAxisLabels(yr, com.psjostrom.strimma.data.GlucoseUnit.MGDL)
+        for (label in labels) {
+            assertEquals("%.0f".format(label.mgdl), label.text)
+        }
+    }
+
+    @Test
+    fun `mmol small range uses 1 mmol step`() {
+        val yr = YRange(63.0, 189.0) // range=126, < 180
+        val labels = computeYAxisLabels(yr, com.psjostrom.strimma.data.GlucoseUnit.MMOL)
+        val values = labels.map { it.mgdl }
+        assertTrue(values.size >= 2)
+        val expectedStep = 1.0 * com.psjostrom.strimma.data.GlucoseUnit.MGDL_FACTOR
+        for (i in 1 until values.size) {
+            assertEquals(expectedStep, values[i] - values[i - 1], 0.01)
+        }
+    }
+
+    @Test
+    fun `mmol large range uses 2 mmol step`() {
+        val yr = YRange(40.0, 300.0) // range=260, > 180
+        val labels = computeYAxisLabels(yr, com.psjostrom.strimma.data.GlucoseUnit.MMOL)
+        val values = labels.map { it.mgdl }
+        assertTrue(values.size >= 2)
+        val expectedStep = 2.0 * com.psjostrom.strimma.data.GlucoseUnit.MGDL_FACTOR
+        for (i in 1 until values.size) {
+            assertEquals(expectedStep, values[i] - values[i - 1], 0.01)
+        }
+    }
+
+    @Test
+    fun `mmol labels show integer text`() {
+        val yr = YRange(63.0, 189.0)
+        val labels = computeYAxisLabels(yr, com.psjostrom.strimma.data.GlucoseUnit.MMOL)
+        for (label in labels) {
+            val mmolValue = label.mgdl / com.psjostrom.strimma.data.GlucoseUnit.MGDL_FACTOR
+            assertEquals("%.0f".format(mmolValue), label.text)
+        }
+    }
+
+    @Test
+    fun `labels are within y range`() {
+        val yr = YRange(63.0, 189.0)
+        val labels = computeYAxisLabels(yr, com.psjostrom.strimma.data.GlucoseUnit.MGDL)
+        for (label in labels) {
+            assertTrue("${label.mgdl} >= ${yr.yMin}", label.mgdl >= yr.yMin)
+            assertTrue("${label.mgdl} <= ${yr.yMax}", label.mgdl <= yr.yMax)
+        }
+    }
 }
