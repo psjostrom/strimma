@@ -3,6 +3,18 @@
 All notable changes to Strimma are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/)
 
+## [v0.10.1] - 2026-04-04
+
+### Added
+- Activity/Full toggle and axis labels on exercise BG graph (#155)
+
+### Fixed
+- Force update dialog never triggered because GitHub serves `update.json` as `text/plain` (#157)
+
+### Internal
+- Removed 4 unnecessary lint/detekt suppressions (#156)
+- Added CHANGELOG.md (#154)
+
 ## [v0.10.0] - 2026-04-03
 
 ### Added
