@@ -44,7 +44,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.psjostrom.strimma.network.FollowerStatus
+import com.psjostrom.strimma.network.IntegrationStatus
 import com.psjostrom.strimma.receiver.GlucoseNotificationListener
 import com.psjostrom.strimma.update.DownloadState
 import com.psjostrom.strimma.service.StrimmaService

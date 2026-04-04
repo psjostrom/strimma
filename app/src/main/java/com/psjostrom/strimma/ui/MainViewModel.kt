@@ -26,7 +26,7 @@ import com.psjostrom.strimma.data.health.StoredExerciseSession
 import com.psjostrom.strimma.data.Treatment
 import com.psjostrom.strimma.data.TreatmentDao
 import com.psjostrom.strimma.graph.PredictionComputer
-import com.psjostrom.strimma.network.FollowerStatus
+import com.psjostrom.strimma.network.IntegrationStatus
 import com.psjostrom.strimma.network.LibreLinkUpFollower
 import com.psjostrom.strimma.network.NightscoutFollower
 import com.psjostrom.strimma.network.NightscoutPuller
@@ -208,13 +208,13 @@ class MainViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), GlucoseSource.COMPANION)
     fun setGlucoseSource(source: GlucoseSource) = viewModelScope.launch { settings.setGlucoseSource(source) }
 
-    val followerStatus: StateFlow<FollowerStatus> = glucoseSource.flatMapLatest { source ->
+    val followerStatus: StateFlow<IntegrationStatus> = glucoseSource.flatMapLatest { source ->
         when (source) {
             GlucoseSource.NIGHTSCOUT_FOLLOWER -> nightscoutFollower.status
             GlucoseSource.LIBRELINKUP -> libreLinkUpFollower.status
-            else -> kotlinx.coroutines.flow.flowOf(FollowerStatus.Idle)
+            else -> kotlinx.coroutines.flow.flowOf(IntegrationStatus.Idle)
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), FollowerStatus.Idle)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), IntegrationStatus.Idle)
 
     val followerPollSeconds: StateFlow<Int> = settings.followerPollSeconds
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 60)

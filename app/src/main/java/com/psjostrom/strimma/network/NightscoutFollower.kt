@@ -17,13 +17,6 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
-sealed class FollowerStatus {
-    object Idle : FollowerStatus()
-    object Connecting : FollowerStatus()
-    data class Connected(val lastPollTs: Long) : FollowerStatus()
-    data class Disconnected(val since: Long) : FollowerStatus()
-}
-
 private const val LOOKBACK_MINUTES = 15
 private const val DUPLICATE_THRESHOLD_MS = 3_000L
 private const val SECONDS_TO_MS = 1000L
@@ -64,8 +57,8 @@ class NightscoutFollower @Inject constructor(
     private val directionComputer: DirectionComputer,
     private val settings: SettingsRepository
 ) {
-    private val _status = MutableStateFlow<FollowerStatus>(FollowerStatus.Idle)
-    val status: StateFlow<FollowerStatus> = _status
+    private val _status = MutableStateFlow<IntegrationStatus>(IntegrationStatus.Idle)
+    val status: StateFlow<IntegrationStatus> = _status
 
     companion object {
         private const val SEVEN_DAYS_MS = 7L * 24 * 60 * 60 * 1000
@@ -81,13 +74,13 @@ class NightscoutFollower @Inject constructor(
 
     fun start(scope: CoroutineScope, onNewReading: suspend (GlucoseReading) -> Unit): Job {
         return scope.launch {
-            _status.value = FollowerStatus.Connecting
+            _status.value = IntegrationStatus.Connecting
 
             val url = settings.nightscoutUrl.first()
             val secret = settings.getNightscoutSecret()
             if (url.isBlank() || secret.isBlank()) {
                 DebugLog.log(message = "Follower: URL or secret empty")
-                _status.value = FollowerStatus.Idle
+                _status.value = IntegrationStatus.Idle
                 return@launch
             }
 
@@ -101,9 +94,8 @@ class NightscoutFollower @Inject constructor(
                 val entries = client.fetchEntries(url, secret, since = latestTs)
 
                 if (entries == null) {
-                    val now = System.currentTimeMillis()
-                    if (_status.value !is FollowerStatus.Disconnected) {
-                        _status.value = FollowerStatus.Disconnected(since = now)
+                    if (_status.value !is IntegrationStatus.Error) {
+                        _status.value = IntegrationStatus.Error("Connection lost")
                     }
                     DebugLog.log(message = "Follower: poll failed")
                     continue
@@ -111,7 +103,7 @@ class NightscoutFollower @Inject constructor(
 
                 val valid = filterValidEntries(entries)
                 if (valid.isEmpty()) {
-                    _status.value = FollowerStatus.Connected(lastPollTs = System.currentTimeMillis())
+                    _status.value = IntegrationStatus.Connected(lastActivityTs = System.currentTimeMillis())
                     continue
                 }
 
@@ -122,14 +114,14 @@ class NightscoutFollower @Inject constructor(
                     }
                 }
 
-                _status.value = FollowerStatus.Connected(lastPollTs = System.currentTimeMillis())
+                _status.value = IntegrationStatus.Connected(lastActivityTs = System.currentTimeMillis())
                 DebugLog.log(message = "Follower: ${valid.size} new readings")
             }
         }
     }
 
     fun stop() {
-        _status.value = FollowerStatus.Idle
+        _status.value = IntegrationStatus.Idle
     }
 
     private suspend fun backfill(url: String, secret: String, onNewReading: suspend (GlucoseReading) -> Unit) {
@@ -137,7 +129,7 @@ class NightscoutFollower @Inject constructor(
         val sevenDaysAgo = System.currentTimeMillis() - SEVEN_DAYS_MS
 
         if (latestTs >= sevenDaysAgo) {
-            _status.value = FollowerStatus.Connected(lastPollTs = System.currentTimeMillis())
+            _status.value = IntegrationStatus.Connected(lastActivityTs = System.currentTimeMillis())
             DebugLog.log(message = "Follower: skip backfill, data is recent")
             return
         }
@@ -150,7 +142,7 @@ class NightscoutFollower @Inject constructor(
         while (true) {
             val entries = client.fetchEntries(url, secret, since = since, count = FETCH_COUNT)
             if (entries == null) {
-                _status.value = FollowerStatus.Disconnected(since = System.currentTimeMillis())
+                _status.value = IntegrationStatus.Error("Backfill failed")
                 DebugLog.log(message = "Follower: backfill fetch failed")
                 return
             }
@@ -174,7 +166,7 @@ class NightscoutFollower @Inject constructor(
             onNewReading(lastReading)
         }
 
-        _status.value = FollowerStatus.Connected(lastPollTs = System.currentTimeMillis())
+        _status.value = IntegrationStatus.Connected(lastActivityTs = System.currentTimeMillis())
         DebugLog.log(message = "Follower: backfill complete, $totalInserted readings")
     }
 

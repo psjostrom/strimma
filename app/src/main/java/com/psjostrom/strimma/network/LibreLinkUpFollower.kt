@@ -29,8 +29,8 @@ class LibreLinkUpFollower @Inject constructor(
     private val directionComputer: DirectionComputer,
     private val settings: SettingsRepository
 ) {
-    private val _status = MutableStateFlow<FollowerStatus>(FollowerStatus.Idle)
-    val status: StateFlow<FollowerStatus> = _status
+    private val _status = MutableStateFlow<IntegrationStatus>(IntegrationStatus.Idle)
+    val status: StateFlow<IntegrationStatus> = _status
 
     private var session: LluSession? = null
     private var patientId: String? = null
@@ -39,18 +39,18 @@ class LibreLinkUpFollower @Inject constructor(
     @Suppress("CyclomaticComplexMethod") // Polling loop with auth + reconnect + data processing
     fun start(scope: CoroutineScope, onNewReading: suspend (GlucoseReading) -> Unit): Job {
         return scope.launch {
-            _status.value = FollowerStatus.Connecting
+            _status.value = IntegrationStatus.Connecting
 
             val email = settings.getLluEmail()
             val password = settings.getLluPassword()
             if (email.isBlank() || password.isBlank()) {
                 DebugLog.log(message = "LLU follower: email or password empty")
-                _status.value = FollowerStatus.Idle
+                _status.value = IntegrationStatus.Idle
                 return@launch
             }
 
             if (!doLogin(email, password)) {
-                _status.value = FollowerStatus.Disconnected(since = System.currentTimeMillis())
+                _status.value = IntegrationStatus.Error("Login failed")
             }
 
             while (isActive) {
@@ -66,7 +66,7 @@ class LibreLinkUpFollower @Inject constructor(
         onNewReading: suspend (GlucoseReading) -> Unit
     ) {
         if (session == null || patientId == null) {
-            _status.value = FollowerStatus.Disconnected(since = System.currentTimeMillis())
+            _status.value = IntegrationStatus.Error("Connection lost")
             doLogin(email, password)
             return
         }
@@ -75,7 +75,7 @@ class LibreLinkUpFollower @Inject constructor(
         if (System.currentTimeMillis() - lastLoginTs > RELOGIN_INTERVAL_MS) {
             DebugLog.log(message = "LLU: re-authenticating")
             if (!doLogin(email, password)) {
-                _status.value = FollowerStatus.Disconnected(since = System.currentTimeMillis())
+                _status.value = IntegrationStatus.Error("Re-authentication failed")
                 DebugLog.log(message = "LLU: re-authentication failed")
                 return
             }
@@ -87,15 +87,15 @@ class LibreLinkUpFollower @Inject constructor(
 
         val graphData = client.getGraph(activeSession, activePatientId)
         if (graphData == null) {
-            if (_status.value !is FollowerStatus.Disconnected) {
-                _status.value = FollowerStatus.Disconnected(since = System.currentTimeMillis())
+            if (_status.value !is IntegrationStatus.Error) {
+                _status.value = IntegrationStatus.Error("Connection lost")
             }
             DebugLog.log(message = "LLU: poll failed")
             return
         }
 
         val newCount = processGraphData(graphData, onNewReading)
-        _status.value = FollowerStatus.Connected(lastPollTs = System.currentTimeMillis())
+        _status.value = IntegrationStatus.Connected(lastActivityTs = System.currentTimeMillis())
         if (newCount > 0) {
             DebugLog.log(message = "LLU: $newCount new readings")
         }
@@ -141,7 +141,7 @@ class LibreLinkUpFollower @Inject constructor(
     fun stop() {
         session = null
         patientId = null
-        _status.value = FollowerStatus.Idle
+        _status.value = IntegrationStatus.Idle
     }
 
     private suspend fun doLogin(email: String, password: String): Boolean {
@@ -152,12 +152,13 @@ class LibreLinkUpFollower @Inject constructor(
         val connections = client.getConnections(newSession)
         if (connections.isNullOrEmpty()) {
             DebugLog.log(message = "LLU: no connections found — is sharing set up in the Libre app?")
+            _status.value = IntegrationStatus.Error("No connections found")
             return false
         }
 
         patientId = connections.first().patientId
         DebugLog.log(message = "LLU: connected as follower of ${connections.first().firstName}")
-        _status.value = FollowerStatus.Connected(lastPollTs = System.currentTimeMillis())
+        _status.value = IntegrationStatus.Connected(lastActivityTs = System.currentTimeMillis())
         return true
     }
 
