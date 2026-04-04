@@ -6,6 +6,8 @@ import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.receiver.DebugLog
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -27,9 +29,17 @@ class NightscoutPusher @Inject constructor(
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    private val _status = MutableStateFlow<IntegrationStatus>(IntegrationStatus.Idle)
+    val status: StateFlow<IntegrationStatus> = _status
+
     private val failureTracker = PushFailureTracker(
         alertThresholdMs = PUSH_FAIL_ALERT_MS,
-        onAlertChanged = { firing -> alertManager.handlePushFailure(firing = firing) }
+        onAlertChanged = { firing ->
+            alertManager.handlePushFailure(firing = firing)
+            if (firing) {
+                _status.value = IntegrationStatus.Error("Push failing for 15+ minutes")
+            }
+        }
     )
 
     fun pushReading(reading: GlucoseReading) {
@@ -49,6 +59,7 @@ class NightscoutPusher @Inject constructor(
                     dao.markPushed(listOf(reading.ts))
                     DebugLog.log(message = "Pushed: ${reading.sgv} mg/dL")
                     failureTracker.onSuccess()
+                    _status.value = IntegrationStatus.Connected(lastActivityTs = System.currentTimeMillis())
                 } else {
                     attempt++
                     failureTracker.onFailure()
@@ -82,6 +93,7 @@ class NightscoutPusher @Inject constructor(
                 dao.markPushed(pending.map { it.ts })
                 DebugLog.log(message = "Pushed ${pending.size} pending")
                 failureTracker.onSuccess()
+                _status.value = IntegrationStatus.Connected(lastActivityTs = System.currentTimeMillis())
             } else {
                 failureTracker.onFailure()
                 DebugLog.log(message = "Pending push failed (${pending.size} readings)")
