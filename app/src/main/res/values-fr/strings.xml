@@ -25,9 +25,6 @@
     <string name="main_prediction_low">Bas dans %1$d min</string>
     <string name="main_prediction_high">Haut dans %1$d min</string>
     <string name="main_iob_value">IOB %1$.1fU</string>
-    <string name="main_follower_connecting">Suivi \u00B7 connexion\u2026</string>
-    <string name="main_follower_lost">Suivi \u00B7 connexion perdue</string>
-    <string name="main_follower_lost_minutes">Suivi \u00B7 connexion perdue %1$dm</string>
     <string name="main_iob_breakdown_title">D\u00E9tail IOB</string>
     <string name="main_iob_clears_in">Dispara\u00EEt dans ~%1$s</string>
     <string name="main_iob_active_boluses">BOLUS ACTIFS</string>
@@ -152,6 +149,11 @@
     <string name="settings_data_pull_14d">14 jours</string>
     <string name="settings_data_pull_30d">30 jours</string>
     <string name="settings_data_integration">Int\u00E9gration</string>
+    <string name="integration_connecting">Connexion…</string>
+    <string name="integration_connected">Connecté · %1$s: %2$s</string>
+    <string name="integration_last_push">Dernier envoi</string>
+    <string name="integration_last_reading">Dernière lecture</string>
+    <string name="integration_last_sync">Dernière synchronisation</string>
     <string name="settings_data_bg_broadcast">Diffusion BG</string>
     <string name="settings_data_bg_broadcast_desc">Intent compatible xDrip pour AAPS, GDH, montres</string>
     <string name="settings_data_web_server">Serveur web local</string>

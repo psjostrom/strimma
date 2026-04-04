@@ -53,7 +53,6 @@ import com.psjostrom.strimma.graph.ThresholdCrossing
 import com.psjostrom.strimma.graph.CrossingType
 import com.psjostrom.strimma.graph.computeYAxisLabels
 import com.psjostrom.strimma.graph.computeYRange
-import com.psjostrom.strimma.network.FollowerStatus
 import com.psjostrom.strimma.notification.AlertCategory
 import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.ui.components.PauseAlertsSheet
@@ -84,7 +83,6 @@ fun MainScreen(
     graphWindowHours: Int,
     predictionMinutes: Int = 15,
     glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
-    followerStatus: FollowerStatus = FollowerStatus.Idle,
     treatments: List<Treatment> = emptyList(),
     iob: Double = 0.0,
     iobTauMinutes: Double = 55.0,
@@ -170,7 +168,7 @@ fun MainScreen(
             }
             Box(modifier = Modifier.fillMaxWidth()) {
                 BgHeader(
-                    latestReading, bgLow, bgHigh, glucoseUnit, followerStatus,
+                    latestReading, bgLow, bgHigh, glucoseUnit,
                     modifier = Modifier.fillMaxWidth(),
                     crossing = crossing, iob = iob, treatments = treatments, iobTauMinutes = iobTauMinutes,
                     pauseLowExpiryMs = pauseLowExpiryMs,
@@ -269,7 +267,7 @@ fun MainScreen(
 @Composable
 private fun BgHeader(
     reading: GlucoseReading?, bgLow: Float, bgHigh: Float,
-    glucoseUnit: GlucoseUnit, followerStatus: FollowerStatus,
+    glucoseUnit: GlucoseUnit,
     modifier: Modifier = Modifier,
     crossing: ThresholdCrossing? = null,
     iob: Double = 0.0,
@@ -434,26 +432,6 @@ private fun BgHeader(
                     )
                 }
             }
-        }
-
-        if (followerStatus is FollowerStatus.Connecting || followerStatus is FollowerStatus.Disconnected) {
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = when (followerStatus) {
-                    is FollowerStatus.Connecting -> stringResource(R.string.main_follower_connecting)
-                    is FollowerStatus.Disconnected -> {
-                        val minsAgo = ((System.currentTimeMillis() - followerStatus.since) / 60_000).toInt()
-                        if (minsAgo > 0) stringResource(R.string.main_follower_lost_minutes, minsAgo)
-                        else stringResource(R.string.main_follower_lost)
-                    }
-                    else -> ""
-                },
-                color = when (followerStatus) {
-                    is FollowerStatus.Disconnected -> BelowLow
-                    else -> MaterialTheme.colorScheme.onSurfaceVariant
-                },
-                fontSize = 12.sp
-            )
         }
     }
 }

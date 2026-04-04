@@ -25,9 +25,6 @@
     <string name="main_prediction_low">Tief in %1$d Min.</string>
     <string name="main_prediction_high">Hoch in %1$d Min.</string>
     <string name="main_iob_value">IOB %1$.1fU</string>
-    <string name="main_follower_connecting">Folgen \u00B7 verbinden\u2026</string>
-    <string name="main_follower_lost">Folgen \u00B7 Verbindung verloren</string>
-    <string name="main_follower_lost_minutes">Folgen \u00B7 Verbindung verloren %1$dm</string>
     <string name="main_iob_breakdown_title">IOB-Aufschl\u00FCsselung</string>
     <string name="main_iob_clears_in">Weg in ~%1$s</string>
     <string name="main_iob_active_boluses">AKTIVE BOLUSGABEN</string>
@@ -152,6 +149,11 @@
     <string name="settings_data_pull_14d">14 Tage</string>
     <string name="settings_data_pull_30d">30 Tage</string>
     <string name="settings_data_integration">Integration</string>
+    <string name="integration_connecting">Verbinden…</string>
+    <string name="integration_connected">Verbunden · %1$s: %2$s</string>
+    <string name="integration_last_push">Letzter Push</string>
+    <string name="integration_last_reading">Letzte Messung</string>
+    <string name="integration_last_sync">Letzte Synchronisierung</string>
     <string name="settings_data_bg_broadcast">BG-\u00DCbertragung</string>
     <string name="settings_data_bg_broadcast_desc">xDrip-kompatibler Intent f\u00FCr AAPS, GDH, Uhren</string>
     <string name="settings_data_web_server">Lokaler Webserver</string>

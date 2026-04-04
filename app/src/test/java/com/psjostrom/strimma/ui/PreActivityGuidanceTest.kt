@@ -17,6 +17,7 @@ import com.psjostrom.strimma.data.meal.MealAnalyzer
 import com.psjostrom.strimma.network.LibreLinkUpFollower
 import com.psjostrom.strimma.network.NightscoutFollower
 import com.psjostrom.strimma.network.NightscoutPuller
+import com.psjostrom.strimma.network.NightscoutPusher
 import com.psjostrom.strimma.network.TreatmentSyncer
 import com.psjostrom.strimma.testutil.FakeCalendarProvider
 import com.psjostrom.strimma.tidepool.TidepoolAuthManager
@@ -69,6 +70,7 @@ class PreActivityGuidanceTest {
     @Inject lateinit var nightscoutFollower: NightscoutFollower
     @Inject lateinit var libreLinkUpFollower: LibreLinkUpFollower
     @Inject lateinit var nightscoutPuller: NightscoutPuller
+    @Inject lateinit var nightscoutPusher: NightscoutPusher
     @Inject lateinit var treatmentSyncer: TreatmentSyncer
     @Inject lateinit var mealAnalyzer: MealAnalyzer
     @Inject lateinit var tidepoolAuthManager: TidepoolAuthManager
@@ -110,7 +112,7 @@ class PreActivityGuidanceTest {
 
     private fun createViewModel() = MainViewModel(
         dao, treatmentDao, exerciseDao, exerciseBGAnalyzer, settings,
-        nightscoutFollower, libreLinkUpFollower, nightscoutPuller,
+        nightscoutFollower, libreLinkUpFollower, nightscoutPuller, nightscoutPusher,
         treatmentSyncer, calendarReader, mealAnalyzer, tidepoolAuthManager,
         tidepoolUploader, updateChecker, updateInstaller
     )

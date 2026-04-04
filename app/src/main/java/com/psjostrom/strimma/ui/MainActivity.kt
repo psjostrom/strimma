@@ -44,7 +44,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.psjostrom.strimma.network.FollowerStatus
+import com.psjostrom.strimma.network.IntegrationStatus
 import com.psjostrom.strimma.receiver.GlucoseNotificationListener
 import com.psjostrom.strimma.update.DownloadState
 import com.psjostrom.strimma.service.StrimmaService
@@ -179,7 +179,6 @@ class MainActivity : ComponentActivity() {
                 val hbA1cUnit by viewModel.hbA1cUnit.collectAsState()
                 val bgBroadcastEnabled by viewModel.bgBroadcastEnabled.collectAsState()
                 val glucoseSource by viewModel.glucoseSource.collectAsState()
-                val followerStatus by viewModel.followerStatus.collectAsState()
                 val followerPollSeconds by viewModel.followerPollSeconds.collectAsState()
                 val nightscoutConfigured by viewModel.nightscoutConfigured.collectAsState()
                 val treatmentsSyncEnabled by viewModel.treatmentsSyncEnabled.collectAsState()
@@ -370,7 +369,6 @@ class MainActivity : ComponentActivity() {
                             graphWindowHours = graphWindowHours,
                             predictionMinutes = predictionMinutes,
                             glucoseUnit = glucoseUnit,
-                            followerStatus = followerStatus,
                             treatments = treatments,
                             iob = iob,
                             iobTauMinutes = IOBComputer.tauForInsulinType(insulinType, customDIA),
@@ -408,6 +406,9 @@ class MainActivity : ComponentActivity() {
                         val isNotifAccessGranted = remember(dsLifecycleState) {
                             GlucoseNotificationListener.isEnabled(this@MainActivity)
                         }
+                        val pushStatus by viewModel.pushStatus.collectAsState()
+                        val nsFollowerStatus by viewModel.nsFollowerStatus.collectAsState()
+                        val lluFollowerStatus by viewModel.lluFollowerStatus.collectAsState()
                         DataSourceSettings(
                             glucoseSource = glucoseSource,
                             nightscoutUrl = nightscoutUrl,
@@ -415,6 +416,9 @@ class MainActivity : ComponentActivity() {
                             followerPollSeconds = followerPollSeconds,
                             lluEmail = viewModel.lluEmail,
                             lluPassword = viewModel.lluPassword,
+                            pushStatus = pushStatus,
+                            nsFollowerStatus = nsFollowerStatus,
+                            lluFollowerStatus = lluFollowerStatus,
                             isNotificationAccessGranted = isNotifAccessGranted,
                             onGlucoseSourceChange = viewModel::setGlucoseSource,
                             onNightscoutUrlChange = viewModel::setNightscoutUrl,
@@ -438,11 +442,13 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable("settings/treatments") {
+                        val treatmentSyncStatus by viewModel.treatmentSyncStatus.collectAsState()
                         TreatmentsSettings(
                             treatmentsSyncEnabled = treatmentsSyncEnabled,
                             insulinType = insulinType,
                             customDIA = customDIA,
                             nightscoutConfigured = nightscoutConfigured,
+                            treatmentSyncStatus = treatmentSyncStatus,
                             onTreatmentsSyncEnabledChange = viewModel::setTreatmentsSyncEnabled,
                             onInsulinTypeChange = viewModel::setInsulinType,
                             onCustomDIAChange = viewModel::setCustomDIA,

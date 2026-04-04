@@ -6,6 +6,7 @@ import com.psjostrom.strimma.network.TreatmentSyncer.Companion.FULL_LOOKBACK_MS
 import com.psjostrom.strimma.network.TreatmentSyncer.Companion.POLL_LOOKBACK_MS
 import com.psjostrom.strimma.network.TreatmentSyncer.Companion.TREATMENTS_PER_DAY
 import com.psjostrom.strimma.network.TreatmentSyncer.Companion.computeStartupAction
+import com.psjostrom.strimma.network.TreatmentSyncer.Companion.sanitizeErrorMessage
 import com.psjostrom.strimma.network.TreatmentSyncer.StartupAction
 import org.junit.Assert.*
 import org.junit.Test
@@ -99,5 +100,47 @@ class TreatmentSyncerTest {
         assertEquals(lastFetch, action.since)
         // (30 + 1) coerced to 30
         assertEquals(FULL_LOOKBACK_DAYS * TREATMENTS_PER_DAY, action.count)
+    }
+
+    @Test
+    fun `sanitizeErrorMessage strips timeout exceptions`() {
+        val e = Exception("Connect timeout has expired for request GET https://my-ns.example.com/api/v1/treatments.json")
+        assertEquals("Connection timeout", sanitizeErrorMessage(e))
+    }
+
+    @Test
+    fun `sanitizeErrorMessage strips connection exceptions`() {
+        val e = Exception("Failed to connect to my-ns.example.com/1.2.3.4:443")
+        assertEquals("Cannot connect", sanitizeErrorMessage(e))
+    }
+
+    @Test
+    fun `sanitizeErrorMessage strips SSL exceptions`() {
+        val e = Exception("SSL handshake failed with https://my-ns.example.com")
+        assertEquals("SSL error", sanitizeErrorMessage(e))
+    }
+
+    @Test
+    fun `sanitizeErrorMessage strips certificate exceptions`() {
+        val e = Exception("Certificate validation failed for my-ns.example.com")
+        assertEquals("SSL error", sanitizeErrorMessage(e))
+    }
+
+    @Test
+    fun `sanitizeErrorMessage strips refused exceptions`() {
+        val e = Exception("Connection refused: my-ns.example.com:443")
+        assertEquals("Connection refused", sanitizeErrorMessage(e))
+    }
+
+    @Test
+    fun `sanitizeErrorMessage falls back to generic message`() {
+        val e = Exception("some unknown error from https://my-ns.example.com")
+        assertEquals("Sync failed", sanitizeErrorMessage(e))
+    }
+
+    @Test
+    fun `sanitizeErrorMessage handles null message`() {
+        val e = Exception(null as String?)
+        assertEquals("Sync failed", sanitizeErrorMessage(e))
     }
 }

@@ -13,6 +13,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.GlucoseSource
+import com.psjostrom.strimma.network.IntegrationStatus
 
 @Composable
 fun DataSourceSettings(
@@ -22,6 +23,9 @@ fun DataSourceSettings(
     followerPollSeconds: Int,
     lluEmail: String,
     lluPassword: String,
+    pushStatus: IntegrationStatus,
+    nsFollowerStatus: IntegrationStatus,
+    lluFollowerStatus: IntegrationStatus,
     isNotificationAccessGranted: Boolean,
     onGlucoseSourceChange: (GlucoseSource) -> Unit,
     onNightscoutUrlChange: (String) -> Unit,
@@ -131,6 +135,8 @@ fun DataSourceSettings(
                     color = outline,
                     fontSize = 12.sp
                 )
+
+                IntegrationStatusRow(status = lluFollowerStatus, activityLabelRes = R.string.integration_last_reading)
             }
         }
 
@@ -166,6 +172,8 @@ fun DataSourceSettings(
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
+
+            IntegrationStatusRow(status = pushStatus, activityLabelRes = R.string.integration_last_push)
         }
 
         if (glucoseSource == GlucoseSource.NIGHTSCOUT_FOLLOWER) {
@@ -186,6 +194,8 @@ fun DataSourceSettings(
                     valueRange = 30f..300f,
                     steps = 8
                 )
+
+                IntegrationStatusRow(status = nsFollowerStatus, activityLabelRes = R.string.integration_last_reading)
             }
         }
     }

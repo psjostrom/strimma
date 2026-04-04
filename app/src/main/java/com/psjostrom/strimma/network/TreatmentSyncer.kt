@@ -7,6 +7,8 @@ import com.psjostrom.strimma.receiver.DebugLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -19,6 +21,9 @@ class TreatmentSyncer @Inject constructor(
     private val dao: TreatmentDao,
     private val settings: SettingsRepository
 ) {
+    private val _status = MutableStateFlow<IntegrationStatus>(IntegrationStatus.Idle)
+    val status: StateFlow<IntegrationStatus> = _status
+
     internal sealed class StartupAction {
         data object FullSync : StartupAction()
         data object PollSync : StartupAction()
@@ -36,6 +41,17 @@ class TreatmentSyncer @Inject constructor(
         // (~288/day) plus boluses/carbs (~10-20/day). 500/day covers aggressive configurations.
         internal const val TREATMENTS_PER_DAY = 500
         private const val FULL_SYNC_COUNT = FULL_LOOKBACK_DAYS * TREATMENTS_PER_DAY
+
+        internal fun sanitizeErrorMessage(e: Exception): String {
+            val msg = e.message ?: return "Sync failed"
+            return when {
+                msg.contains("timeout", ignoreCase = true) -> "Connection timeout"
+                msg.contains("refused", ignoreCase = true) -> "Connection refused"
+                msg.contains("connect", ignoreCase = true) -> "Cannot connect"
+                msg.contains("ssl", ignoreCase = true) || msg.contains("certificate", ignoreCase = true) -> "SSL error"
+                else -> "Sync failed"
+            }
+        }
 
         internal fun computeStartupAction(lastFetch: Long?, now: Long): StartupAction {
             if (lastFetch == null) return StartupAction.FullSync
@@ -109,13 +125,18 @@ class TreatmentSyncer @Inject constructor(
         try {
             val treatments = client.fetchTreatments(url, secret, since, count)
 
-            if (treatments.isEmpty()) return
+            if (treatments.isEmpty()) {
+                _status.value = IntegrationStatus.Connected(lastActivityTs = System.currentTimeMillis())
+                return
+            }
 
             dao.upsert(treatments)
             DebugLog.log(message = "Treatments synced: ${treatments.size}")
 
             val pruneThreshold = System.currentTimeMillis() - PRUNE_MS
             dao.deleteOlderThan(pruneThreshold)
+
+            _status.value = IntegrationStatus.Connected(lastActivityTs = System.currentTimeMillis())
         } catch (e: kotlin.coroutines.cancellation.CancellationException) {
             throw e
         } catch (
@@ -123,6 +144,7 @@ class TreatmentSyncer @Inject constructor(
             e: Exception
         ) {
             DebugLog.log(message = "Treatment sync error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
+            _status.value = IntegrationStatus.Error(sanitizeErrorMessage(e))
         }
     }
 }

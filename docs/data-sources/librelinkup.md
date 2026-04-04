@@ -89,10 +89,11 @@ No manual configuration needed — region detection is transparent.
 
 ## Connection Status
 
-When connected and receiving data, no status text is shown — the reading's own timestamp indicates freshness. Status only appears when something is wrong:
+Connection status is shown inline in **Settings > Data Source**, below the LibreLinkUp credentials (when LibreLinkUp is selected):
 
-- **Connecting...** — initial login in progress
-- **Connection lost Xm** — last poll failed, showing how long ago
+- **Connected · Last reading: X ago** — connected, shown in cyan
+- **Connecting…** — initial login in progress
+- **Login failed** / **Connection lost** / **No connections found** — error, shown in red
 
 ---
 
@@ -128,7 +129,7 @@ Strimma uses the `FactoryTimestamp` field from the LibreLinkUp API, which is alw
     - Verify you accepted the sharing invitation in the LibreLinkUp app
     - Check the debug log for "LLU: bad credentials" or "LLU: no connections found"
 
-!!! question "Status shows 'connection lost'"
+!!! question "Status shows an error"
     - Check your internet connection
     - If you recently changed your LibreLinkUp password, update it in Strimma settings
     - Check the debug log for "LLU: account action required" — you may need to accept updated terms in the LibreLinkUp app

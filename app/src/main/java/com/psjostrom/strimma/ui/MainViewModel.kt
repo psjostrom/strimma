@@ -26,10 +26,11 @@ import com.psjostrom.strimma.data.health.StoredExerciseSession
 import com.psjostrom.strimma.data.Treatment
 import com.psjostrom.strimma.data.TreatmentDao
 import com.psjostrom.strimma.graph.PredictionComputer
-import com.psjostrom.strimma.network.FollowerStatus
+import com.psjostrom.strimma.network.IntegrationStatus
 import com.psjostrom.strimma.network.LibreLinkUpFollower
 import com.psjostrom.strimma.network.NightscoutFollower
 import com.psjostrom.strimma.network.NightscoutPuller
+import com.psjostrom.strimma.network.NightscoutPusher
 import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.tidepool.TidepoolAuthManager
 import com.psjostrom.strimma.tidepool.TidepoolUploader
@@ -62,6 +63,7 @@ class MainViewModel @Inject constructor(
     private val nightscoutFollower: NightscoutFollower,
     private val libreLinkUpFollower: LibreLinkUpFollower,
     private val nightscoutPuller: NightscoutPuller,
+    private val nightscoutPusher: NightscoutPusher,
     private val treatmentSyncer: TreatmentSyncer,
     private val calendarReader: CalendarReader,
     val mealAnalyzer: MealAnalyzer,
@@ -208,13 +210,13 @@ class MainViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), GlucoseSource.COMPANION)
     fun setGlucoseSource(source: GlucoseSource) = viewModelScope.launch { settings.setGlucoseSource(source) }
 
-    val followerStatus: StateFlow<FollowerStatus> = glucoseSource.flatMapLatest { source ->
-        when (source) {
-            GlucoseSource.NIGHTSCOUT_FOLLOWER -> nightscoutFollower.status
-            GlucoseSource.LIBRELINKUP -> libreLinkUpFollower.status
-            else -> kotlinx.coroutines.flow.flowOf(FollowerStatus.Idle)
-        }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), FollowerStatus.Idle)
+    val pushStatus: StateFlow<IntegrationStatus> = nightscoutPusher.status
+
+    val nsFollowerStatus: StateFlow<IntegrationStatus> = nightscoutFollower.status
+
+    val lluFollowerStatus: StateFlow<IntegrationStatus> = libreLinkUpFollower.status
+
+    val treatmentSyncStatus: StateFlow<IntegrationStatus> = treatmentSyncer.status
 
     val followerPollSeconds: StateFlow<Int> = settings.followerPollSeconds
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 60)
