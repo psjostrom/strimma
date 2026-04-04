@@ -179,6 +179,8 @@
     <string name="settings_data_pull_14d">14 days</string>
     <string name="settings_data_pull_30d">30 days</string>
     <string name="settings_data_integration">Integration</string>
+    <string name="integration_connecting">Connecting…</string>
+    <string name="integration_connected">Connected · %1$s: %2$s</string>
     <string name="settings_data_bg_broadcast">BG Broadcast</string>
     <string name="settings_data_bg_broadcast_desc">xDrip-compatible intent for AAPS, GDH, watches</string>
     <string name="settings_data_web_server">Local Web Server</string>
