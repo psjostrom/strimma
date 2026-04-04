@@ -164,6 +164,34 @@ class UpdateCheckerTest {
     }
 
     @Test
+    fun `forced update works with text plain content type`() = runTest {
+        val client = HttpClient(MockEngine { request ->
+            when {
+                request.url.encodedPath.contains("releases/latest") -> respond(
+                    content = RELEASE_WITH_APK,
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json")
+                )
+                request.url.host == "raw.githubusercontent.com" -> respond(
+                    content = """{"min_version": "99.0.0"}""",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "text/plain; charset=utf-8")
+                )
+                else -> respond("Not found", HttpStatusCode.NotFound)
+            }
+        }) {
+            install(ContentNegotiation) {
+                json(Json { ignoreUnknownKeys = true })
+            }
+        }
+        val c = checker(client)
+        c.check()
+        val info = c.updateInfo.value
+        assertNotNull(info)
+        assertTrue("Expected forced=true with text/plain update.json", info!!.isForced)
+    }
+
+    @Test
     fun `min_version null in JSON means not forced`() = runTest {
         val c = checker(mockClient(updateJson = """{"min_version": null}"""))
         c.check()
