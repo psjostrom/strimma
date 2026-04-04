@@ -143,7 +143,7 @@ class UpdateChecker @Inject constructor() {
         return try {
             val response = client.get(UPDATE_JSON_URL)
             if (!response.status.isSuccess()) return null
-            val config: UpdateConfig = response.body()
+            val config = Json.decodeFromString<UpdateConfig>(response.body<String>())
             config.minVersion
         } catch (e: kotlin.coroutines.cancellation.CancellationException) {
             throw e
