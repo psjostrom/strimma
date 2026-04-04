@@ -66,12 +66,12 @@ Backfill happens in pages of 2016 entries, fetching until all available data in 
 
 ## Connection Status
 
-The main screen shows your follower connection status:
+Connection status is shown inline in **Settings > Data Source**, below the poll interval slider (when Nightscout Follower is selected):
 
-- **Following · Xs ago** — connected, showing time since last successful poll
-- **Following · connection lost Xm** — last poll failed, showing how long ago it stopped working
+- **Connected · Last reading: X ago** — connected, shown in cyan
+- **Connection lost** / **Backfill failed** — last poll failed, shown in red
 
-The status text turns red when disconnected.
+Staleness is also signaled on the main screen by the BG timestamp ("5 min ago") and the stale data alert.
 
 ---
 

@@ -178,6 +178,9 @@
     <string name="settings_data_integration">Integration</string>
     <string name="integration_connecting">Connecting…</string>
     <string name="integration_connected">Connected · %1$s: %2$s</string>
+    <string name="integration_last_push">Last push</string>
+    <string name="integration_last_reading">Last reading</string>
+    <string name="integration_last_sync">Last sync</string>
     <string name="settings_data_bg_broadcast">BG Broadcast</string>
     <string name="settings_data_bg_broadcast_desc">xDrip-compatible intent for AAPS, GDH, watches</string>
     <string name="settings_data_web_server">Local Web Server</string>

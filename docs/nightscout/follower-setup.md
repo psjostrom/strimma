@@ -27,10 +27,10 @@ Strimma begins polling immediately.
 
 ## Connection Status
 
-The main screen shows the follower connection state:
+Connection status is shown inline in **Settings > Data Source**, below the poll interval slider:
 
-- **Following · 15s ago** — connected, last successful poll was 15 seconds ago
-- **Following · connection lost 2m** — the server hasn't responded for 2 minutes (shown in red)
+- **Connected · Last reading: 15s ago** — connected, shown in cyan
+- **Connection lost** — the server hasn't responded, shown in red
 
 ---
 

@@ -151,6 +151,9 @@
     <string name="settings_data_integration">Integration</string>
     <string name="integration_connecting">Ansluter…</string>
     <string name="integration_connected">Ansluten · %1$s: %2$s</string>
+    <string name="integration_last_push">Senaste push</string>
+    <string name="integration_last_reading">Senaste avläsning</string>
+    <string name="integration_last_sync">Senaste synk</string>
     <string name="settings_data_bg_broadcast">BG-s\u00E4ndning</string>
     <string name="settings_data_bg_broadcast_desc">xDrip-kompatibel intent f\u00F6r AAPS, GDH, klockor</string>
     <string name="settings_data_web_server">Lokal webbserver</string>

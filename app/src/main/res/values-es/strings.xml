@@ -151,6 +151,9 @@
     <string name="settings_data_integration">Integraci\u00F3n</string>
     <string name="integration_connecting">Conectando…</string>
     <string name="integration_connected">Conectado · %1$s: %2$s</string>
+    <string name="integration_last_push">Último envío</string>
+    <string name="integration_last_reading">Última lectura</string>
+    <string name="integration_last_sync">Última sincronización</string>
     <string name="settings_data_bg_broadcast">Difusi\u00F3n BG</string>
     <string name="settings_data_bg_broadcast_desc">Intent compatible con xDrip para AAPS, GDH, relojes</string>
     <string name="settings_data_web_server">Servidor web local</string>

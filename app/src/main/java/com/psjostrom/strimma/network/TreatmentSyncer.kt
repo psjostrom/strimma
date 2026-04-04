@@ -42,6 +42,17 @@ class TreatmentSyncer @Inject constructor(
         internal const val TREATMENTS_PER_DAY = 500
         private const val FULL_SYNC_COUNT = FULL_LOOKBACK_DAYS * TREATMENTS_PER_DAY
 
+        internal fun sanitizeErrorMessage(e: Exception): String {
+            val msg = e.message ?: return "Sync failed"
+            return when {
+                msg.contains("timeout", ignoreCase = true) -> "Connection timeout"
+                msg.contains("refused", ignoreCase = true) -> "Connection refused"
+                msg.contains("connect", ignoreCase = true) -> "Cannot connect"
+                msg.contains("ssl", ignoreCase = true) || msg.contains("certificate", ignoreCase = true) -> "SSL error"
+                else -> "Sync failed"
+            }
+        }
+
         internal fun computeStartupAction(lastFetch: Long?, now: Long): StartupAction {
             if (lastFetch == null) return StartupAction.FullSync
             val gapMs = (now - lastFetch).coerceIn(0, FULL_LOOKBACK_MS)
@@ -133,7 +144,7 @@ class TreatmentSyncer @Inject constructor(
             e: Exception
         ) {
             DebugLog.log(message = "Treatment sync error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
-            _status.value = IntegrationStatus.Error(e.message?.take(80) ?: "Sync failed")
+            _status.value = IntegrationStatus.Error(sanitizeErrorMessage(e))
         }
     }
 }

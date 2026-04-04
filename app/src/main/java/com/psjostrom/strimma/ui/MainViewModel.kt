@@ -213,10 +213,8 @@ class MainViewModel @Inject constructor(
     val pushStatus: StateFlow<IntegrationStatus> = nightscoutPusher.status
 
     val nsFollowerStatus: StateFlow<IntegrationStatus> = nightscoutFollower.status
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), IntegrationStatus.Idle)
 
     val lluFollowerStatus: StateFlow<IntegrationStatus> = libreLinkUpFollower.status
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), IntegrationStatus.Idle)
 
     val treatmentSyncStatus: StateFlow<IntegrationStatus> = treatmentSyncer.status
 

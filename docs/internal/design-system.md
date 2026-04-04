@@ -84,7 +84,7 @@ System font (no custom imports). Hierarchy through size and weight.
 | Body | 14.sp | Normal | -- | Default text, labels |
 | BodyEmphasis | 14.sp | SemiBold | -- | Stat labels, setting values |
 | Small | 12.sp | Normal | -- | Supporting text, timestamps |
-| Caption | 11.sp | Normal | -- | Follower status, tertiary info |
+| Caption | 11.sp | Normal | -- | Tertiary info |
 | Pill | 13.sp | SemiBold | -- | Prediction pills |
 | Stat | 16.sp | Bold | -- | TIR percentages, stat values |
 

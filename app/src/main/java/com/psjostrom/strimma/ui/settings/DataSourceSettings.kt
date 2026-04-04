@@ -136,7 +136,7 @@ fun DataSourceSettings(
                     fontSize = 12.sp
                 )
 
-                IntegrationStatusRow(status = lluFollowerStatus, activityLabel = "Last reading")
+                IntegrationStatusRow(status = lluFollowerStatus, activityLabelRes = R.string.integration_last_reading)
             }
         }
 
@@ -173,7 +173,7 @@ fun DataSourceSettings(
                 singleLine = true
             )
 
-            IntegrationStatusRow(status = pushStatus, activityLabel = "Last push")
+            IntegrationStatusRow(status = pushStatus, activityLabelRes = R.string.integration_last_push)
         }
 
         if (glucoseSource == GlucoseSource.NIGHTSCOUT_FOLLOWER) {
@@ -195,7 +195,7 @@ fun DataSourceSettings(
                     steps = 8
                 )
 
-                IntegrationStatusRow(status = nsFollowerStatus, activityLabel = "Last reading")
+                IntegrationStatusRow(status = nsFollowerStatus, activityLabelRes = R.string.integration_last_reading)
             }
         }
     }

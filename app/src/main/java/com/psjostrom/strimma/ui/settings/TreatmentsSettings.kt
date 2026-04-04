@@ -65,7 +65,7 @@ fun TreatmentsSettings(
             }
 
             if (treatmentsSyncEnabled) {
-                IntegrationStatusRow(status = treatmentSyncStatus, activityLabel = "Last sync")
+                IntegrationStatusRow(status = treatmentSyncStatus, activityLabelRes = R.string.integration_last_sync)
 
                 Text(stringResource(R.string.settings_treatments_insulin_type), color = onBg, fontSize = 14.sp)
                 var expanded by remember { mutableStateOf(false) }
