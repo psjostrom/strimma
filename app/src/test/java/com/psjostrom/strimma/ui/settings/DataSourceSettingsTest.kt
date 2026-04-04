@@ -8,6 +8,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.psjostrom.strimma.data.GlucoseSource
+import com.psjostrom.strimma.network.IntegrationStatus
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -33,6 +34,9 @@ class DataSourceSettingsTest {
                 followerPollSeconds = 60,
                 lluEmail = "",
                 lluPassword = "",
+                pushStatus = IntegrationStatus.Idle,
+                nsFollowerStatus = IntegrationStatus.Idle,
+                lluFollowerStatus = IntegrationStatus.Idle,
                 onGlucoseSourceChange = onGlucoseSourceChange,
                 onNightscoutUrlChange = {},
                 onNightscoutSecretChange = {},

@@ -25,9 +25,6 @@
     <string name="main_prediction_low">Tief in %1$d Min.</string>
     <string name="main_prediction_high">Hoch in %1$d Min.</string>
     <string name="main_iob_value">IOB %1$.1fU</string>
-    <string name="main_follower_connecting">Folgen \u00B7 verbinden\u2026</string>
-    <string name="main_follower_lost">Folgen \u00B7 Verbindung verloren</string>
-    <string name="main_follower_lost_minutes">Folgen \u00B7 Verbindung verloren %1$dm</string>
     <string name="main_iob_breakdown_title">IOB-Aufschl\u00FCsselung</string>
     <string name="main_iob_clears_in">Weg in ~%1$s</string>
     <string name="main_iob_active_boluses">AKTIVE BOLUSGABEN</string>

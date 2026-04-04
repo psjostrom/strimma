@@ -179,7 +179,6 @@ class MainActivity : ComponentActivity() {
                 val hbA1cUnit by viewModel.hbA1cUnit.collectAsState()
                 val bgBroadcastEnabled by viewModel.bgBroadcastEnabled.collectAsState()
                 val glucoseSource by viewModel.glucoseSource.collectAsState()
-                val followerStatus by viewModel.followerStatus.collectAsState()
                 val followerPollSeconds by viewModel.followerPollSeconds.collectAsState()
                 val nightscoutConfigured by viewModel.nightscoutConfigured.collectAsState()
                 val treatmentsSyncEnabled by viewModel.treatmentsSyncEnabled.collectAsState()
@@ -370,7 +369,6 @@ class MainActivity : ComponentActivity() {
                             graphWindowHours = graphWindowHours,
                             predictionMinutes = predictionMinutes,
                             glucoseUnit = glucoseUnit,
-                            followerStatus = followerStatus,
                             treatments = treatments,
                             iob = iob,
                             iobTauMinutes = IOBComputer.tauForInsulinType(insulinType, customDIA),

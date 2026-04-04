@@ -210,14 +210,6 @@ class MainViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), GlucoseSource.COMPANION)
     fun setGlucoseSource(source: GlucoseSource) = viewModelScope.launch { settings.setGlucoseSource(source) }
 
-    val followerStatus: StateFlow<IntegrationStatus> = glucoseSource.flatMapLatest { source ->
-        when (source) {
-            GlucoseSource.NIGHTSCOUT_FOLLOWER -> nightscoutFollower.status
-            GlucoseSource.LIBRELINKUP -> libreLinkUpFollower.status
-            else -> kotlinx.coroutines.flow.flowOf(IntegrationStatus.Idle)
-        }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), IntegrationStatus.Idle)
-
     val pushStatus: StateFlow<IntegrationStatus> = nightscoutPusher.status
 
     val nsFollowerStatus: StateFlow<IntegrationStatus> = nightscoutFollower.status
