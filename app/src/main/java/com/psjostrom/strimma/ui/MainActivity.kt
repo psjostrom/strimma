@@ -408,6 +408,9 @@ class MainActivity : ComponentActivity() {
                         val isNotifAccessGranted = remember(dsLifecycleState) {
                             GlucoseNotificationListener.isEnabled(this@MainActivity)
                         }
+                        val pushStatus by viewModel.pushStatus.collectAsState()
+                        val nsFollowerStatus by viewModel.nsFollowerStatus.collectAsState()
+                        val lluFollowerStatus by viewModel.lluFollowerStatus.collectAsState()
                         DataSourceSettings(
                             glucoseSource = glucoseSource,
                             nightscoutUrl = nightscoutUrl,
@@ -415,6 +418,9 @@ class MainActivity : ComponentActivity() {
                             followerPollSeconds = followerPollSeconds,
                             lluEmail = viewModel.lluEmail,
                             lluPassword = viewModel.lluPassword,
+                            pushStatus = pushStatus,
+                            nsFollowerStatus = nsFollowerStatus,
+                            lluFollowerStatus = lluFollowerStatus,
                             isNotificationAccessGranted = isNotifAccessGranted,
                             onGlucoseSourceChange = viewModel::setGlucoseSource,
                             onNightscoutUrlChange = viewModel::setNightscoutUrl,

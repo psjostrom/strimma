@@ -30,6 +30,7 @@ import com.psjostrom.strimma.network.IntegrationStatus
 import com.psjostrom.strimma.network.LibreLinkUpFollower
 import com.psjostrom.strimma.network.NightscoutFollower
 import com.psjostrom.strimma.network.NightscoutPuller
+import com.psjostrom.strimma.network.NightscoutPusher
 import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.tidepool.TidepoolAuthManager
 import com.psjostrom.strimma.tidepool.TidepoolUploader
@@ -62,6 +63,7 @@ class MainViewModel @Inject constructor(
     private val nightscoutFollower: NightscoutFollower,
     private val libreLinkUpFollower: LibreLinkUpFollower,
     private val nightscoutPuller: NightscoutPuller,
+    private val nightscoutPusher: NightscoutPusher,
     private val treatmentSyncer: TreatmentSyncer,
     private val calendarReader: CalendarReader,
     val mealAnalyzer: MealAnalyzer,
@@ -215,6 +217,16 @@ class MainViewModel @Inject constructor(
             else -> kotlinx.coroutines.flow.flowOf(IntegrationStatus.Idle)
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), IntegrationStatus.Idle)
+
+    val pushStatus: StateFlow<IntegrationStatus> = nightscoutPusher.status
+
+    val nsFollowerStatus: StateFlow<IntegrationStatus> = nightscoutFollower.status
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), IntegrationStatus.Idle)
+
+    val lluFollowerStatus: StateFlow<IntegrationStatus> = libreLinkUpFollower.status
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), IntegrationStatus.Idle)
+
+    val treatmentSyncStatus: StateFlow<IntegrationStatus> = treatmentSyncer.status
 
     val followerPollSeconds: StateFlow<Int> = settings.followerPollSeconds
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 60)
