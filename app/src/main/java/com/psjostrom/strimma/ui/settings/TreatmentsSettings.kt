@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.sp
 import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.InsulinType
 import com.psjostrom.strimma.data.meal.MealTimeSlotConfig
+import com.psjostrom.strimma.network.IntegrationStatus
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -22,6 +23,7 @@ fun TreatmentsSettings(
     insulinType: InsulinType,
     customDIA: Float,
     nightscoutConfigured: Boolean,
+    treatmentSyncStatus: IntegrationStatus,
     onTreatmentsSyncEnabledChange: (Boolean) -> Unit,
     onInsulinTypeChange: (InsulinType) -> Unit,
     onCustomDIAChange: (Float) -> Unit,
@@ -63,6 +65,8 @@ fun TreatmentsSettings(
             }
 
             if (treatmentsSyncEnabled) {
+                IntegrationStatusRow(status = treatmentSyncStatus, activityLabel = "Last sync")
+
                 Text(stringResource(R.string.settings_treatments_insulin_type), color = onBg, fontSize = 14.sp)
                 var expanded by remember { mutableStateOf(false) }
                 ExposedDropdownMenuBox(

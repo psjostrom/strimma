@@ -444,11 +444,13 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable("settings/treatments") {
+                        val treatmentSyncStatus by viewModel.treatmentSyncStatus.collectAsState()
                         TreatmentsSettings(
                             treatmentsSyncEnabled = treatmentsSyncEnabled,
                             insulinType = insulinType,
                             customDIA = customDIA,
                             nightscoutConfigured = nightscoutConfigured,
+                            treatmentSyncStatus = treatmentSyncStatus,
                             onTreatmentsSyncEnabledChange = viewModel::setTreatmentsSyncEnabled,
                             onInsulinTypeChange = viewModel::setInsulinType,
                             onCustomDIAChange = viewModel::setCustomDIA,
