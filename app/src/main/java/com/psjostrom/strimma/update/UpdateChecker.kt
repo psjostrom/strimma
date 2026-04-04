@@ -62,13 +62,15 @@ class UpdateChecker @Inject constructor() {
 
     private var checkJob: Job? = null
 
+    private val json = Json { ignoreUnknownKeys = true }
+
     internal var client: HttpClient = HttpClient(CIO) {
         install(HttpTimeout) {
             requestTimeoutMillis = REQUEST_TIMEOUT_MS
             socketTimeoutMillis = REQUEST_TIMEOUT_MS
         }
         install(ContentNegotiation) {
-            json(Json { ignoreUnknownKeys = true })
+            json(json)
         }
     }
 
@@ -143,7 +145,8 @@ class UpdateChecker @Inject constructor() {
         return try {
             val response = client.get(UPDATE_JSON_URL)
             if (!response.status.isSuccess()) return null
-            val config = Json.decodeFromString<UpdateConfig>(response.body<String>())
+            // raw.githubusercontent.com returns text/plain, so ContentNegotiation won't auto-deserialize
+            val config = json.decodeFromString<UpdateConfig>(response.body<String>())
             config.minVersion
         } catch (e: kotlin.coroutines.cancellation.CancellationException) {
             throw e
