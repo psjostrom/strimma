@@ -1,6 +1,6 @@
 # Per-Category Exercise Stats — Spec
 
-**Status:** Draft (v2 — research-informed)
+**Status:** Implemented
 **Date:** 2026-03-27
 **Depends on:** Exercise-BG Context (done), Health Connect integration (done)
 

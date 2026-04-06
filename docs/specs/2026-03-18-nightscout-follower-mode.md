@@ -1,7 +1,7 @@
 # Nightscout Follower Mode
 
 **Date:** 2026-03-18
-**Status:** Design
+**Status:** Implemented
 
 ---
 

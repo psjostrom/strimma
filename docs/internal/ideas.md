@@ -1,10 +1,12 @@
 # Strimma — Ideas
 
-**Updated:** 2026-03-29
+**Updated:** 2026-04-06
 
 ---
 
 ## Next
+
+> Deferred for post-1.0. These are observational analytics — no dosing recommendations.
 
 ### Insulin Sensitivity & I:C Ratio Analysis
 
@@ -35,13 +37,10 @@ Deferred until there's demand or hardware.
 - **Wear OS complications** — glucose on watch faces. Needs Wear OS hardware.
 - **Wear OS standalone app** — full watch app with graph. Complications cover 80% of the use case.
 - **Multi-OEM testing** — Pixel, Samsung, OnePlus. Different OEMs handle background services differently.
-- **Tidepool upload** — cloud sync for clinic reports.
 - **Android Auto** — BG display while driving.
-- **Lock screen / AOD display** — BG visible without unlocking.
 - **Floating widget** — always-visible BG overlay over other apps.
 - **Voice readout** — spoken glucose values, hands-free.
 - **Calibration** — for sensors that need it (Libre 1/2 without factory calibration). Not needed for G7 or Libre 3.
-- **Contribution guide** — architecture overview, how to add a data source, how to run tests.
 - **F-Droid listing** — GitHub releases covers distribution for now.
 
 ---
@@ -75,6 +74,9 @@ Deferred until there's demand or hardware.
 - Exercise stats with metabolic profiles — aggregate BG patterns by activity category and intensity
 - Per-meal postprandial analysis (TIR, peak excursion, time-to-peak, recovery, iAUC, IOB at meal, sparkline graphs, AGP-style aggregate profile)
 - Pause alerts by category
+- Lock screen / AOD display (live wallpaper with BG value, trend, and graph)
+- Tidepool upload (blocked on Tidepool client ID registration — code is complete)
+- Contribution guide (CONTRIBUTING.md)
 
 ---
 
