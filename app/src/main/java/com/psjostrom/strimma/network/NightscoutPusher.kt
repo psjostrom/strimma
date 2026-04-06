@@ -3,6 +3,7 @@ package com.psjostrom.strimma.network
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
+import com.psjostrom.strimma.di.IoDispatcher
 import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.receiver.DebugLog
 import kotlinx.coroutines.*
@@ -17,19 +18,18 @@ class NightscoutPusher @Inject constructor(
     private val client: NightscoutClient,
     private val dao: ReadingDao,
     private val settings: SettingsRepository,
-    private val alertManager: AlertManager
+    private val alertManager: AlertManager,
+    @IoDispatcher private val dispatcher: CoroutineDispatcher
 ) {
     companion object {
-        const val MAX_RETRY_ATTEMPTS = 12
-        const val RETRY_BASE_DELAY_MS = 5000L
-        const val MAX_RETRY_DELAY_MS = 60000L
+        private const val MAX_RETRY_ATTEMPTS = 12
+        private const val RETRY_BASE_DELAY_MS = 5000L
+        private const val MAX_RETRY_DELAY_MS = 60000L
         private const val SECONDS_TO_MS = 1000L
         private const val PUSH_FAIL_ALERT_MS = 15 * 60 * 1000L // 15 minutes
     }
 
-    /** Overridable for testing — allows injecting a test dispatcher scope. */
-    @androidx.annotation.VisibleForTesting
-    internal var scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val scope = CoroutineScope(SupervisorJob() + dispatcher)
 
     private val _status = MutableStateFlow<IntegrationStatus>(IntegrationStatus.Idle)
     val status: StateFlow<IntegrationStatus> = _status

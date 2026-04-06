@@ -8,7 +8,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-open class WidgetSettingsRepository @Inject constructor(
+class WidgetSettingsRepository @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
     private val prefs get() = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)

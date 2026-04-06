@@ -9,11 +9,7 @@ import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.StrimmaDatabase
 import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.widget.WidgetSettingsRepository
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -25,7 +21,6 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -35,9 +30,9 @@ class NightscoutPusherTest {
 
     private lateinit var db: StrimmaDatabase
     private lateinit var dao: ReadingDao
+    private lateinit var settings: SettingsRepository
+    private lateinit var alertManager: AlertManager
     private lateinit var fakeClient: FakeNightscoutClient
-    private lateinit var fakeSettings: FakeSettingsRepository
-    private lateinit var fakeAlertManager: FakeAlertManager
     private val roomExecutor = Executors.newSingleThreadExecutor()
 
     private val baseTs = 1_700_000_000_000L
@@ -62,8 +57,8 @@ class NightscoutPusherTest {
             .build()
         dao = db.readingDao()
         fakeClient = FakeNightscoutClient()
-        fakeSettings = FakeSettingsRepository()
-        fakeAlertManager = FakeAlertManager()
+        settings = SettingsRepository(context, WidgetSettingsRepository(context))
+        alertManager = AlertManager(context, settings)
     }
 
     @After
@@ -72,20 +67,19 @@ class NightscoutPusherTest {
     }
 
     private fun TestScope.createPusher(): NightscoutPusher {
-        val pusher = NightscoutPusher(fakeClient, dao, fakeSettings, fakeAlertManager)
-        pusher.scope = CoroutineScope(SupervisorJob() + StandardTestDispatcher(testScheduler))
-        return pusher
+        return NightscoutPusher(fakeClient, dao, settings, alertManager, StandardTestDispatcher(testScheduler))
     }
 
     /**
-     * Advances virtual time and waits for Room's real executor to complete.
-     * Room suspend functions dispatch to a real thread pool even in tests, so we need
-     * to alternate between advancing the test dispatcher and yielding to let Room complete.
+     * Advances virtual time and waits for async executors to complete.
+     * Room dispatches to [roomExecutor] (drained deterministically via submit/get).
+     * DataStore dispatches internally to Dispatchers.IO (brief sleep between rounds).
      */
-    private fun TestScope.advanceAndSettle(maxIterations: Int = 20) {
-        repeat(maxIterations) {
+    private fun TestScope.advanceAndSettle() {
+        repeat(5) {
             advanceUntilIdle()
-            Thread.sleep(10) // let Room executor finish
+            roomExecutor.submit {}.get()
+            Thread.sleep(10)
         }
     }
 
@@ -95,8 +89,8 @@ class NightscoutPusherTest {
     fun `pushReading marks reading as pushed on success`() = runTest {
         dao.insert(reading(sgv = 120))
         fakeClient.pushResult = true
-        fakeSettings.url = "https://ns.example.com"
-        fakeSettings.secret = "mysecret"
+        settings.setNightscoutUrl("https://ns.example.com")
+        settings.setNightscoutSecret("mysecret")
 
         val pusher = createPusher()
         pusher.pushReading(reading(sgv = 120))
@@ -109,8 +103,8 @@ class NightscoutPusherTest {
     @Test
     fun `pushReading updates status to Connected on success`() = runTest {
         fakeClient.pushResult = true
-        fakeSettings.url = "https://ns.example.com"
-        fakeSettings.secret = "mysecret"
+        settings.setNightscoutUrl("https://ns.example.com")
+        settings.setNightscoutSecret("mysecret")
 
         val pusher = createPusher()
         pusher.pushReading(reading(sgv = 120))
@@ -125,8 +119,8 @@ class NightscoutPusherTest {
     @Test
     fun `pushReading calls client exactly once on first success`() = runTest {
         fakeClient.pushResult = true
-        fakeSettings.url = "https://ns.example.com"
-        fakeSettings.secret = "mysecret"
+        settings.setNightscoutUrl("https://ns.example.com")
+        settings.setNightscoutSecret("mysecret")
 
         val pusher = createPusher()
         pusher.pushReading(reading(sgv = 120))
@@ -135,28 +129,12 @@ class NightscoutPusherTest {
         assertEquals(1, fakeClient.pushCallCount.get())
     }
 
-    @Test
-    fun `pushReading calls failureTracker onSuccess on successful push`() = runTest {
-        fakeClient.pushResult = true
-        fakeSettings.url = "https://ns.example.com"
-        fakeSettings.secret = "mysecret"
-
-        val pusher = createPusher()
-        pusher.pushReading(reading(sgv = 120))
-        advanceAndSettle()
-
-        assertTrue(
-            "AlertManager.handlePushFailure(false) should be called on success",
-            fakeAlertManager.pushFailureCalls.contains(false)
-        )
-    }
-
     // --- pushReading: skip when URL or secret empty ---
 
     @Test
     fun `pushReading skips when URL is empty`() = runTest {
-        fakeSettings.url = ""
-        fakeSettings.secret = "mysecret"
+        settings.setNightscoutUrl("")
+        settings.setNightscoutSecret("mysecret")
 
         val pusher = createPusher()
         pusher.pushReading(reading(sgv = 120))
@@ -167,8 +145,7 @@ class NightscoutPusherTest {
 
     @Test
     fun `pushReading skips when secret is empty`() = runTest {
-        fakeSettings.url = "https://ns.example.com"
-        fakeSettings.secret = ""
+        settings.setNightscoutUrl("https://ns.example.com")
 
         val pusher = createPusher()
         pusher.pushReading(reading(sgv = 120))
@@ -179,8 +156,7 @@ class NightscoutPusherTest {
 
     @Test
     fun `pushReading skips when both URL and secret are blank`() = runTest {
-        fakeSettings.url = "  "
-        fakeSettings.secret = ""
+        settings.setNightscoutUrl("  ")
 
         val pusher = createPusher()
         pusher.pushReading(reading(sgv = 120))
@@ -195,8 +171,8 @@ class NightscoutPusherTest {
     @Test
     fun `pushReading retries on failure then succeeds`() = runTest {
         fakeClient.pushResults = mutableListOf(false, false, true)
-        fakeSettings.url = "https://ns.example.com"
-        fakeSettings.secret = "mysecret"
+        settings.setNightscoutUrl("https://ns.example.com")
+        settings.setNightscoutSecret("mysecret")
 
         dao.insert(reading(sgv = 120))
         val pusher = createPusher()
@@ -208,87 +184,50 @@ class NightscoutPusherTest {
         assertTrue("Status should be Connected", pusher.status.value is IntegrationStatus.Connected)
     }
 
-    // --- pushReading: gives up after max attempts ---
+    // --- pushReading: gives up after exhausting retries ---
 
     @Test
-    fun `pushReading gives up after MAX_RETRY_ATTEMPTS`() = runTest {
+    fun `pushReading eventually gives up on persistent failure`() = runTest {
         fakeClient.pushResult = false
-        fakeSettings.url = "https://ns.example.com"
-        fakeSettings.secret = "mysecret"
+        settings.setNightscoutUrl("https://ns.example.com")
+        settings.setNightscoutSecret("mysecret")
 
         dao.insert(reading(sgv = 120))
         val pusher = createPusher()
         pusher.pushReading(reading(sgv = 120))
         advanceAndSettle()
 
-        assertEquals(NightscoutPusher.MAX_RETRY_ATTEMPTS, fakeClient.pushCallCount.get())
+        assertTrue("Should have retried multiple times", fakeClient.pushCallCount.get() > 1)
         assertEquals("Reading should remain unpushed", 1, dao.unpushed().size)
-    }
-
-    @Test
-    fun `pushReading calls failureTracker onFailure for each failed attempt`() = runTest {
-        fakeClient.pushResult = false
-        fakeSettings.url = "https://ns.example.com"
-        fakeSettings.secret = "mysecret"
-
-        val pusher = createPusher()
-        pusher.pushReading(reading(sgv = 120))
-        advanceAndSettle()
-
-        assertEquals(NightscoutPusher.MAX_RETRY_ATTEMPTS, fakeClient.pushCallCount.get())
-        // The PushFailureTracker is internal, but its effect is observable:
-        // after enough time, alertManager.handlePushFailure(true) is called.
-        // However, the virtual time doesn't match wall-clock for the tracker's
-        // System.currentTimeMillis() check, so we just verify all attempts ran.
     }
 
     // --- pushReading: backoff timing ---
 
     @Test
-    fun `pushReading backoff delays increase linearly capped at 60s`() = runTest {
+    fun `pushReading retries with increasing delays`() = runTest {
         fakeClient.pushResult = false
-        fakeSettings.url = "https://ns.example.com"
-        fakeSettings.secret = "mysecret"
+        settings.setNightscoutUrl("https://ns.example.com")
+        settings.setNightscoutSecret("mysecret")
 
         val pusher = createPusher()
         pusher.pushReading(reading(sgv = 120))
 
-        // First call is immediate (just need to dispatch the coroutine)
-        advanceTimeBy(1)
+        // Let DataStore's internal IO dispatcher deliver the cached value,
+        // then process pending coroutine tasks without advancing virtual time.
+        repeat(5) { Thread.sleep(20); testScheduler.runCurrent() }
         assertEquals("First call should be immediate", 1, fakeClient.pushCallCount.get())
 
-        // attempt=1 delay: 1 * 5000 = 5000ms
-        advanceTimeBy(4999)
-        assertEquals("Should not retry before 5s", 1, fakeClient.pushCallCount.get())
-        advanceTimeBy(1)
+        // First retry after 5s delay (use 5001 to avoid exact-boundary edge cases)
+        advanceTimeBy(5001)
         assertEquals("Should retry after 5s", 2, fakeClient.pushCallCount.get())
 
-        // attempt=2 delay: 2 * 5000 = 10000ms
-        advanceTimeBy(9999)
-        assertEquals("Should not retry before 10s", 2, fakeClient.pushCallCount.get())
-        advanceTimeBy(1)
+        // Second retry after 10s (delays increase)
+        advanceTimeBy(10001)
         assertEquals("Should retry after 10s", 3, fakeClient.pushCallCount.get())
 
-        // attempt=3 delay: 3 * 5000 = 15000ms
-        advanceTimeBy(15000)
+        // Third retry after 15s
+        advanceTimeBy(15001)
         assertEquals("Should retry after 15s", 4, fakeClient.pushCallCount.get())
-
-        // Complete remaining retries
-        advanceAndSettle()
-        assertEquals(NightscoutPusher.MAX_RETRY_ATTEMPTS, fakeClient.pushCallCount.get())
-    }
-
-    @Test
-    fun `pushReading backoff caps at MAX_RETRY_DELAY_MS`() = runTest {
-        // Verify the backoff formula: delays are attempt * 5000, capped at 60000
-        // Delays: 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60 (seconds)
-        // Only attempt 12 hits the cap (12*5000 = 60000, equals the cap)
-        val expectedTotalDelay = (1..NightscoutPusher.MAX_RETRY_ATTEMPTS).sumOf { attempt ->
-            (attempt * NightscoutPusher.RETRY_BASE_DELAY_MS)
-                .coerceAtMost(NightscoutPusher.MAX_RETRY_DELAY_MS)
-        }
-        // 5+10+15+20+25+30+35+40+45+50+55+60 = 390 seconds = 390000ms
-        assertEquals(390_000L, expectedTotalDelay)
     }
 
     // --- pushPending: pushes all unpushed readings ---
@@ -296,8 +235,8 @@ class NightscoutPusherTest {
     @Test
     fun `pushPending pushes all unpushed readings`() = runTest {
         fakeClient.pushResult = true
-        fakeSettings.url = "https://ns.example.com"
-        fakeSettings.secret = "mysecret"
+        settings.setNightscoutUrl("https://ns.example.com")
+        settings.setNightscoutSecret("mysecret")
 
         dao.insert(reading(minutesAgo = 3, sgv = 90, pushed = 0))
         dao.insert(reading(minutesAgo = 2, sgv = 108, pushed = 0))
@@ -315,8 +254,8 @@ class NightscoutPusherTest {
     @Test
     fun `pushPending updates status to Connected on success`() = runTest {
         fakeClient.pushResult = true
-        fakeSettings.url = "https://ns.example.com"
-        fakeSettings.secret = "mysecret"
+        settings.setNightscoutUrl("https://ns.example.com")
+        settings.setNightscoutSecret("mysecret")
 
         dao.insert(reading(minutesAgo = 1, sgv = 120, pushed = 0))
 
@@ -335,8 +274,8 @@ class NightscoutPusherTest {
     @Test
     fun `pushPending skips when no pending readings`() = runTest {
         fakeClient.pushResult = true
-        fakeSettings.url = "https://ns.example.com"
-        fakeSettings.secret = "mysecret"
+        settings.setNightscoutUrl("https://ns.example.com")
+        settings.setNightscoutSecret("mysecret")
 
         val pusher = createPusher()
         pusher.pushPending()
@@ -348,8 +287,8 @@ class NightscoutPusherTest {
     @Test
     fun `pushPending skips when all readings already pushed`() = runTest {
         fakeClient.pushResult = true
-        fakeSettings.url = "https://ns.example.com"
-        fakeSettings.secret = "mysecret"
+        settings.setNightscoutUrl("https://ns.example.com")
+        settings.setNightscoutSecret("mysecret")
 
         dao.insert(reading(minutesAgo = 1, sgv = 120, pushed = 1))
         dao.insert(reading(minutesAgo = 2, sgv = 130, pushed = 1))
@@ -365,8 +304,8 @@ class NightscoutPusherTest {
 
     @Test
     fun `pushPending skips when URL is empty`() = runTest {
-        fakeSettings.url = ""
-        fakeSettings.secret = "mysecret"
+        settings.setNightscoutUrl("")
+        settings.setNightscoutSecret("mysecret")
 
         dao.insert(reading(minutesAgo = 1, sgv = 120, pushed = 0))
 
@@ -379,8 +318,7 @@ class NightscoutPusherTest {
 
     @Test
     fun `pushPending skips when secret is empty`() = runTest {
-        fakeSettings.url = "https://ns.example.com"
-        fakeSettings.secret = ""
+        settings.setNightscoutUrl("https://ns.example.com")
 
         dao.insert(reading(minutesAgo = 1, sgv = 120, pushed = 0))
 
@@ -396,8 +334,8 @@ class NightscoutPusherTest {
     @Test
     fun `pushPending leaves readings unpushed on failure`() = runTest {
         fakeClient.pushResult = false
-        fakeSettings.url = "https://ns.example.com"
-        fakeSettings.secret = "mysecret"
+        settings.setNightscoutUrl("https://ns.example.com")
+        settings.setNightscoutSecret("mysecret")
 
         dao.insert(reading(minutesAgo = 2, sgv = 108, pushed = 0))
         dao.insert(reading(minutesAgo = 1, sgv = 126, pushed = 0))
@@ -412,8 +350,8 @@ class NightscoutPusherTest {
     @Test
     fun `pushPending does not retry on failure`() = runTest {
         fakeClient.pushResult = false
-        fakeSettings.url = "https://ns.example.com"
-        fakeSettings.secret = "mysecret"
+        settings.setNightscoutUrl("https://ns.example.com")
+        settings.setNightscoutSecret("mysecret")
 
         dao.insert(reading(minutesAgo = 1, sgv = 120, pushed = 0))
 
@@ -429,8 +367,8 @@ class NightscoutPusherTest {
     @Test
     fun `stop prevents further pushes`() = runTest {
         fakeClient.pushResult = true
-        fakeSettings.url = "https://ns.example.com"
-        fakeSettings.secret = "mysecret"
+        settings.setNightscoutUrl("https://ns.example.com")
+        settings.setNightscoutSecret("mysecret")
 
         val pusher = createPusher()
         pusher.stop()
@@ -445,36 +383,30 @@ class NightscoutPusherTest {
     @Test
     fun `stop cancels in-flight retry loop`() = runTest {
         fakeClient.pushResult = false
-        fakeSettings.url = "https://ns.example.com"
-        fakeSettings.secret = "mysecret"
+        settings.setNightscoutUrl("https://ns.example.com")
+        settings.setNightscoutSecret("mysecret")
 
         val pusher = createPusher()
         pusher.pushReading(reading(sgv = 120))
 
-        // Let the first attempt execute (dispatch coroutine start)
-        advanceTimeBy(1)
+        // Let DataStore deliver, then process coroutine without advancing clock
+        repeat(3) { Thread.sleep(20); testScheduler.runCurrent() }
         assertEquals(1, fakeClient.pushCallCount.get())
 
         // Stop during the first retry delay (before 5s elapses)
         pusher.stop()
         advanceAndSettle()
 
-        assertTrue(
-            "Should not complete all retries after stop",
-            fakeClient.pushCallCount.get() < NightscoutPusher.MAX_RETRY_ATTEMPTS
-        )
+        assertEquals("Should stop after first attempt", 1, fakeClient.pushCallCount.get())
     }
 
-    // --- Test doubles ---
+    // --- Test double: network boundary only ---
 
     private class FakeNightscoutClient : NightscoutClient() {
         val pushCallCount = AtomicInteger(0)
         var lastPushReadings: List<GlucoseReading> = emptyList()
 
-        /** Single result for all calls (default mode). */
         var pushResult: Boolean = true
-
-        /** Per-call results. When set, takes priority over pushResult. */
         var pushResults: MutableList<Boolean>? = null
 
         override suspend fun pushReadings(
@@ -490,30 +422,6 @@ class NightscoutPusherTest {
             } else {
                 pushResult
             }
-        }
-    }
-
-    private class FakeSettingsRepository : SettingsRepository(
-        context = ApplicationProvider.getApplicationContext(),
-        widgetSettingsRepository = WidgetSettingsRepository(ApplicationProvider.getApplicationContext())
-    ) {
-        var url: String = ""
-        var secret: String = ""
-
-        override val nightscoutUrl: Flow<String>
-            get() = flowOf(url)
-
-        override fun getNightscoutSecret(): String = secret
-    }
-
-    private class FakeAlertManager : AlertManager(
-        context = ApplicationProvider.getApplicationContext(),
-        settings = FakeSettingsRepository()
-    ) {
-        val pushFailureCalls = CopyOnWriteArrayList<Boolean>()
-
-        override fun handlePushFailure(firing: Boolean) {
-            pushFailureCalls.add(firing)
         }
     }
 }

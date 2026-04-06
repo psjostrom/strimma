@@ -77,7 +77,7 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
 
 @Suppress("TooManyFunctions") // One getter+setter per setting
 @Singleton
-open class SettingsRepository @Inject constructor(
+class SettingsRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val widgetSettingsRepository: WidgetSettingsRepository
 ) {
@@ -227,7 +227,7 @@ open class SettingsRepository @Inject constructor(
         private const val MINUTES_PER_DAY = 1440
     }
 
-    open val nightscoutUrl: Flow<String> = dataStore.data.map { it[KEY_NIGHTSCOUT_URL] ?: "" }
+    val nightscoutUrl: Flow<String> = dataStore.data.map { it[KEY_NIGHTSCOUT_URL] ?: "" }
     val graphWindowHours: Flow<Int> = dataStore.data.map { it[KEY_GRAPH_WINDOW_HOURS] ?: DEFAULT_GRAPH_WINDOW_HOURS }
     val bgLow: Flow<Float> = dataStore.data.map { it[KEY_BG_LOW] ?: DEFAULT_BG_LOW }
     val bgHigh: Flow<Float> = dataStore.data.map { it[KEY_BG_HIGH] ?: DEFAULT_BG_HIGH }
@@ -251,7 +251,7 @@ open class SettingsRepository @Inject constructor(
     suspend fun setBgLow(value: Float) { dataStore.edit { it[KEY_BG_LOW] = value } }
     suspend fun setBgHigh(value: Float) { dataStore.edit { it[KEY_BG_HIGH] = value } }
 
-    open fun getNightscoutSecret(): String = encryptedPrefs.getString(KEY_NIGHTSCOUT_SECRET, "") ?: ""
+    fun getNightscoutSecret(): String = encryptedPrefs.getString(KEY_NIGHTSCOUT_SECRET, "") ?: ""
     fun setNightscoutSecret(secret: String) {
         encryptedPrefs.edit { putString(KEY_NIGHTSCOUT_SECRET, secret) }
         _secretVersion.value++

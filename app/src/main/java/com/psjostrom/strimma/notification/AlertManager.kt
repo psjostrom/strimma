@@ -33,7 +33,7 @@ enum class AlertCategory(val prefsKey: String, val levelKey: String) {
 
 @Suppress("TooManyFunctions") // Alert channels + management methods
 @Singleton
-open class AlertManager @Inject constructor(
+class AlertManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val settings: SettingsRepository
 ) {
@@ -417,7 +417,7 @@ open class AlertManager @Inject constructor(
         }
     }
 
-    open fun handlePushFailure(firing: Boolean) {
+    fun handlePushFailure(firing: Boolean) {
         if (firing) {
             if (!isSnoozed(ALERT_PUSH_FAIL_ID, System.currentTimeMillis())) {
                 fireAlert(
