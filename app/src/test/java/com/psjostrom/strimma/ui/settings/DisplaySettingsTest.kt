@@ -27,12 +27,14 @@ class DisplaySettingsTest {
         bgLow: Float = 4.0f,
         bgHigh: Float = 10.0f,
         themeMode: ThemeMode = ThemeMode.System,
+        wallpaperShowGraph: Boolean = true,
         onGlucoseUnitChange: (GlucoseUnit) -> Unit = {},
         onHbA1cUnitChange: (HbA1cUnit) -> Unit = {},
         onGraphWindowChange: (Int) -> Unit = {},
         onBgLowChange: (Float) -> Unit = {},
         onBgHighChange: (Float) -> Unit = {},
         onThemeModeChange: (ThemeMode) -> Unit = {},
+        onWallpaperShowGraphChange: (Boolean) -> Unit = {},
         onBack: () -> Unit = {}
     ) {
         composeRule.setContent {
@@ -43,12 +45,14 @@ class DisplaySettingsTest {
                 bgLow = bgLow,
                 bgHigh = bgHigh,
                 themeMode = themeMode,
+                wallpaperShowGraph = wallpaperShowGraph,
                 onGlucoseUnitChange = onGlucoseUnitChange,
                 onHbA1cUnitChange = onHbA1cUnitChange,
                 onGraphWindowChange = onGraphWindowChange,
                 onBgLowChange = onBgLowChange,
                 onBgHighChange = onBgHighChange,
                 onThemeModeChange = onThemeModeChange,
+                onWallpaperShowGraphChange = onWallpaperShowGraphChange,
                 onBack = onBack
             )
         }

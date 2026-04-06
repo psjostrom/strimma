@@ -236,6 +236,14 @@
     <string name="notif_iob">IOB %1$s</string>
     <string name="notif_since">%1$dm</string>
 
+    <!-- Wallpaper -->
+    <string name="wallpaper_label">Strimma BG</string>
+    <string name="wallpaper_description">Affiche votre glycémie actuelle, tendance et graphique sur l\u0027écran de verrouillage et l\u0027affichage permanent</string>
+    <string name="settings_wallpaper_title">Fond d\u0027écran animé</string>
+    <string name="settings_wallpaper_summary">Afficher la glycémie sur l\u0027écran de verrouillage et l\u0027affichage permanent</string>
+    <string name="settings_wallpaper_graph_title">Graphique sur le fond</string>
+    <string name="settings_wallpaper_graph_summary">Afficher un mini graphique de glycémie sur le fond d\u0027écran</string>
+
     <!-- Widget -->
     <string name="widget_now">maint.</string>
     <string name="widget_minutes_suffix">%1$dm</string>

@@ -113,6 +113,19 @@
             android:name=".receiver.WorkoutAlarmReceiver"
             android:exported="false" />
 
+        <service
+            android:name=".wallpaper.BgWallpaperService"
+            android:label="@string/wallpaper_label"
+            android:permission="android.permission.BIND_WALLPAPER"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.wallpaper.WallpaperService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.wallpaper"
+                android:resource="@xml/bg_wallpaper" />
+        </service>
+
         <receiver
             android:name=".widget.StrimmaWidgetReceiver"
             android:exported="true">
