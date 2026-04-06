@@ -20,14 +20,16 @@ class NightscoutPusher @Inject constructor(
     private val alertManager: AlertManager
 ) {
     companion object {
-        private const val MAX_RETRY_ATTEMPTS = 12
-        private const val RETRY_BASE_DELAY_MS = 5000L
-        private const val MAX_RETRY_DELAY_MS = 60000L
+        const val MAX_RETRY_ATTEMPTS = 12
+        const val RETRY_BASE_DELAY_MS = 5000L
+        const val MAX_RETRY_DELAY_MS = 60000L
         private const val SECONDS_TO_MS = 1000L
         private const val PUSH_FAIL_ALERT_MS = 15 * 60 * 1000L // 15 minutes
     }
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    /** Overridable for testing — allows injecting a test dispatcher scope. */
+    @androidx.annotation.VisibleForTesting
+    internal var scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val _status = MutableStateFlow<IntegrationStatus>(IntegrationStatus.Idle)
     val status: StateFlow<IntegrationStatus> = _status

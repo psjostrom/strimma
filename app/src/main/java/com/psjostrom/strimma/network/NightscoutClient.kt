@@ -58,7 +58,7 @@ data class NightscoutTreatment(
 )
 
 @Singleton
-class NightscoutClient @Inject constructor() {
+open class NightscoutClient @Inject constructor() {
 
     companion object {
         private const val HTTP_NOT_FOUND = 404
@@ -146,7 +146,7 @@ class NightscoutClient @Inject constructor() {
         }
     }
 
-    suspend fun pushReadings(
+    open suspend fun pushReadings(
         baseUrl: String,
         apiSecret: String,
         readings: List<GlucoseReading>
