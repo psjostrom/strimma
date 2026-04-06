@@ -3,6 +3,7 @@ package com.psjostrom.strimma.network
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
+import com.psjostrom.strimma.di.IoDispatcher
 import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.receiver.DebugLog
 import kotlinx.coroutines.*
@@ -17,7 +18,8 @@ class NightscoutPusher @Inject constructor(
     private val client: NightscoutClient,
     private val dao: ReadingDao,
     private val settings: SettingsRepository,
-    private val alertManager: AlertManager
+    private val alertManager: AlertManager,
+    @IoDispatcher private val dispatcher: CoroutineDispatcher
 ) {
     companion object {
         private const val MAX_RETRY_ATTEMPTS = 12
@@ -27,7 +29,7 @@ class NightscoutPusher @Inject constructor(
         private const val PUSH_FAIL_ALERT_MS = 15 * 60 * 1000L // 15 minutes
     }
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val scope = CoroutineScope(SupervisorJob() + dispatcher)
 
     private val _status = MutableStateFlow<IntegrationStatus>(IntegrationStatus.Idle)
     val status: StateFlow<IntegrationStatus> = _status
