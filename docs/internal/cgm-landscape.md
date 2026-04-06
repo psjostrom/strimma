@@ -40,7 +40,7 @@ Reference material on what exists in the CGM app space, what works well, and wha
 | **Data broadcast**          | Yes                       | Yes                         | Yes                  | Yes                           | Yes (xDrip format)                |
 | **mg/dL support**           | Yes                       | Yes                         | Yes                  | Yes                           | Yes                               |
 | **Dark/Light theme**        | Dark only                 | Partial                     | Dark only            | Yes                           | Yes (Dark/Light/System)           |
-| **Lock screen display**     | Via notification          | No                          | Yes                  | Yes (AOD)                     | Yes (AOD wallpaper + notification) |
+| **Lock screen display**     | Via notification          | No                          | Yes                  | Yes (AOD)                     | Via notification                  |
 | **Android Auto**            | No                        | No                          | No                   | Yes                           | No                                |
 
 ## Interesting Features Elsewhere

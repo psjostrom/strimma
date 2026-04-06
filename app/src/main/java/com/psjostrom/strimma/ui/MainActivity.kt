@@ -177,7 +177,6 @@ class MainActivity : ComponentActivity() {
                 val predictionMinutes by viewModel.predictionMinutes.collectAsState()
                 val glucoseUnit by viewModel.glucoseUnit.collectAsState()
                 val hbA1cUnit by viewModel.hbA1cUnit.collectAsState()
-                val wallpaperShowGraph by viewModel.wallpaperShowGraph.collectAsState()
                 val bgBroadcastEnabled by viewModel.bgBroadcastEnabled.collectAsState()
                 val glucoseSource by viewModel.glucoseSource.collectAsState()
                 val followerPollSeconds by viewModel.followerPollSeconds.collectAsState()
@@ -482,14 +481,12 @@ class MainActivity : ComponentActivity() {
                             bgLow = bgLow,
                             bgHigh = bgHigh,
                             themeMode = themeMode,
-                            wallpaperShowGraph = wallpaperShowGraph,
                             onGlucoseUnitChange = viewModel::setGlucoseUnit,
                             onHbA1cUnitChange = viewModel::setHbA1cUnit,
                             onGraphWindowChange = viewModel::setGraphWindowHours,
                             onBgLowChange = viewModel::setBgLow,
                             onBgHighChange = viewModel::setBgHigh,
                             onThemeModeChange = viewModel::setThemeMode,
-                            onWallpaperShowGraphChange = viewModel::setWallpaperShowGraph,
                             onBack = { navController.popBackStack() }
                         )
                     }

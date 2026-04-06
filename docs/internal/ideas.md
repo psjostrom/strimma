@@ -74,7 +74,6 @@ Deferred until there's demand or hardware.
 - Exercise stats with metabolic profiles — aggregate BG patterns by activity category and intensity
 - Per-meal postprandial analysis (TIR, peak excursion, time-to-peak, recovery, iAUC, IOB at meal, sparkline graphs, AGP-style aggregate profile)
 - Pause alerts by category
-- Lock screen / AOD display (live wallpaper with BG value, trend, and graph)
 - Tidepool upload (blocked on Tidepool client ID registration — code is complete)
 - Contribution guide (CONTRIBUTING.md)
 
@@ -89,5 +88,6 @@ Deferred until there's demand or hardware.
 - **InfoContentProvider** — broadcast intents provide the same data with better security
 - **LibreView upload** — Abbott's walled garden
 - **Meal photo AI** — requires cloud ML, doesn't fit local-first approach
+- **Lock screen / AOD display** — no public API for custom AOD content on stock Android. The live wallpaper approach (used by GDH) replaces the user's wallpaper and adds no value over what Strimma already provides: the notification shows BG + graph on the lock screen, the widget shows it on the home screen, and the BG number icon is already visible on AOD. Three solutions already cover three surfaces.
 - **Gamification** — doesn't match Strimma's tone
 - **GVI/PGS/GVP variability metrics** — trace-length-based metrics (Thomas 2012, Peyser 2018) are fundamentally sensor-dependent. Reference values were established on Dexcom G4 data with heavy proprietary smoothing. Libre 3 (1-min, less smoothed) produces GVP ~100% for well-controlled T1D (CV 33%, TIR 83%) — misleading when the reference "T1D mean" is 45%. Resampling to 5-min and bucket averaging reduce noise but can't compensate for the smoothing difference. The old PGS (multiplicative formula) is mathematically dubious; Dexcom themselves abandoned these metrics. ATTD international consensus recommends CV as the primary variability metric — Strimma already has it.

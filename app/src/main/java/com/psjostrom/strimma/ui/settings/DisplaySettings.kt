@@ -1,8 +1,6 @@
 package com.psjostrom.strimma.ui.settings
 
 import android.app.LocaleManager
-import android.app.WallpaperManager
-import android.content.Intent
 import android.os.LocaleList
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -30,14 +28,12 @@ fun DisplaySettings(
     bgLow: Float,
     bgHigh: Float,
     themeMode: ThemeMode,
-    wallpaperShowGraph: Boolean,
     onGlucoseUnitChange: (GlucoseUnit) -> Unit,
     onHbA1cUnitChange: (HbA1cUnit) -> Unit,
     onGraphWindowChange: (Int) -> Unit,
     onBgLowChange: (Float) -> Unit,
     onBgHighChange: (Float) -> Unit,
     onThemeModeChange: (ThemeMode) -> Unit,
-    onWallpaperShowGraphChange: (Boolean) -> Unit,
     onBack: () -> Unit
 ) {
     val onBg = MaterialTheme.colorScheme.onBackground
@@ -122,72 +118,6 @@ fun DisplaySettings(
                     }
                 }
             }
-        }
-
-        WallpaperSection(
-            wallpaperShowGraph = wallpaperShowGraph,
-            onWallpaperShowGraphChange = onWallpaperShowGraphChange
-        )
-    }
-}
-
-@Composable
-private fun WallpaperSection(
-    wallpaperShowGraph: Boolean,
-    onWallpaperShowGraphChange: (Boolean) -> Unit
-) {
-    val context = LocalContext.current
-    val onBg = MaterialTheme.colorScheme.onBackground
-    val outline = MaterialTheme.colorScheme.outline
-
-    SettingsSection(stringResource(R.string.settings_wallpaper_title)) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable {
-                    context.startActivity(
-                        Intent(WallpaperManager.ACTION_LIVE_WALLPAPER_CHOOSER)
-                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    )
-                },
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    stringResource(R.string.settings_wallpaper_title),
-                    color = onBg,
-                    fontSize = 14.sp
-                )
-                Text(
-                    stringResource(R.string.settings_wallpaper_summary),
-                    color = outline,
-                    fontSize = 12.sp
-                )
-            }
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
-                Text(
-                    stringResource(R.string.settings_wallpaper_graph_title),
-                    color = onBg,
-                    fontSize = 14.sp
-                )
-                Text(
-                    stringResource(R.string.settings_wallpaper_graph_summary),
-                    color = outline,
-                    fontSize = 12.sp
-                )
-            }
-            Switch(
-                checked = wallpaperShowGraph,
-                onCheckedChange = onWallpaperShowGraphChange
-            )
         }
     }
 }

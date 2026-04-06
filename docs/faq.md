@@ -100,18 +100,6 @@ Yes. In Settings > Alerts, each alert type has a **Sound** button that opens the
 
 ---
 
-## Lock Screen & Always-On Display
-
-### Can I see my glucose on the lock screen?
-
-Yes. Strimma includes a live wallpaper that shows your BG value, trend, delta, and optional graph on the lock screen and always-on display. Enable it in Settings > Display > Live wallpaper, then set Strimma as your lock screen wallpaper.
-
-### Does the wallpaper drain battery?
-
-Minimal impact. The wallpaper only redraws when a new glucose reading arrives (every ~1 minute). It uses no continuous animation.
-
----
-
 ## Battery
 
 ### How much battery does Strimma use?
