@@ -295,7 +295,7 @@ class SettingsRepository @Inject constructor(
     suspend fun setGlucoseSource(source: GlucoseSource) {
         dataStore.edit { prefs ->
             prefs[KEY_GLUCOSE_SOURCE] = source.name
-            // Sync to SharedPreferences inside edit block — only runs if DataStore commits
+            // Sync to SharedPreferences — prevents process-death desync between the two stores
             context.getSharedPreferences(SYNC_PREFS, Context.MODE_PRIVATE)
                 .edit { putString(KEY_GLUCOSE_SOURCE_SYNC, source.name) }
         }
@@ -364,7 +364,7 @@ class SettingsRepository @Inject constructor(
     suspend fun setStartOnBoot(enabled: Boolean) {
         dataStore.edit { prefs ->
             prefs[KEY_START_ON_BOOT] = enabled
-            // Sync to SharedPreferences inside edit block — only runs if DataStore commits
+            // Sync to SharedPreferences — prevents process-death desync between the two stores
             context.getSharedPreferences(SYNC_PREFS, Context.MODE_PRIVATE)
                 .edit { putBoolean(KEY_START_ON_BOOT_SYNC, enabled) }
         }
