@@ -4,13 +4,20 @@ import android.graphics.Color
 import android.graphics.PorterDuff
 import android.service.wallpaper.WallpaperService
 import android.view.SurfaceHolder
+import com.psjostrom.strimma.R
+import com.psjostrom.strimma.data.GlucoseReading
+import com.psjostrom.strimma.data.GlucoseUnit
+import com.psjostrom.strimma.data.MS_PER_MINUTE
+import com.psjostrom.strimma.data.ReadingDao
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 
 class BgWallpaperService : WallpaperService() {
@@ -22,10 +29,6 @@ class BgWallpaperService : WallpaperService() {
         private var collectJob: Job? = null
         private var surfaceWidth = 0
         private var surfaceHeight = 0
-
-        override fun onCreate(surfaceHolder: SurfaceHolder) {
-            super.onCreate(surfaceHolder)
-        }
 
         override fun onVisibilityChanged(visible: Boolean) {
             if (visible) {
@@ -46,6 +49,7 @@ class BgWallpaperService : WallpaperService() {
         }
 
         override fun onDestroy() {
+            stopCollecting()
             scope.cancel()
             super.onDestroy()
         }
@@ -59,18 +63,15 @@ class BgWallpaperService : WallpaperService() {
             val readingDao = entryPoint.readingDao()
             val settings = entryPoint.settingsRepository()
 
-            val now = System.currentTimeMillis()
-            val oneHourAgo = now - GRAPH_WINDOW_MS
-
             collectJob = scope.launch {
                 combine(
                     readingDao.latest(),
-                    readingDao.sinceLive(oneHourAgo),
+                    recentReadingsFlow(readingDao),
                     settings.glucoseUnit,
                     settings.bgLow,
                     settings.bgHigh,
                 ) { latest, recent, unit, bgLow, bgHigh ->
-                    DrawParams(latest, recent, unit, bgLow.toInt(), bgHigh.toInt(), true)
+                    DrawParams(latest, recent, unit, bgLow.toDouble(), bgHigh.toDouble(), true)
                 }.combine(settings.wallpaperShowGraph) { params, showGraph ->
                     params.copy(showGraph = showGraph)
                 }.collect { params ->
@@ -79,9 +80,27 @@ class BgWallpaperService : WallpaperService() {
             }
         }
 
+        private fun recentReadingsFlow(readingDao: ReadingDao) = flow {
+            while (true) {
+                val oneHourAgo = System.currentTimeMillis() - GRAPH_WINDOW_MS
+                emit(readingDao.since(oneHourAgo))
+                delay(RECENT_READINGS_POLL_MS)
+            }
+        }
+
         private fun stopCollecting() {
             collectJob?.cancel()
             collectJob = null
+        }
+
+        private fun formatTimeText(reading: GlucoseReading?): String {
+            if (reading == null) return ""
+            val ageMinutes = ((System.currentTimeMillis() - reading.ts) / MS_PER_MINUTE).toInt()
+            return if (ageMinutes < 1) {
+                getString(R.string.main_just_now)
+            } else {
+                getString(R.string.main_min_ago, ageMinutes)
+            }
         }
 
         private fun draw(params: DrawParams) {
@@ -99,7 +118,8 @@ class BgWallpaperService : WallpaperService() {
                     showGraph = params.showGraph,
                     recentReadings = params.recentReadings,
                     bgLow = params.bgLow,
-                    bgHigh = params.bgHigh
+                    bgHigh = params.bgHigh,
+                    timeText = formatTimeText(params.latest)
                 )
             } finally {
                 holder.unlockCanvasAndPost(canvas)
@@ -108,15 +128,16 @@ class BgWallpaperService : WallpaperService() {
     }
 
     private data class DrawParams(
-        val latest: com.psjostrom.strimma.data.GlucoseReading?,
-        val recentReadings: List<com.psjostrom.strimma.data.GlucoseReading>,
-        val unit: com.psjostrom.strimma.data.GlucoseUnit,
-        val bgLow: Int,
-        val bgHigh: Int,
+        val latest: GlucoseReading?,
+        val recentReadings: List<GlucoseReading>,
+        val unit: GlucoseUnit,
+        val bgLow: Double,
+        val bgHigh: Double,
         val showGraph: Boolean
     )
 
     companion object {
         private const val GRAPH_WINDOW_MS = 3_600_000L
+        private const val RECENT_READINGS_POLL_MS = 60_000L
     }
 }

@@ -245,7 +245,7 @@
     <string name="settings_wallpaper_title">Live-bakgrund</string>
     <string name="settings_wallpaper_summary">Visa glukos på låsskärm och always-on-display</string>
     <string name="settings_wallpaper_graph_title">Graf på bakgrund</string>
-    <string name="settings_wallpaper_graph_summary">Visa en mini-glukosgrafer på bakgrunden</string>
+    <string name="settings_wallpaper_graph_summary">Visa en mini-glukosgraf på bakgrunden</string>
 
     <!-- Widget -->
     <string name="widget_now">nu</string>

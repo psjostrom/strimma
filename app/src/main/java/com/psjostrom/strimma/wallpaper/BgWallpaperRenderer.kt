@@ -7,7 +7,12 @@ import android.graphics.Typeface
 import com.psjostrom.strimma.data.Direction
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseUnit
+import com.psjostrom.strimma.data.MS_PER_MINUTE
+import com.psjostrom.strimma.graph.CANVAS_TEXT_SECONDARY
+import com.psjostrom.strimma.graph.CANVAS_TEXT_TERTIARY
 import com.psjostrom.strimma.graph.canvasColorFor
+import com.psjostrom.strimma.graph.computeYRange
+import com.psjostrom.strimma.notification.AlertManager
 
 class BgWallpaperRenderer {
 
@@ -22,12 +27,12 @@ class BgWallpaperRenderer {
 
     private val deltaPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        color = SECONDARY_TEXT_COLOR
+        color = CANVAS_TEXT_SECONDARY
     }
 
     private val timePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        color = TERTIARY_TEXT_COLOR
+        color = CANVAS_TEXT_TERTIARY
     }
 
     private val dotPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -43,8 +48,9 @@ class BgWallpaperRenderer {
         unit: GlucoseUnit,
         showGraph: Boolean,
         recentReadings: List<GlucoseReading>,
-        bgLow: Int,
-        bgHigh: Int
+        bgLow: Double,
+        bgHigh: Double,
+        timeText: String
     ) {
         canvas.drawColor(Color.TRANSPARENT, android.graphics.PorterDuff.Mode.CLEAR)
 
@@ -55,11 +61,11 @@ class BgWallpaperRenderer {
 
         // Determine status color
         val ageMs = System.currentTimeMillis() - reading.ts
-        val stale = ageMs > STALE_THRESHOLD_MS
+        val stale = ageMs > AlertManager.STALE_THRESHOLD_MINUTES * MS_PER_MINUTE
         val statusColor = if (stale) {
-            TERTIARY_TEXT_COLOR
+            CANVAS_TEXT_TERTIARY
         } else {
-            canvasColorFor(reading.sgv.toDouble(), bgLow.toDouble(), bgHigh.toDouble())
+            canvasColorFor(reading.sgv.toDouble(), bgLow, bgHigh)
         }
 
         // BG value text
@@ -109,8 +115,6 @@ class BgWallpaperRenderer {
         // Draw time since reading
         y += LINE_SPACING * density
         timePaint.textSize = TIME_TEXT_SIZE * density
-        val ageMinutes = (ageMs / MS_PER_MINUTE).toInt()
-        val timeText = if (ageMinutes < 1) "Just now" else "$ageMinutes min ago"
         y += TIME_TEXT_SIZE * density
         canvas.drawText(timeText, centerX, y, timePaint)
 
@@ -125,8 +129,8 @@ class BgWallpaperRenderer {
         val centerX: Float,
         val top: Float,
         val density: Float,
-        val bgLow: Int,
-        val bgHigh: Int
+        val bgLow: Double,
+        val bgHigh: Double
     )
 
     private fun drawMiniGraph(
@@ -142,25 +146,21 @@ class BgWallpaperRenderer {
         val now = System.currentTimeMillis()
         val windowMs = GRAPH_WINDOW_MS
 
-        // Y range from readings
-        val minSgv = readings.minOf { it.sgv }.toDouble()
-        val maxSgv = readings.maxOf { it.sgv }.toDouble()
-        val yMin = minOf(minSgv - Y_PADDING, layout.bgLow.toDouble() - Y_PADDING)
-        val yMax = maxOf(maxSgv + Y_PADDING, layout.bgHigh.toDouble() + Y_PADDING)
-        val yRange = if (yMax - yMin < MIN_Y_RANGE) MIN_Y_RANGE else yMax - yMin
+        val yr = computeYRange(readings.map { it.sgv.toDouble() }, layout.bgLow, layout.bgHigh)
+        val yRange = if (yr.range < MIN_Y_RANGE) MIN_Y_RANGE else yr.range
 
         for (reading in readings) {
             val age = now - reading.ts
             if (age < 0 || age > windowMs) continue
 
             val x = left + graphWidth * (1f - age.toFloat() / windowMs)
-            val yFraction = 1f - ((reading.sgv.toDouble() - yMin) / yRange).toFloat()
+            val yFraction = 1f - ((reading.sgv.toDouble() - yr.yMin) / yRange).toFloat()
             val y = layout.top + yFraction * graphHeight
 
             dotPaint.color = canvasColorFor(
                 reading.sgv.toDouble(),
-                layout.bgLow.toDouble(),
-                layout.bgHigh.toDouble()
+                layout.bgLow,
+                layout.bgHigh
             )
             canvas.drawCircle(x, y, dotRadius, dotPaint)
         }
@@ -180,15 +180,8 @@ class BgWallpaperRenderer {
         private const val GRAPH_HEIGHT = 60f
         private const val GRAPH_TOP_MARGIN = 16f
         private const val DOT_RADIUS = 3f
-        private const val Y_PADDING = 10.0
         private const val MIN_Y_RANGE = 36.0
 
         private const val GRAPH_WINDOW_MS = 3_600_000L // 1 hour
-        private const val STALE_THRESHOLD_MS = 10L * 60 * 1000 // 10 minutes
-        private const val MS_PER_MINUTE = 60_000L
-
-        // Colors matching Color.kt: DarkTextSecondary, DarkTextTertiary
-        const val SECONDARY_TEXT_COLOR = 0xFFA898C0.toInt()
-        const val TERTIARY_TEXT_COLOR = 0xFF6A5F80.toInt()
     }
 }
