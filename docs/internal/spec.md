@@ -1,7 +1,9 @@
 # Strimma — Spec v1
 
 **Date:** 2026-03-17
-**Status:** Draft
+**Status:** Historical — Phase 1 reference
+> **Note (2026-04-06):** This spec covers the original Phase 1 scope only. Strimma has since completed Phase 2 (alerts, prediction, widget, statistics, theme, units, broadcast) and Phase 3 (60+ CGM app support, Nightscout follower, LibreLinkUp follower, i18n, GPL, GitHub releases). See `ideas.md` for current feature status and `docs/specs/` for individual feature specs.
+
 **Author:** psjostrom
 
 Strimma is an open-source Android CGM app inspired by xDrip+. It receives glucose data from CamAPS FX, displays it with notifications and an in-app graph, and pushes readings to Nightscout. Built on modern Android conventions (Kotlin, Compose, Room, Hilt), it aims to be an approachable, well-tested alternative for the CGM community.

@@ -1,6 +1,6 @@
 # Strimma — CGM App Landscape
 
-**Updated:** 2026-03-23
+**Updated:** 2026-04-06
 
 Reference material on what exists in the CGM app space, what works well, and what's missing. See `ideas.md` for ideas.
 
@@ -35,12 +35,12 @@ Reference material on what exists in the CGM app space, what works well, and wha
 | **Prediction**              | Yes (multiple algorithms) | No                          | No                   | No                            | Yes (30-min dampened velocity)    |
 | **Statistics (TIR, GMI)**   | Yes                       | Yes                         | Limited              | No                            | Yes (TIR, GMI, CV%, coverage)     |
 | **GVI/PGS variability**     | Yes                       | No                          | No                   | No                            | No                                |
-| **Health Connect**          | No                        | Yes                         | No                   | No                            | No                                |
+| **Health Connect**          | No                        | Yes                         | No                   | No                            | Yes (exercise read + glucose write) |
 | **Interactive graph**       | Yes (pinch zoom)          | Yes (landscape)             | Basic                | Basic                         | Yes (zoom, pan, scrub, minimap)   |
 | **Data broadcast**          | Yes                       | Yes                         | Yes                  | Yes                           | Yes (xDrip format)                |
 | **mg/dL support**           | Yes                       | Yes                         | Yes                  | Yes                           | Yes                               |
 | **Dark/Light theme**        | Dark only                 | Partial                     | Dark only            | Yes                           | Yes (Dark/Light/System)           |
-| **Lock screen display**     | Via notification          | No                          | Yes                  | Yes (AOD)                     | Via notification                  |
+| **Lock screen display**     | Via notification          | No                          | Yes                  | Yes (AOD)                     | Yes (AOD wallpaper + notification) |
 | **Android Auto**            | No                        | No                          | No                   | Yes                           | No                                |
 
 ## Interesting Features Elsewhere

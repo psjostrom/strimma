@@ -12,6 +12,19 @@ adb connect 192.168.1.10:<port> # wireless debug (port changes on reconnect)
 
 Run tests with `./gradlew testDebugUnitTest`.
 
+## Testing
+
+Integration over isolation. Tests wire real collaborators — mock only at the system boundary.
+
+- **Use real Room** (in-memory via `Room.inMemoryDatabaseBuilder`). Never mock a DAO.
+- **Use real SettingsRepository** (backed by DataStore + SharedPreferences via Robolectric). Never mock settings.
+- **Use real domain classes** (DirectionComputer, IOBComputer, MealAnalyzer, etc.). Never mock a collaborator that's pure computation.
+- **Mock only the network boundary.** Hand-written test doubles (e.g. `FakeNightscoutClient`) or Ktor `MockEngine` for HTTP. No mock frameworks (Mockito, MockK) — if you need one, the design is wrong.
+- **Test behavior, not implementation.** Assert on observable outcomes: DB state after a pipeline run, notifications fired, JSON shape returned, Flow emissions. Never assert on method call counts or internal state.
+- **Pure-logic classes need no integration.** If a class has no collaborators (just data in → result out), test it directly with synthetic data. That's not isolation — it's just a function with nothing to integrate.
+- **Robolectric for Android services.** NotificationManager, SharedPreferences, Context — use Robolectric's real implementations, not mocks.
+- **Each test is self-contained.** Arrange-act-assert in one function. No shared mutable state via `@Before`. Setup helpers that return what you need are fine.
+
 ## Architecture
 
 ```
