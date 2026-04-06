@@ -212,6 +212,8 @@ class SettingsRepository @Inject constructor(
         private val KEY_TIDEPOOL_LAST_ERROR = stringPreferencesKey("tidepool_last_error")
         private const val KEY_TIDEPOOL_REFRESH_TOKEN = "tidepool_refresh_token"
 
+        private val KEY_WALLPAPER_SHOW_GRAPH = booleanPreferencesKey("wallpaper_show_graph")
+
         // Settings defaults (mg/dL)
         private const val DEFAULT_GRAPH_WINDOW_HOURS = 4
         const val DEFAULT_BG_LOW = 72f
@@ -374,6 +376,9 @@ class SettingsRepository @Inject constructor(
             .getBoolean(KEY_START_ON_BOOT_SYNC, true)
     }
 
+
+    val wallpaperShowGraph: Flow<Boolean> = dataStore.data.map { it[KEY_WALLPAPER_SHOW_GRAPH] ?: true }
+    suspend fun setWallpaperShowGraph(show: Boolean) { dataStore.edit { it[KEY_WALLPAPER_SHOW_GRAPH] = show } }
 
     val hcWriteEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_HC_WRITE_ENABLED] ?: false }
     suspend fun setHcWriteEnabled(enabled: Boolean) { dataStore.edit { it[KEY_HC_WRITE_ENABLED] = enabled } }
@@ -538,6 +543,7 @@ class SettingsRepository @Inject constructor(
             put("web_server_enabled", prefs[KEY_WEB_SERVER_ENABLED] ?: false)
             put("start_on_boot", prefs[KEY_START_ON_BOOT] ?: true)
             put("hc_write_enabled", prefs[KEY_HC_WRITE_ENABLED] ?: false)
+            put("wallpaper_show_graph", prefs[KEY_WALLPAPER_SHOW_GRAPH] ?: true)
         }
 
         val secrets = JSONObject().apply {
@@ -599,6 +605,7 @@ class SettingsRepository @Inject constructor(
             if (settings.has("web_server_enabled")) prefs[KEY_WEB_SERVER_ENABLED] = settings.getBoolean("web_server_enabled")
             if (settings.has("start_on_boot")) prefs[KEY_START_ON_BOOT] = settings.getBoolean("start_on_boot")
             if (settings.has("hc_write_enabled")) prefs[KEY_HC_WRITE_ENABLED] = settings.getBoolean("hc_write_enabled")
+            if (settings.has("wallpaper_show_graph")) prefs[KEY_WALLPAPER_SHOW_GRAPH] = settings.getBoolean("wallpaper_show_graph")
 
             // Sync to SharedPreferences atomically with DataStore edit
             val sourceName = settings.optString("glucose_source", "COMPANION")

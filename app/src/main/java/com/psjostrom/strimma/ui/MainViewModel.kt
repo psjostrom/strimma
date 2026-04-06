@@ -174,6 +174,10 @@ class MainViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ThemeMode.System)
     fun setThemeMode(mode: ThemeMode) = viewModelScope.launch { settings.setThemeMode(mode) }
 
+    val wallpaperShowGraph: StateFlow<Boolean> = settings.wallpaperShowGraph
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    fun setWallpaperShowGraph(show: Boolean) = viewModelScope.launch { settings.setWallpaperShowGraph(show) }
+
     val notifGraphMinutes: StateFlow<Int> = settings.notifGraphMinutes
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 60)
     fun setNotifGraphMinutes(minutes: Int) = viewModelScope.launch { settings.setNotifGraphMinutes(minutes) }

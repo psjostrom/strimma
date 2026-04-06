@@ -17,6 +17,10 @@ const val CANVAS_CARB = 0xFF4CAF50.toInt()
 // Exercise band color — keep in sync with Color.kt (ExerciseDefault)
 const val CANVAS_EXERCISE = 0xFF8B8BBA.toInt()
 
+// Text colors — keep in sync with Color.kt (DarkTextSecondary, DarkTextTertiary)
+const val CANVAS_TEXT_SECONDARY = 0xFFA898C0.toInt()
+const val CANVAS_TEXT_TERTIARY = 0xFF6A5F80.toInt()
+
 enum class BgStatus { IN_RANGE, HIGH, DANGER }
 
 fun bgStatusFor(mgdl: Double, bgLow: Double, bgHigh: Double): BgStatus = when {
