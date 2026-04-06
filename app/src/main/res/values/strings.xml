@@ -290,14 +290,6 @@
     <string name="notif_iob">IOB %1$s</string>
     <string name="notif_since">%1$dm</string>
 
-    <!-- Wallpaper -->
-    <string name="wallpaper_label">Strimma BG</string>
-    <string name="wallpaper_description">Shows your current glucose value, trend, and graph on the lock screen and always-on display</string>
-    <string name="settings_wallpaper_title">Live wallpaper</string>
-    <string name="settings_wallpaper_summary">Show glucose on lock screen and always-on display</string>
-    <string name="settings_wallpaper_graph_title">Graph on wallpaper</string>
-    <string name="settings_wallpaper_graph_summary">Show a mini glucose graph on the wallpaper</string>
-
     <!-- Widget -->
     <string name="widget_now">now</string>
     <string name="widget_minutes_suffix">%1$dm</string>

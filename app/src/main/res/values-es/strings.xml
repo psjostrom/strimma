@@ -236,14 +236,6 @@
     <string name="notif_iob">IOB %1$s</string>
     <string name="notif_since">%1$dm</string>
 
-    <!-- Wallpaper -->
-    <string name="wallpaper_label">Strimma BG</string>
-    <string name="wallpaper_description">Muestra tu valor de glucosa actual, tendencia y gráfico en la pantalla de bloqueo y pantalla siempre activa</string>
-    <string name="settings_wallpaper_title">Fondo de pantalla en vivo</string>
-    <string name="settings_wallpaper_summary">Mostrar glucosa en la pantalla de bloqueo y pantalla siempre activa</string>
-    <string name="settings_wallpaper_graph_title">Gráfico en fondo</string>
-    <string name="settings_wallpaper_graph_summary">Mostrar un mini gráfico de glucosa en el fondo de pantalla</string>
-
     <!-- Widget -->
     <string name="widget_now">ahora</string>
     <string name="widget_minutes_suffix">%1$dm</string>
