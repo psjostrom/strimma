@@ -293,9 +293,12 @@ class SettingsRepository @Inject constructor(
         catch (_: Exception) { GlucoseSource.COMPANION }
     }
     suspend fun setGlucoseSource(source: GlucoseSource) {
-        dataStore.edit { it[KEY_GLUCOSE_SOURCE] = source.name }
-        context.getSharedPreferences(SYNC_PREFS, Context.MODE_PRIVATE)
-            .edit { putString(KEY_GLUCOSE_SOURCE_SYNC, source.name) }
+        dataStore.edit { prefs ->
+            prefs[KEY_GLUCOSE_SOURCE] = source.name
+            // Sync to SharedPreferences inside edit block — only runs if DataStore commits
+            context.getSharedPreferences(SYNC_PREFS, Context.MODE_PRIVATE)
+                .edit { putString(KEY_GLUCOSE_SOURCE_SYNC, source.name) }
+        }
     }
     fun getGlucoseSourceSync(): GlucoseSource {
         val name = context.getSharedPreferences(SYNC_PREFS, Context.MODE_PRIVATE)
@@ -359,9 +362,12 @@ class SettingsRepository @Inject constructor(
 
     val startOnBoot: Flow<Boolean> = dataStore.data.map { it[KEY_START_ON_BOOT] ?: true }
     suspend fun setStartOnBoot(enabled: Boolean) {
-        dataStore.edit { it[KEY_START_ON_BOOT] = enabled }
-        context.getSharedPreferences(SYNC_PREFS, Context.MODE_PRIVATE)
-            .edit { putBoolean(KEY_START_ON_BOOT_SYNC, enabled) }
+        dataStore.edit { prefs ->
+            prefs[KEY_START_ON_BOOT] = enabled
+            // Sync to SharedPreferences inside edit block — only runs if DataStore commits
+            context.getSharedPreferences(SYNC_PREFS, Context.MODE_PRIVATE)
+                .edit { putBoolean(KEY_START_ON_BOOT_SYNC, enabled) }
+        }
     }
     fun getStartOnBootSync(): Boolean {
         return context.getSharedPreferences(SYNC_PREFS, Context.MODE_PRIVATE)
