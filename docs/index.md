@@ -115,6 +115,8 @@ Strimma is free, open-source software licensed under [GPLv3](https://github.com/
 
 I'm [Per Sjöström](https://www.linkedin.com/in/persjostrom/), a software engineer with Type 1 diabetes. Strimma started as a personal tool to replace xDrip+ with something modern, and grew into an open-source project for anyone who wants better control over their CGM data. I also build [Springa](https://github.com/psjostrom/springa), a workout generator and BG management system that receives data from Strimma via the Nightscout API.
 
+**Contact:** [per@strimma.org](mailto:per@strimma.org)
+
 ---
 
 !!! warning "Not a medical device"
