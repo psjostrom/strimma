@@ -119,7 +119,7 @@ The debug log is your best tool for troubleshooting. Access it via **Settings > 
 
 Tap the **share icon** in the debug log screen to share the current log file via email, messaging, or file manager.
 
-When reporting an issue, always include the debug log — it contains the information needed to diagnose the problem.
+When reporting an issue, always include the debug log — it contains the information needed to diagnose the problem. You can report issues on [GitHub](https://github.com/psjostrom/strimma/issues).
 
 ---
 

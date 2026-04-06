@@ -82,6 +82,12 @@ The settings export feature (**Settings > Sharing > Export Settings**) creates a
 
 ---
 
+## Contact
+
+If you have questions about Strimma's privacy practices, contact [per@strimma.org](mailto:per@strimma.org).
+
+---
+
 ## Local Web Server
 
 If you enable the local web server (**Settings > Sharing > Local Web Server**), your glucose data is accessible to any device on your local network on port 17580. The web server does not expose data to the internet unless you've specifically configured port forwarding on your router (don't do this — use Nightscout for remote access).

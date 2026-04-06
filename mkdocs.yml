@@ -1,6 +1,6 @@
 site_name: Strimma
 site_description: Open-source Android CGM companion app — real-time glucose display, alerts, and Nightscout integration
-site_url: https://psjostrom.github.io/Strimma/
+site_url: https://www.strimma.org/
 repo_url: https://github.com/psjostrom/Strimma
 repo_name: psjostrom/Strimma
 edit_uri: edit/main/docs/
