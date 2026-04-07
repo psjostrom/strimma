@@ -28,7 +28,7 @@ private fun cleanGlucoseText(raw: String): String = raw
  *
  * Supports both mmol/L (e.g. "13.5", "7,8") and mg/dL (e.g. "180", "95").
  * Values with a decimal are treated as mmol/L and converted to mg/dL.
- * Integer values 20+ are treated as mg/dL directly (no CGM app omits the decimal from mmol/L values).
+ * Integer values 40+ are treated as mg/dL directly (sensors show "LO" below 40, not a number).
  */
 @Suppress("ReturnCount") // Early returns in parser
 fun tryParseGlucose(raw: String): Double? {
@@ -44,7 +44,7 @@ fun tryParseGlucose(raw: String): Double? {
         return mmol * MGDL_CONVERSION
     }
 
-    // mg/dL: integer values > 50 (no overlap with mmol/L range)
+    // mg/dL: integer values >= 40 (sensors show "LO" below 40)
     val mgdlMatch = Regex("^(\\d{2,3})$").find(cleaned)
     if (mgdlMatch != null) {
         val mgdl = mgdlMatch.groupValues[1].toIntOrNull() ?: return null
