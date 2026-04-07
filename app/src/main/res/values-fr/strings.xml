@@ -426,4 +426,40 @@
     <string name="activity_pull_treatments_progress">Téléchargement de %1$d jours de traitements…</string>
     <string name="activity_pull_treatments_success">%1$d traitements téléchargés</string>
     <string name="activity_pull_treatments_failed">Échec du téléchargement des traitements : %1$s</string>
+
+    <!-- Tidepool -->
+    <string name="activity_tidepool_uploading">Envoi vers Tidepool…</string>
+    <string name="activity_tidepool_success">%1$d lectures envoyées vers Tidepool</string>
+    <string name="activity_tidepool_up_to_date">Tidepool est à jour</string>
+    <string name="activity_tidepool_failed">Échec de l\u0027envoi vers Tidepool : %1$s</string>
+
+    <!-- Meal Stats -->
+    <string name="meals_no_meals">Aucun repas trouvé</string>
+    <string name="meals_no_sparkline_data">Pas de données</string>
+    <string name="meals_postprandial_profile">PROFIL POSTPRANDIAL</string>
+    <string name="meals_summary">RÉSUMÉ DES REPAS</string>
+    <string name="meals_avg_tir">TIR moyen</string>
+    <string name="meals_avg_peak">Pic moyen</string>
+    <string name="meals_avg_recovery">Récupération moyenne</string>
+    <string name="meals_by_carb_size">PAR QUANTITÉ DE GLUCIDES</string>
+    <string name="meals_peak">Pic</string>
+    <string name="meals_time_to_peak">Temps au pic</string>
+    <string name="meals_recovery">Récupération</string>
+    <string name="meals_iob_at_meal">IOB au repas</string>
+
+    <!-- Update Dialog -->
+    <string name="update_required_title">Mise à jour obligatoire</string>
+    <string name="update_available_title">Mise à jour disponible</string>
+    <string name="update_version">Version %1$s</string>
+    <string name="update_forced_message">Cette mise à jour est nécessaire pour continuer à utiliser Strimma.</string>
+    <string name="update_downloading">Téléchargement…</string>
+    <string name="update_retry">Réessayer</string>
+    <string name="update_button">Mettre à jour</string>
+    <string name="update_later">Plus tard</string>
+
+    <!-- Pre-Activity Card -->
+    <string name="preactivity_ready">PRÊT</string>
+    <string name="preactivity_caution">ATTENTION</string>
+    <string name="preactivity_wait">ATTENDEZ</string>
+    <string name="preactivity_event_in">%1$s dans %2$s</string>
 </resources>

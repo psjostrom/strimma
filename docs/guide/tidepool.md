@@ -42,7 +42,3 @@ To stop uploading and remove your Tidepool credentials:
 
 This removes the stored session. You can reconnect at any time by logging in again.
 
----
-
-!!! note "Pending: Client ID Registration"
-    Tidepool upload requires a registered client ID. The code is complete, but the client ID registration with Tidepool is pending. This feature will become fully functional once registration is approved.

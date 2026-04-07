@@ -18,7 +18,9 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
+import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.MS_PER_MINUTE
 import com.psjostrom.strimma.data.calendar.GuidanceState
 import com.psjostrom.strimma.data.calendar.ReadinessLevel
@@ -41,10 +43,10 @@ fun PreActivityCard(
     modifier: Modifier = Modifier
 ) {
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
-    val (bgColor, badgeColor, badgeText) = when (state.readiness) {
-        ReadinessLevel.READY -> Triple(if (isDark) TintInRange else LightTintInRange, InRange, "READY")
-        ReadinessLevel.CAUTION -> Triple(if (isDark) TintWarning else LightTintWarning, AboveHigh, "HEADS UP")
-        ReadinessLevel.WAIT -> Triple(if (isDark) TintDanger else LightTintDanger, BelowLow, "HOLD ON")
+    val (bgColor, badgeColor, badgeTextRes) = when (state.readiness) {
+        ReadinessLevel.READY -> Triple(if (isDark) TintInRange else LightTintInRange, InRange, R.string.preactivity_ready)
+        ReadinessLevel.CAUTION -> Triple(if (isDark) TintWarning else LightTintWarning, AboveHigh, R.string.preactivity_caution)
+        ReadinessLevel.WAIT -> Triple(if (isDark) TintDanger else LightTintDanger, BelowLow, R.string.preactivity_wait)
     }
 
     val timeText = formatTimeUntil(state.event.startTime - System.currentTimeMillis())
@@ -66,14 +68,14 @@ fun PreActivityCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = badgeText,
+                    text = stringResource(badgeTextRes),
                     color = badgeColor,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp
                 )
                 Text(
-                    text = "${state.event.title} in $timeText",
+                    text = stringResource(R.string.preactivity_event_in, state.event.title, timeText),
                     color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -96,7 +98,7 @@ fun PreActivityCard(
 }
 
 internal fun formatTimeUntil(ms: Long): String {
-    if (ms <= 0) return "now"
+    if (ms <= 0) return "now" // Not user-visible — used in notification text
     val totalMinutes = (ms / MS_PER_MINUTE).toInt()
     val hours = totalMinutes / MINUTES_PER_HOUR
     val minutes = totalMinutes % MINUTES_PER_HOUR

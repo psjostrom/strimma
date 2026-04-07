@@ -215,6 +215,36 @@
     <string name="stats_meals_treatments_disabled">Meal analysis requires treatment sync. Enable it in Settings → Treatments to see how your meals affect your glucose.</string>
     <string name="stats_meals_requires_ns">Meal analysis requires a Nightscout connection. Configure a Nightscout URL and secret in Settings → Data Source to enable treatment sync.</string>
 
+    <!-- Meal Stats -->
+    <string name="meals_no_meals">No meals found</string>
+    <string name="meals_no_sparkline_data">No data</string>
+    <string name="meals_postprandial_profile">POSTPRANDIAL PROFILE</string>
+    <string name="meals_summary">MEAL SUMMARY</string>
+    <string name="meals_avg_tir">Avg TIR</string>
+    <string name="meals_avg_peak">Avg Peak</string>
+    <string name="meals_avg_recovery">Avg Recovery</string>
+    <string name="meals_by_carb_size">BY CARB SIZE</string>
+    <string name="meals_peak">Peak</string>
+    <string name="meals_time_to_peak">Time to Peak</string>
+    <string name="meals_recovery">Recovery</string>
+    <string name="meals_iob_at_meal">IOB at Meal</string>
+
+    <!-- Update Dialog -->
+    <string name="update_required_title">Required Update</string>
+    <string name="update_available_title">Update Available</string>
+    <string name="update_version">Version %1$s</string>
+    <string name="update_forced_message">This update is required to continue using Strimma.</string>
+    <string name="update_downloading">Downloading…</string>
+    <string name="update_retry">Retry</string>
+    <string name="update_button">Update</string>
+    <string name="update_later">Later</string>
+
+    <!-- Pre-Activity Card -->
+    <string name="preactivity_ready">READY</string>
+    <string name="preactivity_caution">HEADS UP</string>
+    <string name="preactivity_wait">HOLD ON</string>
+    <string name="preactivity_event_in">%1$s in %2$s</string>
+
     <!-- AGP -->
     <string name="agp_title">Ambulatory Glucose Profile</string>
 
@@ -415,6 +445,12 @@
     <string name="activity_pull_treatments_progress" tools:ignore="PluralsCandidate">Pulling %1$d days of treatments…</string>
     <string name="activity_pull_treatments_success" tools:ignore="PluralsCandidate">Pulled %1$d treatments</string>
     <string name="activity_pull_treatments_failed">Treatment pull failed: %1$s</string>
+
+    <!-- Tidepool -->
+    <string name="activity_tidepool_uploading">Uploading to Tidepool…</string>
+    <string name="activity_tidepool_success" tools:ignore="PluralsCandidate">Uploaded %1$d readings to Tidepool</string>
+    <string name="activity_tidepool_up_to_date">Tidepool is up to date</string>
+    <string name="activity_tidepool_failed">Tidepool upload failed: %1$s</string>
 
     <!-- Exercise tabs -->
     <string name="exercise_tab_planned">Planned</string>

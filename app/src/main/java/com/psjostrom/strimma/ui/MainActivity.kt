@@ -594,7 +594,24 @@ class MainActivity : ComponentActivity() {
                             onTidepoolLogout = viewModel::tidepoolLogout,
                             tidepoolLastUploadTime = tidepoolLastUploadTime,
                             tidepoolLastError = tidepoolLastError,
-                            onTidepoolForceUpload = viewModel::tidepoolForceUpload,
+                            onTidepoolForceUpload = {
+                                lifecycleScope.launch {
+                                    val ctx = this@MainActivity
+                                    Toast.makeText(ctx, getString(R.string.activity_tidepool_uploading), Toast.LENGTH_SHORT).show()
+                                    try {
+                                        val count = viewModel.tidepoolForceUpload()
+                                        val msg = if (count > 0) getString(R.string.activity_tidepool_success, count)
+                                            else getString(R.string.activity_tidepool_up_to_date)
+                                        Toast.makeText(ctx, msg, Toast.LENGTH_SHORT).show()
+                                    } catch (
+                                        @Suppress("TooGenericExceptionCaught")
+                                        e: Exception
+                                    ) {
+                                        val msg = getString(R.string.activity_tidepool_failed, e.message ?: "")
+                                        Toast.makeText(ctx, msg, Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                            },
                             onExportReadings = {
                                 lifecycleScope.launch {
                                     val csv = viewModel.exportCsv(EXPORT_HOURS_30_DAYS)

@@ -18,7 +18,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.psjostrom.strimma.R
 import com.psjostrom.strimma.update.DownloadState
 import com.psjostrom.strimma.update.UpdateInfo
 
@@ -33,14 +35,14 @@ fun UpdateDialog(
         onDismissRequest = { if (!info.isForced) onDismiss() },
         title = {
             Text(
-                if (info.isForced) "Required Update" else "Update Available",
+                stringResource(if (info.isForced) R.string.update_required_title else R.string.update_available_title),
                 style = MaterialTheme.typography.titleLarge
             )
         },
         text = {
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 Text(
-                    "Version ${info.version}",
+                    stringResource(R.string.update_version, info.version),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -55,7 +57,7 @@ fun UpdateDialog(
                 if (info.isForced) {
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        "This update is required to continue using Strimma.",
+                        stringResource(R.string.update_forced_message),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error
                     )
@@ -78,11 +80,13 @@ fun UpdateDialog(
                     enabled = downloadState != DownloadState.DOWNLOADING
                 ) {
                     Text(
-                        when (downloadState) {
-                            DownloadState.DOWNLOADING -> "Downloading..."
-                            DownloadState.FAILED -> "Retry"
-                            else -> "Update"
-                        }
+                        stringResource(
+                            when (downloadState) {
+                                DownloadState.DOWNLOADING -> R.string.update_downloading
+                                DownloadState.FAILED -> R.string.update_retry
+                                else -> R.string.update_button
+                            }
+                        )
                     )
                 }
             }
@@ -90,7 +94,7 @@ fun UpdateDialog(
         dismissButton = {
             if (!info.isForced) {
                 OutlinedButton(onClick = onDismiss) {
-                    Text("Later")
+                    Text(stringResource(R.string.update_later))
                 }
             }
         }

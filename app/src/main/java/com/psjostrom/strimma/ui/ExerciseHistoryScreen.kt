@@ -783,11 +783,12 @@ internal fun PlannedWorkoutSheet(
         if (guidance is GuidanceState.WorkoutApproaching) {
             // Guidance in a tinted inner card
             val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
-            val (tintBg, badgeColor, badgeText) = when (guidance.readiness) {
-                ReadinessLevel.READY -> Triple(if (isDark) TintInRange else LightTintInRange, InRange, "READY")
-                ReadinessLevel.CAUTION -> Triple(if (isDark) TintWarning else LightTintWarning, AboveHigh, "HEADS UP")
-                ReadinessLevel.WAIT -> Triple(if (isDark) TintDanger else LightTintDanger, BelowLow, "HOLD ON")
+            val (tintBg, badgeColor, badgeTextRes) = when (guidance.readiness) {
+                ReadinessLevel.READY -> Triple(if (isDark) TintInRange else LightTintInRange, InRange, R.string.preactivity_ready)
+                ReadinessLevel.CAUTION -> Triple(if (isDark) TintWarning else LightTintWarning, AboveHigh, R.string.preactivity_caution)
+                ReadinessLevel.WAIT -> Triple(if (isDark) TintDanger else LightTintDanger, BelowLow, R.string.preactivity_wait)
             }
+            val badgeText = stringResource(badgeTextRes)
             val timeText = formatTimeUntil(event.startTime - System.currentTimeMillis())
             val targetLow = glucoseUnit.format(guidance.targetLowMgdl.toDouble())
             val targetHigh = glucoseUnit.format(guidance.targetHighMgdl.toDouble())
