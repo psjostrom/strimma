@@ -1,7 +1,10 @@
 package com.psjostrom.strimma.di
 
 import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import androidx.room.Room
+import com.psjostrom.strimma.createTestDataStore
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.StrimmaDatabase
 import com.psjostrom.strimma.data.TreatmentDao
@@ -19,6 +22,10 @@ import javax.inject.Singleton
     replaces = [AppModule::class]
 )
 object TestAppModule {
+
+    @Provides
+    @Singleton
+    fun provideDataStore(): DataStore<Preferences> = createTestDataStore()
 
     @Provides
     @Singleton

@@ -2,6 +2,7 @@ package com.psjostrom.strimma.widget
 
 import android.content.Context
 import android.graphics.Bitmap
+import com.psjostrom.strimma.data.settingsDataStore
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -53,7 +54,7 @@ class StrimmaWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val db = StrimmaDatabase.getInstance(context)
         val dao = db.readingDao()
-        val settings = SettingsRepository(context, WidgetSettingsRepository(context))
+        val settings = SettingsRepository(context, WidgetSettingsRepository(context), context.settingsDataStore)
         val bgLow = settings.bgLow.first()
         val bgHigh = settings.bgHigh.first()
         val glucoseUnit = settings.glucoseUnit.first()

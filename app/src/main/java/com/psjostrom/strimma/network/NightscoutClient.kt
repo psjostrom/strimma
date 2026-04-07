@@ -190,7 +190,7 @@ open class NightscoutClient @Inject constructor() {
         }
     }
 
-    suspend fun fetchEntries(
+    open suspend fun fetchEntries(
         baseUrl: String,
         apiSecret: String,
         since: Long,
@@ -227,7 +227,7 @@ open class NightscoutClient @Inject constructor() {
         }
     }
 
-    suspend fun fetchTreatments(
+    open suspend fun fetchTreatments(
         baseUrl: String,
         secret: String,
         since: Long,

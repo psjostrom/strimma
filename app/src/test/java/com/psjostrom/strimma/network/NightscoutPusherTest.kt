@@ -8,6 +8,7 @@ import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.StrimmaDatabase
 import com.psjostrom.strimma.notification.AlertManager
+import com.psjostrom.strimma.createTestDataStore
 import com.psjostrom.strimma.widget.WidgetSettingsRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -57,7 +58,7 @@ class NightscoutPusherTest {
             .build()
         dao = db.readingDao()
         fakeClient = FakeNightscoutClient()
-        settings = SettingsRepository(context, WidgetSettingsRepository(context))
+        settings = SettingsRepository(context, WidgetSettingsRepository(context), createTestDataStore())
         alertManager = AlertManager(context, settings)
     }
 
