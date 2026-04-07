@@ -1,7 +1,7 @@
 # Play Store Distribution — Research & Plan
 
 **Date:** 2026-03-23
-**Status:** Research complete, decision pending
+**Status:** Decided: GitHub releases for 1.0.0, Play Store deferred
 
 ---
 
