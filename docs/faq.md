@@ -52,7 +52,7 @@ Yes. Strimma reads notifications passively — it doesn't interfere with any clo
 
 ### Where is my data stored?
 
-Glucose readings are stored in a local database on your phone (Room database). If you configure Nightscout push, readings are also uploaded to your Nightscout server. Strimma sends no data anywhere else.
+Glucose readings are stored in a local database on your phone (Room database). If you configure Nightscout push or Tidepool upload, readings are also sent to those servers. Strimma sends no data anywhere else.
 
 ### How long does Strimma keep my data?
 
