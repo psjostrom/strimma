@@ -456,5 +456,4 @@
     <string name="preactivity_caution">ACHTUNG</string>
     <string name="preactivity_wait">WARTEN</string>
     <string name="preactivity_event_in">%1$s in %2$s</string>
-    <string name="preactivity_now">jetzt</string>
 </resources>

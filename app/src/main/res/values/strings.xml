@@ -244,7 +244,6 @@
     <string name="preactivity_caution">HEADS UP</string>
     <string name="preactivity_wait">HOLD ON</string>
     <string name="preactivity_event_in">%1$s in %2$s</string>
-    <string name="preactivity_now">now</string>
 
     <!-- AGP -->
     <string name="agp_title">Ambulatory Glucose Profile</string>

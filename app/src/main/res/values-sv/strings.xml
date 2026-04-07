@@ -455,5 +455,4 @@
     <string name="preactivity_caution">OBSERVERA</string>
     <string name="preactivity_wait">VÄNTA</string>
     <string name="preactivity_event_in">%1$s om %2$s</string>
-    <string name="preactivity_now">nu</string>
 </resources>
