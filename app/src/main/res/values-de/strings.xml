@@ -426,4 +426,10 @@
     <string name="activity_pull_treatments_progress">Abruf von %1$d Tagen Behandlungen…</string>
     <string name="activity_pull_treatments_success">%1$d Behandlungen abgerufen</string>
     <string name="activity_pull_treatments_failed">Behandlungsabruf fehlgeschlagen: %1$s</string>
+
+    <!-- Tidepool -->
+    <string name="activity_tidepool_uploading">Hochladen zu Tidepool…</string>
+    <string name="activity_tidepool_success">%1$d Messwerte zu Tidepool hochgeladen</string>
+    <string name="activity_tidepool_up_to_date">Tidepool ist aktuell</string>
+    <string name="activity_tidepool_failed">Tidepool-Upload fehlgeschlagen: %1$s</string>
 </resources>

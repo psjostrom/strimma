@@ -425,4 +425,10 @@
     <string name="activity_pull_treatments_progress">Hämtar %1$d dagars behandlingar…</string>
     <string name="activity_pull_treatments_success">%1$d behandlingar hämtade</string>
     <string name="activity_pull_treatments_failed">Behandlingshämtning misslyckades: %1$s</string>
+
+    <!-- Tidepool -->
+    <string name="activity_tidepool_uploading">Laddar upp till Tidepool…</string>
+    <string name="activity_tidepool_success">%1$d avläsningar uppladdade till Tidepool</string>
+    <string name="activity_tidepool_up_to_date">Tidepool är uppdaterad</string>
+    <string name="activity_tidepool_failed">Tidepool-uppladdning misslyckades: %1$s</string>
 </resources>

@@ -308,7 +308,7 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun tidepoolForceUpload() = tidepoolUploader.forceUpload()
+    suspend fun tidepoolForceUpload(): Int = tidepoolUploader.forceUpload()
 
     val exerciseSessions: StateFlow<List<StoredExerciseSession>> = exerciseDao.getAllSessions()
         .map { sessions ->

@@ -426,4 +426,10 @@
     <string name="activity_pull_treatments_progress">Descargando %1$d días de tratamientos…</string>
     <string name="activity_pull_treatments_success">%1$d tratamientos descargados</string>
     <string name="activity_pull_treatments_failed">Error al descargar tratamientos: %1$s</string>
+
+    <!-- Tidepool -->
+    <string name="activity_tidepool_uploading">Subiendo a Tidepool…</string>
+    <string name="activity_tidepool_success">%1$d lecturas subidas a Tidepool</string>
+    <string name="activity_tidepool_up_to_date">Tidepool está actualizado</string>
+    <string name="activity_tidepool_failed">Error al subir a Tidepool: %1$s</string>
 </resources>

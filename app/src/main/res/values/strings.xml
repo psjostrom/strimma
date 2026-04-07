@@ -416,6 +416,12 @@
     <string name="activity_pull_treatments_success" tools:ignore="PluralsCandidate">Pulled %1$d treatments</string>
     <string name="activity_pull_treatments_failed">Treatment pull failed: %1$s</string>
 
+    <!-- Tidepool -->
+    <string name="activity_tidepool_uploading">Uploading to Tidepool…</string>
+    <string name="activity_tidepool_success" tools:ignore="PluralsCandidate">Uploaded %1$d readings to Tidepool</string>
+    <string name="activity_tidepool_up_to_date">Tidepool is up to date</string>
+    <string name="activity_tidepool_failed">Tidepool upload failed: %1$s</string>
+
     <!-- Exercise tabs -->
     <string name="exercise_tab_planned">Planned</string>
     <string name="exercise_tab_completed">Completed</string>
