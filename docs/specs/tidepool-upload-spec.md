@@ -289,7 +289,6 @@ New section in Settings: **Tidepool** (collapsible group).
 - **Enable Tidepool upload** (toggle)
 - **Login** (button) — opens in-app browser for OIDC auth. Shows "Connected as {email}" or "Not connected" based on whether refresh token exists.
 - **Disconnect** (button, visible when connected) — clears stored tokens, revokes refresh token at Tidepool's revocation endpoint.
-- **Environment** (Production / Integration toggle) — visible only in developer settings.
 - **Only while charging** (toggle)
 - **Only on Wi-Fi** (toggle)
 - **Status** — last upload time, or error message. Updated after each upload attempt.
