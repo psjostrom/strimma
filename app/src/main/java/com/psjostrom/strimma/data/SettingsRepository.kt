@@ -202,7 +202,6 @@ class SettingsRepository @Inject constructor(
         private const val DEFAULT_WORKOUT_TRIGGER_MINUTES = 120
 
         private val KEY_TIDEPOOL_ENABLED = booleanPreferencesKey("tidepool_enabled")
-        private val KEY_TIDEPOOL_ENVIRONMENT = stringPreferencesKey("tidepool_environment")
         private val KEY_TIDEPOOL_ONLY_WHILE_CHARGING = booleanPreferencesKey("tidepool_only_while_charging")
         private val KEY_TIDEPOOL_ONLY_WHILE_WIFI = booleanPreferencesKey("tidepool_only_while_wifi")
         private val KEY_TIDEPOOL_USER_ID = stringPreferencesKey("tidepool_user_id")
@@ -405,8 +404,6 @@ class SettingsRepository @Inject constructor(
     val tidepoolEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_TIDEPOOL_ENABLED] ?: false }
     suspend fun setTidepoolEnabled(enabled: Boolean) { dataStore.edit { it[KEY_TIDEPOOL_ENABLED] = enabled } }
 
-    val tidepoolEnvironment: Flow<String> = dataStore.data.map { it[KEY_TIDEPOOL_ENVIRONMENT] ?: "INTEGRATION" }
-    suspend fun setTidepoolEnvironment(env: String) { dataStore.edit { it[KEY_TIDEPOOL_ENVIRONMENT] = env } }
 
     val tidepoolOnlyWhileCharging: Flow<Boolean> = dataStore.data.map { it[KEY_TIDEPOOL_ONLY_WHILE_CHARGING] ?: false }
     suspend fun setTidepoolOnlyWhileCharging(enabled: Boolean) { dataStore.edit { it[KEY_TIDEPOOL_ONLY_WHILE_CHARGING] = enabled } }
