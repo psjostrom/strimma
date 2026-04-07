@@ -125,7 +125,7 @@ class NotificationHelper @Inject constructor(
             val notifText = arrayOf(bgText, direction.arrow, finalDeltaText)
             attachGraphViews(
                 builder, recentReadings, bgLow, bgHigh,
-                graphWindowMs, predictionMinutes, notifText, exerciseSessions
+                graphWindowMs, predictionMinutes, notifText, glucoseUnit, exerciseSessions
             )
         } else {
             builder.setSmallIcon(createBgIcon("--"))
@@ -145,6 +145,7 @@ class NotificationHelper @Inject constructor(
         graphWindowMs: Long,
         predictionMinutes: Int,
         text: Array<String>,
+        glucoseUnit: GlucoseUnit,
         exerciseSessions: List<StoredExerciseSession> = emptyList()
     ) {
         val (bgText, arrow, deltaText) = text
@@ -156,6 +157,7 @@ class NotificationHelper @Inject constructor(
             recentReadings, COLLAPSED_GRAPH_WIDTH, COLLAPSED_GRAPH_HEIGHT,
             bgLow, bgHigh, graphWindowMs, compact = true,
             predictionMinutes = predictionMinutes,
+            glucoseUnit = glucoseUnit,
             exerciseSessions = exerciseSessions
         )
         collapsed.setImageViewBitmap(R.id.iv_graph, miniGraph)
@@ -169,6 +171,7 @@ class NotificationHelper @Inject constructor(
             recentReadings, EXPANDED_GRAPH_WIDTH, EXPANDED_GRAPH_HEIGHT,
             bgLow, bgHigh, graphWindowMs,
             predictionMinutes = predictionMinutes,
+            glucoseUnit = glucoseUnit,
             exerciseSessions = exerciseSessions
         )
         expanded.setImageViewBitmap(R.id.iv_graph, bigGraph)

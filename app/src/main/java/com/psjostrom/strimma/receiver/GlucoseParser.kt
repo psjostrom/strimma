@@ -3,7 +3,7 @@ package com.psjostrom.strimma.receiver
 import com.psjostrom.strimma.data.GlucoseUnit
 
 private val MGDL_CONVERSION = GlucoseUnit.MGDL_FACTOR
-private const val MIN_MGDL_RANGE = 51
+private const val MIN_MGDL_RANGE = 40 // Sensors show "LO"/"LOW" below 40, not a number
 private const val MAX_MGDL_RANGE = 500
 
 private fun cleanGlucoseText(raw: String): String = raw
@@ -28,8 +28,7 @@ private fun cleanGlucoseText(raw: String): String = raw
  *
  * Supports both mmol/L (e.g. "13.5", "7,8") and mg/dL (e.g. "180", "95").
  * Values with a decimal are treated as mmol/L and converted to mg/dL.
- * Integer values above 50 are treated as mg/dL directly.
- * Integer values 20-50 are ambiguous and skipped.
+ * Integer values 20+ are treated as mg/dL directly (no CGM app omits the decimal from mmol/L values).
  */
 @Suppress("ReturnCount") // Early returns in parser
 fun tryParseGlucose(raw: String): Double? {

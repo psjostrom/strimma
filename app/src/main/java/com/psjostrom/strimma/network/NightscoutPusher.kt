@@ -29,7 +29,8 @@ class NightscoutPusher @Inject constructor(
         private const val PUSH_FAIL_ALERT_MS = 15 * 60 * 1000L // 15 minutes
     }
 
-    private val scope = CoroutineScope(SupervisorJob() + dispatcher)
+    private var job = SupervisorJob()
+    private var scope = CoroutineScope(job + dispatcher)
 
     private val _status = MutableStateFlow<IntegrationStatus>(IntegrationStatus.Idle)
     val status: StateFlow<IntegrationStatus> = _status
@@ -78,6 +79,8 @@ class NightscoutPusher @Inject constructor(
 
     fun stop() {
         scope.cancel()
+        job = SupervisorJob()
+        scope = CoroutineScope(job + dispatcher)
     }
 
     fun pushPending() {

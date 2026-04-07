@@ -53,7 +53,6 @@ class LocalWebServer @Inject constructor(
         try {
             server = embeddedServer(CIO, host = "0.0.0.0", port = PORT) {
                 intercept(ApplicationCallPipeline.Plugins) {
-                    call.response.header("Access-Control-Allow-Origin", "*")
                     val remoteHost = call.request.local.remoteHost
                     if (!isLoopback(remoteHost)) {
                         val secret = settings.getWebServerSecret()
@@ -68,6 +67,7 @@ class LocalWebServer @Inject constructor(
                             finish()
                             return@intercept
                         }
+                        call.response.header("Access-Control-Allow-Origin", "*")
                     }
                 }
                 routing {

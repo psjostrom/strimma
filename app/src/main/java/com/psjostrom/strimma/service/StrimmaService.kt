@@ -75,8 +75,7 @@ class StrimmaService : Service() {
         private const val WORKOUT_GRACE_MINUTES = 15
         private const val FORECAST_HORIZON_MINUTES = 30
 
-        private const val DELTA_DIVISOR = 5.0
-        private const val MGDL_FACTOR = GlucoseUnit.MGDL_FACTOR
+        private const val SLOPE_WINDOW_MS = 5.0 * 60.0 * 1000.0 // 5 min in ms
     }
 
     @Inject lateinit var dao: ReadingDao
@@ -478,7 +477,7 @@ class StrimmaService : Service() {
             putExtra("com.eveningoutpost.dexdrip.Extras.BgEstimate", reading.sgv.toDouble())
             putExtra("com.eveningoutpost.dexdrip.Extras.Raw", reading.sgv.toDouble())
             putExtra("com.eveningoutpost.dexdrip.Extras.Time", reading.ts)
-            putExtra("com.eveningoutpost.dexdrip.Extras.BgSlope", ((reading.delta ?: 0.0) / MGDL_FACTOR) / DELTA_DIVISOR)
+            putExtra("com.eveningoutpost.dexdrip.Extras.BgSlope", (reading.delta ?: 0.0) / SLOPE_WINDOW_MS)
             putExtra("com.eveningoutpost.dexdrip.Extras.SensorId", "Strimma")
             val direction = com.psjostrom.strimma.data.Direction.parse(reading.direction)
             putExtra("com.eveningoutpost.dexdrip.Extras.BgSlopeName", direction.name)
