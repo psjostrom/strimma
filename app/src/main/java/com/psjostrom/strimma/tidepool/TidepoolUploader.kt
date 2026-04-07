@@ -99,8 +99,8 @@ class TidepoolUploader @Inject constructor(
         val enabled = settings.tidepoolEnabled.first()
         val loggedIn = authManager.isLoggedIn()
         DebugLog.log(message = "Tidepool forceUpload: enabled=$enabled, loggedIn=$loggedIn")
-        if (!enabled) throw IllegalStateException("Tidepool upload not enabled")
-        if (!loggedIn) throw IllegalStateException("Not logged in to Tidepool")
+        check(enabled) { "Tidepool upload not enabled" }
+        check(loggedIn) { "Not logged in to Tidepool" }
         return doUpload()
     }
 
@@ -230,7 +230,7 @@ class TidepoolUploader @Inject constructor(
             settings.setTidepoolLastError("Upload failed")
             settings.setTidepoolDatasetId("")
             DebugLog.log(message = "Tidepool upload: failed to upload ${records.size} records, cleared dataset ID")
-            throw IllegalStateException("Upload failed")
+            error("Upload failed")
         }
     }
 

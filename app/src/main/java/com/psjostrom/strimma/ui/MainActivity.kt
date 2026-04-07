@@ -596,14 +596,19 @@ class MainActivity : ComponentActivity() {
                             tidepoolLastError = tidepoolLastError,
                             onTidepoolForceUpload = {
                                 lifecycleScope.launch {
-                                    Toast.makeText(this@MainActivity, getString(R.string.activity_tidepool_uploading), Toast.LENGTH_SHORT).show()
+                                    val ctx = this@MainActivity
+                                    Toast.makeText(ctx, getString(R.string.activity_tidepool_uploading), Toast.LENGTH_SHORT).show()
                                     try {
                                         val count = viewModel.tidepoolForceUpload()
                                         val msg = if (count > 0) getString(R.string.activity_tidepool_success, count)
                                             else getString(R.string.activity_tidepool_up_to_date)
-                                        Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
-                                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                                        Toast.makeText(this@MainActivity, getString(R.string.activity_tidepool_failed, e.message ?: ""), Toast.LENGTH_LONG).show()
+                                        Toast.makeText(ctx, msg, Toast.LENGTH_SHORT).show()
+                                    } catch (
+                                        @Suppress("TooGenericExceptionCaught")
+                                        e: Exception
+                                    ) {
+                                        val msg = getString(R.string.activity_tidepool_failed, e.message ?: "")
+                                        Toast.makeText(ctx, msg, Toast.LENGTH_LONG).show()
                                     }
                                 }
                             },
