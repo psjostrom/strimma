@@ -70,7 +70,7 @@ private object SetupCompletedMigration : DataMigration<Preferences> {
     override suspend fun cleanUp() { /* One-shot migration */ }
 }
 
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
+val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(
     name = "settings",
     produceMigrations = { listOf(SetupCompletedMigration, MgdlSettingsMigration) }
 )
@@ -79,9 +79,9 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
 @Singleton
 class SettingsRepository @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val widgetSettingsRepository: WidgetSettingsRepository
+    private val widgetSettingsRepository: WidgetSettingsRepository,
+    private val dataStore: DataStore<Preferences>
 ) {
-    private val dataStore = context.dataStore
     private val _secretVersion = kotlinx.coroutines.flow.MutableStateFlow(0)
     val secretVersion: kotlinx.coroutines.flow.StateFlow<Int> = _secretVersion
 

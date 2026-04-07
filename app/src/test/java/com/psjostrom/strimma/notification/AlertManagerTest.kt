@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.SettingsRepository
+import com.psjostrom.strimma.createTestDataStore
 import com.psjostrom.strimma.widget.WidgetSettingsRepository
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertFalse
@@ -31,7 +32,7 @@ class AlertManagerTest {
         context = ApplicationProvider.getApplicationContext()
 
         val widgetSettings = WidgetSettingsRepository(context)
-        settings = SettingsRepository(context, widgetSettings)
+        settings = SettingsRepository(context, widgetSettings, createTestDataStore())
         alertManager = AlertManager(context, settings)
         alertManager.createChannels()
         notificationManager = context.getSystemService(NotificationManager::class.java)

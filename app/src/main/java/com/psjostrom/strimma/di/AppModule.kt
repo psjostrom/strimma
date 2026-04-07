@@ -1,11 +1,14 @@
 package com.psjostrom.strimma.di
 
 import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import androidx.room.Room
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.StrimmaDatabase
 import com.psjostrom.strimma.data.TreatmentDao
 import com.psjostrom.strimma.data.health.ExerciseDao
+import com.psjostrom.strimma.data.settingsDataStore
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -16,6 +19,10 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
+
+    @Provides
+    @Singleton
+    fun provideDataStore(@ApplicationContext context: Context): DataStore<Preferences> = context.settingsDataStore
 
     @Provides
     @Singleton

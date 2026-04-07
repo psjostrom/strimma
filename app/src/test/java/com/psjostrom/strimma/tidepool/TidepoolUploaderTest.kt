@@ -5,6 +5,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.StrimmaDatabase
+import com.psjostrom.strimma.createTestDataStore
 import com.psjostrom.strimma.widget.WidgetSettingsRepository
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -52,7 +53,7 @@ class TidepoolUploaderTest {
         val db = Room.inMemoryDatabaseBuilder(context, StrimmaDatabase::class.java)
             .allowMainThreadQueries()
             .build()
-        val settings = SettingsRepository(context, WidgetSettingsRepository(context))
+        val settings = SettingsRepository(context, WidgetSettingsRepository(context), createTestDataStore())
         val uploader = TidepoolUploader(context, TidepoolClient(), TidepoolAuthManager(context, settings), db.readingDao(), settings)
 
         uploader.stop()

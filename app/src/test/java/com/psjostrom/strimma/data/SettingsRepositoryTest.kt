@@ -2,6 +2,7 @@ package com.psjostrom.strimma.data
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import com.psjostrom.strimma.createTestDataStore
 import com.psjostrom.strimma.widget.WidgetSettingsRepository
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -20,7 +21,7 @@ class SettingsRepositoryTest {
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
-        repo = SettingsRepository(context, WidgetSettingsRepository(context))
+        repo = SettingsRepository(context, WidgetSettingsRepository(context), createTestDataStore())
     }
 
     @Test
