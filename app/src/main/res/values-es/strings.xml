@@ -426,4 +426,34 @@
     <string name="activity_pull_treatments_progress">Descargando %1$d días de tratamientos…</string>
     <string name="activity_pull_treatments_success">%1$d tratamientos descargados</string>
     <string name="activity_pull_treatments_failed">Error al descargar tratamientos: %1$s</string>
+
+    <!-- Meal Stats -->
+    <string name="meals_no_meals">No se encontraron comidas</string>
+    <string name="meals_no_sparkline_data">Sin datos</string>
+    <string name="meals_postprandial_profile">PERFIL POSTPRANDIAL</string>
+    <string name="meals_summary">RESUMEN DE COMIDAS</string>
+    <string name="meals_avg_tir">TIR promedio</string>
+    <string name="meals_avg_peak">Pico promedio</string>
+    <string name="meals_avg_recovery">Recuperación promedio</string>
+    <string name="meals_by_carb_size">POR TAMAÑO DE CARBOHIDRATOS</string>
+    <string name="meals_peak">Pico</string>
+    <string name="meals_time_to_peak">Tiempo al pico</string>
+    <string name="meals_recovery">Recuperación</string>
+    <string name="meals_iob_at_meal">IOB en comida</string>
+
+    <!-- Update Dialog -->
+    <string name="update_required_title">Actualización obligatoria</string>
+    <string name="update_available_title">Actualización disponible</string>
+    <string name="update_version">Versión %1$s</string>
+    <string name="update_forced_message">Esta actualización es necesaria para seguir usando Strimma.</string>
+    <string name="update_downloading">Descargando…</string>
+    <string name="update_retry">Reintentar</string>
+    <string name="update_button">Actualizar</string>
+    <string name="update_later">Más tarde</string>
+
+    <!-- Pre-Activity Card -->
+    <string name="preactivity_ready">LISTO</string>
+    <string name="preactivity_caution">ATENCIÓN</string>
+    <string name="preactivity_wait">ESPERA</string>
+    <string name="preactivity_event_in">%1$s en %2$s</string>
 </resources>
