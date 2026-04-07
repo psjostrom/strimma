@@ -83,15 +83,20 @@ fun StatsScreen(
     val periods = getPeriods()
     val exportChooserTitle = stringResource(R.string.stats_export_chooser)
 
+    var statsLoaded by remember { mutableStateOf(false) }
     val stats by produceState<GlucoseStats?>(null, selectedPeriod, bgLow, bgHigh) {
+        statsLoaded = false
         val (hours, label) = periods[selectedPeriod]
         val readings = onLoadReadings(hours)
         value = StatsCalculator.compute(readings, bgLow.toDouble(), bgHigh.toDouble(), label)
+        statsLoaded = true
     }
 
+    var agpLoaded by remember { mutableStateOf(false) }
     val agpResult by produceState<AgpResult?>(null) {
         val readings = onLoadReadings(HOURS_14_DAYS)
         value = AgpCalculator.compute(readings)
+        agpLoaded = true
     }
 
     Scaffold(
@@ -167,6 +172,7 @@ fun StatsScreen(
             when (selectedTab) {
                 TAB_METRICS -> MetricsTab(
                     stats = stats,
+                    loaded = statsLoaded,
                     periods = periods,
                     selectedPeriod = selectedPeriod,
                     onPeriodChange = { selectedPeriod = it },
@@ -177,6 +183,7 @@ fun StatsScreen(
                 )
                 TAB_AGP -> AgpTab(
                     agpResult = agpResult,
+                    loaded = agpLoaded,
                     glucoseUnit = glucoseUnit,
                     hbA1cUnit = hbA1cUnit
                 )
@@ -206,6 +213,7 @@ fun StatsScreen(
 @Composable
 private fun MetricsTab(
     stats: GlucoseStats?,
+    loaded: Boolean,
     periods: List<Pair<Int, String>>,
     selectedPeriod: Int,
     onPeriodChange: (Int) -> Unit,
@@ -240,7 +248,11 @@ private fun MetricsTab(
                 .height(200.dp),
             contentAlignment = Alignment.Center
         ) {
-            Text(stringResource(R.string.common_no_data), color = onSurfaceVar)
+            if (loaded) {
+                Text(stringResource(R.string.common_no_data), color = onSurfaceVar)
+            } else {
+                CircularProgressIndicator()
+            }
         }
     } else {
         // TIR card
@@ -355,6 +367,7 @@ private fun MetricsTab(
 @Composable
 private fun AgpTab(
     agpResult: AgpResult?,
+    loaded: Boolean,
     glucoseUnit: GlucoseUnit,
     hbA1cUnit: HbA1cUnit
 ) {
@@ -370,7 +383,11 @@ private fun AgpTab(
                 .height(200.dp),
             contentAlignment = Alignment.Center
         ) {
-            Text(stringResource(R.string.agp_no_data), color = onSurfaceVar)
+            if (loaded) {
+                Text(stringResource(R.string.agp_no_data), color = onSurfaceVar)
+            } else {
+                CircularProgressIndicator()
+            }
         }
         return
     }

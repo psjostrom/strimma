@@ -100,7 +100,9 @@ fun MealStatsTab(
 
     var selectedSlot by remember { mutableStateOf<MealTimeSlot?>(null) }
 
+    var mealsLoaded by remember { mutableStateOf(false) }
     val results by produceState<List<MealPostprandialResult>>(emptyList(), selectedPeriod) {
+        mealsLoaded = false
         val (hours, _) = periods[selectedPeriod]
         val now = System.currentTimeMillis()
         val start = now - hours * 3600_000L
@@ -114,6 +116,7 @@ fun MealStatsTab(
                 nextMealTime = nextMealTime, allTreatments = allTreatments,
                 tauMinutes = tauMinutes))
         }
+        mealsLoaded = true
     }
 
     val filteredResults = if (selectedSlot != null) {
@@ -163,7 +166,11 @@ fun MealStatsTab(
                     .height(200.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text("No meals found", color = onSurfaceVar)
+                if (mealsLoaded) {
+                    Text(stringResource(R.string.meals_no_meals), color = onSurfaceVar)
+                } else {
+                    CircularProgressIndicator()
+                }
             }
         } else {
             // Aggregate header
@@ -180,7 +187,7 @@ fun MealStatsTab(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            "POSTPRANDIAL PROFILE",
+                            stringResource(R.string.meals_postprandial_profile),
                             color = onSurfaceVar,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
@@ -227,7 +234,7 @@ private fun MealAggregateHeader(
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
-                "MEAL SUMMARY",
+                stringResource(R.string.meals_summary),
                 color = onSurfaceVar,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -240,22 +247,22 @@ private fun MealAggregateHeader(
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("%.0f%%".format(avgTir), color = getTirColor(avgTir), fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                    Text("Avg TIR", color = onSurfaceVar, fontSize = 12.sp)
+                    Text(stringResource(R.string.meals_avg_tir), color = onSurfaceVar, fontSize = 12.sp)
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(glucoseUnit.format(avgExcursion), color = onBg, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                    Text("Avg Peak", color = onSurfaceVar, fontSize = 12.sp)
+                    Text(stringResource(R.string.meals_avg_peak), color = onSurfaceVar, fontSize = 12.sp)
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("%.0f min".format(avgRecovery), color = onBg, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                    Text("Avg Recovery", color = onSurfaceVar, fontSize = 12.sp)
+                    Text(stringResource(R.string.meals_avg_recovery), color = onSurfaceVar, fontSize = 12.sp)
                 }
             }
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
             Text(
-                "BY CARB SIZE",
+                stringResource(R.string.meals_by_carb_size),
                 color = onSurfaceVar,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -380,10 +387,10 @@ private fun MealCard(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        MetricLabel("Peak", glucoseUnit.format(result.excursionMgdl), onBg, onSurfaceVar)
-                        MetricLabel("Time to Peak", "${result.timeToPeakMinutes} min", onBg, onSurfaceVar)
+                        MetricLabel(stringResource(R.string.meals_peak), glucoseUnit.format(result.excursionMgdl), onBg, onSurfaceVar)
+                        MetricLabel(stringResource(R.string.meals_time_to_peak), "${result.timeToPeakMinutes} min", onBg, onSurfaceVar)
                         result.recoveryMinutes?.let {
-                            MetricLabel("Recovery", "$it min", onBg, onSurfaceVar)
+                            MetricLabel(stringResource(R.string.meals_recovery), "$it min", onBg, onSurfaceVar)
                         }
                     }
 
@@ -392,7 +399,7 @@ private fun MealCard(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            MetricLabel("IOB at Meal", "%.1fU".format(result.iobAtMeal), onBg, onSurfaceVar)
+                            MetricLabel(stringResource(R.string.meals_iob_at_meal), "%.1fU".format(result.iobAtMeal), onBg, onSurfaceVar)
                         }
                     }
                 }
@@ -415,7 +422,7 @@ private fun MealSparkline(
                 .height(80.dp),
             contentAlignment = Alignment.Center
         ) {
-            Text("No data", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+            Text(stringResource(R.string.meals_no_sparkline_data), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
         }
         return
     }

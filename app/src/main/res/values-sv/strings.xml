@@ -431,4 +431,34 @@
     <string name="activity_tidepool_success">%1$d avläsningar uppladdade till Tidepool</string>
     <string name="activity_tidepool_up_to_date">Tidepool är uppdaterad</string>
     <string name="activity_tidepool_failed">Tidepool-uppladdning misslyckades: %1$s</string>
+
+    <!-- Meal Stats -->
+    <string name="meals_no_meals">Inga måltider hittades</string>
+    <string name="meals_no_sparkline_data">Ingen data</string>
+    <string name="meals_postprandial_profile">POSTPRANDIELL PROFIL</string>
+    <string name="meals_summary">MÅLTIDSÖVERSIKT</string>
+    <string name="meals_avg_tir">Snitt TIR</string>
+    <string name="meals_avg_peak">Snitt topp</string>
+    <string name="meals_avg_recovery">Snitt åter\u00ADhämtning</string>
+    <string name="meals_by_carb_size">EFTER KOLHYDRATSTORLEK</string>
+    <string name="meals_peak">Topp</string>
+    <string name="meals_time_to_peak">Tid till topp</string>
+    <string name="meals_recovery">Återhämtning</string>
+    <string name="meals_iob_at_meal">IOB vid måltid</string>
+
+    <!-- Update Dialog -->
+    <string name="update_required_title">Obligatorisk uppdatering</string>
+    <string name="update_available_title">Uppdatering tillgänglig</string>
+    <string name="update_version">Version %1$s</string>
+    <string name="update_forced_message">Denna uppdatering krävs för att fortsätta använda Strimma.</string>
+    <string name="update_downloading">Laddar ner…</string>
+    <string name="update_retry">Försök igen</string>
+    <string name="update_button">Uppdatera</string>
+    <string name="update_later">Senare</string>
+
+    <!-- Pre-Activity Card -->
+    <string name="preactivity_ready">REDO</string>
+    <string name="preactivity_caution">OBSERVERA</string>
+    <string name="preactivity_wait">VÄNTA</string>
+    <string name="preactivity_event_in">%1$s om %2$s</string>
 </resources>
