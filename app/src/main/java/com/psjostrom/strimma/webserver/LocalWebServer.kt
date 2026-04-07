@@ -26,6 +26,7 @@ private const val MAX_SGV_COUNT = 1000
 private const val MAX_TREATMENT_COUNT = 100
 private const val HTTP_OK = 200
 private const val TREATMENT_LOOKBACK_HOURS = 48
+
 @Singleton
 class LocalWebServer @Inject constructor(
     private val dao: ReadingDao,

@@ -104,6 +104,34 @@ class IOBComputerTest {
     }
 
     @Test
+    fun `mixed insulin and carb-only treatments sums only insulin`() {
+        val now = 1_000_000_000_000L
+        val treatments = listOf(
+            treatment(3.0, 0, now),
+            Treatment(
+                id = "carb",
+                createdAt = now - 15 * 60_000,
+                eventType = "Carb Correction",
+                insulin = null,
+                carbs = 25.0,
+                basalRate = null,
+                duration = null,
+                enteredBy = "test",
+                fetchedAt = now
+            ),
+            treatment(2.0, 30, now)
+        )
+        val result = IOBComputer.computeIOB(treatments, now, tau)
+
+        val iob1 = 3.0
+        val t2 = 30.0 / tau
+        val iob2 = 2.0 * (1.0 + t2) * exp(-t2)
+        val expected = Math.round((iob1 + iob2) * 10.0) / 10.0
+
+        assertEquals(expected, result, 0.05)
+    }
+
+    @Test
     fun `future treatments are ignored`() {
         val now = 1_000_000_000_000L
         val future = Treatment(

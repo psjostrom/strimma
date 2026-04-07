@@ -76,8 +76,13 @@ object IOBComputer {
         val cutoff = now - lookbackMs(tauMinutes)
 
         val total = treatments
-            .filter { it.insulin != null && it.createdAt in cutoff..now }
-            .sumOf { val dose = it.insulin ?: return@sumOf 0.0; iobForTreatment(dose, (now - it.createdAt) / MS_PER_MINUTE.toDouble(), tauMinutes) }
+            .filter { it.createdAt in cutoff..now }
+            .mapNotNull { treatment ->
+                treatment.insulin?.let { dose ->
+                    iobForTreatment(dose, (now - treatment.createdAt) / MS_PER_MINUTE.toDouble(), tauMinutes)
+                }
+            }
+            .sum()
 
         return Math.round(total * ROUNDING_FACTOR) / ROUNDING_FACTOR
     }
