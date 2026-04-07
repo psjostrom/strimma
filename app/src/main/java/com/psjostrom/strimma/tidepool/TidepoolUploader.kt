@@ -93,17 +93,15 @@ class TidepoolUploader @Inject constructor(
 
     /**
      * Forces an upload attempt, bypassing rate limit and charging/wifi checks.
-     * Used for debugging.
+     * Returns the number of records uploaded, or throws on failure.
      */
-    fun forceUpload() {
-        scope.launch {
-            val enabled = settings.tidepoolEnabled.first()
-            val loggedIn = authManager.isLoggedIn()
-            DebugLog.log(message = "Tidepool forceUpload: enabled=$enabled, loggedIn=$loggedIn")
-            if (!enabled) return@launch
-            if (!loggedIn) return@launch
-            doUpload()
-        }
+    suspend fun forceUpload(): Int {
+        val enabled = settings.tidepoolEnabled.first()
+        val loggedIn = authManager.isLoggedIn()
+        DebugLog.log(message = "Tidepool forceUpload: enabled=$enabled, loggedIn=$loggedIn")
+        check(enabled) { "Tidepool upload not enabled" }
+        check(loggedIn) { "Not logged in to Tidepool" }
+        return doUpload()
     }
 
     private suspend fun uploadIfReady() {
@@ -139,7 +137,7 @@ class TidepoolUploader @Inject constructor(
     }
 
     @Suppress("TooGenericExceptionCaught") // Top-level safety net for background upload
-    private suspend fun doUpload() {
+    private suspend fun doUpload(): Int {
         try {
             val token = authManager.getValidAccessToken()
             if (token == null) {
@@ -147,33 +145,31 @@ class TidepoolUploader @Inject constructor(
                     settings.setTidepoolLastError("Session expired. Please log in again.")
                 }
                 DebugLog.log(message = "Tidepool upload: no valid token")
-                return
+                return 0
             }
-
-            val environment = settings.tidepoolEnvironment.first()
-            val baseUrl = authManager.getApiBase(environment)
 
             val userId = settings.tidepoolUserId.first()
             if (userId.isBlank()) {
                 DebugLog.log(message = "Tidepool upload: no user ID")
-                return
+                return 0
             }
 
-            val datasetId = getOrCreateDataset(baseUrl, userId, token) ?: return
-            uploadChunk(baseUrl, datasetId, token)
+            val datasetId = getOrCreateDataset(userId, token) ?: return 0
+            return uploadChunk(datasetId, token)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             DebugLog.log(message = "Tidepool upload error: ${e.javaClass.simpleName}: ${e.message?.take(MAX_LOG_ERROR_LENGTH)}")
             settings.setTidepoolLastError("Upload error: ${e.message?.take(MAX_USER_ERROR_LENGTH)}")
+            throw e
         }
     }
 
-    private suspend fun getOrCreateDataset(baseUrl: String, userId: String, token: String): String? {
+    private suspend fun getOrCreateDataset(userId: String, token: String): String? {
         var datasetId = settings.tidepoolDatasetId.first()
         if (datasetId.isNotBlank()) return datasetId
 
-        datasetId = client.getExistingDataset(baseUrl, userId, token) ?: ""
+        datasetId = client.getExistingDataset(TidepoolAuthManager.API_BASE, userId, token) ?: ""
 
         if (datasetId.isBlank()) {
             val appVersion = getAppVersion()
@@ -189,7 +185,7 @@ class TidepoolUploader @Inject constructor(
                 timezone = java.util.TimeZone.getDefault().id,
                 version = appVersion
             )
-            datasetId = client.createDataset(baseUrl, userId, token, datasetRequest) ?: ""
+            datasetId = client.createDataset(TidepoolAuthManager.API_BASE, userId, token, datasetRequest) ?: ""
         }
 
         if (datasetId.isBlank()) {
@@ -202,7 +198,7 @@ class TidepoolUploader @Inject constructor(
         return datasetId
     }
 
-    private suspend fun uploadChunk(baseUrl: String, datasetId: String, token: String) {
+    private suspend fun uploadChunk(datasetId: String, token: String): Int {
         val now = System.currentTimeMillis()
         val storedLastEnd = settings.tidepoolLastUploadEnd.first()
         val lastEnd = clampLastUploadEnd(storedLastEnd, now)
@@ -210,7 +206,7 @@ class TidepoolUploader @Inject constructor(
 
         DebugLog.log(message = "Tidepool uploadChunk: lastEnd=$lastEnd, chunkEnd=$chunkEnd, now=$now")
 
-        if (chunkEnd <= lastEnd) return
+        if (chunkEnd <= lastEnd) return 0
 
         val readings = dao.since(lastEnd).filter { reading ->
             reading.ts <= chunkEnd && CbgRecord.isValidForUpload(reading)
@@ -218,21 +214,23 @@ class TidepoolUploader @Inject constructor(
 
         if (readings.isEmpty()) {
             settings.setTidepoolLastUploadEnd(chunkEnd)
-            return
+            return 0
         }
 
         val records = readings.map { CbgRecord.fromReading(it) }
-        val success = client.uploadData(baseUrl, datasetId, token, records)
+        val success = client.uploadData(TidepoolAuthManager.API_BASE, datasetId, token, records)
 
         if (success) {
             settings.setTidepoolLastUploadEnd(chunkEnd)
             settings.setTidepoolLastUploadTime(now)
             settings.setTidepoolLastError("")
             DebugLog.log(message = "Tidepool upload: ${records.size} records uploaded")
+            return records.size
         } else {
             settings.setTidepoolLastError("Upload failed")
             settings.setTidepoolDatasetId("")
             DebugLog.log(message = "Tidepool upload: failed to upload ${records.size} records, cleared dataset ID")
+            error("Upload failed")
         }
     }
 

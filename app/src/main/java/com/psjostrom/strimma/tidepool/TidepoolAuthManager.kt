@@ -14,7 +14,6 @@ import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
@@ -44,10 +43,12 @@ class TidepoolAuthManager @Inject constructor(
     companion object {
         private const val CLIENT_ID = "strimma"
         private const val REDIRECT_URI = "strimma://callback/tidepool"
-        private const val SCOPES = "openid email data_read data_write offline_access"
+        private const val SCOPES = "openid email offline_access"
         private const val TOKEN_EXPIRY_BUFFER_MS = 30_000L
         private const val MAX_ERROR_LENGTH = 80
         private const val LOG_ID_PREFIX_LENGTH = 8
+        const val API_BASE = "https://api.tidepool.org"
+        private const val AUTH_BASE = "https://auth.tidepool.org/realms/tidepool"
     }
 
     private val authService = AuthorizationService(context)
@@ -66,11 +67,10 @@ class TidepoolAuthManager @Inject constructor(
      * Builds an Intent that launches the OIDC authorization flow in a Custom Tab.
      * The caller should startActivity with this intent.
      */
-    fun buildAuthIntent(environment: String): Intent {
-        val authBase = authBaseUrl(environment)
+    fun buildAuthIntent(): Intent {
         val config = AuthorizationServiceConfiguration(
-            "$authBase/protocol/openid-connect/auth".toUri(),
-            "$authBase/protocol/openid-connect/token".toUri()
+            "$AUTH_BASE/protocol/openid-connect/auth".toUri(),
+            "$AUTH_BASE/protocol/openid-connect/token".toUri()
         )
 
         val request = AuthorizationRequest.Builder(
@@ -123,9 +123,7 @@ class TidepoolAuthManager @Inject constructor(
      */
     suspend fun fetchUserId(): String? {
         val token = getValidAccessToken() ?: return null
-        val environment = settings.tidepoolEnvironment.first()
-        val authBase = authBaseUrl(environment)
-        val url = "$authBase/protocol/openid-connect/userinfo"
+        val url = "$AUTH_BASE/protocol/openid-connect/userinfo"
 
         return try {
             val response = httpClient.get(url) {
@@ -179,11 +177,9 @@ class TidepoolAuthManager @Inject constructor(
         val refreshToken = settings.getTidepoolRefreshToken()
         if (refreshToken.isBlank()) return@withLock null
 
-        val environment = settings.tidepoolEnvironment.first()
-        val authBase = authBaseUrl(environment)
         val config = AuthorizationServiceConfiguration(
-            "$authBase/protocol/openid-connect/auth".toUri(),
-            "$authBase/protocol/openid-connect/token".toUri()
+            "$AUTH_BASE/protocol/openid-connect/auth".toUri(),
+            "$AUTH_BASE/protocol/openid-connect/token".toUri()
         )
 
         val tokenRequest = TokenRequest.Builder(config, CLIENT_ID)
@@ -229,18 +225,6 @@ class TidepoolAuthManager @Inject constructor(
         }
     }
 
-    /**
-     * Returns the data API base URL for the given environment.
-     */
-    fun getApiBase(environment: String): String = when (environment.uppercase()) {
-        "INTEGRATION" -> "https://external.integration.tidepool.org"
-        else -> "https://api.tidepool.org"
-    }
-
-    private fun authBaseUrl(environment: String): String = when (environment.uppercase()) {
-        "INTEGRATION" -> "https://auth.integration.tidepool.org/realms/integration"
-        else -> "https://auth.tidepool.org/realms/tidepool"
-    }
 }
 
 @Serializable

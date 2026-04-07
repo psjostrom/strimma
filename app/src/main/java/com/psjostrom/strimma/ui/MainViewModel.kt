@@ -279,11 +279,8 @@ class MainViewModel @Inject constructor(
     private val _tidepoolLoggedIn = MutableStateFlow(tidepoolAuthManager.isLoggedIn())
     val tidepoolLoggedIn: StateFlow<Boolean> = _tidepoolLoggedIn
 
-    private val tidepoolEnvironment: StateFlow<String> = settings.tidepoolEnvironment
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "INTEGRATION")
-
     fun buildTidepoolAuthIntent(): Intent =
-        tidepoolAuthManager.buildAuthIntent(tidepoolEnvironment.value)
+        tidepoolAuthManager.buildAuthIntent()
 
     suspend fun handleTidepoolAuthResult(intent: Intent) {
         val success = tidepoolAuthManager.handleAuthResponse(intent)
@@ -311,7 +308,7 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun tidepoolForceUpload() = tidepoolUploader.forceUpload()
+    suspend fun tidepoolForceUpload(): Int = tidepoolUploader.forceUpload()
 
     val exerciseSessions: StateFlow<List<StoredExerciseSession>> = exerciseDao.getAllSessions()
         .map { sessions ->

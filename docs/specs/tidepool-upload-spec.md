@@ -45,12 +45,11 @@ Uses AppAuth-Android (`net.openid.appauth`) — the same library xDrip and AAPS 
 
 **Endpoints:**
 
-| Environment | Auth base | API base |
-|-------------|-----------|----------|
-| Integration | `https://auth.integration.tidepool.org/realms/integration` | `https://external.integration.tidepool.org` |
-| Production | `https://auth.tidepool.org/realms/tidepool` | `https://api.tidepool.org` |
+| Auth base | API base |
+|-----------|----------|
+| `https://auth.tidepool.org/realms/tidepool` | `https://api.tidepool.org` |
 
-Both provide OIDC discovery at `/.well-known/openid-configuration`.
+OIDC discovery at `/.well-known/openid-configuration`.
 
 **Flow:**
 
@@ -60,7 +59,7 @@ Both provide OIDC discovery at `/.well-known/openid-configuration`.
      ?client_id=strimma
      &response_type=code
      &redirect_uri=strimma://callback/tidepool
-     &scope=openid email data_read data_write offline_access
+     &scope=openid email offline_access
      &code_challenge={PKCE_challenge}
      &code_challenge_method=S256
    ```
@@ -275,7 +274,6 @@ AndroidManifest.xml          — Add intent filter for strimma://callback/tidepo
 | Key | Type | Storage | Default |
 |-----|------|---------|---------|
 | `tidepool_enabled` | Boolean | DataStore | false |
-| `tidepool_environment` | Enum (PRODUCTION/INTEGRATION) | DataStore | PRODUCTION |
 | `tidepool_only_while_charging` | Boolean | DataStore | false |
 | `tidepool_only_while_wifi` | Boolean | DataStore | false |
 | `tidepool_access_token` | String | Memory only | "" |
@@ -291,7 +289,6 @@ New section in Settings: **Tidepool** (collapsible group).
 - **Enable Tidepool upload** (toggle)
 - **Login** (button) — opens in-app browser for OIDC auth. Shows "Connected as {email}" or "Not connected" based on whether refresh token exists.
 - **Disconnect** (button, visible when connected) — clears stored tokens, revokes refresh token at Tidepool's revocation endpoint.
-- **Environment** (Production / Integration toggle) — visible only in developer settings.
 - **Only while charging** (toggle)
 - **Only on Wi-Fi** (toggle)
 - **Status** — last upload time, or error message. Updated after each upload attempt.
@@ -328,14 +325,12 @@ New section in Settings: **Tidepool** (collapsible group).
 | 500 from Tidepool | Retry on next trigger |
 | Empty batch (no new readings) | Advance `lastUploadEnd`, no API call |
 
-## Blocker
+## Client Registration
 
-**Client ID registration required.** Before implementation can begin, contact Tidepool to register:
+Client ID `strimma` is registered on Tidepool's production Keycloak realm by @toddkazakov.
 - Client ID: `strimma`
 - Redirect URI: `strimma://callback/tidepool`
-- Scopes: `openid email data_read data_write offline_access`
-
-Based on xDrip issue #2597, Tidepool's @toddkazakov created client IDs for both xDrip and AAPS within days of being asked. The process should be straightforward.
+- Scopes: `openid email offline_access`
 
 ## Not in scope
 
