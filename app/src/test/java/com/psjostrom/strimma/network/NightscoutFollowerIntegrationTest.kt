@@ -14,8 +14,9 @@ import com.psjostrom.strimma.widget.WidgetSettingsRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
-import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import java.util.concurrent.Executors
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -25,16 +26,24 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class NightscoutFollowerIntegrationTest {
 
-    private val baseTs = 1_700_000_000_000L
+    private val baseTs = System.currentTimeMillis()
     private val context: Context get() = ApplicationProvider.getApplicationContext()
 
     private fun entry(sgv: Int, ts: Long): NightscoutEntryResponse =
         NightscoutEntryResponse(sgv = sgv, date = ts, type = "sgv")
 
-    private fun TestScope.advanceAndSettle() {
-        repeat(5) {
-            advanceUntilIdle()
-            Thread.sleep(20)
+    /**
+     * Advances virtual time and waits for async executors to complete.
+     * Room dispatches to [Env.roomExecutor] (drained via submit/get).
+     * DataStore dispatches to Dispatchers.IO (brief sleep between rounds).
+     * Uses advanceTimeBy (not advanceUntilIdle) to avoid hanging on the infinite polling loop.
+     */
+    private fun TestScope.advanceAndSettle(env: Env) {
+        repeat(10) {
+            advanceTimeBy(100)
+            runCurrent()
+            env.roomExecutor.submit {}.get()
+            Thread.sleep(10)
         }
     }
 
@@ -43,19 +52,24 @@ class NightscoutFollowerIntegrationTest {
         val dao: ReadingDao,
         val settings: SettingsRepository,
         val fakeClient: FakeClient,
-        val directionComputer: DirectionComputer
+        val directionComputer: DirectionComputer,
+        val roomExecutor: java.util.concurrent.ExecutorService
     )
 
     private fun TestScope.createEnv(): Env {
+        val executor = Executors.newSingleThreadExecutor()
         val db = Room.inMemoryDatabaseBuilder(context, StrimmaDatabase::class.java)
             .allowMainThreadQueries()
+            .setQueryExecutor(executor)
+            .setTransactionExecutor(executor)
             .build()
         return Env(
             db = db,
             dao = db.readingDao(),
-            settings = SettingsRepository(context, WidgetSettingsRepository(context), createTestDataStore(this)),
+            settings = SettingsRepository(context, WidgetSettingsRepository(context), createTestDataStore()),
             fakeClient = FakeClient(),
-            directionComputer = DirectionComputer()
+            directionComputer = DirectionComputer(),
+            roomExecutor = executor
         )
     }
 
@@ -72,13 +86,12 @@ class NightscoutFollowerIntegrationTest {
         val follower = NightscoutFollower(env.fakeClient, env.dao, env.directionComputer, env.settings)
         val newReadings = mutableListOf<GlucoseReading>()
         val job = follower.start(this) { newReadings.add(it) }
-        advanceAndSettle()
+        advanceAndSettle(env)
 
         assertTrue("Backfill should insert readings", env.dao.lastN(10).isNotEmpty())
         assertEquals(1, newReadings.size)
 
         job.cancel()
-        env.db.close()
     }
 
     @Test
@@ -91,12 +104,11 @@ class NightscoutFollowerIntegrationTest {
 
         val follower = NightscoutFollower(env.fakeClient, env.dao, env.directionComputer, env.settings)
         val job = follower.start(this) { }
-        advanceAndSettle()
+        advanceAndSettle(env)
 
         assertTrue(follower.status.value is IntegrationStatus.Connected)
 
         job.cancel()
-        env.db.close()
     }
 
     @Test
@@ -110,16 +122,15 @@ class NightscoutFollowerIntegrationTest {
         val follower = NightscoutFollower(env.fakeClient, env.dao, env.directionComputer, env.settings)
         val newReadings = mutableListOf<GlucoseReading>()
         val job = follower.start(this) { newReadings.add(it) }
-        advanceAndSettle()
+        advanceAndSettle(env)
 
         env.fakeClient.entries = listOf(entry(130, System.currentTimeMillis()))
         advanceTimeBy(61_000)
-        advanceAndSettle()
+        advanceAndSettle(env)
 
         assertTrue("Should have received new readings from poll", newReadings.isNotEmpty())
 
         job.cancel()
-        env.db.close()
     }
 
     @Test
@@ -129,13 +140,12 @@ class NightscoutFollowerIntegrationTest {
 
         val follower = NightscoutFollower(env.fakeClient, env.dao, env.directionComputer, env.settings)
         val job = follower.start(this) { }
-        advanceAndSettle()
+        advanceAndSettle(env)
 
         assertEquals(IntegrationStatus.Idle, follower.status.value)
         assertTrue("DB should remain empty", env.dao.lastN(10).isEmpty())
 
         job.cancel()
-        env.db.close()
     }
 
     @Test
@@ -149,15 +159,14 @@ class NightscoutFollowerIntegrationTest {
 
         val follower = NightscoutFollower(env.fakeClient, env.dao, env.directionComputer, env.settings)
         val job = follower.start(this) { }
-        advanceAndSettle()
+        advanceAndSettle(env)
 
         advanceTimeBy(61_000)
-        advanceAndSettle()
+        advanceAndSettle(env)
 
         assertTrue(follower.status.value is IntegrationStatus.Error)
 
         job.cancel()
-        env.db.close()
     }
 
     private class FakeClient : NightscoutClient() {

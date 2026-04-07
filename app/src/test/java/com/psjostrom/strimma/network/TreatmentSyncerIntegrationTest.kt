@@ -12,19 +12,22 @@ import com.psjostrom.strimma.data.TreatmentDao
 import com.psjostrom.strimma.widget.WidgetSettingsRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.util.concurrent.Executors
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 class TreatmentSyncerIntegrationTest {
 
-    private val now = 1_700_000_000_000L
+    private val now = System.currentTimeMillis()
     private val context: Context get() = ApplicationProvider.getApplicationContext()
+    private val roomExecutor = Executors.newSingleThreadExecutor()
 
     private fun treatment(id: String, createdAt: Long, insulin: Double? = null, carbs: Double? = null) =
         Treatment(
@@ -33,10 +36,18 @@ class TreatmentSyncerIntegrationTest {
             duration = null, enteredBy = "test", fetchedAt = now
         )
 
+    /**
+     * Advances virtual time and waits for async executors to complete.
+     * Room dispatches to [roomExecutor] (drained via submit/get).
+     * DataStore dispatches to Dispatchers.IO (brief sleep between rounds).
+     * Uses advanceTimeBy (not advanceUntilIdle) to avoid hanging on the infinite polling loop.
+     */
     private fun TestScope.advanceAndSettle() {
-        repeat(5) {
-            advanceUntilIdle()
-            Thread.sleep(20)
+        repeat(10) {
+            advanceTimeBy(100)
+            runCurrent()
+            roomExecutor.submit {}.get()
+            Thread.sleep(10)
         }
     }
 
@@ -50,11 +61,13 @@ class TreatmentSyncerIntegrationTest {
     private fun TestScope.createEnv(): Env {
         val db = Room.inMemoryDatabaseBuilder(context, StrimmaDatabase::class.java)
             .allowMainThreadQueries()
+            .setQueryExecutor(roomExecutor)
+            .setTransactionExecutor(roomExecutor)
             .build()
         return Env(
             db = db,
             treatmentDao = db.treatmentDao(),
-            settings = SettingsRepository(context, WidgetSettingsRepository(context), createTestDataStore(this)),
+            settings = SettingsRepository(context, WidgetSettingsRepository(context), createTestDataStore()),
             fakeClient = FakeClient()
         )
     }
@@ -76,7 +89,6 @@ class TreatmentSyncerIntegrationTest {
         assertEquals(2, env.treatmentDao.allSince(0).size)
 
         job.cancel()
-        env.db.close()
     }
 
     @Test
@@ -98,7 +110,6 @@ class TreatmentSyncerIntegrationTest {
         assertEquals("new", stored[0].id)
 
         job.cancel()
-        env.db.close()
     }
 
     @Test
@@ -114,7 +125,6 @@ class TreatmentSyncerIntegrationTest {
         assertTrue("DB should remain empty", env.treatmentDao.allSince(0).isEmpty())
 
         job.cancel()
-        env.db.close()
     }
 
     @Test
@@ -131,7 +141,6 @@ class TreatmentSyncerIntegrationTest {
         assertTrue(syncer.status.value is IntegrationStatus.Connected)
 
         job.cancel()
-        env.db.close()
     }
 
     @Test
@@ -148,7 +157,6 @@ class TreatmentSyncerIntegrationTest {
         assertTrue(syncer.status.value is IntegrationStatus.Error)
 
         job.cancel()
-        env.db.close()
     }
 
     @Test
@@ -168,7 +176,6 @@ class TreatmentSyncerIntegrationTest {
         assertEquals(2, result.getOrThrow())
         assertEquals(2, env.treatmentDao.allSince(0).size)
 
-        env.db.close()
     }
 
     @Test
@@ -180,7 +187,6 @@ class TreatmentSyncerIntegrationTest {
 
         assertTrue(result.isFailure)
 
-        env.db.close()
     }
 
     private class FakeClient : NightscoutClient() {

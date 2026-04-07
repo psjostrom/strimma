@@ -30,8 +30,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -56,7 +59,7 @@ import javax.inject.Inject
 @Config(application = HiltTestApplication::class)
 class PreActivityGuidanceTest {
 
-    private val testDispatcher = UnconfinedTestDispatcher()
+    private val testDispatcher = StandardTestDispatcher()
 
     @get:Rule
     val hiltRule = HiltAndroidRule(this)
@@ -195,10 +198,15 @@ class PreActivityGuidanceTest {
         settings.setWorkoutCalendarName("Test Calendar")
 
         // Let DataStore persist
-        advanceUntilIdle()
+        advanceTimeBy(100)
+        runCurrent()
 
-        // Create ViewModel — its init should collect the calendarId immediately
+        // Create ViewModel — its init collects calendarId from DataStore
         val viewModel = createViewModel()
+
+        // Advance to let ViewModel's init coroutines dispatch and settle
+        advanceTimeBy(200)
+        runCurrent()
 
         // Subscribe on a real dispatcher so Room flows can emit
         val state = withContext(Dispatchers.Default) {
@@ -210,6 +218,10 @@ class PreActivityGuidanceTest {
             "guidanceState should be WorkoutApproaching, got $state",
             state is GuidanceState.WorkoutApproaching
         )
+
+        // Cancel ViewModel's scope to stop its polling loop — otherwise runTest cleanup
+        // calls advanceUntilIdle on the shared scheduler and hangs.
+        viewModel.viewModelScope.cancel()
     }
 
     @Test
@@ -221,8 +233,9 @@ class PreActivityGuidanceTest {
 
         // Don't set any calendar ID — default is -1
         val viewModel = createViewModel()
-        advanceUntilIdle()
 
         assertEquals(GuidanceState.NoWorkout, viewModel.guidanceState.value)
+
+        viewModel.viewModelScope.cancel()
     }
 }
