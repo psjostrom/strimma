@@ -44,7 +44,7 @@ Apps and devices that can receive xDrip-compatible broadcasts:
 | `BgEstimate` | Double | Glucose in mg/dL |
 | `Raw` | Double | Same as BgEstimate (no raw/filtered distinction) |
 | `Time` | Long | Unix timestamp in milliseconds |
-| `BgSlope` | Double | Rate of change (delta / 18.0182 / 5) |
+| `BgSlope` | Double | Rate of change in mg/dL per millisecond |
 | `BgSlopeName` | String | Direction name (e.g., "Flat", "SingleUp") |
 | `SensorId` | String | `"Strimma"` |
 

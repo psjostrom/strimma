@@ -79,15 +79,16 @@ class GlucoseParserTest {
     }
 
     @Test
-    fun `rejects ambiguous integers 20-50`() {
-        assertNull(tryParseGlucose("40"))
-        assertNull(tryParseGlucose("20"))
-        assertNull(tryParseGlucose("50"))
+    fun `accepts low mgdl integers 40-50`() {
+        assertEquals(40.0, tryParseGlucose("40")!!, 0.01)
+        assertEquals(45.0, tryParseGlucose("45")!!, 0.01)
+        assertEquals(50.0, tryParseGlucose("50")!!, 0.01)
     }
 
     @Test
     fun `rejects mg-dL out of range`() {
         assertNull(tryParseGlucose("501"))
+        assertNull(tryParseGlucose("39"))
         assertNull(tryParseGlucose("10"))
     }
 

@@ -61,11 +61,14 @@ class TidepoolUploader @Inject constructor(
         }
     }
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var job = SupervisorJob()
+    private var scope = CoroutineScope(job + Dispatchers.IO)
 
     /** Cancels the upload scope. Called from StrimmaService.onDestroy(). */
     fun stop() {
         scope.cancel()
+        job = SupervisorJob()
+        scope = CoroutineScope(job + Dispatchers.IO)
     }
 
     /**

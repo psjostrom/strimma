@@ -362,10 +362,10 @@ class NightscoutPusherTest {
         assertEquals("pushPending should call client exactly once", 1, fakeClient.pushCallCount.get())
     }
 
-    // --- stop cancels scope ---
+    // --- stop cancels scope but pusher remains usable ---
 
     @Test
-    fun `stop prevents further pushes`() = runTest {
+    fun `stop then push still works (scope is recreated)`() = runTest {
         fakeClient.pushResult = true
         settings.setNightscoutUrl("https://ns.example.com")
         settings.setNightscoutSecret("mysecret")
@@ -377,7 +377,7 @@ class NightscoutPusherTest {
         pusher.pushReading(reading(sgv = 120))
         advanceAndSettle()
 
-        assertEquals("Client should not be called after stop", 0, fakeClient.pushCallCount.get())
+        assertEquals("Client should be called after stop + new push", 1, fakeClient.pushCallCount.get())
     }
 
     @Test
