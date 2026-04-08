@@ -205,7 +205,7 @@ fun MealStatsTab(
             }
 
             // Meal cards
-            filteredResults.forEach { result ->
+            filteredResults.asReversed().forEach { result ->
                 val slotLabel = MealTimeSlot.fromTimestamp(result.mealTime, ZoneId.systemDefault(), timeSlotConfig).label
                 MealCard(result, bgLow, bgHigh, glucoseUnit, slotLabel)
             }
