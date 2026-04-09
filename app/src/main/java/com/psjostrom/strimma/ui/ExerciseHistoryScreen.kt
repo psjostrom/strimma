@@ -754,7 +754,7 @@ private fun ExerciseCard(
                     }
                     ctx.minBG?.let { min ->
                         StatChip(
-                            label = stringResource(R.string.exercise_detail_lowest_bg),
+                            label = stringResource(R.string.exercise_detail_min_bg),
                             value = glucoseUnit.format(min),
                             valueColor = if (min < bgLow.toInt()) BelowLow else null
                         )
