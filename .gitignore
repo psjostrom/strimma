@@ -104,6 +104,9 @@ app/release.keystore
 .claude/worktrees/
 site/
 
+# Playwright MCP
+.playwright-mcp/
+
 # Git worktrees
 .worktrees/
 .superpowers/
