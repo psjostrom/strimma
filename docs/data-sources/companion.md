@@ -24,7 +24,7 @@ Strimma automatically detects whether the notification shows glucose in mmol/L o
 
 ## Supported Apps
 
-Strimma recognizes notifications from 50+ CGM app variants across all major manufacturers:
+Strimma recognizes notifications from CGM app variants across all major manufacturers:
 
 - **Dexcom** — G6, G7, ONE, D1+, Stelo (all regional variants)
 - **Abbott** — Libre 2 / LibreLink

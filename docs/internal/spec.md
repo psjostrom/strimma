@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-17
 **Status:** Historical — Phase 1 reference
-> **Note (2026-04-06):** This spec covers the original Phase 1 scope only. Strimma has since completed Phase 2 (alerts, prediction, widget, statistics, theme, units, broadcast) and Phase 3 (60+ CGM app support, Nightscout follower, LibreLinkUp follower, i18n, GPL, GitHub releases). See `ideas.md` for current feature status and `docs/specs/` for individual feature specs.
+> **Note (2026-04-06):** This spec covers the original Phase 1 scope only. Strimma has since completed Phase 2 (alerts, prediction, widget, statistics, theme, units, broadcast) and Phase 3 (broad CGM app support, Nightscout follower, LibreLinkUp follower, i18n, GPL, GitHub releases). See `ideas.md` for current feature status and `docs/specs/` for individual feature specs.
 
 **Author:** psjostrom
 

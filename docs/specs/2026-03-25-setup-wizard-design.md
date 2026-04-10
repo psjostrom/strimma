@@ -42,7 +42,7 @@ Nightscout push configuration is optional and complex enough to belong in Settin
 
 **Options (radio cards with description):**
 
-1. **CGM App Notifications** (COMPANION) — "Reads glucose from your CGM app's notifications. Works with Dexcom, Libre, CamAPS, Juggluco, xDrip+, and 50+ more."
+1. **CGM App Notifications** (COMPANION) — "Reads glucose from your CGM app's notifications. Works with Dexcom, Libre, CamAPS, Juggluco, xDrip+, and many more."
 2. **xDrip Broadcast** (XDRIP_BROADCAST) — "Receives glucose via xDrip-compatible broadcast intent. Use if your CGM app supports xDrip broadcasting."
 3. **Nightscout Follower** (NIGHTSCOUT_FOLLOWER) — "Follows a remote Nightscout server. Use to monitor someone else's glucose."
 4. **LibreLinkUp** (LIBRELINKUP) — Polls Abbott's LibreLinkUp API. Shows inline email + password fields when selected.

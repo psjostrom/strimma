@@ -29,10 +29,9 @@ Strimma is distributed as an APK from GitHub Releases. It is not on Google Play.
 
 ## Update Strimma
 
-To update, download the latest release APK and install it over the existing version. Your settings and data are preserved — Android keeps them as long as the signing key matches.
+Strimma checks for updates automatically and prompts you when a new version is available. See [Auto-Update](../guide/auto-update.md) for details.
 
-!!! tip "Check for updates"
-    Watch the [Strimma repository](https://github.com/psjostrom/strimma) on GitHub to get notified of new releases.
+You can also update manually: download the latest release APK from [GitHub Releases](https://github.com/psjostrom/strimma/releases) and install it over the existing version. Your settings and data are preserved — Android keeps them as long as the signing key matches.
 
 ---
 

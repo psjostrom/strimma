@@ -16,7 +16,7 @@ git config core.hooksPath .githooks
 
 ## Project Structure
 
-Single-module app. ~55 Kotlin source files.
+Single-module app.
 
 ```
 app/src/main/java/com/psjostrom/strimma/

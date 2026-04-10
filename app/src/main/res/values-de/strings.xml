@@ -320,13 +320,14 @@
     <string name="setup_welcome_item_nightscout">Mit Nightscout verbinden (optional)</string>
     <string name="setup_welcome_item_alerts">Alarmschwellen einstellen</string>
     <string name="setup_welcome_item_permissions">Erforderliche Berechtigungen erteilen</string>
+    <string name="setup_welcome_disclaimer">Strimma ist kein Medizinprodukt. Es ist von keiner Aufsichtsbehörde zugelassen. Verwenden Sie Strimma nicht als alleinige Grundlage für medizinische Entscheidungen. Befolgen Sie stets die Empfehlungen Ihres Ärzteteams und Ihrer offiziellen CGM-App.</string>
     <string name="setup_units_title">Einheit</string>
     <string name="setup_units_mmol">mmol/L</string>
     <string name="setup_units_mgdl">mg/dL</string>
     <string name="setup_units_mmol_desc">Verwendet in den meisten Teilen Europas, Großbritannien, Kanada, Australien</string>
     <string name="setup_units_mgdl_desc">Verwendet in den USA, Japan und vielen anderen Ländern</string>
     <string name="setup_source_title">Datenquelle</string>
-    <string name="setup_source_companion_desc">Liest Glukose aus den Benachrichtigungen deiner CGM-App. Funktioniert mit Dexcom, Libre, CamAPS, Juggluco, xDrip+ und über 50 weiteren.</string>
+    <string name="setup_source_companion_desc">Liest Glukose aus den Benachrichtigungen deiner CGM-App. Funktioniert mit Dexcom, Libre, CamAPS, Juggluco, xDrip+ und vielen weiteren.</string>
     <string name="setup_source_xdrip_desc">Empfängt Glukose über xDrip-kompatible Übertragung. Verwende dies, wenn deine CGM-App xDrip-Übertragung unterstützt.</string>
     <string name="setup_source_follower_desc">Folgt einem entfernten Nightscout-Server. Verwende dies, um die Glukose einer anderen Person zu überwachen.</string>
     <string name="setup_source_llu_desc">Liest Glukose aus Abbotts LibreLinkUp-Cloud. Erfordert ein LibreLinkUp-Follower-Konto.</string>

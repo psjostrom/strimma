@@ -104,6 +104,7 @@ nav:
     - Statistics: guide/statistics.md
     - Home Screen Widget: guide/widget.md
     - Exercise & BG Analysis: guide/exercise.md
+    - Auto-Update: guide/auto-update.md
     - All Settings: guide/settings.md
   - Data Sources:
     - Overview: data-sources/overview.md

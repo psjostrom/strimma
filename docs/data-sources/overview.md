@@ -14,7 +14,7 @@ Strimma reads glucose values from your CGM app's notifications. This is the prim
 
 **Pros:**
 
-- Works with 50+ CGM app variants out of the box
+- Works with all major CGM app variants out of the box
 - No extra configuration beyond notification access
 - No interference with your CGM app or closed-loop system
 - No separate Bluetooth connection needed
@@ -80,7 +80,7 @@ Strimma polls Abbott's LibreLinkUp sharing API for glucose readings from Libre 3
 | Needs Nightscout server | No (optional for push) | No (optional for push) | Yes | No (optional for push) |
 | Latency | Near-instant | Near-instant | Poll interval (30s–5m) | ~60s |
 | Push to Nightscout | Yes | Yes | No (already on NS) | Yes |
-| Supported CGM apps | 50+ variants | Any xDrip-compatible | Any Nightscout-connected | Libre 3 only |
+| Supported CGM apps | All major variants | Any xDrip-compatible | Any Nightscout-connected | Libre 3 only |
 | Best for | Most users | xDrip+/AAPS/Juggluco users | Caregivers, remote monitoring | Libre 3 users without third-party apps |
 
 ---
