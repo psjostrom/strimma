@@ -457,6 +457,11 @@ private fun BgHeader(
             }
         }
 
+        // Reset sheet flag if crossing disappears (avoids auto-open on reappear)
+        LaunchedEffect(crossing) {
+            if (crossing == null) showPredictionDetail = false
+        }
+
         // Detail sheets
         if (showIobDetail) {
             IobDetailSheet(treatments, iobTauMinutes, onDismiss = { showIobDetail = false })
