@@ -24,6 +24,15 @@
     <string name="main_min_ago">Il y a %1$d min</string>
     <string name="main_prediction_low">Bas dans %1$d min</string>
     <string name="main_prediction_high">Haut dans %1$d min</string>
+    <string name="main_prediction_detail_title">Pr\u00E9diction</string>
+    <string name="main_prediction_rate">Vitesse</string>
+    <string name="main_prediction_rate_value">%1$s/min</string>
+    <string name="main_prediction_projected">Projection</string>
+    <string name="main_prediction_threshold">Seuil %1$s</string>
+    <string name="main_prediction_in_min">dans %1$d min</string>
+    <string name="main_prediction_pause_alerts">Suspendre alertes %1$s</string>
+    <string name="main_prediction_pause_low">basses</string>
+    <string name="main_prediction_pause_high">hautes</string>
     <string name="main_iob_value">IOB %1$.1fU</string>
     <string name="main_iob_breakdown_title">D\u00E9tail IOB</string>
     <string name="main_iob_clears_in">Dispara\u00EEt dans ~%1$s</string>

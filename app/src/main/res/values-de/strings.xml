@@ -24,6 +24,15 @@
     <string name="main_min_ago">Vor %1$d Min.</string>
     <string name="main_prediction_low">Tief in %1$d Min.</string>
     <string name="main_prediction_high">Hoch in %1$d Min.</string>
+    <string name="main_prediction_detail_title">Vorhersage</string>
+    <string name="main_prediction_rate">Rate</string>
+    <string name="main_prediction_rate_value">%1$s/min</string>
+    <string name="main_prediction_projected">Prognose</string>
+    <string name="main_prediction_threshold">%1$s-Grenze</string>
+    <string name="main_prediction_in_min">in %1$d Min.</string>
+    <string name="main_prediction_pause_alerts">%1$s Alarme pausieren</string>
+    <string name="main_prediction_pause_low">Tief</string>
+    <string name="main_prediction_pause_high">Hoch</string>
     <string name="main_iob_value">IOB %1$.1fU</string>
     <string name="main_iob_breakdown_title">IOB-Aufschl\u00FCsselung</string>
     <string name="main_iob_clears_in">Weg in ~%1$s</string>
