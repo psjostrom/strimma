@@ -42,6 +42,8 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
@@ -98,6 +100,7 @@ class StrimmaService : Service() {
     @Inject lateinit var updateChecker: UpdateChecker
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private val readingMutex = Mutex()
     private var pruneJob: Job? = null
     private var xdripReceiver: XdripBroadcastReceiver? = null
     private var followerJob: Job? = null
@@ -265,7 +268,7 @@ class StrimmaService : Service() {
             val mgdl = intent.getDoubleExtra(GlucoseNotificationListener.EXTRA_MGDL, 0.0)
             val timestamp = intent.getLongExtra(GlucoseNotificationListener.EXTRA_TIMESTAMP, 0L)
             if (mgdl > 0.0 && timestamp > 0L) {
-                scope.launch { processReading(mgdl, timestamp) }
+                scope.launch { readingMutex.withLock { processReading(mgdl, timestamp) } }
             }
         }
         return START_STICKY
