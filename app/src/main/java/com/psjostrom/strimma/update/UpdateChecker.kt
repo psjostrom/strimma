@@ -94,6 +94,10 @@ class UpdateChecker @Inject constructor() {
         _dismissed.value = true
     }
 
+    fun resetDismissed() {
+        _dismissed.value = false
+    }
+
     @Suppress("TooGenericExceptionCaught") // Network boundary
     suspend fun check() {
         try {

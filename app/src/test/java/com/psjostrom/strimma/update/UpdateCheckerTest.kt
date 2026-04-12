@@ -150,6 +150,31 @@ class UpdateCheckerTest {
     }
 
     @Test
+    fun `resetDismissed clears dismissed flag`() {
+        val c = UpdateChecker()
+        c.dismiss()
+        assertTrue(c.dismissed.value)
+        c.resetDismissed()
+        assertFalse(c.dismissed.value)
+    }
+
+    @Test
+    fun `manual check shows dialog after previous dismiss`() = runTest {
+        val c = checker(mockClient())
+        c.check()
+        assertNotNull(c.updateInfo.value)
+
+        c.dismiss()
+        assertTrue(c.dismissed.value)
+
+        // Simulate manual check: reset dismissed, re-check
+        c.resetDismissed()
+        c.check()
+        assertFalse(c.dismissed.value)
+        assertNotNull(c.updateInfo.value)
+    }
+
+    @Test
     fun `check survives GitHub API error`() = runTest {
         val c = checker(mockClient(releaseStatus = HttpStatusCode.InternalServerError))
         c.check() // should not throw

@@ -74,6 +74,7 @@ class MainViewModel @Inject constructor(
 ) : ViewModel() {
 
     companion object {
+        private const val UP_TO_DATE_DISPLAY_MS = 3000L
         private const val HOURS_PER_DAY = 24
         private const val PRE_WINDOW_MINUTES = 30
         private const val POST_WINDOW_HOURS = 4
@@ -458,9 +459,31 @@ class MainViewModel @Inject constructor(
     val updateDismissed: StateFlow<Boolean> = updateChecker.dismissed
     val downloadState: StateFlow<DownloadState> = updateInstaller.state
 
+    private val _updateCheckState = MutableStateFlow(UpdateCheckState.IDLE)
+    val updateCheckState: StateFlow<UpdateCheckState> = _updateCheckState
+
     fun dismissUpdate() = updateChecker.dismiss()
 
     fun downloadUpdate(info: UpdateInfo) {
         updateInstaller.download(info.apkUrl, info.version)
     }
+
+    fun checkForUpdates() {
+        viewModelScope.launch {
+            _updateCheckState.value = UpdateCheckState.CHECKING
+            updateChecker.resetDismissed() // reset so dialog shows if update found
+            updateChecker.check()
+            _updateCheckState.value = if (updateChecker.updateInfo.value != null) {
+                UpdateCheckState.IDLE
+            } else {
+                UpdateCheckState.UP_TO_DATE
+            }
+            if (_updateCheckState.value == UpdateCheckState.UP_TO_DATE) {
+                delay(UP_TO_DATE_DISPLAY_MS)
+                _updateCheckState.value = UpdateCheckState.IDLE
+            }
+        }
+    }
+
+    enum class UpdateCheckState { IDLE, CHECKING, UP_TO_DATE }
 }
