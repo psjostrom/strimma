@@ -22,7 +22,7 @@ The large center area shows:
 - **Glucose value** — large, bold text in the center. Color-coded by range.
 - **Direction arrow** — to the right of the BG value, showing the trend direction (e.g., → flat, ↗ rising slowly, ↑ rising).
 - **Delta and time** — below the BG, showing how much glucose changed and when the last reading arrived. Format: `+0.3 · 2 min ago`.
-- **Prediction warning** — a colored pill that appears when Strimma predicts you'll cross a threshold. Shows `Low in 8 min` or `High in 12 min`. Only appears when you're currently in range.
+- **Prediction warning** — a colored pill that appears when Strimma predicts you'll cross a threshold. Shows `Low in 8 min` or `High in 12 min`. Only appears when you're currently in range. Tap to see prediction details (rate, projected values, quick pause).
 - **IOB pill** — if treatment sync is enabled and you have active insulin, shows `IOB 2.3U` in a cyan pill. Tap it to see a breakdown of each bolus and its remaining IOB.
 - **Follower status** — if in follower mode, shows connection status and time since last poll.
 

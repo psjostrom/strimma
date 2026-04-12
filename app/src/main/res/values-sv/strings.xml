@@ -24,6 +24,15 @@
     <string name="main_min_ago">%1$d min sedan</string>
     <string name="main_prediction_low">L\u00E5gt om %1$d min</string>
     <string name="main_prediction_high">H\u00F6gt om %1$d min</string>
+    <string name="main_prediction_detail_title">Prediktion</string>
+    <string name="main_prediction_rate">Hastighet</string>
+    <string name="main_prediction_rate_value">%1$s/min</string>
+    <string name="main_prediction_projected">Prognos</string>
+    <string name="main_prediction_threshold">%1$s-gr\u00E4ns</string>
+    <string name="main_prediction_in_min">om %1$d min</string>
+    <string name="main_prediction_pause_alerts">Pausa %1$s larm</string>
+    <string name="main_prediction_pause_low">l\u00E5ga</string>
+    <string name="main_prediction_pause_high">h\u00F6ga</string>
     <string name="main_iob_value">IOB %1$.1fU</string>
     <string name="main_iob_breakdown_title">IOB-f\u00F6rdelning</string>
     <string name="main_iob_clears_in">Borta om ~%1$s</string>

@@ -31,6 +31,13 @@ When Strimma predicts you'll cross a threshold, a **warning pill** appears:
 
 The pill shows the time until the predicted crossing.
 
+**Tap the pill** to open a detail sheet showing:
+
+- **Rate of change** — how fast your glucose is moving, in your display unit per minute
+- **Threshold crossing** — which threshold and when the prediction expects to cross it
+- **Projected values** — predicted glucose at 5, 10, and 15 minutes, color-coded by range
+- **Pause alerts** — a quick button to pause alerts for 30 minutes (e.g., if you're already treating the situation)
+
 ### In the Notification
 
 The notification subtitle includes a compact prediction warning (e.g., "Low 10m") when applicable.

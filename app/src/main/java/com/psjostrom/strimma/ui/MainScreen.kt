@@ -29,6 +29,7 @@ import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -49,6 +50,7 @@ import com.psjostrom.strimma.graph.BgStatus
 import com.psjostrom.strimma.graph.bgStatusFor
 import com.psjostrom.strimma.graph.CRITICAL_LOW
 import com.psjostrom.strimma.graph.PredictionComputer
+import com.psjostrom.strimma.graph.Prediction
 import com.psjostrom.strimma.graph.ThresholdCrossing
 import com.psjostrom.strimma.graph.CrossingType
 import com.psjostrom.strimma.graph.computeYAxisLabels
@@ -163,17 +165,20 @@ fun MainScreen(
                 .padding(padding)
                 .padding(horizontal = 16.dp)
         ) {
-            val crossing = remember(readings, bgLow, bgHigh, predictionMinutes) {
-                PredictionComputer.compute(readings, predictionMinutes, bgLow.toDouble(), bgHigh.toDouble())?.crossing
+            val prediction = remember(readings, bgLow, bgHigh, predictionMinutes) {
+                PredictionComputer.compute(readings, predictionMinutes, bgLow.toDouble(), bgHigh.toDouble())
             }
+            val crossing = prediction?.crossing
             Box(modifier = Modifier.fillMaxWidth()) {
                 BgHeader(
                     latestReading, bgLow, bgHigh, glucoseUnit,
                     modifier = Modifier.fillMaxWidth(),
-                    crossing = crossing, iob = iob, treatments = treatments, iobTauMinutes = iobTauMinutes,
+                    prediction = prediction, readings = readings,
+                    iob = iob, treatments = treatments, iobTauMinutes = iobTauMinutes,
                     pauseLowExpiryMs = pauseLowExpiryMs,
                     pauseHighExpiryMs = pauseHighExpiryMs,
-                    onPausePillClick = { showPauseSheet = true }
+                    onPausePillClick = { showPauseSheet = true },
+                    onPauseAlerts = onPauseAlerts
                 )
                 IconButton(
                     onClick = { showPauseSheet = true },
@@ -269,14 +274,17 @@ private fun BgHeader(
     reading: GlucoseReading?, bgLow: Float, bgHigh: Float,
     glucoseUnit: GlucoseUnit,
     modifier: Modifier = Modifier,
-    crossing: ThresholdCrossing? = null,
+    prediction: Prediction? = null,
+    readings: List<GlucoseReading> = emptyList(),
     iob: Double = 0.0,
     treatments: List<Treatment> = emptyList(),
     iobTauMinutes: Double = 55.0,
     pauseLowExpiryMs: Long? = null,
     pauseHighExpiryMs: Long? = null,
-    onPausePillClick: () -> Unit = {}
+    onPausePillClick: () -> Unit = {},
+    onPauseAlerts: (AlertCategory, Long) -> Unit = { _, _ -> }
 ) {
+    val crossing = prediction?.crossing
     var minutesAgo by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(reading?.ts) {
@@ -339,99 +347,140 @@ private fun BgHeader(
             fontSize = 14.sp
         )
 
-        // Prediction warning as pill
-        if (crossing != null) {
-            val crossingColor = when (crossing.type) {
-                CrossingType.LOW -> BelowLow
-                CrossingType.HIGH -> AboveHigh
-            }
-            val crossingText = when (crossing.type) {
-                CrossingType.LOW -> stringResource(R.string.main_prediction_low, crossing.minutesUntil)
-                CrossingType.HIGH -> stringResource(R.string.main_prediction_high, crossing.minutesUntil)
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
-            val pillBg = when (crossing.type) {
-                CrossingType.LOW -> if (isDark) TintDanger else LightTintDanger
-                CrossingType.HIGH -> if (isDark) TintWarning else LightTintWarning
-            }
-            Surface(
-                shape = RoundedCornerShape(100),
-                color = pillBg
-            ) {
-                Text(
-                    text = crossingText,
-                    color = crossingColor,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
-                )
+        // Pills row — prediction, IOB, pause
+        var showIobDetail by remember { mutableStateOf(false) }
+        var showPredictionDetail by remember { mutableStateOf(false) }
+        val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+
+        // Reactive clock for pause expiry checks — ticks every 10s so pills disappear on time
+        var nowMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
+        LaunchedEffect(Unit) {
+            while (true) {
+                delay(10_000)
+                nowMs = System.currentTimeMillis()
             }
         }
 
-        // IOB pill
-        if (iob > 0.0) {
-            Spacer(modifier = Modifier.height(8.dp))
-            var showIobDetail by remember { mutableStateOf(false) }
-            val iobColor = if (iob < 0.3) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
-            Surface(
-                onClick = { showIobDetail = true },
-                shape = RoundedCornerShape(100),
-                color = InRange.copy(alpha = 0.12f)
-            ) {
-                Text(
-                    text = stringResource(R.string.main_iob_value, iob),
-                    color = iobColor,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
-                )
-            }
-            if (showIobDetail) {
-                IobDetailSheet(treatments, iobTauMinutes, onDismiss = { showIobDetail = false })
-            }
-        }
+        val hasPills = crossing != null || iob > 0.0 ||
+            (pauseHighExpiryMs != null && pauseHighExpiryMs > nowMs) ||
+            (pauseLowExpiryMs != null && pauseLowExpiryMs > nowMs)
 
-        pauseHighExpiryMs?.let { expiry ->
-            if (expiry > System.currentTimeMillis()) {
-                val countdownText = rememberCountdownText(expiry)
-                Spacer(modifier = Modifier.height(8.dp))
-                val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
-                Surface(
-                    onClick = onPausePillClick,
-                    shape = RoundedCornerShape(100),
-                    color = if (isDark) TintWarning else LightTintWarning
-                ) {
-                    Text(
-                        text = stringResource(R.string.pause_high_active, countdownText),
-                        color = AboveHigh,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
-                    )
+        if (hasPills) {
+            Spacer(modifier = Modifier.height(8.dp))
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                // Prediction pill
+                if (crossing != null) {
+                    val crossingColor = when (crossing.type) {
+                        CrossingType.LOW -> BelowLow
+                        CrossingType.HIGH -> AboveHigh
+                    }
+                    val crossingText = when (crossing.type) {
+                        CrossingType.LOW -> stringResource(R.string.main_prediction_low, crossing.minutesUntil)
+                        CrossingType.HIGH -> stringResource(R.string.main_prediction_high, crossing.minutesUntil)
+                    }
+                    val pillBg = when (crossing.type) {
+                        CrossingType.LOW -> if (isDark) TintDanger else LightTintDanger
+                        CrossingType.HIGH -> if (isDark) TintWarning else LightTintWarning
+                    }
+                    Surface(
+                        onClick = { showPredictionDetail = true },
+                        shape = RoundedCornerShape(100),
+                        color = pillBg
+                    ) {
+                        Text(
+                            text = crossingText,
+                            color = crossingColor,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
+                        )
+                    }
+                }
+
+                // IOB pill
+                if (iob > 0.0) {
+                    val iobColor = if (iob < 0.3) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
+                    Surface(
+                        onClick = { showIobDetail = true },
+                        shape = RoundedCornerShape(100),
+                        color = InRange.copy(alpha = 0.12f)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.main_iob_value, iob),
+                            color = iobColor,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
+                        )
+                    }
+                }
+
+                // Pause high pill
+                if (pauseHighExpiryMs != null && pauseHighExpiryMs > nowMs) {
+                    val countdownText = rememberCountdownText(pauseHighExpiryMs)
+                    Surface(
+                        onClick = onPausePillClick,
+                        shape = RoundedCornerShape(100),
+                        color = if (isDark) TintWarning else LightTintWarning
+                    ) {
+                        Text(
+                            text = stringResource(R.string.pause_high_active, countdownText),
+                            color = AboveHigh,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
+                        )
+                    }
+                }
+
+                // Pause low pill
+                if (pauseLowExpiryMs != null && pauseLowExpiryMs > nowMs) {
+                    val countdownText = rememberCountdownText(pauseLowExpiryMs)
+                    Surface(
+                        onClick = onPausePillClick,
+                        shape = RoundedCornerShape(100),
+                        color = if (isDark) TintDanger else LightTintDanger
+                    ) {
+                        Text(
+                            text = stringResource(R.string.pause_low_active, countdownText),
+                            color = BelowLow,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
+                        )
+                    }
                 }
             }
         }
 
-        pauseLowExpiryMs?.let { expiry ->
-            if (expiry > System.currentTimeMillis()) {
-                val countdownText = rememberCountdownText(expiry)
-                Spacer(modifier = Modifier.height(8.dp))
-                val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
-                Surface(
-                    onClick = onPausePillClick,
-                    shape = RoundedCornerShape(100),
-                    color = if (isDark) TintDanger else LightTintDanger
-                ) {
-                    Text(
-                        text = stringResource(R.string.pause_low_active, countdownText),
-                        color = BelowLow,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
-                    )
+        // Reset sheet flag if crossing disappears (avoids auto-open on reappear)
+        LaunchedEffect(crossing) {
+            if (crossing == null) showPredictionDetail = false
+        }
+
+        // Detail sheets
+        if (showIobDetail) {
+            IobDetailSheet(treatments, iobTauMinutes, onDismiss = { showIobDetail = false })
+        }
+        if (showPredictionDetail && prediction != null && crossing != null) {
+            PredictionDetailSheet(
+                prediction = prediction,
+                crossing = crossing,
+                readings = readings,
+                glucoseUnit = glucoseUnit,
+                bgLow = bgLow,
+                bgHigh = bgHigh,
+                onPauseAlerts = onPauseAlerts,
+                onDismiss = { showPredictionDetail = false },
+                isPaused = when (crossing.type) {
+                    CrossingType.LOW -> pauseLowExpiryMs != null && pauseLowExpiryMs > nowMs
+                    CrossingType.HIGH -> pauseHighExpiryMs != null && pauseHighExpiryMs > nowMs
                 }
-            }
+            )
         }
     }
 }
