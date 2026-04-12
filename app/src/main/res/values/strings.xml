@@ -76,7 +76,6 @@
     <string name="settings_general_version">Version</string>
     <string name="settings_general_build">Build</string>
     <string name="settings_general_check_for_updates">Check for updates</string>
-    <string name="settings_general_checking">Checking…</string>
     <string name="settings_general_up_to_date">Up to date</string>
 
     <!-- Data Source Settings -->

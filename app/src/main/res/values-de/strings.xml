@@ -70,6 +70,8 @@
     <string name="settings_general_about">\u00DCber</string>
     <string name="settings_general_version">Version</string>
     <string name="settings_general_build">Build</string>
+    <string name="settings_general_check_for_updates">Nach Updates suchen</string>
+    <string name="settings_general_up_to_date">Aktuell</string>
 
     <!-- Data Source Settings -->
     <string name="settings_source_title">Datenquelle</string>
