@@ -40,7 +40,7 @@ Strimma stands on the shoulders of the incredible [xDrip+](https://github.com/Ni
 
 ## What Strimma Does
 
-- **Receives glucose four ways** — reads notifications from 50+ CGM app variants (Dexcom, Libre, CamAPS FX, etc.), receives xDrip-compatible broadcasts (from xDrip+, Juggluco, AAPS), follows a remote Nightscout server, or reads from Abbott's LibreLinkUp cloud. See [Data Sources](data-sources/overview.md).
+- **Receives glucose four ways** — reads notifications from dozens of CGM app variants (Dexcom, Libre, CamAPS FX, etc.), receives xDrip-compatible broadcasts (from xDrip+, Juggluco, AAPS), follows a remote Nightscout server, or reads from Abbott's LibreLinkUp cloud. See [Data Sources](data-sources/overview.md).
 - **Shows your BG at a glance** — large, color-coded number with direction arrow, delta, and trend graph in your notification bar.
 - **Configurable alerts** — eight alert types (urgent low, low, high, urgent high, low soon, high soon, stale data, push failed), each with its own notification channel. Urgent alerts bypass Do Not Disturb by default; any alert can be configured to bypass DND via Android's notification settings. Alerts can be paused by category (Low or High) for a custom duration.
 - **Predicts where you're heading** — shows "Low in X min" or "High in X min" warnings before you cross your thresholds.

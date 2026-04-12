@@ -1,6 +1,6 @@
 # Strimma
 
-Android CGM companion app. Receives glucose from 60+ CGM apps (CamAPS FX, Dexcom G6/G7, LibreLink, Libre 3, Juggluco, xDrip+, etc.) via NotificationListenerService, displays with graph + notification, pushes to / follows Nightscout.
+Android CGM companion app. Receives glucose from dozens of CGM apps (CamAPS FX, Dexcom G6/G7, LibreLink, Libre 3, Juggluco, xDrip+, etc.) via NotificationListenerService, displays with graph + notification, pushes to / follows Nightscout.
 
 ## Build
 
@@ -51,7 +51,7 @@ Single-module app. Hilt DI. All async via Coroutines/Flow.
 - `graph/` — Shared graph logic (colors, Y-range computation, critical thresholds) + weighted least-squares prediction with endpoint anchoring
 - `network/` — Nightscout HTTP client, push logic (Ktor, `/api/v1/entries`), and follower mode (polling)
 - `notification/` — Foreground notification (collapsed/expanded with graph bitmap), alert manager
-- `receiver/` — Data source receivers (notification parser for 60+ CGM apps, xDrip broadcast receiver), debug logging
+- `receiver/` — Data source receivers (notification parser for CGM apps, xDrip broadcast receiver), debug logging
 - `service/` — Foreground service, boot receiver
 - `ui/` — Compose screens (Main, Settings, Stats, Debug), ViewModel, theme
 - `ui/theme/` — Dark + light palettes, status colors, Material 3 theme with `ThemeMode` (Dark/Light/System)

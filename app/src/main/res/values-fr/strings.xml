@@ -329,13 +329,14 @@
     <string name="setup_welcome_item_nightscout">Se connecter à Nightscout (optionnel)</string>
     <string name="setup_welcome_item_alerts">Définir vos seuils d\u0027alerte</string>
     <string name="setup_welcome_item_permissions">Accorder les autorisations requises</string>
+    <string name="setup_welcome_disclaimer">Strimma n\u0027est pas un dispositif médical. Il n\u0027est approuvé par aucun organisme de réglementation. N\u0027utilisez pas Strimma comme seule base pour des décisions médicales. Suivez toujours les recommandations de votre équipe soignante et de votre application CGM officielle.</string>
     <string name="setup_units_title">Unité</string>
     <string name="setup_units_mmol">mmol/L</string>
     <string name="setup_units_mgdl">mg/dL</string>
     <string name="setup_units_mmol_desc">Utilisé dans la majeure partie de l\u0027Europe, au Royaume-Uni, au Canada, en Australie</string>
     <string name="setup_units_mgdl_desc">Utilisé aux États-Unis, au Japon et dans de nombreux autres pays</string>
     <string name="setup_source_title">Source de données</string>
-    <string name="setup_source_companion_desc">Lit le glucose depuis les notifications de votre application CGM. Fonctionne avec Dexcom, Libre, CamAPS, Juggluco, xDrip+ et plus de 50 autres.</string>
+    <string name="setup_source_companion_desc">Lit le glucose depuis les notifications de votre application CGM. Fonctionne avec Dexcom, Libre, CamAPS, Juggluco, xDrip+ et bien d\u0027autres.</string>
     <string name="setup_source_xdrip_desc">Reçoit le glucose via une diffusion compatible xDrip. Utilisez si votre application CGM prend en charge la diffusion xDrip.</string>
     <string name="setup_source_follower_desc">Suit un serveur Nightscout distant. Utilisez pour surveiller le glucose de quelqu\u0027un d\u0027autre.</string>
     <string name="setup_source_llu_desc">Lit le glucose depuis le cloud LibreLinkUp d\u0027Abbott. N\u00E9cessite un compte suiveur LibreLinkUp.</string>

@@ -1,11 +1,13 @@
 package com.psjostrom.strimma.ui.setup
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ShowChart
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -36,6 +38,32 @@ fun SetupWelcomeStep() {
         WelcomeItem(Icons.Default.Sync, stringResource(R.string.setup_welcome_item_nightscout))
         WelcomeItem(Icons.Default.Notifications, stringResource(R.string.setup_welcome_item_alerts))
         WelcomeItem(Icons.Default.Settings, stringResource(R.string.setup_welcome_item_permissions))
+
+        Spacer(Modifier.height(16.dp))
+
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        ) {
+            Row(
+                modifier = Modifier.padding(12.dp),
+                verticalAlignment = Alignment.Top
+            ) {
+                Icon(
+                    Icons.Outlined.Info,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(Modifier.width(10.dp))
+                Text(
+                    stringResource(R.string.setup_welcome_disclaimer),
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
     }
 }
 

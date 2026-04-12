@@ -56,7 +56,7 @@ Deferred until there's demand or hardware.
 - mmol/L + mg/dL unit support
 - Dark / Light / System theme
 - Interactive graph (pinch zoom, pan, scrub-to-inspect, minimap)
-- Notification parsing for 60+ CGM apps (Dexcom, Libre, Juggluco, CamAPS, etc.)
+- Notification parsing for all major CGM apps (Dexcom, Libre, Juggluco, CamAPS, etc.)
 - xDrip broadcast receiver (data source)
 - Nightscout follower mode (data source)
 - Nightscout upload with retry and offline resilience
@@ -74,7 +74,7 @@ Deferred until there's demand or hardware.
 - Exercise stats with metabolic profiles — aggregate BG patterns by activity category and intensity
 - Per-meal postprandial analysis (TIR, peak excursion, time-to-peak, recovery, iAUC, IOB at meal, sparkline graphs, AGP-style aggregate profile)
 - Pause alerts by category
-- Tidepool upload (blocked on Tidepool client ID registration — code is complete)
+- Tidepool upload
 - Contribution guide (CONTRIBUTING.md)
 
 ---

@@ -65,5 +65,5 @@ Received values must be in the range 18–900 mg/dL. Invalid values are silently
 |--------|-----------|-----------------|
 | Data source | CGM app's notification | xDrip-format broadcast |
 | Unit handling | Auto-detect mmol/L or mg/dL | Always mg/dL |
-| Works with | 50+ CGM app variants | Apps that broadcast in xDrip format |
+| Works with | All major CGM app variants | Apps that broadcast in xDrip format |
 | Direction | Computed locally | Computed locally |
