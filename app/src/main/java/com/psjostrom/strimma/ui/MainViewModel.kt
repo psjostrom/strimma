@@ -471,7 +471,7 @@ class MainViewModel @Inject constructor(
     fun checkForUpdates() {
         viewModelScope.launch {
             _updateCheckState.value = UpdateCheckState.CHECKING
-            updateChecker.dismiss() // reset so dialog shows if update found
+            updateChecker.resetDismissed() // reset so dialog shows if update found
             updateChecker.check()
             _updateCheckState.value = if (updateChecker.updateInfo.value != null) {
                 UpdateCheckState.IDLE
