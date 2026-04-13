@@ -32,8 +32,8 @@ class TreatmentSyncer @Inject constructor(
 
     companion object {
         private const val POLL_INTERVAL_MS = 5 * 60 * 1000L
-        internal const val FULL_LOOKBACK_DAYS = 30
-        private const val PRUNE_DAYS = 30
+        internal const val FULL_LOOKBACK_DAYS = 100
+        private const val PRUNE_DAYS = 100
         internal const val FULL_LOOKBACK_MS = FULL_LOOKBACK_DAYS * 24 * 60 * 60 * 1000L
         internal const val POLL_LOOKBACK_MS = 24 * 60 * 60 * 1000L // 24h for regular polls
         private const val PRUNE_MS = PRUNE_DAYS * 24 * 60 * 60 * 1000L
