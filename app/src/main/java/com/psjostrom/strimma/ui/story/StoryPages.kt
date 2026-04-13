@@ -1,0 +1,450 @@
+package com.psjostrom.strimma.ui.story
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.psjostrom.strimma.data.GlucoseUnit
+import com.psjostrom.strimma.data.story.MealStoryData
+import com.psjostrom.strimma.data.story.StoryData
+import com.psjostrom.strimma.ui.theme.AboveHigh
+import com.psjostrom.strimma.ui.theme.BelowLow
+import com.psjostrom.strimma.ui.theme.InRange
+import com.psjostrom.strimma.ui.theme.TintDanger
+import com.psjostrom.strimma.ui.theme.TintGood
+import com.psjostrom.strimma.ui.theme.TintInRange
+import com.psjostrom.strimma.ui.theme.TintWarning
+import com.psjostrom.strimma.ui.theme.TirGood
+import java.time.format.DateTimeFormatter
+
+private const val TIR_GOOD_THRESHOLD = 70.0
+private const val TIR_OK_THRESHOLD = 50.0
+
+@Composable
+fun OverviewPage(data: StoryData, glucoseUnit: GlucoseUnit) {
+    StoryPageScaffold(tintColor = TintInRange) {
+        val stats = data.stats
+        val prev = data.previousStats
+
+        Text(
+            data.monthLabel,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            "Your Month in Review",
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onBackground,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(Modifier.height(32.dp))
+
+        // TIR hero
+        Text(
+            "%.0f%%".format(stats.tirPercent),
+            fontSize = 72.sp,
+            fontWeight = FontWeight.Bold,
+            color = InRange,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Text(
+            "Time in Range",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        prev?.let {
+            val delta = stats.tirPercent - it.tirPercent
+            val sign = if (delta >= 0) "+" else ""
+            Text(
+                "${sign}%.0f%% vs last month".format(delta),
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (delta >= 0) TirGood else BelowLow,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp)
+            )
+        }
+
+        Spacer(Modifier.height(32.dp))
+
+        StoryCard("Key Metrics") {
+            MetricRow("GMI (eHbA1c)", "%.1f%%".format(stats.gmi))
+            Spacer(Modifier.height(8.dp))
+            MetricRow("CV", "%.1f%%".format(stats.cv))
+            Spacer(Modifier.height(8.dp))
+            MetricRow("Average", glucoseUnit.formatWithUnit(stats.averageMgdl))
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        StoryCard("Coverage") {
+            MetricRow("Days", "${data.dayCount}")
+            Spacer(Modifier.height(8.dp))
+            MetricRow("Readings", "%,d".format(data.readingCount))
+        }
+    }
+}
+
+@Composable
+fun StabilityPage(data: StoryData) {
+    StoryPageScaffold(tintColor = TintGood) {
+        Text(
+            "Stability",
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onBackground,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(Modifier.height(32.dp))
+
+        // Flatline hero
+        val flatCount = data.stability.flatlineCount
+        Text(
+            "$flatCount",
+            fontSize = 72.sp,
+            fontWeight = FontWeight.Bold,
+            color = TirGood,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Text(
+            if (flatCount == 1) "Flatline" else "Flatlines",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Text(
+            "Periods of ultra-stable glucose",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(Modifier.height(32.dp))
+
+        data.stability.longestInRangeStreak?.let { streak ->
+            StoryCard("Longest in-range streak") {
+                val hours = streak.durationMinutes / 60
+                val mins = streak.durationMinutes % 60
+                val label = if (hours > 0) "${hours}h ${mins}m" else "${mins}m"
+                Text(
+                    label,
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = InRange
+                )
+            }
+            Spacer(Modifier.height(12.dp))
+        }
+
+        data.stability.longestFlatline?.let { flat ->
+            StoryCard("Longest flatline") {
+                val hours = flat.durationMinutes / 60
+                val mins = flat.durationMinutes % 60
+                val label = if (hours > 0) "${hours}h ${mins}m" else "${mins}m"
+                Text(
+                    label,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = TirGood
+                )
+            }
+            Spacer(Modifier.height(12.dp))
+        }
+
+        data.stability.steadiestDay?.let { day ->
+            StoryCard("Steadiest day") {
+                Text(
+                    day.date.format(DateTimeFormatter.ofPattern("EEEE, MMM d")),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                Spacer(Modifier.height(4.dp))
+                MetricRow("TIR", "%.0f%%".format(day.tirPercent))
+                Spacer(Modifier.height(4.dp))
+                MetricRow("CV", "%.1f%%".format(day.cv))
+            }
+        }
+    }
+}
+
+@Composable
+fun EventsPage(data: StoryData) {
+    StoryPageScaffold(tintColor = TintDanger) {
+        Text(
+            "Events",
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onBackground,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(Modifier.height(32.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            // Low events
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    "${data.events.lowEvents}",
+                    fontSize = 48.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = BelowLow
+                )
+                Text(
+                    "Low events",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                data.events.previousLowEvents?.let { prev ->
+                    val delta = data.events.lowEvents - prev
+                    val arrow = when {
+                        delta < 0 -> "\u2193" // down arrow
+                        delta > 0 -> "\u2191" // up arrow
+                        else -> "="
+                    }
+                    Text(
+                        "$arrow vs last month",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (delta <= 0) TirGood else BelowLow
+                    )
+                }
+            }
+
+            // High events
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    "${data.events.highEvents}",
+                    fontSize = 48.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = AboveHigh
+                )
+                Text(
+                    "High events",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                data.events.previousHighEvents?.let { prev ->
+                    val delta = data.events.highEvents - prev
+                    val arrow = when {
+                        delta < 0 -> "\u2193"
+                        delta > 0 -> "\u2191"
+                        else -> "="
+                    }
+                    Text(
+                        "$arrow vs last month",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (delta <= 0) TirGood else AboveHigh
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(32.dp))
+
+        StoryCard("Time out of range") {
+            MetricRow("Below range", "%.1f%%".format(data.events.belowPercent))
+            Spacer(Modifier.height(8.dp))
+            MetricRow("Above range", "%.1f%%".format(data.events.abovePercent))
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        val avgLow = data.events.avgLowDurationMinutes
+        val avgHigh = data.events.avgHighDurationMinutes
+        if (avgLow != null || avgHigh != null) {
+            StoryCard("Average duration") {
+                avgLow?.let {
+                    MetricRow("Low events", "${it}m avg")
+                    Spacer(Modifier.height(8.dp))
+                }
+                avgHigh?.let {
+                    MetricRow("High events", "${it}m avg")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun PatternsPage(data: StoryData) {
+    StoryPageScaffold(tintColor = TintInRange) {
+        Text(
+            "Time of Day",
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onBackground,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            "How your glucose varies throughout the day",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(Modifier.height(24.dp))
+
+        data.timeOfDay.blocks.forEach { block ->
+            StoryCard(block.name) {
+                val tirColor = when {
+                    block.tirPercent >= TIR_GOOD_THRESHOLD -> InRange
+                    block.tirPercent >= TIR_OK_THRESHOLD -> AboveHigh
+                    else -> BelowLow
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            "%02d:00 - %02d:00".format(block.startHour, block.endHour),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Text(
+                        "%.0f%% TIR".format(block.tirPercent),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = tirColor
+                    )
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+        }
+    }
+}
+
+@Composable
+fun MealsPage(meals: MealStoryData, glucoseUnit: GlucoseUnit) {
+    StoryPageScaffold(tintColor = TintWarning) {
+        Text(
+            "Meals",
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onBackground,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            "${meals.mealCount} meals analyzed",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(Modifier.height(24.dp))
+
+        meals.bestSlot?.let { best ->
+            StoryCard("Best meal slot") {
+                Text(
+                    best.slot.label,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = TirGood
+                )
+                Spacer(Modifier.height(4.dp))
+                MetricRow("TIR", "%.0f%%".format(best.tirPercent))
+                Spacer(Modifier.height(4.dp))
+                MetricRow("Meals", "${best.mealCount}")
+            }
+            Spacer(Modifier.height(12.dp))
+        }
+
+        meals.worstSlot?.let { worst ->
+            if (worst != meals.bestSlot) {
+                StoryCard("Needs attention") {
+                    Text(
+                        worst.slot.label,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = AboveHigh
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    MetricRow("TIR", "%.0f%%".format(worst.tirPercent))
+                    Spacer(Modifier.height(4.dp))
+                    MetricRow("Meals", "${worst.mealCount}")
+                }
+                Spacer(Modifier.height(12.dp))
+            }
+        }
+
+        if (meals.avgExcursionBySlot.isNotEmpty()) {
+            StoryCard("Avg excursion by slot") {
+                meals.avgExcursionBySlot.forEach { (slot, excursion) ->
+                    MetricRow(slot.label, glucoseUnit.formatWithUnit(excursion))
+                    Spacer(Modifier.height(4.dp))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SummaryPage(data: StoryData) {
+    StoryPageScaffold(tintColor = TintInRange) {
+        Text(
+            "${data.monthLabel} ${data.year}",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            "Summary",
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onBackground,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(Modifier.height(24.dp))
+
+        Text(
+            data.narrative,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onBackground,
+            lineHeight = 28.sp
+        )
+    }
+}
+
+@Composable
+private fun MetricRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+    }
+}

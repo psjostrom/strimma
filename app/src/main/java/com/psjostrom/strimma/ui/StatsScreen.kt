@@ -1,5 +1,6 @@
 package com.psjostrom.strimma.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -7,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -71,6 +73,7 @@ fun StatsScreen(
     mealAnalyzer: MealAnalyzer,
     mealTimeSlotConfig: MealTimeSlotConfig,
     onExportCsv: suspend (Int) -> String,
+    onNavigateToStory: ((Int, Int) -> Unit)? = null,
     onBack: (() -> Unit)? = null
 ) {
     val bg = MaterialTheme.colorScheme.background
@@ -143,6 +146,45 @@ fun StatsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Spacer(modifier = Modifier.height(4.dp))
+
+            // Monthly Story entry card
+            onNavigateToStory?.let { navigate ->
+                val now = java.time.YearMonth.now()
+                val lastMonth = now.minusMonths(1)
+                val monthName = lastMonth.month.getDisplayName(
+                    java.time.format.TextStyle.FULL, java.util.Locale.getDefault()
+                )
+                Surface(
+                    onClick = { navigate(lastMonth.year, lastMonth.monthValue) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium,
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                ) {
+                    Row(
+                        Modifier.padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "Your $monthName Story",
+                                style = MaterialTheme.typography.titleSmall
+                            )
+                            Text(
+                                "Tap to see your monthly recap",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowForward,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
 
             // Tab selector
             SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {

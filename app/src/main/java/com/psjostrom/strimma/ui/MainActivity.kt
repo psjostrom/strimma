@@ -678,7 +678,28 @@ class MainActivity : ComponentActivity() {
                             tauMinutes = viewModel.currentTauMinutes(),
                             mealAnalyzer = viewModel.mealAnalyzer,
                             mealTimeSlotConfig = viewModel.mealTimeSlotConfig.collectAsState().value,
-                            onExportCsv = viewModel::exportCsv
+                            onExportCsv = viewModel::exportCsv,
+                            onNavigateToStory = { year, month ->
+                                navController.navigate("story/$year/$month") {
+                                    launchSingleTop = true
+                                }
+                            }
+                        )
+                    }
+                    composable(
+                        "story/{year}/{month}",
+                        arguments = listOf(
+                            androidx.navigation.navArgument("year") {
+                                type = androidx.navigation.NavType.IntType
+                            },
+                            androidx.navigation.navArgument("month") {
+                                type = androidx.navigation.NavType.IntType
+                            }
+                        )
+                    ) {
+                        com.psjostrom.strimma.ui.story.StoryScreen(
+                            glucoseUnit = glucoseUnit,
+                            onBack = { navController.popBackStack() }
                         )
                     }
                     composable("debug") {
