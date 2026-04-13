@@ -168,11 +168,11 @@ fun StatsScreen(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                "Your $monthName Story",
+                                stringResource(R.string.story_entry_title, monthName),
                                 style = MaterialTheme.typography.titleSmall
                             )
                             Text(
-                                "Tap to see your monthly recap",
+                                stringResource(R.string.story_entry_subtitle),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

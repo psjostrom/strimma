@@ -1,21 +1,38 @@
 package com.psjostrom.strimma.ui.story
 
+import android.content.Context
+import android.content.Intent
+import android.graphics.Bitmap
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.layer.GraphicsLayer
+import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.graphics.rememberGraphicsLayer
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
+import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.story.MealStoryData
 import com.psjostrom.strimma.data.story.StoryData
@@ -27,6 +44,10 @@ import com.psjostrom.strimma.ui.theme.TintGood
 import com.psjostrom.strimma.ui.theme.TintInRange
 import com.psjostrom.strimma.ui.theme.TintWarning
 import com.psjostrom.strimma.ui.theme.TirGood
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
 import java.time.format.DateTimeFormatter
 
 private const val TIR_GOOD_THRESHOLD = 70.0
@@ -404,29 +425,95 @@ fun MealsPage(meals: MealStoryData, glucoseUnit: GlucoseUnit) {
 
 @Composable
 fun SummaryPage(data: StoryData) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val graphicsLayer = rememberGraphicsLayer()
+    val shareLabel = stringResource(R.string.story_share)
+
     StoryPageScaffold(tintColor = TintInRange) {
-        Text(
-            "${data.monthLabel} ${data.year}",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(Modifier.height(4.dp))
-        Text(
-            "Summary",
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onBackground,
-            fontWeight = FontWeight.Bold
-        )
+        Box(
+            modifier = Modifier.drawWithContent {
+                graphicsLayer.record {
+                    this@drawWithContent.drawContent()
+                }
+                drawLayer(graphicsLayer)
+            }
+        ) {
+            Column {
+                Text(
+                    "${data.monthLabel} ${data.year}",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "Summary",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(Modifier.height(24.dp))
+
+                Text(
+                    data.narrative,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    lineHeight = 28.sp
+                )
+            }
+        }
 
         Spacer(Modifier.height(24.dp))
 
-        Text(
-            data.narrative,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onBackground,
-            lineHeight = 28.sp
-        )
+        Button(
+            onClick = {
+                scope.launch {
+                    shareStoryBitmap(context, graphicsLayer, shareLabel)
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(
+                Icons.Default.Share,
+                contentDescription = null,
+                modifier = Modifier.padding(end = 8.dp)
+            )
+            Text(shareLabel)
+        }
     }
+}
+
+private suspend fun shareStoryBitmap(
+    context: Context,
+    graphicsLayer: GraphicsLayer,
+    chooserTitle: String
+) {
+    val bitmap = graphicsLayer.toImageBitmap()
+    val androidBitmap = Bitmap.createBitmap(
+        bitmap.width,
+        bitmap.height,
+        Bitmap.Config.ARGB_8888
+    )
+    val pixels = IntArray(bitmap.width * bitmap.height)
+    bitmap.readPixels(pixels)
+    androidBitmap.setPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+
+    val file = withContext(Dispatchers.IO) {
+        val f = File(context.cacheDir, "strimma_story.png")
+        f.outputStream().use { out ->
+            androidBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+        }
+        f
+    }
+
+    val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "image/png"
+        putExtra(Intent.EXTRA_STREAM, uri)
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+    context.startActivity(Intent.createChooser(intent, chooserTitle))
 }
 
 @Composable

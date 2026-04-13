@@ -42,8 +42,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.GlucoseUnit
 
 private const val PAGE_OVERVIEW = 0
@@ -90,13 +92,13 @@ fun StoryScreen(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            "Not enough data",
+                            stringResource(R.string.story_not_enough_data),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            "At least 7 days of readings are needed to generate your story.",
+                            stringResource(R.string.story_not_enough_data_detail),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center,
@@ -164,7 +166,7 @@ fun StoryScreen(
         ) {
             Icon(
                 Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back",
+                contentDescription = stringResource(R.string.story_go_back),
                 tint = MaterialTheme.colorScheme.onBackground
             )
         }

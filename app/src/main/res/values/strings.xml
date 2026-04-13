@@ -341,6 +341,14 @@
     <string name="widget_config_opacity">%1$d%%</string>
     <string name="widget_config_background_hint">Controls background only — graph and values stay fully visible</string>
 
+    <!-- Story -->
+    <string name="story_entry_title">Your %s Story</string>
+    <string name="story_entry_subtitle">Tap to see your monthly recap</string>
+    <string name="story_not_enough_data">Not enough data</string>
+    <string name="story_not_enough_data_detail">Need at least 7 days of readings</string>
+    <string name="story_share">Share your Story</string>
+    <string name="story_go_back">Go back</string>
+
     <!-- Exercise types -->
     <string name="exercise_type_running">Run</string>
     <string name="exercise_type_walking">Walk</string>
