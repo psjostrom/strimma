@@ -97,7 +97,7 @@ class TreatmentSyncerIntegrationTest {
         env.settings.setNightscoutUrl("https://ns.example.com")
         env.settings.setNightscoutSecret("secret")
 
-        val oldTs = now - 31L * 24 * 60 * 60 * 1000
+        val oldTs = now - 101L * 24 * 60 * 60 * 1000
         env.treatmentDao.upsert(listOf(treatment("old", oldTs, insulin = 1.0)))
         env.fakeClient.treatments = listOf(treatment("new", now - 60_000, insulin = 2.0))
 
