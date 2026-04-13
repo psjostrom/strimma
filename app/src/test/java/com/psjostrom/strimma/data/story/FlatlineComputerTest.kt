@@ -45,7 +45,7 @@ class FlatlineComputerTest {
             (17..50).map { reading(110, it) }
         val flatlines = FlatlineComputer.findFlatlines(readings)
         assertEquals(1, flatlines.size)
-        assertEquals(33, flatlines[0].durationMinutes)
+        assertEquals(34, flatlines[0].durationMinutes)
     }
 
     @Test

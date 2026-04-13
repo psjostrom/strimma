@@ -38,42 +38,52 @@ class StoryViewModel @Inject constructor(
     private val _loading = MutableStateFlow(true)
     val loading: StateFlow<Boolean> = _loading
 
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error
+
     init {
         viewModelScope.launch { loadStory() }
     }
 
+    @Suppress("TooGenericExceptionCaught") // Multiple data sources — DB, DataStore, computation
     private suspend fun loadStory() {
-        _loading.value = true
-        val zone = ZoneId.systemDefault()
-        val currentMonth = YearMonth.of(year, month)
-        val prevMonth = currentMonth.minusMonths(1)
+        try {
+            _loading.value = true
+            _error.value = null
+            val zone = ZoneId.systemDefault()
+            val currentMonth = YearMonth.of(year, month)
+            val prevMonth = currentMonth.minusMonths(1)
 
-        val (curStart, curEnd) = currentMonth.toMillisRange(zone)
-        val (prevStart, prevEnd) = prevMonth.toMillisRange(zone)
+            val (curStart, curEnd) = currentMonth.toMillisRange(zone)
+            val (prevStart, prevEnd) = prevMonth.toMillisRange(zone)
 
-        val readings = readingDao.readingsInRange(curStart, curEnd)
-        val prevReadings = readingDao.readingsInRange(prevStart, prevEnd)
-        val carbTreatments = treatmentDao.carbsInRange(curStart, curEnd)
-        val allTreatments = treatmentDao.allSince(curStart)
+            val readings = readingDao.readingsInRange(curStart, curEnd)
+            val prevReadings = readingDao.readingsInRange(prevStart, prevEnd)
+            val carbTreatments = treatmentDao.carbsInRange(curStart, curEnd)
+            val allTreatments = treatmentDao.allSince(curStart)
 
-        val bgLow = settings.bgLow.first()
-        val bgHigh = settings.bgHigh.first()
-        val insulinType = settings.insulinType.first()
-        val customDIA = settings.customDIA.first()
-        val tauMinutes = IOBComputer.tauForInsulinType(insulinType, customDIA)
+            val bgLow = settings.bgLow.first()
+            val bgHigh = settings.bgHigh.first()
+            val insulinType = settings.insulinType.first()
+            val customDIA = settings.customDIA.first()
+            val tauMinutes = IOBComputer.tauForInsulinType(insulinType, customDIA)
 
-        _story.value = StoryComputer.compute(
-            month = currentMonth,
-            readings = readings,
-            previousReadings = prevReadings,
-            carbTreatments = carbTreatments,
-            allTreatments = allTreatments,
-            bgLow = bgLow.toDouble(),
-            bgHigh = bgHigh.toDouble(),
-            tauMinutes = tauMinutes,
-            zone = zone,
-            mealAnalyzer = mealAnalyzer
-        )
-        _loading.value = false
+            _story.value = StoryComputer.compute(
+                month = currentMonth,
+                readings = readings,
+                previousReadings = prevReadings,
+                carbTreatments = carbTreatments,
+                allTreatments = allTreatments,
+                bgLow = bgLow.toDouble(),
+                bgHigh = bgHigh.toDouble(),
+                tauMinutes = tauMinutes,
+                zone = zone,
+                mealAnalyzer = mealAnalyzer
+            )
+        } catch (e: Exception) {
+            _error.value = e.message
+        } finally {
+            _loading.value = false
+        }
     }
 }

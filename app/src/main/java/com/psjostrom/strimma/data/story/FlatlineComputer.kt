@@ -24,7 +24,7 @@ object FlatlineComputer {
                 maxDiff = maxOf(maxDiff, diff)
             } else {
                 emitIfLongEnough(sorted, stretchStart, i - 1, maxDiff, result)
-                stretchStart = i + 1
+                stretchStart = i
                 maxDiff = 0.0
             }
         }

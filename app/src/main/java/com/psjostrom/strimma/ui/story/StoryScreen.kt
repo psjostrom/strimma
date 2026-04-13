@@ -48,16 +48,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.GlucoseUnit
 
-private const val PAGE_OVERVIEW = 0
-private const val PAGE_STABILITY = 1
-private const val PAGE_EVENTS = 2
-private const val PAGE_PATTERNS = 3
-private const val PAGE_MEALS = 4
-private const val PAGE_SUMMARY = 5
-
-private const val PAGES_WITH_MEALS = 6
-private const val PAGES_WITHOUT_MEALS = 5
-
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun StoryScreen(
@@ -67,6 +57,7 @@ fun StoryScreen(
 ) {
     val story by viewModel.story.collectAsState()
     val loading by viewModel.loading.collectAsState()
+    val error by viewModel.error.collectAsState()
     val bg = MaterialTheme.colorScheme.background
 
     Box(
@@ -81,6 +72,30 @@ fun StoryScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator()
+                }
+            }
+            error != null -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .windowInsetsPadding(WindowInsets.statusBars),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            stringResource(R.string.story_not_enough_data),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            error ?: "",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 48.dp)
+                        )
+                    }
                 }
             }
             story == null -> {
@@ -109,24 +124,22 @@ fun StoryScreen(
             }
             else -> {
                 val data = story!!
-                val hasMeals = data.meals != null
-                val pageCount = if (hasMeals) PAGES_WITH_MEALS else PAGES_WITHOUT_MEALS
-                val pagerState = rememberPagerState(pageCount = { pageCount })
+                val pages = buildList<@Composable () -> Unit> {
+                    add { OverviewPage(data, glucoseUnit) }
+                    add { StabilityPage(data) }
+                    add { EventsPage(data) }
+                    add { PatternsPage(data) }
+                    data.meals?.let { meals -> add { MealsPage(meals, glucoseUnit) } }
+                    add { SummaryPage(data) }
+                }
+                val pagerState = rememberPagerState(pageCount = { pages.size })
 
                 Column(modifier = Modifier.fillMaxSize()) {
                     HorizontalPager(
                         state = pagerState,
                         modifier = Modifier.weight(1f)
                     ) { page ->
-                        val effectivePage = if (!hasMeals && page >= PAGE_MEALS) page + 1 else page
-                        when (effectivePage) {
-                            PAGE_OVERVIEW -> OverviewPage(data, glucoseUnit)
-                            PAGE_STABILITY -> StabilityPage(data)
-                            PAGE_EVENTS -> EventsPage(data)
-                            PAGE_PATTERNS -> PatternsPage(data)
-                            PAGE_MEALS -> data.meals?.let { MealsPage(it, glucoseUnit) }
-                            PAGE_SUMMARY -> SummaryPage(data)
-                        }
+                        pages[page]()
                     }
 
                     // Page indicator dots
@@ -138,7 +151,7 @@ fun StoryScreen(
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        repeat(pageCount) { index ->
+                        repeat(pages.size) { index ->
                             val isSelected = pagerState.currentPage == index
                             Box(
                                 modifier = Modifier

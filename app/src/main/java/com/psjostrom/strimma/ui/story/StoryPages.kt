@@ -484,36 +484,41 @@ fun SummaryPage(data: StoryData) {
     }
 }
 
+@Suppress("TooGenericExceptionCaught") // Bitmap capture + file I/O + FileProvider — multiple failure modes
 private suspend fun shareStoryBitmap(
     context: Context,
     graphicsLayer: GraphicsLayer,
     chooserTitle: String
 ) {
-    val bitmap = graphicsLayer.toImageBitmap()
-    val androidBitmap = Bitmap.createBitmap(
-        bitmap.width,
-        bitmap.height,
-        Bitmap.Config.ARGB_8888
-    )
-    val pixels = IntArray(bitmap.width * bitmap.height)
-    bitmap.readPixels(pixels)
-    androidBitmap.setPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+    try {
+        val bitmap = graphicsLayer.toImageBitmap()
+        val androidBitmap = Bitmap.createBitmap(
+            bitmap.width,
+            bitmap.height,
+            Bitmap.Config.ARGB_8888
+        )
+        val pixels = IntArray(bitmap.width * bitmap.height)
+        bitmap.readPixels(pixels)
+        androidBitmap.setPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
 
-    val file = withContext(Dispatchers.IO) {
-        val f = File(context.cacheDir, "strimma_story.png")
-        f.outputStream().use { out ->
-            androidBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+        val file = withContext(Dispatchers.IO) {
+            val f = File(context.cacheDir, "strimma_story.png")
+            f.outputStream().use { out ->
+                androidBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+            }
+            f
         }
-        f
-    }
 
-    val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-    val intent = Intent(Intent.ACTION_SEND).apply {
-        type = "image/png"
-        putExtra(Intent.EXTRA_STREAM, uri)
-        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "image/png"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(Intent.createChooser(intent, chooserTitle))
+    } catch (e: Exception) {
+        android.widget.Toast.makeText(context, "Share failed: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
     }
-    context.startActivity(Intent.createChooser(intent, chooserTitle))
 }
 
 @Composable
