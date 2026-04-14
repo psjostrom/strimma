@@ -71,7 +71,7 @@ fun OverviewPage(data: StoryData, glucoseUnit: GlucoseUnit, hbA1cUnit: com.psjos
     StoryPageScaffold(tintColor = MaterialTheme.colorScheme.surfaceVariant) {
         // Label
         Text(
-            "${data.monthLabel.uppercase()} ${data.year}",
+            "YOUR STORY \u00B7 ${data.year}",
             fontSize = 11.sp,
             fontWeight = FontWeight.SemiBold,
             letterSpacing = 2.5.sp,
@@ -79,7 +79,7 @@ fun OverviewPage(data: StoryData, glucoseUnit: GlucoseUnit, hbA1cUnit: com.psjos
         )
         Spacer(Modifier.height(8.dp))
 
-        // Hero title — actual month name
+        // Hero title — month name
         Text(
             data.monthLabel.uppercase(),
             fontSize = 38.sp,
