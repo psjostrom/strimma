@@ -251,6 +251,7 @@ class MainViewModel @Inject constructor(
     suspend fun pullFromNightscout(days: Int): Result<Int> = nightscoutPuller.pullHistory(days)
     suspend fun pullTreatments(days: Int): Result<Int> = treatmentSyncer.pullHistory(days)
 
+
     // Treatments
     val treatmentsSyncEnabled: StateFlow<Boolean> = settings.treatmentsSyncEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)

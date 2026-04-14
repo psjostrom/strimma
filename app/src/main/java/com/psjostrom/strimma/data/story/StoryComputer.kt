@@ -109,34 +109,13 @@ object StoryComputer {
         if (carbTreatments.isEmpty() || mealAnalyzer == null) return null
 
         val sortedCarbs = carbTreatments.sortedBy { it.createdAt }
-        android.util.Log.w("StoryMeals", "Carb treatments: ${sortedCarbs.size}, readings: ${readings.size}")
         val results = sortedCarbs.mapIndexedNotNull { i, meal ->
             val nextMealTime = sortedCarbs.getOrNull(i + 1)?.createdAt
-            val result = mealAnalyzer.analyze(
+            mealAnalyzer.analyze(
                 meal, readings,
                 MealAnalysisParams(bgLow, bgHigh, nextMealTime, allTreatments, tauMinutes)
             )
-            if (result == null) {
-                val mealTs = meal.createdAt
-                val dt = java.time.Instant.ofEpochMilli(mealTs).atZone(zone)
-                val preStart = mealTs - 15 * 60 * 1000L
-                val preCount = readings.count { it.ts in preStart until mealTs }
-                val postEnd = mealTs + 180 * 60 * 1000L
-                val postCount = readings.count { it.ts in (mealTs + 1)..postEnd }
-                android.util.Log.w("StoryMeals", "FILTERED: ${dt.toLocalDateTime()} carbs=${meal.carbs}g " +
-                    "preReadings=$preCount postReadings=$postCount")
-            }
-            result
         }
-        android.util.Log.w("StoryMeals", "Analyzed: ${results.size} of ${sortedCarbs.size}")
-
-        // Log time slot distribution
-        val bySlotDebug = MealStatsCalculator.groupByTimeSlot(results, zone, mealTimeSlotConfig)
-        bySlotDebug.forEach { (slot, meals) ->
-            android.util.Log.w("StoryMeals", "Slot $slot: ${meals.size} meals, " +
-                "hours=${meals.map { java.time.Instant.ofEpochMilli(it.mealTime).atZone(zone).hour }}")
-        }
-
         if (results.isEmpty()) return null
 
         val bySlot = MealStatsCalculator.groupByTimeSlot(results, zone, mealTimeSlotConfig)

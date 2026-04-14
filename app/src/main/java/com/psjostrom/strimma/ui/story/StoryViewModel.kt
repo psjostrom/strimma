@@ -69,10 +69,6 @@ class StoryViewModel @Inject constructor(
             val customDIA = settings.customDIA.first()
             val tauMinutes = IOBComputer.tauForInsulinType(insulinType, customDIA)
 
-            android.util.Log.w("StoryVM", "Meal slots: " +
-                "brkStart=${settings.mealBreakfastStart.first()} brkEnd=${settings.mealBreakfastEnd.first()} " +
-                "lchStart=${settings.mealLunchStart.first()} lchEnd=${settings.mealLunchEnd.first()} " +
-                "dinStart=${settings.mealDinnerStart.first()} dinEnd=${settings.mealDinnerEnd.first()}")
             val mealConfig = MealTimeSlotConfig(
                 breakfastStart = settings.mealBreakfastStart.first(),
                 breakfastEnd = settings.mealBreakfastEnd.first(),
@@ -96,8 +92,9 @@ class StoryViewModel @Inject constructor(
                 mealTimeSlotConfig = mealConfig
             )
             _story.value = result
-            // DEV: reset viewed flag so card always shows during development
-            settings.setStoryViewedMonth("")
+            if (result != null) {
+                settings.setStoryViewedMonth("%d-%02d".format(year, month))
+            }
         } catch (e: Exception) {
             _error.value = e.message
         } finally {
