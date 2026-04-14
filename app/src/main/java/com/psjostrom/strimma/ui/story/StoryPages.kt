@@ -22,6 +22,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
@@ -54,73 +55,104 @@ private const val TIR_GOOD_THRESHOLD = 70.0
 private const val TIR_OK_THRESHOLD = 50.0
 
 @Composable
-fun OverviewPage(data: StoryData, glucoseUnit: GlucoseUnit) {
-    StoryPageScaffold(tintColor = TintInRange) {
-        val stats = data.stats
-        val prev = data.previousStats
-
+fun OverviewPage(data: StoryData, glucoseUnit: GlucoseUnit, hbA1cUnit: com.psjostrom.strimma.data.HbA1cUnit) {
+    val stats = data.stats
+    StoryPageScaffold(tintColor = MaterialTheme.colorScheme.surfaceVariant) {
+        // Label
         Text(
-            data.monthLabel,
-            style = MaterialTheme.typography.titleMedium,
+            "${data.monthLabel.uppercase()} ${data.year}",
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 2.5.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(Modifier.height(8.dp))
+
+        // Hero title — actual month name
+        Text(
+            data.monthLabel.uppercase(),
+            fontSize = 38.sp,
+            fontWeight = FontWeight.ExtraBold,
+            lineHeight = 42.sp,
+            color = MaterialTheme.colorScheme.onBackground
         )
         Spacer(Modifier.height(4.dp))
         Text(
-            "Your Month in Review",
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onBackground,
-            fontWeight = FontWeight.Bold
+            "${data.dayCount} days \u00B7 %,d readings".format(data.readingCount),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(28.dp))
 
         // TIR hero
         Text(
-            "%.0f%%".format(stats.tirPercent),
-            fontSize = 72.sp,
-            fontWeight = FontWeight.Bold,
-            color = InRange,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
+            "TIME IN RANGE",
+            fontSize = 10.sp,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 1.5.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
-            "Time in Range",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
+            "${stats.tirPercent.toInt()}%",
+            fontSize = 72.sp,
+            fontWeight = FontWeight.ExtraBold,
+            color = InRange
         )
-
-        prev?.let {
-            val delta = stats.tirPercent - it.tirPercent
+        data.previousStats?.let { prev ->
+            val delta = stats.tirPercent - prev.tirPercent
             val sign = if (delta >= 0) "+" else ""
             Text(
-                "${sign}%.0f%% vs last month".format(delta),
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (delta >= 0) TirGood else BelowLow,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 4.dp)
+                "${sign}${"%.1f".format(delta)}% vs last month",
+                style = MaterialTheme.typography.bodySmall,
+                color = if (delta >= 0) TirGood else BelowLow
             )
         }
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(24.dp))
 
-        StoryCard("Key Metrics") {
-            MetricRow("GMI (eHbA1c)", "%.1f%%".format(stats.gmi))
-            Spacer(Modifier.height(8.dp))
-            MetricRow("CV", "%.1f%%".format(stats.cv))
-            Spacer(Modifier.height(8.dp))
-            MetricRow("Average", glucoseUnit.formatWithUnit(stats.averageMgdl))
+        // Stat cards — 2x2 grid
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            StoryCard("GMI", Modifier.weight(1f)) {
+                Text(
+                    hbA1cUnit.format(stats.gmi),
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TirGood
+                )
+            }
+            StoryCard("CV", Modifier.weight(1f)) {
+                Text(
+                    "${"%.0f".format(stats.cv)}%",
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = InRange
+                )
+            }
         }
-
-        Spacer(Modifier.height(12.dp))
-
-        StoryCard("Coverage") {
-            MetricRow("Days", "${data.dayCount}")
-            Spacer(Modifier.height(8.dp))
-            MetricRow("Readings", "%,d".format(data.readingCount))
+        Spacer(Modifier.height(10.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            StoryCard("AVG GLUCOSE", Modifier.weight(1f)) {
+                Text(
+                    glucoseUnit.format(stats.averageMgdl),
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                Text(
+                    if (glucoseUnit == GlucoseUnit.MMOL) "mmol/L" else "mg/dL",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            StoryCard("READINGS", Modifier.weight(1f)) {
+                Text(
+                    "%,d".format(data.readingCount),
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+            }
         }
     }
 }
@@ -441,16 +473,19 @@ fun SummaryPage(data: StoryData) {
         ) {
             Column {
                 Text(
-                    "${data.monthLabel} ${data.year}",
-                    style = MaterialTheme.typography.titleMedium,
+                    "YOUR STORY",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 2.5.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(8.dp))
                 Text(
-                    "Summary",
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontWeight = FontWeight.Bold
+                    "${data.monthLabel.uppercase()}\n${data.year}",
+                    fontSize = 38.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    lineHeight = 42.sp,
+                    color = MaterialTheme.colorScheme.onBackground
                 )
 
                 Spacer(Modifier.height(24.dp))

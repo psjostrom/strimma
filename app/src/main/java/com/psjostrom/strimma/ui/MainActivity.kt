@@ -13,7 +13,9 @@ import android.app.AlertDialog
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -148,6 +150,7 @@ class MainActivity : ComponentActivity() {
     @Suppress("LongMethod", "CyclomaticComplexMethod") // Compose setContent wiring
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
 
         setContent {
             val viewModel: MainViewModel = hiltViewModel()
@@ -211,6 +214,7 @@ class MainActivity : ComponentActivity() {
 
                 Scaffold(
                     containerColor = MaterialTheme.colorScheme.background,
+                    contentWindowInsets = WindowInsets(0, 0, 0, 0),
                     bottomBar = {
                         if (showBottomBar) {
                             NavigationBar(
@@ -699,6 +703,7 @@ class MainActivity : ComponentActivity() {
                     ) {
                         com.psjostrom.strimma.ui.story.StoryScreen(
                             glucoseUnit = glucoseUnit,
+                            hbA1cUnit = hbA1cUnit,
                             onBack = { navController.popBackStack() }
                         )
                     }

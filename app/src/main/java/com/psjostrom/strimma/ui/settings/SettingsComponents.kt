@@ -110,9 +110,9 @@ fun PullDataSection(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             listOf(
-                7 to stringResource(R.string.settings_data_pull_7d),
-                14 to stringResource(R.string.settings_data_pull_14d),
-                30 to stringResource(R.string.settings_data_pull_30d)
+                30 to stringResource(R.string.settings_data_pull_30d),
+                60 to stringResource(R.string.settings_data_pull_60d),
+                90 to stringResource(R.string.settings_data_pull_90d)
             ).forEach { (days, label) ->
                 OutlinedButton(
                     onClick = { onPull(days) },

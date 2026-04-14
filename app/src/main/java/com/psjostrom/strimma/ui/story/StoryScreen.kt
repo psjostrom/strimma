@@ -52,147 +52,119 @@ import com.psjostrom.strimma.data.GlucoseUnit
 @Composable
 fun StoryScreen(
     glucoseUnit: GlucoseUnit,
+    hbA1cUnit: com.psjostrom.strimma.data.HbA1cUnit,
     onBack: () -> Unit,
     viewModel: StoryViewModel = hiltViewModel()
 ) {
     val story by viewModel.story.collectAsState()
     val loading by viewModel.loading.collectAsState()
     val error by viewModel.error.collectAsState()
-    val bg = MaterialTheme.colorScheme.background
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(bg)
+            .background(MaterialTheme.colorScheme.background)
     ) {
-        when {
-            loading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            }
-            error != null -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .windowInsetsPadding(WindowInsets.statusBars),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            stringResource(R.string.story_not_enough_data),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            error ?: "",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(horizontal = 48.dp)
-                        )
+            when {
+                loading -> {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
                     }
                 }
-            }
-            story == null -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .windowInsetsPadding(WindowInsets.statusBars),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            stringResource(R.string.story_not_enough_data),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            stringResource(R.string.story_not_enough_data_detail),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(horizontal = 48.dp)
-                        )
-                    }
-                }
-            }
-            else -> {
-                val data = story!!
-                val pages = buildList<@Composable () -> Unit> {
-                    add { OverviewPage(data, glucoseUnit) }
-                    add { StabilityPage(data) }
-                    add { EventsPage(data) }
-                    add { PatternsPage(data) }
-                    data.meals?.let { meals -> add { MealsPage(meals, glucoseUnit) } }
-                    add { SummaryPage(data) }
-                }
-                val pagerState = rememberPagerState(pageCount = { pages.size })
-
-                Column(modifier = Modifier.fillMaxSize()) {
-                    HorizontalPager(
-                        state = pagerState,
-                        modifier = Modifier.weight(1f)
-                    ) { page ->
-                        pages[page]()
-                    }
-
-                    // Page indicator dots
-                    Row(
+                error != null || story == null -> {
+                    Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .windowInsetsPadding(WindowInsets.navigationBars)
-                            .padding(bottom = 16.dp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
+                            .fillMaxSize()
+                            .windowInsetsPadding(WindowInsets.statusBars),
+                        contentAlignment = Alignment.Center
                     ) {
-                        repeat(pages.size) { index ->
-                            val isSelected = pagerState.currentPage == index
-                            Box(
-                                modifier = Modifier
-                                    .padding(horizontal = 4.dp)
-                                    .size(if (isSelected) 8.dp else 6.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        if (isSelected) MaterialTheme.colorScheme.onBackground
-                                        else MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
-                                    )
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                stringResource(R.string.story_not_enough_data),
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                error ?: stringResource(R.string.story_not_enough_data_detail),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(horizontal = 48.dp)
                             )
                         }
                     }
                 }
+                else -> {
+                    val data = story!!
+                    val pages = buildList<@Composable () -> Unit> {
+                        add { OverviewPage(data, glucoseUnit, hbA1cUnit) }
+                        add { StabilityPage(data) }
+                        add { EventsPage(data) }
+                        add { PatternsPage(data) }
+                        data.meals?.let { meals -> add { MealsPage(meals, glucoseUnit) } }
+                        add { SummaryPage(data) }
+                    }
+                    val pagerState = rememberPagerState(pageCount = { pages.size })
+
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        HorizontalPager(
+                            state = pagerState,
+                            modifier = Modifier.fillMaxSize()
+                        ) { page ->
+                            pages[page]()
+                        }
+
+                        // Page indicator dots — bottom, over content
+                        Row(
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .windowInsetsPadding(WindowInsets.navigationBars)
+                                .padding(bottom = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            repeat(pages.size) { index ->
+                                val isSelected = pagerState.currentPage == index
+                                Box(
+                                    Modifier
+                                        .size(if (isSelected) 8.dp else 6.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            if (isSelected) Color.White
+                                            else Color.White.copy(alpha = 0.3f)
+                                        )
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Back button — always visible, respects status bar
+            IconButton(
+                onClick = onBack,
+                modifier = Modifier
+                    .windowInsetsPadding(WindowInsets.statusBars)
+                    .padding(8.dp)
+                    .align(Alignment.TopStart)
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = stringResource(R.string.story_go_back),
+                    tint = MaterialTheme.colorScheme.onBackground
+                )
             }
         }
-
-        // Back button — always visible
-        IconButton(
-            onClick = onBack,
-            modifier = Modifier
-                .windowInsetsPadding(WindowInsets.statusBars)
-                .padding(8.dp)
-                .align(Alignment.TopStart)
-        ) {
-            Icon(
-                Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = stringResource(R.string.story_go_back),
-                tint = MaterialTheme.colorScheme.onBackground
-            )
-        }
     }
-}
 
+/** Gradient background that extends edge-to-edge behind system bars. */
 @Composable
 fun StoryPageScaffold(
     tintColor: Color,
     content: @Composable () -> Unit
 ) {
     val bg = MaterialTheme.colorScheme.background
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(
@@ -202,15 +174,21 @@ fun StoryPageScaffold(
                     1f to bg
                 )
             )
-            .windowInsetsPadding(WindowInsets.statusBars)
-            .padding(horizontal = 24.dp)
-            .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.Top
     ) {
-        // Top spacing for back button
-        Spacer(Modifier.height(56.dp))
-        content()
-        Spacer(Modifier.height(32.dp))
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.statusBars)
+                .padding(horizontal = 24.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.Top
+        ) {
+            // Space for back button
+            Spacer(Modifier.height(48.dp))
+            content()
+            // Space for page dots + nav bar
+            Spacer(Modifier.height(56.dp))
+        }
     }
 }
 
@@ -221,22 +199,22 @@ fun StoryCard(
     content: @Composable () -> Unit
 ) {
     Surface(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier,
         shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.surfaceVariant,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(14.dp)) {
             Text(
                 label.uppercase(),
                 style = MaterialTheme.typography.labelSmall.copy(
-                    fontSize = 11.sp,
+                    fontSize = 10.sp,
                     fontWeight = FontWeight.SemiBold,
                     letterSpacing = 1.5.sp
                 ),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(4.dp))
             content()
         }
     }
