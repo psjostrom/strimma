@@ -7,6 +7,7 @@ import com.psjostrom.strimma.data.meal.MealAnalysisParams
 import com.psjostrom.strimma.data.meal.MealAnalyzer
 import com.psjostrom.strimma.data.meal.MealStatsCalculator
 import com.psjostrom.strimma.data.meal.MealTimeSlot
+import com.psjostrom.strimma.data.meal.MealTimeSlotConfig
 import java.time.Instant
 import java.time.YearMonth
 import java.time.ZoneId
@@ -25,7 +26,8 @@ object StoryComputer {
         bgHigh: Double,
         tauMinutes: Double,
         zone: ZoneId,
-        mealAnalyzer: MealAnalyzer? = null
+        mealAnalyzer: MealAnalyzer? = null,
+        mealTimeSlotConfig: MealTimeSlotConfig = MealTimeSlotConfig()
     ): StoryData? {
         val dayCount = readings.map { Instant.ofEpochMilli(it.ts).atZone(zone).toLocalDate() }
             .distinct().size
@@ -67,7 +69,8 @@ object StoryComputer {
         val timeOfDay = TimeOfDayComputer.compute(readings, bgLow, bgHigh, zone)
 
         val meals = computeMeals(
-            carbTreatments, readings, allTreatments, bgLow, bgHigh, tauMinutes, zone, mealAnalyzer
+            carbTreatments, readings, allTreatments, bgLow, bgHigh, tauMinutes, zone, mealAnalyzer,
+            mealTimeSlotConfig
         )
 
         val monthLabel = month.month.getDisplayName(
@@ -100,21 +103,43 @@ object StoryComputer {
         bgHigh: Double,
         tauMinutes: Double,
         zone: ZoneId,
-        mealAnalyzer: MealAnalyzer?
+        mealAnalyzer: MealAnalyzer?,
+        mealTimeSlotConfig: MealTimeSlotConfig
     ): MealStoryData? {
         if (carbTreatments.isEmpty() || mealAnalyzer == null) return null
 
         val sortedCarbs = carbTreatments.sortedBy { it.createdAt }
+        android.util.Log.w("StoryMeals", "Carb treatments: ${sortedCarbs.size}, readings: ${readings.size}")
         val results = sortedCarbs.mapIndexedNotNull { i, meal ->
             val nextMealTime = sortedCarbs.getOrNull(i + 1)?.createdAt
-            mealAnalyzer.analyze(
+            val result = mealAnalyzer.analyze(
                 meal, readings,
                 MealAnalysisParams(bgLow, bgHigh, nextMealTime, allTreatments, tauMinutes)
             )
+            if (result == null) {
+                val mealTs = meal.createdAt
+                val dt = java.time.Instant.ofEpochMilli(mealTs).atZone(zone)
+                val preStart = mealTs - 15 * 60 * 1000L
+                val preCount = readings.count { it.ts in preStart until mealTs }
+                val postEnd = mealTs + 180 * 60 * 1000L
+                val postCount = readings.count { it.ts in (mealTs + 1)..postEnd }
+                android.util.Log.w("StoryMeals", "FILTERED: ${dt.toLocalDateTime()} carbs=${meal.carbs}g " +
+                    "preReadings=$preCount postReadings=$postCount")
+            }
+            result
         }
+        android.util.Log.w("StoryMeals", "Analyzed: ${results.size} of ${sortedCarbs.size}")
+
+        // Log time slot distribution
+        val bySlotDebug = MealStatsCalculator.groupByTimeSlot(results, zone, mealTimeSlotConfig)
+        bySlotDebug.forEach { (slot, meals) ->
+            android.util.Log.w("StoryMeals", "Slot $slot: ${meals.size} meals, " +
+                "hours=${meals.map { java.time.Instant.ofEpochMilli(it.mealTime).atZone(zone).hour }}")
+        }
+
         if (results.isEmpty()) return null
 
-        val bySlot = MealStatsCalculator.groupByTimeSlot(results, zone)
+        val bySlot = MealStatsCalculator.groupByTimeSlot(results, zone, mealTimeSlotConfig)
         val slotSummaries = bySlot.mapValues { (slot, meals) ->
             val agg = MealStatsCalculator.aggregate(meals)
             MealSlotSummary(slot, agg.avgTirPercent, agg.mealCount)

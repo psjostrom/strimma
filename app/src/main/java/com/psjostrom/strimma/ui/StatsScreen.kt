@@ -165,7 +165,7 @@ fun StatsScreen(
                     }.distinct().size
                     hasData = days >= 7
                 }
-                if (hasData && storyViewedMonth != lastMonthKey) {
+                if (hasData) { // DEV: removed viewed check for development
                     val monthName = lastMonth.month.getDisplayName(
                         java.time.format.TextStyle.FULL, java.util.Locale.getDefault()
                     )

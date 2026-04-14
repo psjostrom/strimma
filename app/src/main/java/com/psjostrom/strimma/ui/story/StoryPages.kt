@@ -182,9 +182,10 @@ fun OverviewPage(data: StoryData, glucoseUnit: GlucoseUnit, hbA1cUnit: com.psjos
 }
 
 @Composable
-fun StabilityPage(data: StoryData) {
+fun StabilityPage(data: StoryData, glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL) {
     var showExplainer by remember { mutableStateOf<Pair<String, String>?>(null) }
-    val explainFlatline = stringResource(R.string.explain_flatline)
+    val flatlineThreshold = glucoseUnit.formatWithUnit(2.0)
+    val explainFlatline = stringResource(R.string.explain_flatline, flatlineThreshold)
     val explainStreak = stringResource(R.string.explain_in_range_streak)
     val explainSteadiest = stringResource(R.string.explain_steadiest_day)
 
@@ -285,10 +286,12 @@ fun StabilityPage(data: StoryData) {
 }
 
 @Composable
-fun EventsPage(data: StoryData) {
+fun EventsPage(data: StoryData, glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL) {
     var showExplainer by remember { mutableStateOf<Pair<String, String>?>(null) }
-    val explainLow = stringResource(R.string.explain_low_events)
-    val explainHigh = stringResource(R.string.explain_high_events)
+    val lowThreshold = glucoseUnit.formatWithUnit(70.0)
+    val highThreshold = glucoseUnit.formatWithUnit(180.0)
+    val explainLow = stringResource(R.string.explain_low_events, lowThreshold)
+    val explainHigh = stringResource(R.string.explain_high_events, highThreshold)
 
     StoryPageScaffold(tintColor = TintDanger) {
         Text(

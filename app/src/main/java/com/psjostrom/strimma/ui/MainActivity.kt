@@ -389,7 +389,13 @@ class MainActivity : ComponentActivity() {
                             onCancelPause = alertsViewModel::cancelAlertPause,
                             onComputeBGContext = viewModel::computeExerciseBGContext,
                             storyReady = storyReady,
-                            storyMonthName = storyMonthName
+                            storyMonthName = storyMonthName,
+                            onNavigateToStory = {
+                                val lm = java.time.YearMonth.now().minusMonths(1)
+                                navController.navigate("story/${lm.year}/${lm.monthValue}") {
+                                    launchSingleTop = true
+                                }
+                            }
                         )
                     }
                     composable("exercise") {

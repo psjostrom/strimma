@@ -99,8 +99,8 @@ fun StoryScreen(
                     val data = story!!
                     val pages = buildList<@Composable () -> Unit> {
                         add { OverviewPage(data, glucoseUnit, hbA1cUnit) }
-                        add { StabilityPage(data) }
-                        add { EventsPage(data) }
+                        add { StabilityPage(data, glucoseUnit) }
+                        add { EventsPage(data, glucoseUnit) }
                         add { PatternsPage(data) }
                         data.meals?.let { meals -> add { MealsPage(meals, glucoseUnit) } }
                         add { SummaryPage(data) }

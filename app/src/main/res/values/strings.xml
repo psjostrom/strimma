@@ -356,11 +356,11 @@
     <string name="explain_gmi">Glucose Management Indicator estimates your HbA1c from CGM data. It shows long-term glucose control without a blood test.</string>
     <string name="explain_cv">Coefficient of Variation measures glucose variability. Lower is more stable. Clinical target is \u226436%.</string>
     <string name="explain_avg_glucose">Your average glucose reading for the month.</string>
-    <string name="explain_flatline">A flatline is a period where consecutive readings differ by \u22642 mg/dL \u2014 ultra-stable glucose. Minimum 30 minutes to count.</string>
+    <string name="explain_flatline">A flatline is a period where consecutive readings differ by \u2264%s \u2014 ultra-stable glucose. Minimum 30 minutes to count.</string>
     <string name="explain_in_range_streak">The longest continuous period where all readings stayed between your low and high thresholds.</string>
     <string name="explain_steadiest_day">The day with the lowest Coefficient of Variation \u2014 your most stable glucose day.</string>
-    <string name="explain_low_events">A low event is a continuous period below 70 mg/dL. Events separated by less than 15 minutes of in-range readings are counted as one.</string>
-    <string name="explain_high_events">A high event is a continuous period above 180 mg/dL. Events separated by less than 15 minutes of in-range readings are counted as one.</string>
+    <string name="explain_low_events">A low event is a continuous period below %s. Events separated by less than 15 minutes of in-range readings are counted as one.</string>
+    <string name="explain_high_events">A high event is a continuous period above %s. Events separated by less than 15 minutes of in-range readings are counted as one.</string>
 
     <!-- Exercise types -->
     <string name="exercise_type_running">Run</string>

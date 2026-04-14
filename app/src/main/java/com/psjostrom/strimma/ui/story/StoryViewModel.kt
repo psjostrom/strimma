@@ -8,6 +8,7 @@ import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.TreatmentDao
 import com.psjostrom.strimma.data.meal.MealAnalyzer
+import com.psjostrom.strimma.data.meal.MealTimeSlotConfig
 import com.psjostrom.strimma.data.story.StoryComputer
 import com.psjostrom.strimma.data.story.StoryData
 import com.psjostrom.strimma.data.story.toMillisRange
@@ -68,6 +69,15 @@ class StoryViewModel @Inject constructor(
             val customDIA = settings.customDIA.first()
             val tauMinutes = IOBComputer.tauForInsulinType(insulinType, customDIA)
 
+            val mealConfig = MealTimeSlotConfig(
+                breakfastStart = settings.mealBreakfastStart.first(),
+                breakfastEnd = settings.mealBreakfastEnd.first(),
+                lunchStart = settings.mealLunchStart.first(),
+                lunchEnd = settings.mealLunchEnd.first(),
+                dinnerStart = settings.mealDinnerStart.first(),
+                dinnerEnd = settings.mealDinnerEnd.first()
+            )
+
             val result = StoryComputer.compute(
                 month = currentMonth,
                 readings = readings,
@@ -78,12 +88,12 @@ class StoryViewModel @Inject constructor(
                 bgHigh = bgHigh.toDouble(),
                 tauMinutes = tauMinutes,
                 zone = zone,
-                mealAnalyzer = mealAnalyzer
+                mealAnalyzer = mealAnalyzer,
+                mealTimeSlotConfig = mealConfig
             )
             _story.value = result
-            if (result != null) {
-                settings.setStoryViewedMonth("%d-%02d".format(year, month))
-            }
+            // DEV: reset viewed flag so card always shows during development
+            settings.setStoryViewedMonth("")
         } catch (e: Exception) {
             _error.value = e.message
         } finally {
