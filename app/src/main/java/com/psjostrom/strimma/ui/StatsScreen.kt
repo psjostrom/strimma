@@ -75,6 +75,7 @@ fun StatsScreen(
     mealTimeSlotConfig: MealTimeSlotConfig,
     onExportCsv: suspend (Int) -> String,
     onNavigateToStory: ((Int, Int) -> Unit)? = null,
+    storyViewedMonth: String = "",
     onBack: (() -> Unit)? = null
 ) {
     val bg = MaterialTheme.colorScheme.background
@@ -148,9 +149,10 @@ fun StatsScreen(
         ) {
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Monthly Story entry card — last completed month only, hidden if insufficient data
+            // Monthly Story entry card — last completed month only, hidden if insufficient data or already viewed
             onNavigateToStory?.let { navigate ->
                 val lastMonth = java.time.YearMonth.now().minusMonths(1)
+                val lastMonthKey = "%d-%02d".format(lastMonth.year, lastMonth.monthValue)
                 var hasData by remember { mutableStateOf(false) }
                 LaunchedEffect(Unit) {
                     val zone = java.time.ZoneId.systemDefault()
@@ -163,7 +165,7 @@ fun StatsScreen(
                     }.distinct().size
                     hasData = days >= 7
                 }
-                if (hasData) {
+                if (hasData && storyViewedMonth != lastMonthKey) {
                     val monthName = lastMonth.month.getDisplayName(
                         java.time.format.TextStyle.FULL, java.util.Locale.getDefault()
                     )

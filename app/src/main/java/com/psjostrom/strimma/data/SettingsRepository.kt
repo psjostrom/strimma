@@ -201,6 +201,8 @@ class SettingsRepository @Inject constructor(
         private const val DEFAULT_WORKOUT_LOOKAHEAD_HOURS = 3
         private const val DEFAULT_WORKOUT_TRIGGER_MINUTES = 120
 
+        private val KEY_STORY_VIEWED_MONTH = stringPreferencesKey("story_viewed_month")
+
         private val KEY_TIDEPOOL_ENABLED = booleanPreferencesKey("tidepool_enabled")
         private val KEY_TIDEPOOL_ONLY_WHILE_CHARGING = booleanPreferencesKey("tidepool_only_while_charging")
         private val KEY_TIDEPOOL_ONLY_WHILE_WIFI = booleanPreferencesKey("tidepool_only_while_wifi")
@@ -394,6 +396,9 @@ class SettingsRepository @Inject constructor(
 
     val setupStep: Flow<Int> = dataStore.data.map { it[KEY_SETUP_STEP] ?: 0 }
     suspend fun setSetupStep(step: Int) { dataStore.edit { it[KEY_SETUP_STEP] = step } }
+
+    val storyViewedMonth: Flow<String> = dataStore.data.map { it[KEY_STORY_VIEWED_MONTH] ?: "" }
+    suspend fun setStoryViewedMonth(yearMonth: String) { dataStore.edit { it[KEY_STORY_VIEWED_MONTH] = yearMonth } }
 
     val hbA1cUnit: Flow<HbA1cUnit> = dataStore.data.map {
         try { HbA1cUnit.valueOf(it[KEY_HBA1C_UNIT] ?: "MMOL_MOL") } catch (_: Exception) { HbA1cUnit.MMOL_MOL }

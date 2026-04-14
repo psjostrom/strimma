@@ -94,7 +94,9 @@ fun MainScreen(
     pauseLowExpiryMs: Long? = null,
     pauseHighExpiryMs: Long? = null,
     onPauseAlerts: (AlertCategory, Long) -> Unit = { _, _ -> },
-    onCancelPause: (AlertCategory) -> Unit = {}
+    onCancelPause: (AlertCategory) -> Unit = {},
+    storyReady: Boolean = false,
+    storyMonthName: String = ""
 ) {
     val mainWindowMs = graphWindowHours * 3600_000L
 
@@ -156,8 +158,20 @@ fun MainScreen(
         }
     }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    val storyMessage = if (storyMonthName.isNotEmpty()) {
+        stringResource(R.string.story_snackbar_ready, storyMonthName)
+    } else ""
+
+    LaunchedEffect(storyReady) {
+        if (storyReady && storyMessage.isNotEmpty()) {
+            snackbarHostState.showSnackbar(storyMessage)
+        }
+    }
+
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = MaterialTheme.colorScheme.background,
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         Column(
             modifier = Modifier

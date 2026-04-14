@@ -196,10 +196,13 @@ fun StoryPageScaffold(
 fun StoryCard(
     label: String,
     modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
     Surface(
         modifier = modifier,
+        onClick = onClick ?: {},
+        enabled = onClick != null,
         shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.surfaceVariant,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
@@ -218,4 +221,22 @@ fun StoryCard(
             content()
         }
     }
+}
+
+@Composable
+fun MetricExplainerDialog(
+    title: String,
+    explanation: String,
+    onDismiss: () -> Unit
+) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = { Text(explanation) },
+        confirmButton = {
+            androidx.compose.material3.TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.story_explainer_ok))
+            }
+        }
+    )
 }

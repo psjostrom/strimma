@@ -3,6 +3,7 @@ package com.psjostrom.strimma.ui.story
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,7 +19,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
@@ -57,6 +62,12 @@ private const val TIR_OK_THRESHOLD = 50.0
 @Composable
 fun OverviewPage(data: StoryData, glucoseUnit: GlucoseUnit, hbA1cUnit: com.psjostrom.strimma.data.HbA1cUnit) {
     val stats = data.stats
+    var showExplainer by remember { mutableStateOf<Pair<String, String>?>(null) }
+    val explainTir = stringResource(R.string.explain_tir)
+    val explainGmi = stringResource(R.string.explain_gmi)
+    val explainCv = stringResource(R.string.explain_cv)
+    val explainAvg = stringResource(R.string.explain_avg_glucose)
+
     StoryPageScaffold(tintColor = MaterialTheme.colorScheme.surfaceVariant) {
         // Label
         Text(
@@ -97,7 +108,10 @@ fun OverviewPage(data: StoryData, glucoseUnit: GlucoseUnit, hbA1cUnit: com.psjos
             "${stats.tirPercent.toInt()}%",
             fontSize = 72.sp,
             fontWeight = FontWeight.ExtraBold,
-            color = InRange
+            color = InRange,
+            modifier = Modifier.clickable {
+                showExplainer = "Time in Range" to explainTir
+            }
         )
         data.previousStats?.let { prev ->
             val delta = stats.tirPercent - prev.tirPercent
@@ -113,7 +127,9 @@ fun OverviewPage(data: StoryData, glucoseUnit: GlucoseUnit, hbA1cUnit: com.psjos
 
         // Stat cards — 2x2 grid
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            StoryCard("GMI", Modifier.weight(1f)) {
+            StoryCard("GMI", Modifier.weight(1f), onClick = {
+                showExplainer = "GMI" to explainGmi
+            }) {
                 Text(
                     hbA1cUnit.format(stats.gmi),
                     fontSize = 28.sp,
@@ -121,7 +137,9 @@ fun OverviewPage(data: StoryData, glucoseUnit: GlucoseUnit, hbA1cUnit: com.psjos
                     color = TirGood
                 )
             }
-            StoryCard("CV", Modifier.weight(1f)) {
+            StoryCard("CV", Modifier.weight(1f), onClick = {
+                showExplainer = "CV" to explainCv
+            }) {
                 Text(
                     "${"%.0f".format(stats.cv)}%",
                     fontSize = 28.sp,
@@ -132,7 +150,9 @@ fun OverviewPage(data: StoryData, glucoseUnit: GlucoseUnit, hbA1cUnit: com.psjos
         }
         Spacer(Modifier.height(10.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            StoryCard("AVG GLUCOSE", Modifier.weight(1f)) {
+            StoryCard("AVG GLUCOSE", Modifier.weight(1f), onClick = {
+                showExplainer = "Avg Glucose" to explainAvg
+            }) {
                 Text(
                     glucoseUnit.format(stats.averageMgdl),
                     fontSize = 28.sp,
@@ -155,10 +175,19 @@ fun OverviewPage(data: StoryData, glucoseUnit: GlucoseUnit, hbA1cUnit: com.psjos
             }
         }
     }
+
+    showExplainer?.let { (title, text) ->
+        MetricExplainerDialog(title, text, onDismiss = { showExplainer = null })
+    }
 }
 
 @Composable
 fun StabilityPage(data: StoryData) {
+    var showExplainer by remember { mutableStateOf<Pair<String, String>?>(null) }
+    val explainFlatline = stringResource(R.string.explain_flatline)
+    val explainStreak = stringResource(R.string.explain_in_range_streak)
+    val explainSteadiest = stringResource(R.string.explain_steadiest_day)
+
     StoryPageScaffold(tintColor = TintGood) {
         Text(
             "Stability",
@@ -177,7 +206,9 @@ fun StabilityPage(data: StoryData) {
             fontWeight = FontWeight.Bold,
             color = TirGood,
             textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { showExplainer = "Flatlines" to explainFlatline }
         )
         Text(
             if (flatCount == 1) "Flatline" else "Flatlines",
@@ -197,7 +228,9 @@ fun StabilityPage(data: StoryData) {
         Spacer(Modifier.height(32.dp))
 
         data.stability.longestInRangeStreak?.let { streak ->
-            StoryCard("Longest in-range streak") {
+            StoryCard("Longest in-range streak", onClick = {
+                showExplainer = "In-Range Streak" to explainStreak
+            }) {
                 val hours = streak.durationMinutes / 60
                 val mins = streak.durationMinutes % 60
                 val label = if (hours > 0) "${hours}h ${mins}m" else "${mins}m"
@@ -212,7 +245,9 @@ fun StabilityPage(data: StoryData) {
         }
 
         data.stability.longestFlatline?.let { flat ->
-            StoryCard("Longest flatline") {
+            StoryCard("Longest flatline", onClick = {
+                showExplainer = "Flatlines" to explainFlatline
+            }) {
                 val hours = flat.durationMinutes / 60
                 val mins = flat.durationMinutes % 60
                 val label = if (hours > 0) "${hours}h ${mins}m" else "${mins}m"
@@ -227,7 +262,9 @@ fun StabilityPage(data: StoryData) {
         }
 
         data.stability.steadiestDay?.let { day ->
-            StoryCard("Steadiest day") {
+            StoryCard("Steadiest day", onClick = {
+                showExplainer = "Steadiest Day" to explainSteadiest
+            }) {
                 Text(
                     day.date.format(DateTimeFormatter.ofPattern("EEEE, MMM d")),
                     style = MaterialTheme.typography.titleMedium,
@@ -241,10 +278,18 @@ fun StabilityPage(data: StoryData) {
             }
         }
     }
+
+    showExplainer?.let { (title, text) ->
+        MetricExplainerDialog(title, text, onDismiss = { showExplainer = null })
+    }
 }
 
 @Composable
 fun EventsPage(data: StoryData) {
+    var showExplainer by remember { mutableStateOf<Pair<String, String>?>(null) }
+    val explainLow = stringResource(R.string.explain_low_events)
+    val explainHigh = stringResource(R.string.explain_high_events)
+
     StoryPageScaffold(tintColor = TintDanger) {
         Text(
             "Events",
@@ -260,7 +305,10 @@ fun EventsPage(data: StoryData) {
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             // Low events
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.clickable { showExplainer = "Low Events" to explainLow }
+            ) {
                 Text(
                     "${data.events.lowEvents}",
                     fontSize = 48.sp,
@@ -288,7 +336,10 @@ fun EventsPage(data: StoryData) {
             }
 
             // High events
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.clickable { showExplainer = "High Events" to explainHigh }
+            ) {
                 Text(
                     "${data.events.highEvents}",
                     fontSize = 48.sp,
@@ -340,10 +391,17 @@ fun EventsPage(data: StoryData) {
             }
         }
     }
+
+    showExplainer?.let { (title, text) ->
+        MetricExplainerDialog(title, text, onDismiss = { showExplainer = null })
+    }
 }
 
 @Composable
 fun PatternsPage(data: StoryData) {
+    var showExplainer by remember { mutableStateOf<Pair<String, String>?>(null) }
+    val explainTir = stringResource(R.string.explain_tir)
+
     StoryPageScaffold(tintColor = TintInRange) {
         Text(
             "Time of Day",
@@ -361,7 +419,9 @@ fun PatternsPage(data: StoryData) {
         Spacer(Modifier.height(24.dp))
 
         data.timeOfDay.blocks.forEach { block ->
-            StoryCard(block.name) {
+            StoryCard(block.name, onClick = {
+                showExplainer = "Time in Range" to explainTir
+            }) {
                 val tirColor = when {
                     block.tirPercent >= TIR_GOOD_THRESHOLD -> InRange
                     block.tirPercent >= TIR_OK_THRESHOLD -> AboveHigh
@@ -390,10 +450,17 @@ fun PatternsPage(data: StoryData) {
             Spacer(Modifier.height(12.dp))
         }
     }
+
+    showExplainer?.let { (title, text) ->
+        MetricExplainerDialog(title, text, onDismiss = { showExplainer = null })
+    }
 }
 
 @Composable
 fun MealsPage(meals: MealStoryData, glucoseUnit: GlucoseUnit) {
+    var showExplainer by remember { mutableStateOf<Pair<String, String>?>(null) }
+    val explainTir = stringResource(R.string.explain_tir)
+
     StoryPageScaffold(tintColor = TintWarning) {
         Text(
             "Meals",
@@ -411,7 +478,9 @@ fun MealsPage(meals: MealStoryData, glucoseUnit: GlucoseUnit) {
         Spacer(Modifier.height(24.dp))
 
         meals.bestSlot?.let { best ->
-            StoryCard("Best meal slot") {
+            StoryCard("Best meal slot", onClick = {
+                showExplainer = "Time in Range" to explainTir
+            }) {
                 Text(
                     best.slot.label,
                     style = MaterialTheme.typography.titleLarge,
@@ -428,7 +497,9 @@ fun MealsPage(meals: MealStoryData, glucoseUnit: GlucoseUnit) {
 
         meals.worstSlot?.let { worst ->
             if (worst != meals.bestSlot) {
-                StoryCard("Needs attention") {
+                StoryCard("Needs attention", onClick = {
+                    showExplainer = "Time in Range" to explainTir
+                }) {
                     Text(
                         worst.slot.label,
                         style = MaterialTheme.typography.titleLarge,
@@ -452,6 +523,10 @@ fun MealsPage(meals: MealStoryData, glucoseUnit: GlucoseUnit) {
                 }
             }
         }
+    }
+
+    showExplainer?.let { (title, text) ->
+        MetricExplainerDialog(title, text, onDismiss = { showExplainer = null })
     }
 }
 

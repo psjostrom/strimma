@@ -68,7 +68,7 @@ class StoryViewModel @Inject constructor(
             val customDIA = settings.customDIA.first()
             val tauMinutes = IOBComputer.tauForInsulinType(insulinType, customDIA)
 
-            _story.value = StoryComputer.compute(
+            val result = StoryComputer.compute(
                 month = currentMonth,
                 readings = readings,
                 previousReadings = prevReadings,
@@ -80,6 +80,10 @@ class StoryViewModel @Inject constructor(
                 zone = zone,
                 mealAnalyzer = mealAnalyzer
             )
+            _story.value = result
+            if (result != null) {
+                settings.setStoryViewedMonth("%d-%02d".format(year, month))
+            }
         } catch (e: Exception) {
             _error.value = e.message
         } finally {

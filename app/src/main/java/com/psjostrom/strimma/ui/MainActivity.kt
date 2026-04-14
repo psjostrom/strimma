@@ -365,6 +365,11 @@ class MainActivity : ComponentActivity() {
                         val alertsViewModel: AlertsViewModel = hiltViewModel()
                         val pauseLowExpiryMs by alertsViewModel.pauseLowExpiryMs.collectAsState()
                         val pauseHighExpiryMs by alertsViewModel.pauseHighExpiryMs.collectAsState()
+                        val storyReady by viewModel.storyReady.collectAsState()
+                        val lastMonth = java.time.YearMonth.now().minusMonths(1)
+                        val storyMonthName = lastMonth.month.getDisplayName(
+                            java.time.format.TextStyle.FULL, java.util.Locale.getDefault()
+                        )
                         MainScreen(
                             latestReading = latestReading,
                             readings = readings,
@@ -382,7 +387,9 @@ class MainActivity : ComponentActivity() {
                             pauseHighExpiryMs = pauseHighExpiryMs,
                             onPauseAlerts = alertsViewModel::pauseAlerts,
                             onCancelPause = alertsViewModel::cancelAlertPause,
-                            onComputeBGContext = viewModel::computeExerciseBGContext
+                            onComputeBGContext = viewModel::computeExerciseBGContext,
+                            storyReady = storyReady,
+                            storyMonthName = storyMonthName
                         )
                     }
                     composable("exercise") {
@@ -669,6 +676,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable("stats") {
+                        val storyViewedMonth by viewModel.settings.storyViewedMonth.collectAsState(initial = "")
                         StatsScreen(
                             bgLow = bgLow,
                             bgHigh = bgHigh,
@@ -687,7 +695,8 @@ class MainActivity : ComponentActivity() {
                                 navController.navigate("story/$year/$month") {
                                     launchSingleTop = true
                                 }
-                            }
+                            },
+                            storyViewedMonth = storyViewedMonth
                         )
                     }
                     composable(

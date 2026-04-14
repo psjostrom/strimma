@@ -41,7 +41,11 @@ import com.psjostrom.strimma.update.DownloadState
 import android.content.Intent
 import com.psjostrom.strimma.data.meal.MealAnalyzer
 import com.psjostrom.strimma.data.meal.MealTimeSlotConfig
+import com.psjostrom.strimma.data.story.toMillisRange
 import com.psjostrom.strimma.network.TreatmentSyncer
+import java.time.Instant
+import java.time.YearMonth
+import java.time.ZoneId
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.currentCoroutineContext
@@ -78,6 +82,7 @@ class MainViewModel @Inject constructor(
         private const val PRE_WINDOW_MINUTES = 30
         private const val POST_WINDOW_HOURS = 4
         internal const val FORECAST_HORIZON_MINUTES = 30
+        private const val MIN_STORY_DAYS = 7
 
         internal fun computeGuidance(
             event: WorkoutEvent?,
@@ -133,6 +138,21 @@ class MainViewModel @Inject constructor(
 
     val setupStep: StateFlow<Int> = settings.setupStep
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    val storyReady: StateFlow<Boolean> = settings.storyViewedMonth
+        .map { viewedMonth ->
+            val lastMonth = YearMonth.now().minusMonths(1)
+            val lastMonthKey = "%d-%02d".format(lastMonth.year, lastMonth.monthValue)
+            if (viewedMonth == lastMonthKey) return@map false
+            val zone = ZoneId.systemDefault()
+            val (start, end) = lastMonth.toMillisRange(zone)
+            val readings = dao.readingsInRange(start, end)
+            val days = readings.map {
+                Instant.ofEpochMilli(it.ts).atZone(zone).toLocalDate()
+            }.distinct().size
+            days >= MIN_STORY_DAYS
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     val latestReading: StateFlow<GlucoseReading?> = dao.latest()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
