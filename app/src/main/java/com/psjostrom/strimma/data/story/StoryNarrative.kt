@@ -4,6 +4,13 @@ import com.psjostrom.strimma.data.GlucoseStats
 
 object StoryNarrative {
 
+    private const val SWEET_SPOT_TIR_THRESHOLD = 85.0
+    private const val WORST_BLOCK_TIR_THRESHOLD = 60.0
+    private const val MIN_FLATLINE_MINUTES = 120
+    private const val MINUTES_PER_HOUR = 60
+    private const val MAX_FRAGMENTS = 5
+    private const val TIR_DELTA_THRESHOLD = 2.0
+
     fun generate(
         stats: GlucoseStats,
         previousStats: GlucoseStats?,
@@ -19,23 +26,23 @@ object StoryNarrative {
         lowsFragment(events)?.let { fragments.add(it) }
 
         val best = timeOfDay.blocks.filter { it.readingCount > 0 }.maxByOrNull { it.tirPercent }
-        if (best != null && best.tirPercent >= 85.0) {
+        if (best != null && best.tirPercent >= SWEET_SPOT_TIR_THRESHOLD) {
             fragments.add("${best.name} is your sweet spot at ${best.tirPercent.toInt()}% TIR.")
         }
 
         val worst = timeOfDay.blocks.filter { it.readingCount > 0 }.minByOrNull { it.tirPercent }
-        if (worst != null && worst.tirPercent < 60.0) {
+        if (worst != null && worst.tirPercent < WORST_BLOCK_TIR_THRESHOLD) {
             fragments.add("${worst.name} is where the next win is \u2014 ${worst.tirPercent.toInt()}% TIR.")
         }
 
         val flatline = stability.longestFlatline
-        if (flatline != null && flatline.durationMinutes >= 120) {
-            val hours = flatline.durationMinutes / 60
-            val minutes = flatline.durationMinutes % 60
+        if (flatline != null && flatline.durationMinutes >= MIN_FLATLINE_MINUTES) {
+            val hours = flatline.durationMinutes / MINUTES_PER_HOUR
+            val minutes = flatline.durationMinutes % MINUTES_PER_HOUR
             fragments.add("You held a ${hours}h ${minutes}m flatline \u2014 rock steady.")
         }
 
-        return fragments.take(5).joinToString(" ")
+        return fragments.take(MAX_FRAGMENTS).joinToString(" ")
     }
 
     private fun tirFragment(stats: GlucoseStats, prev: GlucoseStats?, monthLabel: String): String {
@@ -44,8 +51,12 @@ object StoryNarrative {
         }
         val delta = stats.tirPercent - prev.tirPercent
         return when {
-            delta >= 2.0 -> "Time in range climbed to ${formatTir(stats.tirPercent)}%, up from ${formatTir(prev.tirPercent)}%."
-            delta <= -2.0 -> "Time in range dipped to ${formatTir(stats.tirPercent)}%, down from ${formatTir(prev.tirPercent)}%."
+            delta >= TIR_DELTA_THRESHOLD ->
+                "Time in range climbed to ${formatTir(stats.tirPercent)}%, " +
+                    "up from ${formatTir(prev.tirPercent)}%."
+            delta <= -TIR_DELTA_THRESHOLD ->
+                "Time in range dipped to ${formatTir(stats.tirPercent)}%, " +
+                    "down from ${formatTir(prev.tirPercent)}%."
             else -> "Time in range held steady at ${formatTir(stats.tirPercent)}%."
         }
     }

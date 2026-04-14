@@ -11,6 +11,7 @@ object FlatlineComputer {
     private const val MAX_CONSECUTIVE_DIFF_MGDL = 2.0
     private const val MIN_FLATLINE_MINUTES = 30
     private const val MIN_READINGS_PER_DAY = 20
+    private const val PERCENT = 100
 
     fun findFlatlines(readings: List<GlucoseReading>): List<FlatlineStretch> {
         if (readings.size < 2) return emptyList()
@@ -99,14 +100,14 @@ object FlatlineComputer {
                 val values = entry.value.map { it.sgv.toDouble() }
                 val mean = values.average()
                 val variance = values.sumOf { (it - mean) * (it - mean) } / values.size
-                sqrt(variance) / mean * 100
+                sqrt(variance) / mean * PERCENT
             }?.let { entry ->
                 val values = entry.value.map { it.sgv.toDouble() }
                 val mean = values.average()
                 val stdDev = sqrt(values.sumOf { (it - mean) * (it - mean) } / values.size)
-                val cv = stdDev / mean * 100
+                val cv = stdDev / mean * PERCENT
                 val inRange = entry.value.count { it.sgv >= bgLow && it.sgv <= bgHigh }
-                val tir = inRange.toDouble() / entry.value.size * 100
+                val tir = inRange.toDouble() / entry.value.size * PERCENT
                 SteadiestDay(entry.key, cv, tir)
             }
     }

@@ -48,7 +48,10 @@ class StoryNarrativeTest {
             monthLabel = "March"
         )
         assertTrue("Should mention TIR improvement", text.contains("78"))
-        assertTrue("Should mention increase", text.contains("74") || text.lowercase().contains("up") || text.lowercase().contains("climbed"))
+        assertTrue(
+            "Should mention increase",
+            text.contains("74") || text.lowercase().contains("up") || text.lowercase().contains("climbed")
+        )
     }
 
     @Test

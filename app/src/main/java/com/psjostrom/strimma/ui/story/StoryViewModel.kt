@@ -11,6 +11,7 @@ import com.psjostrom.strimma.data.meal.MealAnalyzer
 import com.psjostrom.strimma.data.meal.MealTimeSlotConfig
 import com.psjostrom.strimma.data.story.StoryComputer
 import com.psjostrom.strimma.data.story.StoryData
+import com.psjostrom.strimma.data.story.StoryParams
 import com.psjostrom.strimma.data.story.toMillisRange
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -79,17 +80,19 @@ class StoryViewModel @Inject constructor(
             )
 
             val result = StoryComputer.compute(
-                month = currentMonth,
-                readings = readings,
-                previousReadings = prevReadings,
-                carbTreatments = carbTreatments,
-                allTreatments = allTreatments,
-                bgLow = bgLow.toDouble(),
-                bgHigh = bgHigh.toDouble(),
-                tauMinutes = tauMinutes,
-                zone = zone,
-                mealAnalyzer = mealAnalyzer,
-                mealTimeSlotConfig = mealConfig
+                StoryParams(
+                    month = currentMonth,
+                    readings = readings,
+                    previousReadings = prevReadings,
+                    carbTreatments = carbTreatments,
+                    allTreatments = allTreatments,
+                    bgLow = bgLow.toDouble(),
+                    bgHigh = bgHigh.toDouble(),
+                    tauMinutes = tauMinutes,
+                    zone = zone,
+                    mealAnalyzer = mealAnalyzer,
+                    mealTimeSlotConfig = mealConfig
+                )
             )
             _story.value = result
             if (result != null) {

@@ -7,6 +7,7 @@ object EventComputer {
     private const val LOW_THRESHOLD_MGDL = 70.0
     private const val HIGH_THRESHOLD_MGDL = 180.0
     private const val GAP_MINUTES = 15
+    private const val PERCENT = 100
 
     data class EventStats(
         val lowEvents: Int,
@@ -22,8 +23,8 @@ object EventComputer {
         val sorted = readings.sortedBy { it.ts }
         val belowCount = sorted.count { it.sgv < LOW_THRESHOLD_MGDL }
         val aboveCount = sorted.count { it.sgv > HIGH_THRESHOLD_MGDL }
-        val belowPct = belowCount.toDouble() / sorted.size * 100
-        val abovePct = aboveCount.toDouble() / sorted.size * 100
+        val belowPct = belowCount.toDouble() / sorted.size * PERCENT
+        val abovePct = aboveCount.toDouble() / sorted.size * PERCENT
         val lowEvents = findEvents(sorted) { it.sgv < LOW_THRESHOLD_MGDL }
         val highEvents = findEvents(sorted) { it.sgv > HIGH_THRESHOLD_MGDL }
         val avgLow = if (lowEvents.isNotEmpty()) {

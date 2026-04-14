@@ -607,6 +607,8 @@ fun SummaryPage(data: StoryData) {
     }
 }
 
+private const val PNG_QUALITY = 100
+
 @Suppress("TooGenericExceptionCaught") // Bitmap capture + file I/O + FileProvider — multiple failure modes
 private suspend fun shareStoryBitmap(
     context: Context,
@@ -627,7 +629,7 @@ private suspend fun shareStoryBitmap(
         val file = withContext(Dispatchers.IO) {
             val f = File(context.cacheDir, "strimma_story.png")
             f.outputStream().use { out ->
-                androidBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+                androidBitmap.compress(Bitmap.CompressFormat.PNG, PNG_QUALITY, out)
             }
             f
         }

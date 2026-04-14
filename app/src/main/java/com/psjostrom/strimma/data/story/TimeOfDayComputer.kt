@@ -6,6 +6,8 @@ import java.time.ZoneId
 
 object TimeOfDayComputer {
 
+    private const val PERCENT = 100
+
     private val BLOCK_DEFS = listOf(
         Triple("Night", 0, 6),
         Triple("Morning", 6, 12),
@@ -29,7 +31,7 @@ object TimeOfDayComputer {
                 TimeBlockStats(name, start, end, 0.0, 0)
             } else {
                 val inRange = blockReadings.count { it.sgv >= bgLow && it.sgv <= bgHigh }
-                val tir = inRange.toDouble() / blockReadings.size * 100
+                val tir = inRange.toDouble() / blockReadings.size * PERCENT
                 TimeBlockStats(name, start, end, tir, blockReadings.size)
             }
         }

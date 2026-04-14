@@ -1,6 +1,7 @@
 package com.psjostrom.strimma.data.story
 
 import com.psjostrom.strimma.data.GlucoseReading
+import com.psjostrom.strimma.data.GlucoseStats
 import com.psjostrom.strimma.data.StatsCalculator
 import com.psjostrom.strimma.data.Treatment
 import com.psjostrom.strimma.data.meal.MealAnalysisParams
@@ -12,68 +13,43 @@ import java.time.Instant
 import java.time.YearMonth
 import java.time.ZoneId
 
+data class StoryParams(
+    val month: YearMonth,
+    val readings: List<GlucoseReading>,
+    val previousReadings: List<GlucoseReading>,
+    val carbTreatments: List<Treatment>,
+    val allTreatments: List<Treatment>,
+    val bgLow: Double,
+    val bgHigh: Double,
+    val tauMinutes: Double,
+    val zone: ZoneId,
+    val mealAnalyzer: MealAnalyzer? = null,
+    val mealTimeSlotConfig: MealTimeSlotConfig = MealTimeSlotConfig()
+)
+
 object StoryComputer {
 
     private const val MIN_DAYS = 7
 
-    fun compute(
-        month: YearMonth,
-        readings: List<GlucoseReading>,
-        previousReadings: List<GlucoseReading>,
-        carbTreatments: List<Treatment>,
-        allTreatments: List<Treatment>,
-        bgLow: Double,
-        bgHigh: Double,
-        tauMinutes: Double,
-        zone: ZoneId,
-        mealAnalyzer: MealAnalyzer? = null,
-        mealTimeSlotConfig: MealTimeSlotConfig = MealTimeSlotConfig()
-    ): StoryData? {
-        val dayCount = readings.map { Instant.ofEpochMilli(it.ts).atZone(zone).toLocalDate() }
-            .distinct().size
+    fun compute(params: StoryParams): StoryData? {
+        val dayCount = countDays(params.readings, params.zone)
         if (dayCount < MIN_DAYS) return null
 
-        val stats = StatsCalculator.compute(readings, bgLow, bgHigh, "month") ?: return null
+        val stats = StatsCalculator.compute(
+            params.readings, params.bgLow, params.bgHigh, "month"
+        ) ?: return null
 
-        val previousStats = if (previousReadings.isNotEmpty()) {
-            val prevDays = previousReadings.map {
-                Instant.ofEpochMilli(it.ts).atZone(zone).toLocalDate()
-            }.distinct().size
-            if (prevDays >= MIN_DAYS) StatsCalculator.compute(previousReadings, bgLow, bgHigh, "month")
-            else null
-        } else null
+        val previousStats = computePreviousStats(params)
+        val stability = computeStability(params)
+        val events = computeEvents(params)
 
-        val flatlines = FlatlineComputer.findFlatlines(readings)
-        val stability = StabilityData(
-            longestFlatline = flatlines.maxByOrNull { it.durationMinutes },
-            flatlineCount = flatlines.size,
-            longestInRangeStreak = FlatlineComputer.longestInRangeStreak(readings, bgLow, bgHigh),
-            steadiestDay = FlatlineComputer.steadiestDay(readings, bgLow, bgHigh, zone)
+        val timeOfDay = TimeOfDayComputer.compute(
+            params.readings, params.bgLow, params.bgHigh, params.zone
         )
 
-        val currentEvents = EventComputer.compute(readings)
-        val previousEvents = if (previousReadings.isNotEmpty()) {
-            EventComputer.compute(previousReadings)
-        } else null
-        val events = EventData(
-            lowEvents = currentEvents.lowEvents,
-            highEvents = currentEvents.highEvents,
-            previousLowEvents = previousEvents?.lowEvents,
-            previousHighEvents = previousEvents?.highEvents,
-            belowPercent = currentEvents.belowPercent,
-            abovePercent = currentEvents.abovePercent,
-            avgLowDurationMinutes = currentEvents.avgLowDurationMinutes,
-            avgHighDurationMinutes = currentEvents.avgHighDurationMinutes
-        )
+        val meals = computeMeals(params)
 
-        val timeOfDay = TimeOfDayComputer.compute(readings, bgLow, bgHigh, zone)
-
-        val meals = computeMeals(
-            carbTreatments, readings, allTreatments, bgLow, bgHigh, tauMinutes, zone, mealAnalyzer,
-            mealTimeSlotConfig
-        )
-
-        val monthLabel = month.month.getDisplayName(
+        val monthLabel = params.month.month.getDisplayName(
             java.time.format.TextStyle.FULL, java.util.Locale.getDefault()
         )
         val narrative = StoryNarrative.generate(
@@ -81,9 +57,9 @@ object StoryComputer {
         )
 
         return StoryData(
-            year = month.year,
-            month = month.monthValue,
-            readingCount = readings.size,
+            year = params.month.year,
+            month = params.month.monthValue,
+            readingCount = params.readings.size,
             dayCount = dayCount,
             stats = stats,
             previousStats = previousStats,
@@ -95,30 +71,66 @@ object StoryComputer {
         )
     }
 
-    private fun computeMeals(
-        carbTreatments: List<Treatment>,
-        readings: List<GlucoseReading>,
-        allTreatments: List<Treatment>,
-        bgLow: Double,
-        bgHigh: Double,
-        tauMinutes: Double,
-        zone: ZoneId,
-        mealAnalyzer: MealAnalyzer?,
-        mealTimeSlotConfig: MealTimeSlotConfig
-    ): MealStoryData? {
-        if (carbTreatments.isEmpty() || mealAnalyzer == null) return null
+    private fun countDays(readings: List<GlucoseReading>, zone: ZoneId): Int =
+        readings.map { Instant.ofEpochMilli(it.ts).atZone(zone).toLocalDate() }.distinct().size
 
-        val sortedCarbs = carbTreatments.sortedBy { it.createdAt }
+    private fun computePreviousStats(params: StoryParams): GlucoseStats? {
+        if (params.previousReadings.isEmpty()) return null
+        val prevDays = countDays(params.previousReadings, params.zone)
+        if (prevDays < MIN_DAYS) return null
+        return StatsCalculator.compute(params.previousReadings, params.bgLow, params.bgHigh, "month")
+    }
+
+    private fun computeStability(params: StoryParams): StabilityData {
+        val flatlines = FlatlineComputer.findFlatlines(params.readings)
+        return StabilityData(
+            longestFlatline = flatlines.maxByOrNull { it.durationMinutes },
+            flatlineCount = flatlines.size,
+            longestInRangeStreak = FlatlineComputer.longestInRangeStreak(
+                params.readings, params.bgLow, params.bgHigh
+            ),
+            steadiestDay = FlatlineComputer.steadiestDay(
+                params.readings, params.bgLow, params.bgHigh, params.zone
+            )
+        )
+    }
+
+    private fun computeEvents(params: StoryParams): EventData {
+        val currentEvents = EventComputer.compute(params.readings)
+        val previousEvents = if (params.previousReadings.isNotEmpty()) {
+            EventComputer.compute(params.previousReadings)
+        } else null
+        return EventData(
+            lowEvents = currentEvents.lowEvents,
+            highEvents = currentEvents.highEvents,
+            previousLowEvents = previousEvents?.lowEvents,
+            previousHighEvents = previousEvents?.highEvents,
+            belowPercent = currentEvents.belowPercent,
+            abovePercent = currentEvents.abovePercent,
+            avgLowDurationMinutes = currentEvents.avgLowDurationMinutes,
+            avgHighDurationMinutes = currentEvents.avgHighDurationMinutes
+        )
+    }
+
+    private fun computeMeals(params: StoryParams): MealStoryData? {
+        if (params.carbTreatments.isEmpty() || params.mealAnalyzer == null) return null
+
+        val sortedCarbs = params.carbTreatments.sortedBy { it.createdAt }
         val results = sortedCarbs.mapIndexedNotNull { i, meal ->
             val nextMealTime = sortedCarbs.getOrNull(i + 1)?.createdAt
-            mealAnalyzer.analyze(
-                meal, readings,
-                MealAnalysisParams(bgLow, bgHigh, nextMealTime, allTreatments, tauMinutes)
+            params.mealAnalyzer.analyze(
+                meal, params.readings,
+                MealAnalysisParams(
+                    params.bgLow, params.bgHigh, nextMealTime,
+                    params.allTreatments, params.tauMinutes
+                )
             )
         }
         if (results.isEmpty()) return null
 
-        val bySlot = MealStatsCalculator.groupByTimeSlot(results, zone, mealTimeSlotConfig)
+        val bySlot = MealStatsCalculator.groupByTimeSlot(
+            results, params.zone, params.mealTimeSlotConfig
+        )
         val slotSummaries = bySlot.mapValues { (slot, meals) ->
             val agg = MealStatsCalculator.aggregate(meals)
             MealSlotSummary(slot, agg.avgTirPercent, agg.mealCount)
