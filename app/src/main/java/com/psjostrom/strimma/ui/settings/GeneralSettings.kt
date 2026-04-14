@@ -1,5 +1,6 @@
 package com.psjostrom.strimma.ui.settings
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -9,6 +10,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.psjostrom.strimma.R
+import com.psjostrom.strimma.ui.MainViewModel.UpdateCheckState
 
 @Composable
 fun GeneralSettings(
@@ -16,6 +18,8 @@ fun GeneralSettings(
     onStartOnBootChange: (Boolean) -> Unit,
     appVersion: String,
     isDebug: Boolean,
+    updateCheckState: UpdateCheckState,
+    onCheckForUpdates: () -> Unit,
     isBatteryOptimizationIgnored: Boolean,
     onOpenBatteryOptimization: () -> Unit,
     onBack: () -> Unit
@@ -79,6 +83,34 @@ fun GeneralSettings(
                 ) {
                     Text(stringResource(R.string.settings_general_build), color = onBg, fontSize = 14.sp)
                     Text("Debug", color = MaterialTheme.colorScheme.error, fontSize = 14.sp)
+                }
+            }
+            HorizontalDivider(color = outlineVar)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(enabled = updateCheckState != UpdateCheckState.CHECKING) {
+                        onCheckForUpdates()
+                    },
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    stringResource(R.string.settings_general_check_for_updates),
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = 14.sp
+                )
+                when (updateCheckState) {
+                    UpdateCheckState.CHECKING -> CircularProgressIndicator(
+                        modifier = Modifier.size(14.dp),
+                        strokeWidth = 2.dp
+                    )
+                    UpdateCheckState.UP_TO_DATE -> Text(
+                        stringResource(R.string.settings_general_up_to_date),
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 12.sp
+                    )
+                    UpdateCheckState.IDLE -> {}
                 }
             }
         }

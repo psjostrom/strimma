@@ -565,6 +565,7 @@ class MainActivity : ComponentActivity() {
                     }
                     composable("settings/general") {
                         val startOnBoot by viewModel.startOnBoot.collectAsState()
+                        val updateCheckState by viewModel.updateCheckState.collectAsState()
                         val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
                         val lifecycleState by lifecycleOwner.lifecycle.currentStateFlow.collectAsState()
                         val isBatteryOptimizationIgnored = remember(lifecycleState) {
@@ -576,6 +577,8 @@ class MainActivity : ComponentActivity() {
                             onStartOnBootChange = viewModel::setStartOnBoot,
                             appVersion = packageManager.getPackageInfo(packageName, 0).versionName ?: "",
                             isDebug = com.psjostrom.strimma.BuildConfig.DEBUG,
+                            updateCheckState = updateCheckState,
+                            onCheckForUpdates = viewModel::checkForUpdates,
                             isBatteryOptimizationIgnored = isBatteryOptimizationIgnored,
                             onOpenBatteryOptimization = {
                                 // BatteryLife: Strimma is a CGM safety app whose core function

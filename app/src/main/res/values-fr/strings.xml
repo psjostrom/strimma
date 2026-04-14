@@ -70,6 +70,8 @@
     <string name="settings_general_about">\u00C0 propos</string>
     <string name="settings_general_version">Version</string>
     <string name="settings_general_build">Build</string>
+    <string name="settings_general_check_for_updates">Rechercher des mises à jour</string>
+    <string name="settings_general_up_to_date">À jour</string>
 
     <!-- Data Source Settings -->
     <string name="settings_source_title">Source de donn\u00E9es</string>
