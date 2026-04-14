@@ -290,8 +290,10 @@ fun EventsPage(data: StoryData, glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL) {
     var showExplainer by remember { mutableStateOf<Pair<String, String>?>(null) }
     val lowThreshold = glucoseUnit.formatWithUnit(70.0)
     val highThreshold = glucoseUnit.formatWithUnit(180.0)
-    val explainLow = stringResource(R.string.explain_low_events, lowThreshold)
-    val explainHigh = stringResource(R.string.explain_high_events, highThreshold)
+    val explainLow = stringResource(R.string.explain_low_events, lowThreshold) +
+        "\n\n" + stringResource(R.string.advice_low_events)
+    val explainHigh = stringResource(R.string.explain_high_events, highThreshold) +
+        "\n\n" + stringResource(R.string.advice_high_events)
 
     StoryPageScaffold(tintColor = TintDanger) {
         Text(
@@ -404,6 +406,8 @@ fun EventsPage(data: StoryData, glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL) {
 fun PatternsPage(data: StoryData) {
     var showExplainer by remember { mutableStateOf<Pair<String, String>?>(null) }
     val explainTir = stringResource(R.string.explain_tir)
+    val adviceWorstBlock = stringResource(R.string.advice_worst_time_block)
+    val worstBlock = data.timeOfDay.blocks.filter { it.readingCount > 0 }.minByOrNull { it.tirPercent }
 
     StoryPageScaffold(tintColor = TintInRange) {
         Text(
@@ -422,8 +426,13 @@ fun PatternsPage(data: StoryData) {
         Spacer(Modifier.height(24.dp))
 
         data.timeOfDay.blocks.forEach { block ->
+            val isWorst = block == worstBlock && block.tirPercent < TIR_GOOD_THRESHOLD
             StoryCard(block.name, onClick = {
-                showExplainer = "Time in Range" to explainTir
+                showExplainer = if (isWorst) {
+                    block.name to "$explainTir\n\n$adviceWorstBlock"
+                } else {
+                    block.name to explainTir
+                }
             }) {
                 val tirColor = when {
                     block.tirPercent >= TIR_GOOD_THRESHOLD -> InRange
@@ -500,8 +509,9 @@ fun MealsPage(meals: MealStoryData, glucoseUnit: GlucoseUnit) {
 
         meals.worstSlot?.let { worst ->
             if (worst != meals.bestSlot) {
+                val adviceWorstMeal = stringResource(R.string.advice_worst_meal)
                 StoryCard("Needs attention", onClick = {
-                    showExplainer = "Time in Range" to explainTir
+                    showExplainer = worst.slot.label to adviceWorstMeal
                 }) {
                     Text(
                         worst.slot.label,

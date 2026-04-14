@@ -361,6 +361,10 @@
     <string name="explain_steadiest_day">The day with the lowest Coefficient of Variation \u2014 your most stable glucose day.</string>
     <string name="explain_low_events">A low event is a continuous period below %s. Events separated by less than 15 minutes of in-range readings are counted as one.</string>
     <string name="explain_high_events">A high event is a continuous period above %s. Events separated by less than 15 minutes of in-range readings are counted as one.</string>
+    <string name="advice_worst_meal">This meal type has your lowest time in range. Consider:\n\n\u2022 Adjusting carb ratio for this meal\n\u2022 Pre-bolusing earlier\n\u2022 Trying lower-GI carb alternatives\n\u2022 Splitting the bolus if the meal is large or fatty</string>
+    <string name="advice_worst_time_block">This time of day has your lowest time in range. Consider:\n\n\u2022 Reviewing your basal rate during these hours\n\u2022 Checking if meal timing or carb choices are contributing\n\u2022 Discussing a profile adjustment with your care team</string>
+    <string name="advice_low_events">Lows can be reduced by:\n\n\u2022 Reviewing basal rates during the hours when lows occur\n\u2022 Reducing correction boluses, especially before bed\n\u2022 Setting a higher low-glucose alert to catch drops earlier\n\u2022 Having fast-acting carbs accessible</string>
+    <string name="advice_high_events">Highs can be reduced by:\n\n\u2022 Pre-bolusing 10\u201315 minutes before meals\n\u2022 Reviewing carb ratios for meals that spike\n\u2022 Checking for missed boluses or under-counted carbs\n\u2022 Adjusting basal rates during high-event hours</string>
 
     <!-- Exercise types -->
     <string name="exercise_type_running">Run</string>

@@ -69,6 +69,10 @@ class StoryViewModel @Inject constructor(
             val customDIA = settings.customDIA.first()
             val tauMinutes = IOBComputer.tauForInsulinType(insulinType, customDIA)
 
+            android.util.Log.w("StoryVM", "Meal slots: " +
+                "brkStart=${settings.mealBreakfastStart.first()} brkEnd=${settings.mealBreakfastEnd.first()} " +
+                "lchStart=${settings.mealLunchStart.first()} lchEnd=${settings.mealLunchEnd.first()} " +
+                "dinStart=${settings.mealDinnerStart.first()} dinEnd=${settings.mealDinnerEnd.first()}")
             val mealConfig = MealTimeSlotConfig(
                 breakfastStart = settings.mealBreakfastStart.first(),
                 breakfastEnd = settings.mealBreakfastEnd.first(),
