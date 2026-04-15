@@ -159,6 +159,8 @@
     <string name="settings_data_pull_7d">7 Tage</string>
     <string name="settings_data_pull_14d">14 Tage</string>
     <string name="settings_data_pull_30d">30 Tage</string>
+    <string name="settings_data_pull_60d">60 Tage</string>
+    <string name="settings_data_pull_90d">90 Tage</string>
     <string name="settings_data_integration">Integration</string>
     <string name="integration_connecting">Verbinden…</string>
     <string name="integration_connected">Verbunden · %1$s: %2$s</string>
@@ -474,4 +476,27 @@
     <string name="preactivity_caution">ACHTUNG</string>
     <string name="preactivity_wait">WARTEN</string>
     <string name="preactivity_event_in">%1$s in %2$s</string>
+
+    <!-- Story -->
+    <string name="story_entry_title">Deine %s-Story</string>
+    <string name="story_entry_subtitle">Tippe, um deinen Monatsr\u00FCckblick zu sehen</string>
+    <string name="story_not_enough_data">Nicht gen\u00FCgend Daten</string>
+    <string name="story_not_enough_data_detail">Mindestens 7 Tage mit Messwerten erforderlich</string>
+    <string name="story_share">Teile deine Story</string>
+    <string name="story_go_back">Zur\u00FCck</string>
+    <string name="story_snackbar_ready">Deine %s-Story ist bereit</string>
+    <string name="story_explainer_ok">Verstanden</string>
+    <string name="explain_tir">Zeit im Zielbereich (TIR) ist der Prozentsatz der Zeit, in der dein Glukosewert zwischen deinem unteren und oberen Schwellenwert lag. Klinisches Ziel ist \u226570%.</string>
+    <string name="explain_gmi">Der Glukose-Management-Indikator sch\u00E4tzt dein HbA1c aus CGM-Daten. Er zeigt die langfristige Glukosekontrolle ohne Bluttest.</string>
+    <string name="explain_cv">Der Variationskoeffizient misst die Glukosevariabilit\u00E4t. Niedriger ist stabiler. Klinisches Ziel ist \u226436%.</string>
+    <string name="explain_avg_glucose">Dein durchschnittlicher Glukosewert f\u00FCr den Monat.</string>
+    <string name="explain_flatline">Eine Flatline ist ein Zeitraum, in dem aufeinanderfolgende Messwerte um \u2264%s abweichen \u2014 ultrastabiler Glukosewert. Mindestens 30 Minuten erforderlich.</string>
+    <string name="explain_in_range_streak">Der l\u00E4ngste zusammenh\u00E4ngende Zeitraum, in dem alle Messwerte zwischen deinem unteren und oberen Schwellenwert lagen.</string>
+    <string name="explain_steadiest_day">Der Tag mit dem niedrigsten Variationskoeffizienten \u2014 dein stabilster Glukosetag.</string>
+    <string name="explain_low_events">Ein Tief-Ereignis ist ein zusammenh\u00E4ngender Zeitraum unter %s. Ereignisse, die durch weniger als 15 Minuten im Zielbereich getrennt sind, werden als eines gez\u00E4hlt.</string>
+    <string name="explain_high_events">Ein Hoch-Ereignis ist ein zusammenh\u00E4ngender Zeitraum \u00FCber %s. Ereignisse, die durch weniger als 15 Minuten im Zielbereich getrennt sind, werden als eines gez\u00E4hlt.</string>
+    <string name="advice_worst_meal">Dieser Mahlzeitentyp hat deine niedrigste Zeit im Zielbereich. \u00DCberlege:\n\n\u2022 Kohlenhydratfaktor f\u00FCr diese Mahlzeit anpassen\n\u2022 Fr\u00FCher vorbolen\n\u2022 Alternativen mit niedrigerem GI ausprobieren\n\u2022 Bolus aufteilen, wenn die Mahlzeit gro\u00DF oder fettreich ist</string>
+    <string name="advice_worst_time_block">Diese Tageszeit hat deine niedrigste Zeit im Zielbereich. \u00DCberlege:\n\n\u2022 Basalrate w\u00E4hrend dieser Stunden \u00FCberpr\u00FCfen\n\u2022 Pr\u00FCfen, ob Mahlzeitenzeiten oder Kohlenhydratwahl beitragen\n\u2022 Eine Profilanpassung mit deinem Behandlungsteam besprechen</string>
+    <string name="advice_low_events">Tiefs k\u00F6nnen reduziert werden durch:\n\n\u2022 \u00DCberpr\u00FCfung der Basalraten w\u00E4hrend der Stunden, in denen Tiefs auftreten\n\u2022 Korrekturbolusse reduzieren, besonders vor dem Schlafengehen\n\u2022 Einen h\u00F6heren Niedrig-Glukose-Alarm einstellen, um Abf\u00E4lle fr\u00FCher zu erkennen\n\u2022 Schnell wirkende Kohlenhydrate griffbereit haben</string>
+    <string name="advice_high_events">Hochs k\u00F6nnen reduziert werden durch:\n\n\u2022 10\u201315 Minuten vor der Mahlzeit vorbolen\n\u2022 Kohlenhydratfaktoren f\u00FCr Mahlzeiten mit Spitzen \u00FCberpr\u00FCfen\n\u2022 Auf vergessene Bolusse oder zu niedrig gesch\u00E4tzte Kohlenhydrate achten\n\u2022 Basalraten w\u00E4hrend der Stunden mit Hochs anpassen</string>
 </resources>
