@@ -183,9 +183,9 @@
     <string name="settings_data_pull_desc">Download glucose history from your Nightscout server</string>
     <string name="settings_data_pull_treatments">Pull treatments</string>
     <string name="settings_data_pull_treatments_desc">Download bolus, carb, and basal history from Nightscout</string>
-    <string name="settings_data_pull_7d">7 days</string>
-    <string name="settings_data_pull_14d">14 days</string>
     <string name="settings_data_pull_30d">30 days</string>
+    <string name="settings_data_pull_60d">60 days</string>
+    <string name="settings_data_pull_90d">90 days</string>
     <string name="settings_data_integration">Integration</string>
     <string name="integration_connecting">Connecting…</string>
     <string name="integration_connected">Connected · %1$s: %2$s</string>
@@ -342,6 +342,29 @@
     <string name="widget_config_background">Background</string>
     <string name="widget_config_opacity">%1$d%%</string>
     <string name="widget_config_background_hint">Controls background only — graph and values stay fully visible</string>
+
+    <!-- Story -->
+    <string name="story_entry_title">Your %s Story</string>
+    <string name="story_entry_subtitle">Tap to see your monthly recap</string>
+    <string name="story_not_enough_data">Not enough data</string>
+    <string name="story_not_enough_data_detail">Need at least 7 days of readings</string>
+    <string name="story_share">Share your Story</string>
+    <string name="story_go_back">Go back</string>
+    <string name="story_snackbar_ready">Your %s Story is ready</string>
+    <string name="story_explainer_ok">Got it</string>
+    <string name="explain_tir">Time in Range (TIR) is the percentage of time your glucose was between your low and high thresholds. Clinical target is \u226570%.</string>
+    <string name="explain_gmi">Glucose Management Indicator estimates your HbA1c from CGM data. It shows long-term glucose control without a blood test.</string>
+    <string name="explain_cv">Coefficient of Variation measures glucose variability. Lower is more stable. Clinical target is \u226436%.</string>
+    <string name="explain_avg_glucose">Your average glucose reading for the month.</string>
+    <string name="explain_flatline">A flatline is a period where consecutive readings differ by \u2264%s \u2014 ultra-stable glucose. Minimum 30 minutes to count.</string>
+    <string name="explain_in_range_streak">The longest continuous period where all readings stayed between your low and high thresholds.</string>
+    <string name="explain_steadiest_day">The day with the lowest Coefficient of Variation \u2014 your most stable glucose day.</string>
+    <string name="explain_low_events">A low event is a continuous period below %s. Events separated by less than 15 minutes of in-range readings are counted as one.</string>
+    <string name="explain_high_events">A high event is a continuous period above %s. Events separated by less than 15 minutes of in-range readings are counted as one.</string>
+    <string name="advice_worst_meal">This meal type has your lowest time in range. Consider:\n\n\u2022 Adjusting carb ratio for this meal\n\u2022 Pre-bolusing earlier\n\u2022 Trying lower-GI carb alternatives\n\u2022 Splitting the bolus if the meal is large or fatty</string>
+    <string name="advice_worst_time_block">This time of day has your lowest time in range. Consider:\n\n\u2022 Reviewing your basal rate during these hours\n\u2022 Checking if meal timing or carb choices are contributing\n\u2022 Discussing a profile adjustment with your care team</string>
+    <string name="advice_low_events">Lows can be reduced by:\n\n\u2022 Reviewing basal rates during the hours when lows occur\n\u2022 Reducing correction boluses, especially before bed\n\u2022 Setting a higher low-glucose alert to catch drops earlier\n\u2022 Having fast-acting carbs accessible</string>
+    <string name="advice_high_events">Highs can be reduced by:\n\n\u2022 Pre-bolusing 10\u201315 minutes before meals\n\u2022 Reviewing carb ratios for meals that spike\n\u2022 Checking for missed boluses or under-counted carbs\n\u2022 Adjusting basal rates during high-event hours</string>
 
     <!-- Exercise types -->
     <string name="exercise_type_running">Run</string>

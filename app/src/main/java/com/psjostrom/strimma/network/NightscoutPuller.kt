@@ -18,7 +18,7 @@ class NightscoutPuller @Inject constructor(
 ) {
     companion object {
         private const val PAGE_SIZE = 2016
-        private const val AUTO_PULL_DAYS = 30
+        private const val AUTO_PULL_DAYS = 100
     }
 
     suspend fun pullHistory(days: Int): Result<Int> {

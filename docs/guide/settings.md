@@ -38,7 +38,7 @@ Choose how Strimma receives glucose data and configure Nightscout.
 | **Pull 30 days** | Backfill 30 days |
 
 !!! info "Auto-pull"
-    When Strimma's database is empty (first install), it automatically pulls 30 days of history from Nightscout if a URL and secret are configured.
+    When Strimma's database is empty (first install), it automatically pulls 100 days of history from Nightscout if a URL and secret are configured.
 
 See [Data Sources](../data-sources/overview.md) for details on each mode.
 
