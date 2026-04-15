@@ -617,10 +617,9 @@ private suspend fun shareStoryBitmap(
 ) {
     try {
         val bitmap = graphicsLayer.toImageBitmap()
-        val androidBitmap = Bitmap.createBitmap(
+        val androidBitmap = androidx.core.graphics.createBitmap(
             bitmap.width,
-            bitmap.height,
-            Bitmap.Config.ARGB_8888
+            bitmap.height
         )
         val pixels = IntArray(bitmap.width * bitmap.height)
         bitmap.readPixels(pixels)
