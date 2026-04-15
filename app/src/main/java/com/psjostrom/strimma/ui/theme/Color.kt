@@ -30,16 +30,16 @@ val Stale = Color(0xFF6A5F80)
 // --- TIR rating color ---
 val TirGood = Color(0xFF4ADE80)
 
-// --- Semantic tinted backgrounds (dark) ---
-val TintInRange = Color(0xFF152535)
-val TintGood = Color(0xFF1A3A2A)
-val TintWarning = Color(0xFF35280E)
-val TintDanger = Color(0xFF351525)
+// --- Semantic tinted backgrounds (dark) — derived from status colors, surface-adaptive ---
+val TintInRange = InRange.copy(alpha = 0.10f)
+val TintGood = TirGood.copy(alpha = 0.10f)
+val TintWarning = AboveHigh.copy(alpha = 0.12f)
+val TintDanger = BelowLow.copy(alpha = 0.10f)
 
-// --- Semantic tinted backgrounds (light) ---
-val LightTintInRange = Color(0xFFDCF3FB)
-val LightTintWarning = Color(0xFFFFF3D6)
-val LightTintDanger = Color(0xFFFFE0E8)
+// --- Semantic tinted backgrounds (light) — derived from status colors, surface-adaptive ---
+val LightTintInRange = InRange.copy(alpha = 0.12f)
+val LightTintWarning = AboveHigh.copy(alpha = 0.14f)
+val LightTintDanger = BelowLow.copy(alpha = 0.12f)
 
 // --- AGP 5-tier colors ---
 val VeryLow = Color(0xFFE53935)

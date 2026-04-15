@@ -45,7 +45,9 @@ import com.psjostrom.strimma.ui.theme.BelowLow
 import com.psjostrom.strimma.ui.theme.GraphAxisText
 import com.psjostrom.strimma.ui.theme.InRange
 import com.psjostrom.strimma.ui.theme.Stale
+import com.psjostrom.strimma.ui.theme.TintDanger
 import com.psjostrom.strimma.ui.theme.TintGood
+import com.psjostrom.strimma.ui.theme.TintWarning
 import com.psjostrom.strimma.ui.theme.TirGood
 import java.time.ZoneId
 import kotlin.math.max
@@ -354,9 +356,9 @@ private fun MealCard(
                         color = if (result.tirPercent >= 80) {
                             TintGood
                         } else if (result.tirPercent >= 50) {
-                            Color(0xFF35280E)
+                            TintWarning
                         } else {
-                            Color(0xFF351525)
+                            TintDanger
                         }
                     ) {
                         Text(

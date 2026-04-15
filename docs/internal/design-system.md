@@ -44,13 +44,24 @@ These are Strimma's identity. They never change between themes.
 
 ### Semantic Tinted Backgrounds
 
-Solid dark-tinted surfaces for contextual areas (prediction pills, alert backgrounds).
+Transparent overlays of status colors. Surface-adaptive — they blend with whatever
+surface they sit on, so they work on both the main background and elevated surfaces
+(bottom sheets, dialogs).
 
-| Token | Hex | Usage |
-|-------|-----|-------|
-| `TintInRange` | `#152535` | Cyan-tinted dark, in-range context |
-| `TintWarning` | `#35280E` | Amber-tinted dark, high glucose alert |
-| `TintDanger` | `#351525` | Red-tinted dark, low glucose alert |
+| Token | Definition | Usage |
+|-------|-----------|-------|
+| `TintInRange` | `InRange` @ 10% alpha | Cyan tint, in-range context |
+| `TintGood` | `TirGood` @ 10% alpha | Green tint, good TIR |
+| `TintWarning` | `AboveHigh` @ 12% alpha | Amber tint, high glucose / caution |
+| `TintDanger` | `BelowLow` @ 10% alpha | Coral tint, low glucose / danger |
+| `LightTintInRange` | `InRange` @ 12% alpha | Light theme cyan tint |
+| `LightTintWarning` | `AboveHigh` @ 14% alpha | Light theme amber tint |
+| `LightTintDanger` | `BelowLow` @ 12% alpha | Light theme coral tint |
+
+**Why transparent, not hardcoded hex?** Hardcoded tint colors are designed for one
+specific surface. Transparent status colors adapt to any surface — the underlying
+color bleeds through, maintaining the palette's undertone. Changing a status color
+automatically updates its tint.
 
 ### Graph Zone Fills
 
