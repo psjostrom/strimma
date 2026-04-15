@@ -1239,11 +1239,11 @@ fun Minimap(
         // Threshold lines (subtle)
         val dashEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 4f))
         drawLine(
-            color = Color(0x40FFB800), start = Offset(0f, yFor(bgLow)),
+            color = AboveHigh.copy(alpha = 0.25f), start = Offset(0f, yFor(bgLow)),
             end = Offset(w, yFor(bgLow)), pathEffect = dashEffect, strokeWidth = 1f
         )
         drawLine(
-            color = Color(0x40FFB800), start = Offset(0f, yFor(bgHigh)),
+            color = AboveHigh.copy(alpha = 0.25f), start = Offset(0f, yFor(bgHigh)),
             end = Offset(w, yFor(bgHigh)), pathEffect = dashEffect, strokeWidth = 1f
         )
 

@@ -342,7 +342,7 @@ private fun ExerciseBGGraph(
     val exerciseBorderColor = ExerciseDefault.copy(alpha = 0.5f)
     val thresholdDash = PathEffect.dashPathEffect(floatArrayOf(6f, 6f))
     val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
-    val cardColor = MaterialTheme.colorScheme.surfaceContainerHigh
+    val cardColor = MaterialTheme.colorScheme.surfaceVariant
 
     Surface(
         modifier = modifier,

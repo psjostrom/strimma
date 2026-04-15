@@ -828,7 +828,7 @@ internal fun PlannedWorkoutSheet(
 
                     for (reason in guidance.reasons) {
                         Spacer(Modifier.height(4.dp))
-                        Text(reason.message, color = MaterialTheme.colorScheme.outline, fontSize = 12.sp)
+                        Text(reason.message, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                     }
                     if (guidance.suggestions.isNotEmpty()) {
                         Spacer(Modifier.height(8.dp))
