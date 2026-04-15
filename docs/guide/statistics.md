@@ -12,6 +12,12 @@ Open statistics from **Settings > Statistics**.
 
 ---
 
+## Monthly Story
+
+A card at the top of the Statistics screen links to your **Monthly Story** — a curated summary of the previous month's glucose data. See [Monthly Story](story.md) for details.
+
+---
+
 ## Time Periods
 
 Select the time period at the top:
@@ -135,7 +141,7 @@ Each meal shows:
 ### Data Requirements
 
 - Treatment sync must be enabled
-- Treatments are retained for 30 days
+- Treatments are retained for 100 days
 - Each meal needs ≥3 pre-meal readings (15-min window) and ≥5 postprandial readings to be analyzed
 - The postprandial window is 3 hours by default, extending to 4 hours if glucose hasn't recovered
 

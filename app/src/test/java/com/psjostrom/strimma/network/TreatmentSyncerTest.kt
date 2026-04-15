@@ -75,11 +75,11 @@ class TreatmentSyncerTest {
     }
 
     @Test
-    fun `gap exceeding 30 days caps at full lookback`() {
-        val lastFetch = now - 45L * MS_PER_DAY // 45 days ago
+    fun `gap exceeding full lookback caps at full lookback`() {
+        val lastFetch = now - 150L * MS_PER_DAY // 150 days ago
         val action = computeStartupAction(lastFetch, now) as StartupAction.DeltaSync
 
-        // since capped at 30 days ago, not 45
+        // since capped at FULL_LOOKBACK_DAYS ago, not 150
         assertEquals(now - FULL_LOOKBACK_MS, action.since)
         // gapDays capped at FULL_LOOKBACK_DAYS
         assertEquals(FULL_LOOKBACK_DAYS * TREATMENTS_PER_DAY, action.count)
@@ -93,12 +93,12 @@ class TreatmentSyncerTest {
     }
 
     @Test
-    fun `gap exactly 30 days returns DeltaSync capped at 30 days`() {
+    fun `gap exactly at full lookback returns DeltaSync capped at full lookback`() {
         val lastFetch = now - FULL_LOOKBACK_MS
         val action = computeStartupAction(lastFetch, now) as StartupAction.DeltaSync
 
         assertEquals(lastFetch, action.since)
-        // (30 + 1) coerced to 30
+        // (FULL_LOOKBACK_DAYS + 1) coerced to FULL_LOOKBACK_DAYS
         assertEquals(FULL_LOOKBACK_DAYS * TREATMENTS_PER_DAY, action.count)
     }
 

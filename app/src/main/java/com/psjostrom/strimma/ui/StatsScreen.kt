@@ -1,5 +1,6 @@
 package com.psjostrom.strimma.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -7,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -26,6 +28,7 @@ import com.psjostrom.strimma.data.AgpResult
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseStats
 import com.psjostrom.strimma.data.GlucoseUnit
+import com.psjostrom.strimma.data.story.toMillisRange
 import com.psjostrom.strimma.data.HbA1cUnit
 import com.psjostrom.strimma.data.StatsCalculator
 import com.psjostrom.strimma.data.Treatment
@@ -71,6 +74,8 @@ fun StatsScreen(
     mealAnalyzer: MealAnalyzer,
     mealTimeSlotConfig: MealTimeSlotConfig,
     onExportCsv: suspend (Int) -> String,
+    onNavigateToStory: ((Int, Int) -> Unit)? = null,
+    storyViewedMonth: String = "",
     onBack: (() -> Unit)? = null
 ) {
     val bg = MaterialTheme.colorScheme.background
@@ -143,6 +148,59 @@ fun StatsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Spacer(modifier = Modifier.height(4.dp))
+
+            // Monthly Story entry card — last completed month only, hidden if insufficient data or already viewed
+            onNavigateToStory?.let { navigate ->
+                val lastMonth = java.time.YearMonth.now().minusMonths(1)
+                val lastMonthKey = "%d-%02d".format(lastMonth.year, lastMonth.monthValue)
+                var hasData by remember { mutableStateOf(false) }
+                LaunchedEffect(Unit) {
+                    val zone = java.time.ZoneId.systemDefault()
+                    val (start, end) = lastMonth.toMillisRange(zone)
+                    val hoursAgo = ((System.currentTimeMillis() - start) / 3_600_000L).toInt()
+                    val readings = onLoadReadings(hoursAgo)
+                    val inMonth = readings.filter { it.ts in start..end }
+                    val days = inMonth.map {
+                        java.time.Instant.ofEpochMilli(it.ts).atZone(zone).toLocalDate()
+                    }.distinct().size
+                    hasData = days >= 7
+                }
+                if (hasData && storyViewedMonth != lastMonthKey) {
+                    val monthName = lastMonth.month.getDisplayName(
+                        java.time.format.TextStyle.FULL, java.util.Locale.getDefault()
+                    )
+                    Surface(
+                        onClick = { navigate(lastMonth.year, lastMonth.monthValue) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.medium,
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                    ) {
+                        Row(
+                            Modifier.padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    stringResource(R.string.story_entry_title, monthName),
+                                    style = MaterialTheme.typography.titleSmall
+                                )
+                                Text(
+                                    stringResource(R.string.story_entry_subtitle),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowForward,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
 
             // Tab selector
             SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {

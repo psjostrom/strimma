@@ -156,9 +156,9 @@
     <string name="settings_data_nightscout">Nightscout</string>
     <string name="settings_data_pull">H\u00E4mta fr\u00E5n Nightscout</string>
     <string name="settings_data_pull_desc">Ladda ner glukoshistorik fr\u00E5n din Nightscout-server</string>
-    <string name="settings_data_pull_7d">7 dagar</string>
-    <string name="settings_data_pull_14d">14 dagar</string>
     <string name="settings_data_pull_30d">30 dagar</string>
+    <string name="settings_data_pull_60d">60 dagar</string>
+    <string name="settings_data_pull_90d">90 dagar</string>
     <string name="settings_data_integration">Integration</string>
     <string name="integration_connecting">Ansluter…</string>
     <string name="integration_connected">Ansluten · %1$s: %2$s</string>
@@ -473,4 +473,27 @@
     <string name="preactivity_caution">OBSERVERA</string>
     <string name="preactivity_wait">VÄNTA</string>
     <string name="preactivity_event_in">%1$s om %2$s</string>
+
+    <!-- Story -->
+    <string name="story_entry_title">Din %s-ber\u00E4ttelse</string>
+    <string name="story_entry_subtitle">Tryck f\u00F6r att se din m\u00E5nadssammanfattning</string>
+    <string name="story_not_enough_data">Inte tillr\u00E4ckligt med data</string>
+    <string name="story_not_enough_data_detail">Minst 7 dagars avl\u00E4sningar kr\u00E4vs</string>
+    <string name="story_share">Dela din ber\u00E4ttelse</string>
+    <string name="story_go_back">G\u00E5 tillbaka</string>
+    <string name="story_snackbar_ready">Din %s-ber\u00E4ttelse \u00E4r klar</string>
+    <string name="story_explainer_ok">Uppfattat</string>
+    <string name="explain_tir">Tid i intervall (TIR) \u00E4r andelen tid ditt glukos var mellan dina l\u00E5ga och h\u00F6ga tr\u00F6sklar. Kliniskt m\u00E5l \u00E4r \u226570%.</string>
+    <string name="explain_gmi">Glucose Management Indicator uppskattar ditt HbA1c fr\u00E5n CGM-data. Det visar l\u00E5ngsiktig glukoskontroll utan blodprov.</string>
+    <string name="explain_cv">Variationskoefficienten m\u00E4ter glukosvariabilitet. L\u00E4gre \u00E4r mer stabilt. Kliniskt m\u00E5l \u00E4r \u226436%.</string>
+    <string name="explain_avg_glucose">Ditt genomsnittliga glukov\u00E4rde f\u00F6r m\u00E5naden.</string>
+    <string name="explain_flatline">En flatline \u00E4r en period d\u00E4r konsekutiva avl\u00E4sningar skiljer sig med \u2264%s \u2014 ultrastabilt glukos. Minst 30 minuter f\u00F6r att r\u00E4knas.</string>
+    <string name="explain_in_range_streak">Den l\u00E4ngsta sammanh\u00E4ngande perioden d\u00E4r alla avl\u00E4sningar l\u00E5g mellan dina l\u00E5ga och h\u00F6ga tr\u00F6sklar.</string>
+    <string name="explain_steadiest_day">Dagen med l\u00E4gst variationskoefficient \u2014 din mest stabila glukosdag.</string>
+    <string name="explain_low_events">En l\u00E5g-h\u00E4ndelse \u00E4r en sammanh\u00E4ngande period under %s. H\u00E4ndelser separerade av mindre \u00E4n 15 minuter inom intervall r\u00E4knas som en.</string>
+    <string name="explain_high_events">En h\u00F6g-h\u00E4ndelse \u00E4r en sammanh\u00E4ngande period \u00F6ver %s. H\u00E4ndelser separerade av mindre \u00E4n 15 minuter inom intervall r\u00E4knas som en.</string>
+    <string name="advice_worst_meal">Denna m\u00E5ltidstyp har din l\u00E4gsta tid i intervall. \u00D6verv\u00E4g:\n\n\u2022 Justera kolhydratkvoten f\u00F6r denna m\u00E5ltid\n\u2022 F\u00F6rbolusa tidigare\n\u2022 Testa alternativ med l\u00E4gre GI\n\u2022 Dela bolusen om m\u00E5ltiden \u00E4r stor eller fet</string>
+    <string name="advice_worst_time_block">Denna tid p\u00E5 dygnet har din l\u00E4gsta tid i intervall. \u00D6verv\u00E4g:\n\n\u2022 Granska din basaldos under dessa timmar\n\u2022 Kontrollera om m\u00E5ltidstiming eller kolhydratval bidrar\n\u2022 Diskutera en profiljustering med ditt v\u00E5rdteam</string>
+    <string name="advice_low_events">L\u00E5ga v\u00E4rden kan minskas genom:\n\n\u2022 Granska basaldoser under timmarna d\u00E5 l\u00E5ga v\u00E4rden intr\u00E4ffar\n\u2022 Minska korrektionsbolusar, s\u00E4rskilt innan s\u00E4ngs\n\u2022 St\u00E4lla in en h\u00F6gre l\u00E5g-glukosgr\u00E4ns f\u00F6r att f\u00E5nga fall tidigare\n\u2022 Ha snabbverkande kolhydrater tillg\u00E4ngliga</string>
+    <string name="advice_high_events">H\u00F6ga v\u00E4rden kan minskas genom:\n\n\u2022 F\u00F6rbolusa 10\u201315 minuter innan m\u00E5ltid\n\u2022 Granska kolhydratkvoter f\u00F6r m\u00E5ltider som ger toppar\n\u2022 Kontrollera om bolusar missats eller kolhydrater r\u00E4knats f\u00F6r l\u00E5gt\n\u2022 Justera basaldoser under timmar med h\u00F6ga v\u00E4rden</string>
 </resources>

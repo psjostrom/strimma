@@ -156,9 +156,9 @@
     <string name="settings_data_nightscout">Nightscout</string>
     <string name="settings_data_pull">T\u00E9l\u00E9charger depuis Nightscout</string>
     <string name="settings_data_pull_desc">T\u00E9l\u00E9charger l\u2019historique de glyc\u00E9mie depuis votre serveur Nightscout</string>
-    <string name="settings_data_pull_7d">7 jours</string>
-    <string name="settings_data_pull_14d">14 jours</string>
     <string name="settings_data_pull_30d">30 jours</string>
+    <string name="settings_data_pull_60d">60 jours</string>
+    <string name="settings_data_pull_90d">90 jours</string>
     <string name="settings_data_integration">Int\u00E9gration</string>
     <string name="integration_connecting">Connexion…</string>
     <string name="integration_connected">Connecté · %1$s: %2$s</string>
@@ -474,4 +474,27 @@
     <string name="preactivity_caution">ATTENTION</string>
     <string name="preactivity_wait">ATTENDEZ</string>
     <string name="preactivity_event_in">%1$s dans %2$s</string>
+
+    <!-- Story -->
+    <string name="story_entry_title">Votre r\u00E9cap %s</string>
+    <string name="story_entry_subtitle">Appuyez pour voir votre bilan mensuel</string>
+    <string name="story_not_enough_data">Pas assez de donn\u00E9es</string>
+    <string name="story_not_enough_data_detail">Au moins 7 jours de lectures n\u00E9cessaires</string>
+    <string name="story_share">Partagez votre r\u00E9cap</string>
+    <string name="story_go_back">Retour</string>
+    <string name="story_snackbar_ready">Votre r\u00E9cap %s est pr\u00EAt</string>
+    <string name="story_explainer_ok">Compris</string>
+    <string name="explain_tir">Le Temps dans la Cible (TIR) est le pourcentage de temps o\u00F9 votre glyc\u00E9mie \u00E9tait entre vos seuils bas et haut. L\u0027objectif clinique est \u226570%.</string>
+    <string name="explain_gmi">L\u0027indicateur de gestion du glucose estime votre HbA1c \u00E0 partir des donn\u00E9es CGM. Il montre le contr\u00F4le glyc\u00E9mique \u00E0 long terme sans prise de sang.</string>
+    <string name="explain_cv">Le coefficient de variation mesure la variabilit\u00E9 glyc\u00E9mique. Plus bas est plus stable. L\u0027objectif clinique est \u226436%.</string>
+    <string name="explain_avg_glucose">Votre glyc\u00E9mie moyenne pour le mois.</string>
+    <string name="explain_flatline">Une flatline est une p\u00E9riode o\u00F9 les lectures cons\u00E9cutives diff\u00E8rent de \u2264%s \u2014 glyc\u00E9mie ultra-stable. Minimum 30 minutes pour compter.</string>
+    <string name="explain_in_range_streak">La plus longue p\u00E9riode continue o\u00F9 toutes les lectures sont rest\u00E9es entre vos seuils bas et haut.</string>
+    <string name="explain_steadiest_day">Le jour avec le plus faible coefficient de variation \u2014 votre jour de glyc\u00E9mie le plus stable.</string>
+    <string name="explain_low_events">Un \u00E9v\u00E9nement bas est une p\u00E9riode continue en dessous de %s. Les \u00E9v\u00E9nements s\u00E9par\u00E9s par moins de 15 minutes dans la cible sont compt\u00E9s comme un seul.</string>
+    <string name="explain_high_events">Un \u00E9v\u00E9nement haut est une p\u00E9riode continue au-dessus de %s. Les \u00E9v\u00E9nements s\u00E9par\u00E9s par moins de 15 minutes dans la cible sont compt\u00E9s comme un seul.</string>
+    <string name="advice_worst_meal">Ce type de repas a votre plus faible temps dans la cible. Envisagez :\n\n\u2022 Ajuster le ratio de glucides pour ce repas\n\u2022 Pr\u00E9-boluser plus t\u00F4t\n\u2022 Essayer des alternatives \u00E0 plus faible IG\n\u2022 Fractionner le bolus si le repas est copieux ou gras</string>
+    <string name="advice_worst_time_block">Cette p\u00E9riode de la journ\u00E9e a votre plus faible temps dans la cible. Envisagez :\n\n\u2022 V\u00E9rifier votre d\u00E9bit basal pendant ces heures\n\u2022 V\u00E9rifier si les horaires de repas ou les choix de glucides y contribuent\n\u2022 Discuter d\u0027un ajustement de profil avec votre \u00E9quipe soignante</string>
+    <string name="advice_low_events">Les hypoglyc\u00E9mies peuvent \u00EAtre r\u00E9duites en :\n\n\u2022 V\u00E9rifiant les d\u00E9bits basaux pendant les heures o\u00F9 les hypos surviennent\n\u2022 R\u00E9duisant les bolus de correction, surtout avant le coucher\n\u2022 R\u00E9glant une alerte de glyc\u00E9mie basse plus \u00E9lev\u00E9e pour d\u00E9tecter les baisses plus t\u00F4t\n\u2022 Gardant des glucides \u00E0 action rapide \u00E0 port\u00E9e de main</string>
+    <string name="advice_high_events">Les hyperglyc\u00E9mies peuvent \u00EAtre r\u00E9duites en :\n\n\u2022 Pr\u00E9-bolusant 10\u201315 minutes avant les repas\n\u2022 V\u00E9rifiant les ratios de glucides pour les repas qui causent des pics\n\u2022 V\u00E9rifiant les bolus oubli\u00E9s ou les glucides sous-estim\u00E9s\n\u2022 Ajustant les d\u00E9bits basaux pendant les heures d\u0027hypergluc\u00E9mie</string>
 </resources>
