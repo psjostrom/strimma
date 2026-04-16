@@ -17,11 +17,14 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.SerializationException
+import java.io.IOException
 import java.security.MessageDigest
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
-import java.util.concurrent.CancellationException
+import java.time.format.DateTimeParseException
+import kotlin.coroutines.cancellation.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -133,14 +136,16 @@ open class NightscoutClient @Inject constructor() {
             } else {
                 ConnectionTestResult(false, error = "HTTP ${response.status.value}")
             }
-        } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+        } catch (e: CancellationException) {
             throw e
-        } catch (
-            @Suppress("TooGenericExceptionCaught") // Network boundary
-            e: Exception
-        ) {
+        } catch (e: IOException) {
             com.psjostrom.strimma.receiver.DebugLog.log(
                 message = "Connection test error: ${e.message?.take(MAX_ERROR_LENGTH)}"
+            )
+            ConnectionTestResult(false, error = e.message?.take(MAX_ERROR_LENGTH) ?: "Connection failed")
+        } catch (e: SerializationException) {
+            com.psjostrom.strimma.receiver.DebugLog.log(
+                message = "Connection test parse error: ${e.message?.take(MAX_ERROR_LENGTH)}"
             )
             ConnectionTestResult(false, error = e.message?.take(MAX_ERROR_LENGTH) ?: "Connection failed")
         }
@@ -179,12 +184,14 @@ open class NightscoutClient @Inject constructor() {
             response.status.isSuccess()
         } catch (e: CancellationException) {
             throw e
-        } catch (
-            @Suppress("TooGenericExceptionCaught") // Network boundary — Ktor can throw any exception type
-            e: Exception
-        ) {
+        } catch (e: IOException) {
             com.psjostrom.strimma.receiver.DebugLog.log(
                 message = "Push error: ${e.message?.take(MAX_ERROR_LENGTH)}"
+            )
+            false
+        } catch (e: SerializationException) {
+            com.psjostrom.strimma.receiver.DebugLog.log(
+                message = "Push serialize error: ${e.message?.take(MAX_ERROR_LENGTH)}"
             )
             false
         }
@@ -216,12 +223,14 @@ open class NightscoutClient @Inject constructor() {
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (
-            @Suppress("TooGenericExceptionCaught") // Network boundary — Ktor can throw any exception type
-            e: Exception
-        ) {
+        } catch (e: IOException) {
             com.psjostrom.strimma.receiver.DebugLog.log(
                 message = "Fetch error: ${e.message?.take(MAX_ERROR_LENGTH)}"
+            )
+            null
+        } catch (e: SerializationException) {
+            com.psjostrom.strimma.receiver.DebugLog.log(
+                message = "Fetch parse error: ${e.message?.take(MAX_ERROR_LENGTH)}"
             )
             null
         }
@@ -276,12 +285,14 @@ open class NightscoutClient @Inject constructor() {
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (
-            @Suppress("TooGenericExceptionCaught") // Network boundary — Ktor can throw any exception type
-            e: Exception
-        ) {
+        } catch (e: IOException) {
             com.psjostrom.strimma.receiver.DebugLog.log(
                 message = "Treatments fetch error: ${e.message?.take(MAX_ERROR_LENGTH)}"
+            )
+            emptyList()
+        } catch (e: SerializationException) {
+            com.psjostrom.strimma.receiver.DebugLog.log(
+                message = "Treatments parse error: ${e.message?.take(MAX_ERROR_LENGTH)}"
             )
             emptyList()
         }
@@ -290,10 +301,10 @@ open class NightscoutClient @Inject constructor() {
     private fun parseIsoTimestamp(iso: String): Long? {
         return try {
             java.time.OffsetDateTime.parse(iso).toInstant().toEpochMilli()
-        } catch (_: Exception) {
+        } catch (_: DateTimeParseException) {
             try {
                 Instant.from(isoFormatter.parse(iso)).toEpochMilli()
-            } catch (_: Exception) {
+            } catch (_: DateTimeParseException) {
                 null
             }
         }
