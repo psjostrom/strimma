@@ -9,6 +9,7 @@ import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.TreatmentDao
+import com.psjostrom.strimma.data.calendar.CalendarPoller
 import com.psjostrom.strimma.data.calendar.CalendarReader
 import com.psjostrom.strimma.data.calendar.GuidanceState
 import com.psjostrom.strimma.data.health.ExerciseBGAnalyzer
@@ -70,6 +71,7 @@ class PreActivityGuidanceTest {
     @Inject lateinit var exerciseDao: ExerciseDao
     @Inject lateinit var exerciseBGAnalyzer: ExerciseBGAnalyzer
     @Inject lateinit var calendarReader: CalendarReader
+    @Inject lateinit var calendarPoller: CalendarPoller
     @Inject lateinit var nightscoutFollower: NightscoutFollower
     @Inject lateinit var libreLinkUpFollower: LibreLinkUpFollower
     @Inject lateinit var nightscoutPuller: NightscoutPuller
@@ -116,7 +118,7 @@ class PreActivityGuidanceTest {
     private fun createViewModel() = MainViewModel(
         dao, treatmentDao, exerciseDao, exerciseBGAnalyzer, settings,
         nightscoutFollower, libreLinkUpFollower, nightscoutPuller, nightscoutPusher,
-        treatmentSyncer, calendarReader, mealAnalyzer, tidepoolAuthManager,
+        treatmentSyncer, calendarPoller, mealAnalyzer, tidepoolAuthManager,
         tidepoolUploader, updateChecker, updateInstaller
     )
 

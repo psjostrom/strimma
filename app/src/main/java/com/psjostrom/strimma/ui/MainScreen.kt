@@ -260,7 +260,8 @@ fun MainScreen(
                     onExerciseTap = { selectedExercise = it },
                     onViewportChange = { viewportEnd = it },
                     onZoomChange = { zoomScale = it },
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    prediction = prediction
                 )
             }
 
@@ -745,6 +746,7 @@ fun GlucoseGraph(
     treatments: List<Treatment> = emptyList(),
     exerciseSessions: List<StoredExerciseSession> = emptyList(),
     onExerciseTap: (StoredExerciseSession) -> Unit = {},
+    prediction: Prediction? = null,
 ) {
     val predictionMs = predictionMinutes * 60_000L
     var selectedReading by remember { mutableStateOf<GlucoseReading?>(null) }
@@ -1003,14 +1005,14 @@ fun GlucoseGraph(
         }
 
         // Prediction curve (least-squares fit to last 12 min of readings)
-        val prediction = PredictionComputer.compute(readings, predictionMinutes, bgLow, bgHigh)
-        if (prediction != null) {
+        val pred = prediction ?: PredictionComputer.compute(readings, predictionMinutes, bgLow, bgHigh)
+        if (pred != null) {
             val predColor = predictionColor
             val predDash = PathEffect.dashPathEffect(floatArrayOf(6f, 6f))
-            var prevPx = xFor(prediction.anchorTs)
-            var prevPy = yFor(prediction.anchorMgdl)
-            for (pt in prediction.points) {
-                val px = xFor(prediction.anchorTs + pt.minuteOffset * 60_000L)
+            var prevPx = xFor(pred.anchorTs)
+            var prevPy = yFor(pred.anchorMgdl)
+            for (pt in pred.points) {
+                val px = xFor(pred.anchorTs + pt.minuteOffset * 60_000L)
                 val py = yFor(pt.mgdl)
                 if (px > size.width - marginRight) break
                 drawLine(

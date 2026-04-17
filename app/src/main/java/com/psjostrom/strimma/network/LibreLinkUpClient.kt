@@ -11,9 +11,11 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
+import java.io.IOException
 import java.security.MessageDigest
-import java.util.concurrent.CancellationException
+import kotlin.coroutines.cancellation.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -154,11 +156,11 @@ class LibreLinkUpClient @Inject constructor() {
             parseLoginResponse(loginResponse, email, password, baseUrl, allowRedirect)
         } catch (e: CancellationException) {
             throw e
-        } catch (
-            @Suppress("TooGenericExceptionCaught")
-            e: Exception
-        ) {
+        } catch (e: IOException) {
             DebugLog.log(message = "LLU login error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
+            null
+        } catch (e: SerializationException) {
+            DebugLog.log(message = "LLU login parse error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
             null
         }
     }
@@ -212,11 +214,11 @@ class LibreLinkUpClient @Inject constructor() {
             response.body<LluConnectionsResponse>().data
         } catch (e: CancellationException) {
             throw e
-        } catch (
-            @Suppress("TooGenericExceptionCaught")
-            e: Exception
-        ) {
+        } catch (e: IOException) {
             DebugLog.log(message = "LLU connections error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
+            null
+        } catch (e: SerializationException) {
+            DebugLog.log(message = "LLU connections parse error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
             null
         }
     }
@@ -233,15 +235,16 @@ class LibreLinkUpClient @Inject constructor() {
             response.body<LluGraphResponse>().data
         } catch (e: CancellationException) {
             throw e
-        } catch (
-            @Suppress("TooGenericExceptionCaught")
-            e: Exception
-        ) {
+        } catch (e: IOException) {
             DebugLog.log(message = "LLU graph error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
+            null
+        } catch (e: SerializationException) {
+            DebugLog.log(message = "LLU graph parse error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
             null
         }
     }
 
+    @Suppress("CyclomaticComplexMethod") // 10-region lookup is inherently branchy
     private suspend fun resolveRegionUrl(baseUrl: String, region: String): String? {
         return try {
             val response = client.get("$baseUrl/llu/config/country?country=DE") {
@@ -265,11 +268,11 @@ class LibreLinkUpClient @Inject constructor() {
             regionDef?.lslApi?.takeIf { it.isNotBlank() }
         } catch (e: CancellationException) {
             throw e
-        } catch (
-            @Suppress("TooGenericExceptionCaught")
-            e: Exception
-        ) {
+        } catch (e: IOException) {
             DebugLog.log(message = "LLU region resolve error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
+            null
+        } catch (e: SerializationException) {
+            DebugLog.log(message = "LLU region resolve parse error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
             null
         }
     }
