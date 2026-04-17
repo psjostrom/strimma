@@ -214,7 +214,9 @@ class MainActivity : ComponentActivity() {
             val viewModel: MainViewModel = hiltViewModel()
             viewModelRef = viewModel
             val setupCompleted by viewModel.setupCompleted.collectAsState()
-            val themeMode by viewModel.themeMode.collectAsState()
+            val themeMode by viewModel.settings.themeMode.collectAsState(
+                initial = com.psjostrom.strimma.ui.theme.ThemeMode.System
+            )
 
             // Wait for DataStore to load before showing anything
             if (setupCompleted == null) return@setContent
