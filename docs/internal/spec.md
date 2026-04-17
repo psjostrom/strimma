@@ -91,7 +91,7 @@ CamAPS FX (closed-loop pump control)
     Watches / other consumers
 ```
 
-Strimma uses a `NotificationListenerService` to parse glucose values from CamAPS FX's ongoing notification (see §4).
+Strimma uses a `NotificationListenerService` to parse glucose values from CGM app notifications (see §4). Most CGM apps use ongoing notifications; some (Eversense, Dexcom ONE, Medtronic) use regular notifications and are handled via an allowlist bypass.
 
 ---
 

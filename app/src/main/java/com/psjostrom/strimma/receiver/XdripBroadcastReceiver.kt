@@ -32,8 +32,14 @@ class XdripBroadcastReceiver : BroadcastReceiver() {
         val sgv = intent.getDoubleExtra("com.eveningoutpost.dexdrip.Extras.BgEstimate", 0.0)
         val timestamp = intent.getLongExtra("com.eveningoutpost.dexdrip.Extras.Time", 0L)
 
-        if (sgv <= 0.0 || timestamp <= 0L) return
-        if (!GlucoseReading.isValidSgv(sgv)) return
+        if (sgv <= 0.0 || timestamp <= 0L) {
+            DebugLog.log(message = "xDrip broadcast: invalid data (sgv=$sgv, ts=$timestamp)")
+            return
+        }
+        if (!GlucoseReading.isValidSgv(sgv)) {
+            DebugLog.log(message = "xDrip broadcast: sgv ${sgv.toInt()} outside valid range")
+            return
+        }
 
         DebugLog.log(message = "xDrip broadcast: ${sgv.toInt()} mg/dL")
 
