@@ -9,9 +9,11 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
+import java.io.IOException
 import kotlin.coroutines.cancellation.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -70,11 +72,11 @@ class TidepoolClient @Inject constructor() {
             datasets.firstOrNull()?.uploadId
         } catch (e: CancellationException) {
             throw e
-        } catch (
-            @Suppress("TooGenericExceptionCaught") // Network boundary — Ktor can throw any exception type
-            e: Exception
-        ) {
+        } catch (e: IOException) {
             DebugLog.log(message = "Tidepool getExistingDataset error: ${e.message?.take(MAX_ERROR_LENGTH)}")
+            null
+        } catch (e: SerializationException) {
+            DebugLog.log(message = "Tidepool getExistingDataset parse error: ${e.message?.take(MAX_ERROR_LENGTH)}")
             null
         }
     }
@@ -114,11 +116,11 @@ class TidepoolClient @Inject constructor() {
             uploadId
         } catch (e: CancellationException) {
             throw e
-        } catch (
-            @Suppress("TooGenericExceptionCaught") // Network boundary — Ktor can throw any exception type
-            e: Exception
-        ) {
+        } catch (e: IOException) {
             DebugLog.log(message = "Tidepool createDataset error: ${e.message?.take(MAX_ERROR_LENGTH)}")
+            null
+        } catch (e: SerializationException) {
+            DebugLog.log(message = "Tidepool createDataset parse error: ${e.message?.take(MAX_ERROR_LENGTH)}")
             null
         }
     }
@@ -132,7 +134,7 @@ class TidepoolClient @Inject constructor() {
             val root = json.parseToJsonElement(responseText).jsonObject
             val obj = root["data"]?.jsonObject ?: root
             (obj["uploadId"] ?: obj["id"])?.toString()?.trim('"')
-        } catch (e: kotlinx.serialization.SerializationException) {
+        } catch (e: SerializationException) {
             DebugLog.log(message = "Tidepool parseUploadId error: ${e.message?.take(MAX_ERROR_LENGTH)}")
             null
         } catch (e: IllegalArgumentException) {
@@ -169,11 +171,11 @@ class TidepoolClient @Inject constructor() {
             true
         } catch (e: CancellationException) {
             throw e
-        } catch (
-            @Suppress("TooGenericExceptionCaught") // Network boundary — Ktor can throw any exception type
-            e: Exception
-        ) {
+        } catch (e: IOException) {
             DebugLog.log(message = "Tidepool uploadData error: ${e.message?.take(MAX_ERROR_LENGTH)}")
+            false
+        } catch (e: SerializationException) {
+            DebugLog.log(message = "Tidepool uploadData parse error: ${e.message?.take(MAX_ERROR_LENGTH)}")
             false
         }
     }

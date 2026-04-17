@@ -7,6 +7,9 @@ import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.receiver.DebugLog
 import kotlinx.coroutines.flow.first
+import kotlinx.serialization.SerializationException
+import java.io.IOException
+import kotlin.coroutines.cancellation.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -84,13 +87,13 @@ class NightscoutPuller @Inject constructor(
 
             DebugLog.log(message = "Pull: $totalInserted readings from Nightscout")
             Result.success(totalInserted)
-        } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+        } catch (e: CancellationException) {
             throw e
-        } catch (
-            @Suppress("TooGenericExceptionCaught") // Network boundary — Ktor can throw any exception type
-            e: Exception
-        ) {
+        } catch (e: IOException) {
             DebugLog.log(message = "Pull error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
+            Result.failure(e)
+        } catch (e: SerializationException) {
+            DebugLog.log(message = "Pull parse error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
             Result.failure(e)
         }
     }
