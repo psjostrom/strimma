@@ -13,8 +13,7 @@ import com.psjostrom.strimma.data.IOBComputer
 import com.psjostrom.strimma.data.InsulinType
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
-import com.psjostrom.strimma.receiver.DebugLog
-import com.psjostrom.strimma.data.calendar.CalendarReader
+import com.psjostrom.strimma.data.calendar.CalendarPoller
 import com.psjostrom.strimma.data.calendar.GuidanceState
 import com.psjostrom.strimma.data.calendar.PreActivityAssessor
 import com.psjostrom.strimma.data.calendar.WorkoutEvent
@@ -48,10 +47,8 @@ import java.time.YearMonth
 import java.time.ZoneId
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -69,7 +66,7 @@ class MainViewModel @Inject constructor(
     private val nightscoutPuller: NightscoutPuller,
     private val nightscoutPusher: NightscoutPusher,
     private val treatmentSyncer: TreatmentSyncer,
-    private val calendarReader: CalendarReader,
+    private val calendarPoller: CalendarPoller,
     val mealAnalyzer: MealAnalyzer,
     private val tidepoolAuthManager: TidepoolAuthManager,
     private val tidepoolUploader: TidepoolUploader,
@@ -338,8 +335,6 @@ class MainViewModel @Inject constructor(
             sessions.filter { it.startTime >= since }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    private val _cachedEvent = MutableStateFlow<WorkoutEvent?>(null)
-
     val workoutCalendarId: StateFlow<Long> = settings.workoutCalendarId
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), -1L)
     val workoutCalendarName: StateFlow<String> = settings.workoutCalendarName
@@ -358,46 +353,12 @@ class MainViewModel @Inject constructor(
     fun setExerciseTarget(category: ExerciseCategory, low: Float, high: Float) =
         viewModelScope.launch { settings.setExerciseTarget(category, low, high) }
 
-    private suspend fun fetchNextEvent(calId: Long, lookaheadHours: Int): WorkoutEvent? =
-        if (calId >= 0) {
-            calendarReader.getNextWorkout(calId, lookaheadHours.toLong() * MS_PER_HOUR)
-        } else null
-
     init {
-        // React to calendarId/lookahead changes from DataStore
-        viewModelScope.launch {
-            combine(workoutCalendarId, workoutLookaheadHours) { calId, hours -> calId to hours }
-                .collect { (calId, hours) ->
-                    _cachedEvent.value = try {
-                        fetchNextEvent(calId, hours)
-                    } catch (
-                        @Suppress("TooGenericExceptionCaught")
-                        e: Exception
-                    ) {
-                        DebugLog.log("Calendar poll failed: ${e.message}")
-                        null
-                    }
-                }
-        }
-        // Background poll for calendar changes (events added/removed externally)
-        viewModelScope.launch {
-            while (currentCoroutineContext().isActive) {
-                delay(MS_PER_MINUTE)
-                _cachedEvent.value = try {
-                    fetchNextEvent(workoutCalendarId.value, workoutLookaheadHours.value)
-                } catch (
-                    @Suppress("TooGenericExceptionCaught")
-                    e: Exception
-                ) {
-                    DebugLog.log("Calendar poll failed: ${e.message}")
-                    null
-                }
-            }
-        }
+        calendarPoller.start(viewModelScope)
     }
 
     val guidanceState: StateFlow<GuidanceState> = combine(
-        _cachedEvent,
+        calendarPoller.nextEvent,
         latestReading,
         readings,
         iob,
