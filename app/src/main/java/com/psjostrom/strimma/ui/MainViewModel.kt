@@ -364,4 +364,27 @@ class MainViewModel @Inject constructor(
     }
 
     enum class UpdateCheckState { IDLE, CHECKING, UP_TO_DATE }
+
+    // Beta updates
+    val betaUpdateInfo: StateFlow<UpdateInfo?> = updateChecker.betaUpdateInfo
+
+    private val _betaCheckState = MutableStateFlow(UpdateCheckState.IDLE)
+    val betaCheckState: StateFlow<UpdateCheckState> = _betaCheckState
+
+    fun checkForBeta() {
+        viewModelScope.launch {
+            _betaCheckState.value = UpdateCheckState.CHECKING
+            updateChecker.resetDismissed()
+            updateChecker.checkBeta()
+            _betaCheckState.value = if (updateChecker.betaUpdateInfo.value != null) {
+                UpdateCheckState.IDLE
+            } else {
+                UpdateCheckState.UP_TO_DATE
+            }
+            if (_betaCheckState.value == UpdateCheckState.UP_TO_DATE) {
+                delay(UP_TO_DATE_DISPLAY_MS)
+                _betaCheckState.value = UpdateCheckState.IDLE
+            }
+        }
+    }
 }

@@ -77,6 +77,9 @@
     <string name="settings_general_build">Build</string>
     <string name="settings_general_check_for_updates">Check for updates</string>
     <string name="settings_general_up_to_date">Up to date</string>
+    <string name="settings_general_check_for_beta">Check for beta release</string>
+    <string name="settings_general_beta_desc">Beta releases contain early features that have not been thoroughly tested</string>
+    <string name="settings_general_no_beta">No beta available</string>
 
     <!-- Data Source Settings -->
     <string name="settings_source_title">Data Source</string>

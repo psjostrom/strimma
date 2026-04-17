@@ -229,11 +229,13 @@ class MainActivity : ComponentActivity() {
             StrimmaTheme(themeMode = themeMode) {
                 val navController = rememberNavController()
 
-                // Auto-update dialog
+                // Auto-update dialog (stable + beta)
                 val updateInfo by viewModel.updateInfo.collectAsState()
+                val betaUpdateInfo by viewModel.betaUpdateInfo.collectAsState()
                 val updateDismissed by viewModel.updateDismissed.collectAsState()
                 val downloadState by viewModel.downloadState.collectAsState()
-                updateInfo?.let { info ->
+                val activeUpdate = updateInfo ?: betaUpdateInfo
+                activeUpdate?.let { info ->
                     if (!updateDismissed || info.isForced) {
                         UpdateDialog(
                             info = info,
