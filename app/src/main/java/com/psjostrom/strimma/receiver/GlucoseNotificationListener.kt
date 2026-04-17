@@ -16,8 +16,11 @@ import com.psjostrom.strimma.data.GlucoseSource
 /**
  * Companion mode: reads glucose values from CGM app notifications.
  *
- * Accepts ongoing notifications from known CGM apps (CamAPS FX, Dexcom G6/G7/ONE,
+ * Accepts notifications from known CGM apps (CamAPS FX, Dexcom G6/G7/ONE,
  * Juggluco, LibreLink, Libre 3, xDrip+, Diabox, Medtronic, Eversense, Aidex, etc.).
+ * Most CGM apps use ongoing notifications; some (Eversense, Dexcom ONE, Medtronic)
+ * use regular notifications and are listed in [ONGOING_NOT_REQUIRED].
+ *
  * Parses the glucose number and forwards it to StrimmaService for processing.
  *
  * Disabled when the data source is set to xDrip Broadcast (handled by
@@ -92,6 +95,23 @@ class GlucoseNotificationListener : NotificationListenerService() {
             "com.glucotech.app.android",
         )
 
+        // Packages that post BG values in non-ongoing notifications.
+        // These bypass the isOngoing filter. Matches xDrip+'s coOptedPackagesAll.
+        private val ONGOING_NOT_REQUIRED = setOf(
+            "com.dexcom.dexcomone",
+            "com.dexcom.d1plus",
+            "com.dexcom.stelo",
+            "com.medtronic.diabetes.guardian",
+            "com.medtronic.diabetes.guardianconnect",
+            "com.medtronic.diabetes.guardianconnect.us",
+            "com.medtronic.diabetes.minimedmobile.eu",
+            "com.medtronic.diabetes.minimedmobile.us",
+            "com.medtronic.diabetes.simplera.eu",
+            "com.senseonics.androidapp",
+            "com.senseonics.gen12androidapp",
+            "com.senseonics.eversense365.us",
+        )
+
         const val ACTION_GLUCOSE_RECEIVED = "com.psjostrom.strimma.GLUCOSE_RECEIVED"
         const val EXTRA_MGDL = "mgdl"
         const val EXTRA_TIMESTAMP = "timestamp"
@@ -127,6 +147,9 @@ class GlucoseNotificationListener : NotificationListenerService() {
         }
     }
 
+    /** Tracks packages for which a rejection has already been logged, to avoid spam. */
+    private val loggedRejections = mutableSetOf<String>()
+
     private fun getSelectedSource(): GlucoseSource {
         val name = getSharedPreferences("strimma_sync", Context.MODE_PRIVATE)
             .getString("glucose_source", null) ?: return GlucoseSource.COMPANION
@@ -134,9 +157,24 @@ class GlucoseNotificationListener : NotificationListenerService() {
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
-        if (getSelectedSource() != GlucoseSource.COMPANION) return
-        if (sbn.packageName !in CGM_PACKAGES) return
-        if (!sbn.isOngoing) return
+        val source = getSelectedSource()
+        val isCgmPackage = sbn.packageName in CGM_PACKAGES
+
+        if (source != GlucoseSource.COMPANION) {
+            if (isCgmPackage && loggedRejections.add(sbn.packageName)) {
+                DebugLog.log(message = "${sbn.packageName}: ignored (source is ${source.name})")
+            }
+            return
+        }
+
+        if (!isCgmPackage) return
+
+        if (!sbn.isOngoing && sbn.packageName !in ONGOING_NOT_REQUIRED) {
+            if (loggedRejections.add(sbn.packageName)) {
+                DebugLog.log(message = "${sbn.packageName}: not ongoing, skipped")
+            }
+            return
+        }
 
         DebugLog.log(message = "Notification from: ${sbn.packageName}")
 
@@ -185,6 +223,13 @@ class GlucoseNotificationListener : NotificationListenerService() {
         notification.extras?.getString(Notification.EXTRA_TEXT)?.let { text ->
             DebugLog.log(message = "Text: $text")
             val parsed = tryParseGlucose(text)
+            if (parsed != null) return parsed
+        }
+
+        // tickerText fallback — Eversense puts the raw BG value here
+        notification.tickerText?.toString()?.let { ticker ->
+            DebugLog.log(message = "Ticker: $ticker")
+            val parsed = tryParseGlucose(ticker)
             if (parsed != null) return parsed
         }
 
