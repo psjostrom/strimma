@@ -96,7 +96,7 @@ class GlucoseNotificationListener : NotificationListenerService() {
         )
 
         // Packages that post BG values in non-ongoing notifications.
-        // These bypass the isOngoing filter. Matches xDrip+'s coOptedPackagesAll.
+        // These bypass the isOngoing filter. Based on xDrip+'s coOptedPackagesAll.
         private val ONGOING_NOT_REQUIRED = setOf(
             "com.dexcom.dexcomone",
             "com.dexcom.d1plus",
