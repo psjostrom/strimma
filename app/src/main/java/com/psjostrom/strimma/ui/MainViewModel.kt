@@ -371,10 +371,13 @@ class MainViewModel @Inject constructor(
     private val _betaCheckState = MutableStateFlow(UpdateCheckState.IDLE)
     val betaCheckState: StateFlow<UpdateCheckState> = _betaCheckState
 
+    fun clearBetaUpdate() {
+        updateChecker.clearBetaUpdate()
+    }
+
     fun checkForBeta() {
         viewModelScope.launch {
             _betaCheckState.value = UpdateCheckState.CHECKING
-            updateChecker.resetDismissed()
             updateChecker.checkBeta()
             _betaCheckState.value = if (updateChecker.betaUpdateInfo.value != null) {
                 UpdateCheckState.IDLE

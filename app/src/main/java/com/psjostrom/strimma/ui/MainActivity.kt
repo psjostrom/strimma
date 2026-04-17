@@ -229,13 +229,11 @@ class MainActivity : ComponentActivity() {
             StrimmaTheme(themeMode = themeMode) {
                 val navController = rememberNavController()
 
-                // Auto-update dialog (stable + beta)
+                // Auto-update dialog (stable only)
                 val updateInfo by viewModel.updateInfo.collectAsState()
-                val betaUpdateInfo by viewModel.betaUpdateInfo.collectAsState()
                 val updateDismissed by viewModel.updateDismissed.collectAsState()
                 val downloadState by viewModel.downloadState.collectAsState()
-                val activeUpdate = updateInfo ?: betaUpdateInfo
-                activeUpdate?.let { info ->
+                updateInfo?.let { info ->
                     if (!updateDismissed || info.isForced) {
                         UpdateDialog(
                             info = info,
@@ -244,6 +242,17 @@ class MainActivity : ComponentActivity() {
                             onDismiss = { viewModel.dismissUpdate() }
                         )
                     }
+                }
+
+                // Beta update dialog (manual check only)
+                val betaUpdateInfo by viewModel.betaUpdateInfo.collectAsState()
+                betaUpdateInfo?.let { info ->
+                    UpdateDialog(
+                        info = info,
+                        downloadState = downloadState,
+                        onUpdate = { viewModel.downloadUpdate(info) },
+                        onDismiss = { viewModel.clearBetaUpdate() }
+                    )
                 }
 
                 val navBackStackEntry by navController.currentBackStackEntryAsState()

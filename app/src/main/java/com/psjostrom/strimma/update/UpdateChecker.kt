@@ -99,6 +99,10 @@ class UpdateChecker @Inject constructor() {
         _dismissed.value = true
     }
 
+    fun clearBetaUpdate() {
+        _betaUpdateInfo.value = null
+    }
+
     fun resetDismissed() {
         _dismissed.value = false
     }
