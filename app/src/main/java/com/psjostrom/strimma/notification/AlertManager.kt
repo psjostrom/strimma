@@ -16,6 +16,7 @@ import com.psjostrom.strimma.data.MS_PER_MINUTE
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.graph.CrossingType
+import com.psjostrom.strimma.graph.Prediction
 import com.psjostrom.strimma.graph.PredictionComputer
 import com.psjostrom.strimma.receiver.DebugLog
 import com.psjostrom.strimma.ui.MainActivity
@@ -276,7 +277,12 @@ class AlertManager @Inject constructor(
         context.startActivity(intent)
     }
 
-    suspend fun checkReading(reading: GlucoseReading, recentReadings: List<GlucoseReading>, predictionMinutes: Int) {
+    suspend fun checkReading(
+        reading: GlucoseReading,
+        recentReadings: List<GlucoseReading>,
+        predictionMinutes: Int,
+        prediction: Prediction? = null
+    ) {
         val mgdl = reading.sgv.toDouble()
         val unit = settings.glucoseUnit.first()
 
@@ -287,7 +293,7 @@ class AlertManager @Inject constructor(
         val alreadyHigh = checkHighAlerts(mgdl, unit)
 
         checkPredictive(recentReadings, predictionMinutes, lowThreshold.toDouble(),
-            highThreshold.toDouble(), alreadyLow, alreadyHigh, unit)
+            highThreshold.toDouble(), alreadyLow, alreadyHigh, unit, prediction)
     }
 
     private suspend fun checkLowAlerts(mgdl: Double, unit: GlucoseUnit): Boolean {
@@ -362,7 +368,8 @@ class AlertManager @Inject constructor(
         bgHigh: Double,
         alreadyLow: Boolean,
         alreadyHigh: Boolean,
-        unit: GlucoseUnit
+        unit: GlucoseUnit,
+        precomputed: Prediction? = null
     ) {
         val lowSoonEnabled = settings.alertLowSoonEnabled.first()
         val highSoonEnabled = settings.alertHighSoonEnabled.first()
@@ -373,7 +380,7 @@ class AlertManager @Inject constructor(
             return
         }
 
-        val prediction = PredictionComputer.compute(recentReadings, predictionMinutes, bgLow, bgHigh)
+        val prediction = precomputed ?: PredictionComputer.compute(recentReadings, predictionMinutes, bgLow, bgHigh)
         val crossing = prediction?.crossing
 
         // Low soon

@@ -24,6 +24,8 @@ import com.psjostrom.strimma.network.NightscoutFollower
 import com.psjostrom.strimma.network.NightscoutPuller
 import com.psjostrom.strimma.network.NightscoutPusher
 import com.psjostrom.strimma.network.TreatmentSyncer
+import com.psjostrom.strimma.graph.Prediction
+import com.psjostrom.strimma.graph.PredictionComputer
 import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.notification.NotificationHelper
 import com.psjostrom.strimma.receiver.DebugLog
@@ -302,9 +304,9 @@ class StrimmaService : Service() {
     private fun startFollower() {
         if (followerJob != null) return
         followerJob = nightscoutFollower.start(scope) { reading ->
-            updateNotification()
+            val prediction = updateNotification()
             val alertReadings = dao.since(reading.ts - LOOKBACK_MINUTES * MS_PER_MINUTE)
-            alertManager.checkReading(reading, alertReadings, predMinutes.value)
+            alertManager.checkReading(reading, alertReadings, predMinutes.value, prediction)
             broadcastBgIfEnabled(reading)
             updateWidgets()
         }
@@ -322,9 +324,9 @@ class StrimmaService : Service() {
         if (lluFollowerJob != null) return
         lluFollowerJob = libreLinkUpFollower.start(scope) { reading ->
             pusher.pushReading(reading)
-            updateNotification()
+            val prediction = updateNotification()
             val alertReadings = dao.since(reading.ts - LOOKBACK_MINUTES * MS_PER_MINUTE)
-            alertManager.checkReading(reading, alertReadings, predMinutes.value)
+            alertManager.checkReading(reading, alertReadings, predMinutes.value, prediction)
             broadcastBgIfEnabled(reading)
             writeToHealthConnectIfEnabled(reading)
             updateWidgets()
@@ -365,10 +367,10 @@ class StrimmaService : Service() {
         DebugLog.log("Stored: ${reading.sgv} mg/dL ${direction.arrow}")
         pusher.pushReading(reading)
         tidepoolUploader.onNewReading()
-        updateNotification()
+        val prediction = updateNotification()
         // Reuse recentReadings + the newly inserted reading instead of re-querying
         val alertReadings = recentReadings + reading
-        alertManager.checkReading(reading, alertReadings, predMinutes.value)
+        alertManager.checkReading(reading, alertReadings, predMinutes.value, prediction)
         broadcastBgIfEnabled(reading)
         writeToHealthConnectIfEnabled(reading)
         updateWidgets()
@@ -403,7 +405,7 @@ class StrimmaService : Service() {
         }
     }
 
-    private suspend fun updateNotification() {
+    private suspend fun updateNotification(): Prediction? {
         val latest = dao.latestOnce()?.takeUnless { reading ->
             AlertManager.isStale(reading.ts)
         }
@@ -418,50 +420,63 @@ class StrimmaService : Service() {
 
         val exerciseSessions = exerciseDao.getSessionsInRange(now - graphWindowMs, now)
 
-        val workoutText = if (WorkoutAlarmReceiver.notificationTriggerFired.get() && latest != null) {
-            calendarPoller.nextEvent.value?.let { event ->
-                val minutesUntil = ((event.startTime - now) / MS_PER_MINUTE).toInt()
-                if (minutesUntil <= 0) return@let null
-                val timeText = if (minutesUntil >= MINUTES_PER_HOUR) {
-                    val h = minutesUntil / MINUTES_PER_HOUR
-                    val m = minutesUntil % MINUTES_PER_HOUR
-                    if (m > 0) "${h}h${m}m" else "${h}h"
-                } else {
-                    "${minutesUntil}m"
-                }
-                val velocity = com.psjostrom.strimma.graph.PredictionComputer.currentVelocity(recent)
-                val prediction = com.psjostrom.strimma.graph.PredictionComputer.compute(
-                    recent, FORECAST_HORIZON_MINUTES,
-                    bgLow.value.toDouble(), bgHigh.value.toDouble()
-                )
-                val forecastBg = prediction?.points?.lastOrNull()?.mgdl
-                val targetLow = settings.exerciseTargetLow(event.category).first()
-                val result = com.psjostrom.strimma.data.calendar.PreActivityAssessor.assess(
-                    currentBgMgdl = latest.sgv,
-                    velocityMgdlPerMin = velocity,
-                    iob = iob,
-                    forecastBgAt30minMgdl = forecastBg,
-                    timeToWorkoutMs = (event.startTime - now),
-                    targetLowMgdl = targetLow,
-                    glucoseUnit = glucoseUnit.value
-                )
-                val actionText = when {
-                    result.carbRecommendation != null -> "eat ${result.carbRecommendation.totalGrams}g"
-                    result.readiness == com.psjostrom.strimma.data.calendar.ReadinessLevel.WAIT ->
-                        "hold off"
-                    result.readiness == com.psjostrom.strimma.data.calendar.ReadinessLevel.CAUTION ->
-                        "monitor"
-                    else -> "ready"
-                }
-                "\uD83C\uDFC3 $timeText $actionText"
-            }
-        } else null
+        // Compute prediction once — reused by notification helper, graph renderer, and alert manager
+        val prediction = PredictionComputer.compute(
+            recent, predMinutes.value,
+            bgLow.value.toDouble(), bgHigh.value.toDouble()
+        )
+
+        val workoutText = computeWorkoutText(latest, recent, iob, now)
 
         notificationHelper.updateNotification(
             latest, recent, bgLow.value.toDouble(), bgHigh.value.toDouble(),
             graphWindowMs, predMinutes.value, glucoseUnit.value, iob, exerciseSessions,
-            workoutText
+            workoutText, prediction
         )
+
+        return prediction
+    }
+
+    private suspend fun computeWorkoutText(
+        latest: GlucoseReading?,
+        recent: List<GlucoseReading>,
+        iob: Double,
+        now: Long
+    ): String? {
+        if (!WorkoutAlarmReceiver.notificationTriggerFired.get() || latest == null) return null
+        val event = calendarPoller.nextEvent.value ?: return null
+        val minutesUntil = ((event.startTime - now) / MS_PER_MINUTE).toInt()
+        if (minutesUntil <= 0) return null
+        val timeText = if (minutesUntil >= MINUTES_PER_HOUR) {
+            val h = minutesUntil / MINUTES_PER_HOUR
+            val m = minutesUntil % MINUTES_PER_HOUR
+            if (m > 0) "${h}h${m}m" else "${h}h"
+        } else {
+            "${minutesUntil}m"
+        }
+        val velocity = PredictionComputer.currentVelocity(recent)
+        val forecastPrediction = PredictionComputer.compute(
+            recent, FORECAST_HORIZON_MINUTES,
+            bgLow.value.toDouble(), bgHigh.value.toDouble()
+        )
+        val forecastBg = forecastPrediction?.points?.lastOrNull()?.mgdl
+        val targetLow = settings.exerciseTargetLow(event.category).first()
+        val result = com.psjostrom.strimma.data.calendar.PreActivityAssessor.assess(
+            currentBgMgdl = latest.sgv,
+            velocityMgdlPerMin = velocity,
+            iob = iob,
+            forecastBgAt30minMgdl = forecastBg,
+            timeToWorkoutMs = (event.startTime - now),
+            targetLowMgdl = targetLow,
+            glucoseUnit = glucoseUnit.value
+        )
+        val actionText = when {
+            result.carbRecommendation != null -> "eat ${result.carbRecommendation.totalGrams}g"
+            result.readiness == com.psjostrom.strimma.data.calendar.ReadinessLevel.WAIT -> "hold off"
+            result.readiness == com.psjostrom.strimma.data.calendar.ReadinessLevel.CAUTION -> "monitor"
+            else -> "ready"
+        }
+        return "\uD83C\uDFC3 $timeText $actionText"
     }
 
     private fun broadcastBgIfEnabled(reading: com.psjostrom.strimma.data.GlucoseReading) {
