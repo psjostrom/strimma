@@ -442,6 +442,7 @@ fun StrimmaNavGraph(
         composable("settings/general") {
             val startOnBoot by viewModel.settings.startOnBoot.collectAsState(initial = true)
             val updateCheckState by viewModel.updateCheckState.collectAsState()
+            val betaCheckState by viewModel.betaCheckState.collectAsState()
             val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
             val lifecycleState by lifecycleOwner.lifecycle.currentStateFlow.collectAsState()
             val isBatteryOptimizationIgnored = remember(lifecycleState) {
@@ -457,6 +458,8 @@ fun StrimmaNavGraph(
                 isDebug = com.psjostrom.strimma.BuildConfig.DEBUG,
                 updateCheckState = updateCheckState,
                 onCheckForUpdates = viewModel::checkForUpdates,
+                betaCheckState = betaCheckState,
+                onCheckForBeta = viewModel::checkForBeta,
                 isBatteryOptimizationIgnored = isBatteryOptimizationIgnored,
                 onOpenBatteryOptimization = {
                     activity.requestBatteryOptimization()

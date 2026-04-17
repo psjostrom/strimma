@@ -224,6 +224,67 @@ class UpdateCheckerTest {
         assertFalse(c.updateInfo.value!!.isForced)
     }
 
+    // --- beta tests ---
+
+    private fun betaMockClient(
+        allReleasesJson: String = ALL_RELEASES_WITH_BETA
+    ): HttpClient = HttpClient(MockEngine { request ->
+        when {
+            request.url.encodedPath.endsWith("/releases") -> respond(
+                content = allReleasesJson,
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+            else -> respond("Not found", HttpStatusCode.NotFound)
+        }
+    }) {
+        install(ContentNegotiation) {
+            json(Json { ignoreUnknownKeys = true })
+        }
+    }
+
+    @Test
+    fun `checkBeta finds pre-release newer than current`() = runTest {
+        val c = checker(betaMockClient())
+        c.checkBeta()
+        val info = c.betaUpdateInfo.value
+        assertNotNull(info)
+        assertEquals("2.0.0-rc.1", info!!.version)
+        assertFalse(info.isForced)
+    }
+
+    @Test
+    fun `checkBeta ignores stable releases`() = runTest {
+        val allStable = """[
+            {"tag_name": "v2.0.0", "prerelease": false, "body": "Stable", "assets": [
+                {"name": "strimma-2.0.0.apk", "browser_download_url": "https://example.com/a.apk"}
+            ]}
+        ]"""
+        val c = checker(betaMockClient(allReleasesJson = allStable))
+        c.checkBeta()
+        assertNull(c.betaUpdateInfo.value)
+    }
+
+    @Test
+    fun `checkBeta ignores pre-release older than current`() = runTest {
+        val oldBeta = """[
+            {"tag_name": "v0.0.1-rc.1", "prerelease": true, "body": "Old beta", "assets": [
+                {"name": "strimma-0.0.1-rc.1.apk", "browser_download_url": "https://example.com/a.apk"}
+            ]}
+        ]"""
+        val c = checker(betaMockClient(allReleasesJson = oldBeta))
+        c.checkBeta()
+        assertNull(c.betaUpdateInfo.value)
+    }
+
+    @Test
+    fun `checkBeta does not affect stable updateInfo`() = runTest {
+        val c = checker(betaMockClient())
+        c.checkBeta()
+        assertNotNull(c.betaUpdateInfo.value)
+        assertNull(c.updateInfo.value) // stable check was never run
+    }
+
     // --- helpers ---
 
     private fun currentVersion(): String = com.psjostrom.strimma.BuildConfig.VERSION_NAME
@@ -240,5 +301,14 @@ class UpdateCheckerTest {
         private const val RELEASE_WITH_APK = """{"tag_name": "v2.0.0", "body": "Release notes", "assets": [
             {"name": "strimma-2.0.0.apk", "browser_download_url": "https://github.com/test/strimma-2.0.0.apk"}
         ]}"""
+
+        private const val ALL_RELEASES_WITH_BETA = """[
+            {"tag_name": "v2.0.0-rc.1", "prerelease": true, "body": "Beta notes", "assets": [
+                {"name": "strimma-2.0.0-rc.1.apk", "browser_download_url": "https://example.com/beta.apk"}
+            ]},
+            {"tag_name": "v1.0.1", "prerelease": false, "body": "Stable", "assets": [
+                {"name": "strimma-1.0.1.apk", "browser_download_url": "https://example.com/stable.apk"}
+            ]}
+        ]"""
     }
 }

@@ -26,6 +26,7 @@ import javax.inject.Singleton
 @Serializable
 private data class GitHubRelease(
     @SerialName("tag_name") val tagName: String,
+    val prerelease: Boolean = false,
     val body: String? = null,
     val assets: List<GitHubAsset> = emptyList()
 )
@@ -47,6 +48,7 @@ class UpdateChecker @Inject constructor() {
     companion object {
         private const val GITHUB_REPO = "psjostrom/strimma"
         private const val RELEASES_URL = "https://api.github.com/repos/$GITHUB_REPO/releases/latest"
+        private const val ALL_RELEASES_URL = "https://api.github.com/repos/$GITHUB_REPO/releases"
         private const val UPDATE_JSON_URL =
             "https://raw.githubusercontent.com/$GITHUB_REPO/main/update.json"
         private const val CHECK_INTERVAL_MS = 12L * 60 * 60 * 1000 // 12 hours
@@ -56,6 +58,9 @@ class UpdateChecker @Inject constructor() {
 
     private val _updateInfo = MutableStateFlow<UpdateInfo?>(null)
     val updateInfo: StateFlow<UpdateInfo?> = _updateInfo
+
+    private val _betaUpdateInfo = MutableStateFlow<UpdateInfo?>(null)
+    val betaUpdateInfo: StateFlow<UpdateInfo?> = _betaUpdateInfo
 
     private val _dismissed = MutableStateFlow(false)
     val dismissed: StateFlow<Boolean> = _dismissed
@@ -92,6 +97,10 @@ class UpdateChecker @Inject constructor() {
 
     fun dismiss() {
         _dismissed.value = true
+    }
+
+    fun clearBetaUpdate() {
+        _betaUpdateInfo.value = null
     }
 
     fun resetDismissed() {
@@ -134,6 +143,38 @@ class UpdateChecker @Inject constructor() {
         }
     }
 
+    @Suppress("TooGenericExceptionCaught") // Network boundary
+    suspend fun checkBeta() {
+        try {
+            val release = fetchLatestPreRelease() ?: return
+            val currentVersion = BuildConfig.VERSION_NAME
+
+            val releaseVersion = release.tagName.removePrefix("v")
+            if (!VersionComparator.isOlderThan(currentVersion, releaseVersion)) {
+                _betaUpdateInfo.value = null
+                return
+            }
+
+            val apkAsset = release.assets.firstOrNull { it.name.endsWith(".apk") }
+            if (apkAsset == null) {
+                DebugLog.log("Beta $releaseVersion found but no APK asset")
+                return
+            }
+
+            _betaUpdateInfo.value = UpdateInfo(
+                version = releaseVersion,
+                changelog = release.body?.trim() ?: "",
+                apkUrl = apkAsset.downloadUrl,
+                isForced = false
+            )
+            DebugLog.log("Beta available: $releaseVersion")
+        } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            DebugLog.log("Beta check failed: ${e.message?.take(MAX_LOG_MESSAGE_LENGTH)}")
+        }
+    }
+
     private suspend fun fetchLatestRelease(): GitHubRelease? {
         val response = client.get(RELEASES_URL) {
             header("Accept", "application/vnd.github+json")
@@ -143,6 +184,18 @@ class UpdateChecker @Inject constructor() {
             return null
         }
         return response.body()
+    }
+
+    private suspend fun fetchLatestPreRelease(): GitHubRelease? {
+        val response = client.get(ALL_RELEASES_URL) {
+            header("Accept", "application/vnd.github+json")
+        }
+        if (!response.status.isSuccess()) {
+            DebugLog.log("GitHub releases HTTP ${response.status.value}")
+            return null
+        }
+        val releases: List<GitHubRelease> = response.body()
+        return releases.firstOrNull { it.prerelease }
     }
 
     private suspend fun fetchMinVersion(): String? {

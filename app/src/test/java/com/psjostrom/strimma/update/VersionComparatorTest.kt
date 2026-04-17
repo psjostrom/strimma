@@ -65,4 +65,59 @@ class VersionComparatorTest {
         assertFalse(VersionComparator.isOlderThan("", "1.0.0"))
         assertFalse(VersionComparator.isOlderThan("1.0.0", ""))
     }
+
+    // Pre-release support
+
+    @Test
+    fun `parse strips pre-release suffix`() {
+        assertEquals(listOf(1, 1, 0), VersionComparator.parse("1.1.0-rc.1"))
+        assertEquals(listOf(1, 1, 0), VersionComparator.parse("v1.1.0-beta.2"))
+    }
+
+    @Test
+    fun `isPreRelease detects rc and beta tags`() {
+        assertTrue(VersionComparator.isPreRelease("1.1.0-rc.1"))
+        assertTrue(VersionComparator.isPreRelease("v1.1.0-beta.2"))
+        assertFalse(VersionComparator.isPreRelease("1.1.0"))
+        assertFalse(VersionComparator.isPreRelease("v1.1.0"))
+    }
+
+    @Test
+    fun `preReleaseNumber extracts the number`() {
+        assertEquals(1, VersionComparator.preReleaseNumber("1.1.0-rc.1"))
+        assertEquals(3, VersionComparator.preReleaseNumber("v1.1.0-rc.3"))
+        assertEquals(0, VersionComparator.preReleaseNumber("1.1.0"))
+    }
+
+    @Test
+    fun `rc is older than stable of same version`() {
+        assertTrue(VersionComparator.isOlderThan("1.1.0-rc.1", "1.1.0"))
+        assertTrue(VersionComparator.isOlderThan("v1.1.0-rc.3", "v1.1.0"))
+    }
+
+    @Test
+    fun `stable is not older than rc of same version`() {
+        assertFalse(VersionComparator.isOlderThan("1.1.0", "1.1.0-rc.1"))
+    }
+
+    @Test
+    fun `lower rc is older than higher rc`() {
+        assertTrue(VersionComparator.isOlderThan("1.1.0-rc.1", "1.1.0-rc.2"))
+        assertFalse(VersionComparator.isOlderThan("1.1.0-rc.2", "1.1.0-rc.1"))
+    }
+
+    @Test
+    fun `same rc is not older`() {
+        assertFalse(VersionComparator.isOlderThan("1.1.0-rc.1", "1.1.0-rc.1"))
+    }
+
+    @Test
+    fun `rc of higher base version is newer than stable of lower`() {
+        assertTrue(VersionComparator.isOlderThan("1.0.0", "1.1.0-rc.1"))
+    }
+
+    @Test
+    fun `rc of lower base version is older than stable of higher`() {
+        assertTrue(VersionComparator.isOlderThan("1.0.0-rc.1", "1.1.0"))
+    }
 }

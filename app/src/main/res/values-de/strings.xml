@@ -72,6 +72,9 @@
     <string name="settings_general_build">Build</string>
     <string name="settings_general_check_for_updates">Nach Updates suchen</string>
     <string name="settings_general_up_to_date">Aktuell</string>
+    <string name="settings_general_check_for_beta">Nach Betaversion suchen</string>
+    <string name="settings_general_beta_desc">Betaversionen enthalten neue Funktionen, die noch nicht gründlich getestet wurden</string>
+    <string name="settings_general_no_beta">Keine gefunden</string>
 
     <!-- Data Source Settings -->
     <string name="settings_source_title">Datenquelle</string>

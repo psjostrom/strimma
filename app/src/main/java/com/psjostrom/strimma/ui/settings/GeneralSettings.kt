@@ -20,6 +20,8 @@ fun GeneralSettings(
     isDebug: Boolean,
     updateCheckState: UpdateCheckState,
     onCheckForUpdates: () -> Unit,
+    betaCheckState: UpdateCheckState,
+    onCheckForBeta: () -> Unit,
     isBatteryOptimizationIgnored: Boolean,
     onOpenBatteryOptimization: () -> Unit,
     onBack: () -> Unit
@@ -112,6 +114,43 @@ fun GeneralSettings(
                     )
                     UpdateCheckState.IDLE -> {}
                 }
+            }
+            HorizontalDivider(color = outlineVar)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(enabled = betaCheckState != UpdateCheckState.CHECKING) {
+                        onCheckForBeta()
+                    }
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        stringResource(R.string.settings_general_check_for_beta),
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 14.sp
+                    )
+                    when (betaCheckState) {
+                        UpdateCheckState.CHECKING -> CircularProgressIndicator(
+                            modifier = Modifier.size(14.dp),
+                            strokeWidth = 2.dp
+                        )
+                        UpdateCheckState.UP_TO_DATE -> Text(
+                            stringResource(R.string.settings_general_no_beta),
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 12.sp
+                        )
+                        UpdateCheckState.IDLE -> {}
+                    }
+                }
+                Text(
+                    stringResource(R.string.settings_general_beta_desc),
+                    color = outline,
+                    fontSize = 12.sp
+                )
             }
         }
     }

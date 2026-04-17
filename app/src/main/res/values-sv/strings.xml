@@ -72,6 +72,9 @@
     <string name="settings_general_build">Bygge</string>
     <string name="settings_general_check_for_updates">Sök efter uppdateringar</string>
     <string name="settings_general_up_to_date">Uppdaterad</string>
+    <string name="settings_general_check_for_beta">Sök efter betaversion</string>
+    <string name="settings_general_beta_desc">Betaversioner innehåller nya funktioner som inte har testats grundligt</string>
+    <string name="settings_general_no_beta">Ingen hittad</string>
 
     <!-- Data Source Settings -->
     <string name="settings_source_title">Datak\u00E4lla</string>
