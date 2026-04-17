@@ -17,6 +17,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -229,31 +230,7 @@ class MainActivity : ComponentActivity() {
             StrimmaTheme(themeMode = themeMode) {
                 val navController = rememberNavController()
 
-                // Auto-update dialog (stable only)
-                val updateInfo by viewModel.updateInfo.collectAsState()
-                val updateDismissed by viewModel.updateDismissed.collectAsState()
-                val downloadState by viewModel.downloadState.collectAsState()
-                updateInfo?.let { info ->
-                    if (!updateDismissed || info.isForced) {
-                        UpdateDialog(
-                            info = info,
-                            downloadState = downloadState,
-                            onUpdate = { viewModel.downloadUpdate(info) },
-                            onDismiss = { viewModel.dismissUpdate() }
-                        )
-                    }
-                }
-
-                // Beta update dialog (manual check only)
-                val betaUpdateInfo by viewModel.betaUpdateInfo.collectAsState()
-                betaUpdateInfo?.let { info ->
-                    UpdateDialog(
-                        info = info,
-                        downloadState = downloadState,
-                        onUpdate = { viewModel.downloadUpdate(info) },
-                        onDismiss = { viewModel.clearBetaUpdate() }
-                    )
-                }
+                UpdateDialogs(viewModel)
 
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentRoute = navBackStackEntry?.destination?.route
@@ -277,5 +254,35 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun UpdateDialogs(viewModel: MainViewModel) {
+    val updateDismissed by viewModel.updateDismissed.collectAsState()
+    val downloadState by viewModel.downloadState.collectAsState()
+
+    // Stable auto-update
+    val updateInfo by viewModel.updateInfo.collectAsState()
+    updateInfo?.let { info ->
+        if (!updateDismissed || info.isForced) {
+            UpdateDialog(
+                info = info,
+                downloadState = downloadState,
+                onUpdate = { viewModel.downloadUpdate(info) },
+                onDismiss = { viewModel.dismissUpdate() }
+            )
+        }
+    }
+
+    // Beta (manual check only)
+    val betaUpdateInfo by viewModel.betaUpdateInfo.collectAsState()
+    betaUpdateInfo?.let { info ->
+        UpdateDialog(
+            info = info,
+            downloadState = downloadState,
+            onUpdate = { viewModel.downloadUpdate(info) },
+            onDismiss = { viewModel.clearBetaUpdate() }
+        )
     }
 }
