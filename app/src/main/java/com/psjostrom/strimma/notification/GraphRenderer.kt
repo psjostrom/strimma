@@ -6,6 +6,7 @@ import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.MS_PER_MINUTE
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.health.StoredExerciseSession
+import com.psjostrom.strimma.graph.Prediction
 import com.psjostrom.strimma.graph.PredictionComputer
 import com.psjostrom.strimma.graph.canvasColorFor
 import com.psjostrom.strimma.graph.computeYAxisLabels
@@ -74,7 +75,8 @@ object GraphRenderer {
         compact: Boolean = false,
         predictionMinutes: Int = 10,
         glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
-        exerciseSessions: List<StoredExerciseSession> = emptyList()
+        exerciseSessions: List<StoredExerciseSession> = emptyList(),
+        prediction: Prediction? = null
     ): Bitmap {
         val bitmap = createBitmap(width, height)
         val canvas = Canvas(bitmap)
@@ -182,8 +184,8 @@ object GraphRenderer {
         }
 
         // Prediction curve (least-squares fit to last 12 min of readings)
-        val prediction = PredictionComputer.compute(readings, predictionMinutes, bgLow, bgHigh)
-        if (prediction != null) {
+        val pred = prediction ?: PredictionComputer.compute(readings, predictionMinutes, bgLow, bgHigh)
+        if (pred != null) {
             val predPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 style = Paint.Style.FILL
             }
@@ -192,10 +194,10 @@ object GraphRenderer {
                 style = Paint.Style.STROKE
                 pathEffect = DashPathEffect(floatArrayOf(DASH_LENGTH, DASH_LENGTH), 0f)
             }
-            var prevPx = xFor(prediction.anchorTs)
-            var prevPy = yFor(prediction.anchorMgdl)
-            for (pt in prediction.points) {
-                val px = xFor(prediction.anchorTs + pt.minuteOffset * MS_PER_MINUTE)
+            var prevPx = xFor(pred.anchorTs)
+            var prevPy = yFor(pred.anchorMgdl)
+            for (pt in pred.points) {
+                val px = xFor(pred.anchorTs + pt.minuteOffset * MS_PER_MINUTE)
                 val py = yFor(pt.mgdl)
                 if (px > width - marginRight) break
                 val predColor = canvasColorFor(pt.mgdl, bgLow, bgHigh)

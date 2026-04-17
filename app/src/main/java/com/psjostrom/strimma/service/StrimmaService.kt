@@ -4,9 +4,6 @@ import android.app.Service
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.IBinder
-import com.psjostrom.strimma.data.Direction
-import com.psjostrom.strimma.data.DirectionComputer
-import com.psjostrom.strimma.data.MS_PER_HOUR
 import com.psjostrom.strimma.data.MS_PER_MINUTE
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseSource
@@ -17,23 +14,20 @@ import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.TreatmentDao
 import com.psjostrom.strimma.data.health.ExerciseDao
-import com.psjostrom.strimma.data.health.ExerciseSyncer
 import com.psjostrom.strimma.data.health.HealthConnectManager
 import com.psjostrom.strimma.network.LibreLinkUpFollower
 import com.psjostrom.strimma.network.NightscoutFollower
-import com.psjostrom.strimma.network.NightscoutPuller
 import com.psjostrom.strimma.network.NightscoutPusher
-import com.psjostrom.strimma.network.TreatmentSyncer
+import com.psjostrom.strimma.graph.Prediction
+import com.psjostrom.strimma.graph.PredictionComputer
 import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.notification.NotificationHelper
 import com.psjostrom.strimma.receiver.DebugLog
 import com.psjostrom.strimma.receiver.GlucoseNotificationListener
 import com.psjostrom.strimma.receiver.XdripBroadcastReceiver
-import com.psjostrom.strimma.data.calendar.CalendarReader
+import com.psjostrom.strimma.data.calendar.CalendarPoller
 import com.psjostrom.strimma.data.calendar.WorkoutEvent
 import com.psjostrom.strimma.receiver.WorkoutAlarmReceiver
-import com.psjostrom.strimma.update.UpdateChecker
-import com.psjostrom.strimma.webserver.LocalWebServer
 import android.app.AlarmManager
 import android.app.PendingIntent
 import androidx.glance.appwidget.GlanceAppWidgetManager
@@ -42,14 +36,11 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
-@Suppress("TooManyFunctions") // Service lifecycle + source management + core logic
+@Suppress("TooManyFunctions") // Service lifecycle + source management + side effects
 @AndroidEntryPoint
 class StrimmaService : Service() {
 
@@ -60,20 +51,10 @@ class StrimmaService : Service() {
         private const val DEFAULT_NOTIF_GRAPH_MINUTES = SettingsRepository.DEFAULT_NOTIF_GRAPH_MINUTES
         private const val DEFAULT_CUSTOM_DIA = 5.0f
 
-        private const val DUPLICATE_THRESHOLD_MS = 3_000L
-        private const val LOOKBACK_MINUTES = 15
-
-        private const val RETRY_INTERVAL_MINUTES = 5
-        private const val PRUNE_INTERVAL_DAYS = 1
-        private const val PRUNE_RETENTION_DAYS = 30L
         private const val STALE_CHECK_INTERVAL_SECONDS = 60
         private const val SECONDS_TO_MS = 1000L
-        private const val HOURS_PER_DAY = 24
-        private const val DELTA_ROUNDING_FACTOR = 10.0
         private const val MINUTES_PER_HOUR = 60
-        private const val DEFAULT_WORKOUT_LOOKAHEAD_HOURS = 3
         private const val DEFAULT_WORKOUT_TRIGGER_MINUTES = 120
-        private const val CALENDAR_POLL_INTERVAL_MINUTES = 15
         private const val WORKOUT_GRACE_MINUTES = 15
         private const val FORECAST_HORIZON_MINUTES = 30
 
@@ -81,39 +62,26 @@ class StrimmaService : Service() {
     }
 
     @Inject lateinit var dao: ReadingDao
-    @Inject lateinit var directionComputer: DirectionComputer
     @Inject lateinit var pusher: NightscoutPusher
     @Inject lateinit var notificationHelper: NotificationHelper
     @Inject lateinit var alertManager: AlertManager
     @Inject lateinit var settings: SettingsRepository
     @Inject lateinit var nightscoutFollower: NightscoutFollower
     @Inject lateinit var libreLinkUpFollower: LibreLinkUpFollower
-    @Inject lateinit var nightscoutPuller: NightscoutPuller
-    @Inject lateinit var treatmentSyncer: TreatmentSyncer
     @Inject lateinit var treatmentDao: TreatmentDao
-    @Inject lateinit var localWebServer: LocalWebServer
-    @Inject lateinit var tidepoolUploader: com.psjostrom.strimma.tidepool.TidepoolUploader
     @Inject lateinit var exerciseDao: ExerciseDao
-    @Inject lateinit var exerciseSyncer: ExerciseSyncer
     @Inject lateinit var healthConnectManager: HealthConnectManager
-    @Inject lateinit var calendarReader: CalendarReader
-    @Inject lateinit var updateChecker: UpdateChecker
+    @Inject lateinit var calendarPoller: CalendarPoller
+    @Inject lateinit var readingPipeline: ReadingPipeline
+    @Inject lateinit var syncOrchestrator: SyncOrchestrator
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-    private val readingMutex = Mutex()
-    private var pruneJob: Job? = null
     private var xdripReceiver: XdripBroadcastReceiver? = null
     private var followerJob: Job? = null
     private var lluFollowerJob: Job? = null
-    private var treatmentSyncJob: Job? = null
-    private var exerciseSyncJob: Job? = null
     private var calendarPollJob: Job? = null
     @Volatile
-    private var cachedWorkoutEvent: WorkoutEvent? = null
-    @Volatile
     private var wasStale = true // Start as stale (no data yet)
-    private lateinit var workoutCalendarId: StateFlow<Long>
-    private lateinit var workoutLookaheadHours: StateFlow<Int>
     private lateinit var workoutTriggerMinutes: StateFlow<Int>
 
     private lateinit var predMinutes: StateFlow<Int>
@@ -143,10 +111,6 @@ class StrimmaService : Service() {
         insulinType = settings.insulinType.stateIn(scope, SharingStarted.Eagerly, InsulinType.FIASP)
         customDIA = settings.customDIA.stateIn(scope, SharingStarted.Eagerly, DEFAULT_CUSTOM_DIA)
         hcWriteEnabled = settings.hcWriteEnabled.stateIn(scope, SharingStarted.Eagerly, false)
-        workoutCalendarId = settings.workoutCalendarId.stateIn(scope, SharingStarted.Eagerly, -1L)
-        workoutLookaheadHours = settings.workoutLookaheadHours.stateIn(
-            scope, SharingStarted.Eagerly, DEFAULT_WORKOUT_LOOKAHEAD_HOURS
-        )
         workoutTriggerMinutes = settings.workoutTriggerMinutes.stateIn(
             scope, SharingStarted.Eagerly, DEFAULT_WORKOUT_TRIGGER_MINUTES
         )
@@ -175,70 +139,14 @@ class StrimmaService : Service() {
             }
         }
 
-        // Treatment sync lifecycle — only run when NS is configured
-        scope.launch {
-            combine(
-                settings.treatmentsSyncEnabled,
-                settings.nightscoutUrl,
-                settings.secretVersion
-            ) { enabled, nsUrl, _ ->
-                if (!enabled) return@combine false
-                val hasConfig = nsUrl.isNotBlank() && settings.getNightscoutSecret().isNotBlank()
-                if (!hasConfig && enabled) {
-                    settings.setTreatmentsSyncEnabled(false)
-                    DebugLog.log("Treatment sync auto-disabled: Nightscout not configured")
-                }
-                hasConfig && enabled
-            }.collect { shouldSync ->
-                treatmentSyncJob?.cancel()
-                treatmentSyncJob = null
-                if (shouldSync) {
-                    treatmentSyncJob = treatmentSyncer.start(scope)
-                    DebugLog.log("Treatment sync started")
-                } else {
-                    DebugLog.log("Treatment sync stopped")
-                }
-            }
-        }
-
-        // Web server lifecycle
-        scope.launch {
-            settings.webServerEnabled.collect { enabled ->
-                if (enabled) {
-                    localWebServer.start()
-                } else {
-                    localWebServer.stop()
-                }
-            }
-        }
-
-        // Exercise sync (HC availability + permissions checked inside syncer)
-        exerciseSyncJob = exerciseSyncer.start(scope)
-
-        pusher.pushPending()
-        tidepoolUploader.uploadPending()
-        scope.launch { nightscoutPuller.pullIfEmpty() }
         scope.launch { updateNotification() }
-        startPeriodicJobs()
-        startCalendarPoll()
-        updateChecker.start(scope)
+        startStaleCheckLoop()
+        syncOrchestrator.start(scope)
+        calendarPollJob = calendarPoller.start(scope)
+        observeCalendarForAlarms()
     }
 
-    private fun startPeriodicJobs() {
-        scope.launch {
-            while (isActive) {
-                delay(RETRY_INTERVAL_MINUTES * MS_PER_MINUTE)
-                pusher.pushPending()
-                tidepoolUploader.uploadPending()
-            }
-        }
-        scope.launch {
-            while (isActive) {
-                val thirtyDaysAgo = System.currentTimeMillis() - PRUNE_RETENTION_DAYS * HOURS_PER_DAY * MS_PER_HOUR
-                dao.pruneBefore(thirtyDaysAgo)
-                delay(PRUNE_INTERVAL_DAYS * HOURS_PER_DAY * MS_PER_HOUR)
-            }
-        }
+    private fun startStaleCheckLoop() {
         scope.launch {
             while (isActive) {
                 delay(STALE_CHECK_INTERVAL_SECONDS * SECONDS_TO_MS)
@@ -247,14 +155,13 @@ class StrimmaService : Service() {
 
                 val isStale = AlertManager.isStale(latest?.ts)
                 val workoutCountdownActive =
-                    WorkoutAlarmReceiver.notificationTriggerFired.get() && cachedWorkoutEvent != null
+                    WorkoutAlarmReceiver.notificationTriggerFired.get() && calendarPoller.nextEvent.value != null
                 if (isStale != wasStale || workoutCountdownActive) {
                     updateNotification()
                 }
 
-                cachedWorkoutEvent?.let { event ->
+                calendarPoller.nextEvent.value?.let { event ->
                     if (System.currentTimeMillis() > event.startTime + WORKOUT_GRACE_MINUTES * MS_PER_MINUTE) {
-                        cachedWorkoutEvent = null
                         cancelWorkoutAlarm()
                         WorkoutAlarmReceiver.notificationTriggerFired.set(false)
                     }
@@ -268,7 +175,12 @@ class StrimmaService : Service() {
             val mgdl = intent.getDoubleExtra(GlucoseNotificationListener.EXTRA_MGDL, 0.0)
             val timestamp = intent.getLongExtra(GlucoseNotificationListener.EXTRA_TIMESTAMP, 0L)
             if (mgdl > 0.0 && timestamp > 0L) {
-                scope.launch { readingMutex.withLock { processReading(mgdl, timestamp) } }
+                scope.launch {
+                    val reading = readingPipeline.processReading(mgdl, timestamp)
+                    if (reading != null) {
+                        onNewReading(reading)
+                    }
+                }
             }
         }
         return START_STICKY
@@ -280,16 +192,23 @@ class StrimmaService : Service() {
         unregisterXdripReceiver()
         stopFollower()
         stopLluFollower()
-        treatmentSyncJob?.cancel()
-        exerciseSyncJob?.cancel()
         calendarPollJob?.cancel()
-        pruneJob?.cancel()
-        localWebServer.stop()
-        pusher.stop()
-        tidepoolUploader.stop()
-        updateChecker.stop()
+        syncOrchestrator.stop()
         scope.cancel()
         super.onDestroy()
+    }
+
+    /**
+     * Side effects triggered after a new reading is stored via the pipeline.
+     * Also called by follower callbacks (NS/LLU) after their own storage path.
+     */
+    private suspend fun onNewReading(reading: GlucoseReading) {
+        val prediction = updateNotification()
+        val alertReadings = dao.since(reading.ts - ReadingPipeline.LOOKBACK_MINUTES * MS_PER_MINUTE)
+        alertManager.checkReading(reading, alertReadings, predMinutes.value, prediction)
+        broadcastBgIfEnabled(reading)
+        writeToHealthConnectIfEnabled(reading)
+        updateWidgets()
     }
 
     private fun registerXdripReceiver() {
@@ -312,9 +231,9 @@ class StrimmaService : Service() {
     private fun startFollower() {
         if (followerJob != null) return
         followerJob = nightscoutFollower.start(scope) { reading ->
-            updateNotification()
-            val alertReadings = dao.since(reading.ts - LOOKBACK_MINUTES * MS_PER_MINUTE)
-            alertManager.checkReading(reading, alertReadings, predMinutes.value)
+            val prediction = updateNotification()
+            val alertReadings = dao.since(reading.ts - ReadingPipeline.LOOKBACK_MINUTES * MS_PER_MINUTE)
+            alertManager.checkReading(reading, alertReadings, predMinutes.value, prediction)
             broadcastBgIfEnabled(reading)
             updateWidgets()
         }
@@ -332,9 +251,9 @@ class StrimmaService : Service() {
         if (lluFollowerJob != null) return
         lluFollowerJob = libreLinkUpFollower.start(scope) { reading ->
             pusher.pushReading(reading)
-            updateNotification()
-            val alertReadings = dao.since(reading.ts - LOOKBACK_MINUTES * MS_PER_MINUTE)
-            alertManager.checkReading(reading, alertReadings, predMinutes.value)
+            val prediction = updateNotification()
+            val alertReadings = dao.since(reading.ts - ReadingPipeline.LOOKBACK_MINUTES * MS_PER_MINUTE)
+            alertManager.checkReading(reading, alertReadings, predMinutes.value, prediction)
             broadcastBgIfEnabled(reading)
             writeToHealthConnectIfEnabled(reading)
             updateWidgets()
@@ -347,41 +266,6 @@ class StrimmaService : Service() {
         lluFollowerJob = null
         libreLinkUpFollower.stop()
         DebugLog.log("LibreLinkUp follower stopped")
-    }
-
-    private suspend fun processReading(mgdl: Double, timestamp: Long) {
-        if (!GlucoseReading.isValidSgv(mgdl)) {
-            DebugLog.log("Rejected invalid mg/dL value: $mgdl")
-            return
-        }
-        val sgv = Math.round(mgdl).toInt()
-
-        val existing = dao.lastN(1)
-        if (existing.isNotEmpty() && kotlin.math.abs(timestamp - existing[0].ts) < DUPLICATE_THRESHOLD_MS) return
-
-        val recentReadings = dao.since(timestamp - LOOKBACK_MINUTES * MS_PER_MINUTE)
-        val tempReading = GlucoseReading(
-            ts = timestamp, sgv = sgv,
-            direction = "NONE", delta = null, pushed = 0
-        )
-        val (direction, deltaMgdl) = directionComputer.compute(recentReadings, tempReading)
-
-        val reading = tempReading.copy(
-            direction = direction.name,
-            delta = deltaMgdl?.let { Math.round(it * DELTA_ROUNDING_FACTOR) / DELTA_ROUNDING_FACTOR }
-        )
-
-        dao.insert(reading)
-        DebugLog.log("Stored: ${reading.sgv} mg/dL ${direction.arrow}")
-        pusher.pushReading(reading)
-        tidepoolUploader.onNewReading()
-        updateNotification()
-        // Reuse recentReadings + the newly inserted reading instead of re-querying
-        val alertReadings = recentReadings + reading
-        alertManager.checkReading(reading, alertReadings, predMinutes.value)
-        broadcastBgIfEnabled(reading)
-        writeToHealthConnectIfEnabled(reading)
-        updateWidgets()
     }
 
     private suspend fun updateWidgets() {
@@ -413,7 +297,7 @@ class StrimmaService : Service() {
         }
     }
 
-    private suspend fun updateNotification() {
+    private suspend fun updateNotification(): Prediction? {
         val latest = dao.latestOnce()?.takeUnless { reading ->
             AlertManager.isStale(reading.ts)
         }
@@ -428,53 +312,66 @@ class StrimmaService : Service() {
 
         val exerciseSessions = exerciseDao.getSessionsInRange(now - graphWindowMs, now)
 
-        val workoutText = if (WorkoutAlarmReceiver.notificationTriggerFired.get() && latest != null) {
-            cachedWorkoutEvent?.let { event ->
-                val minutesUntil = ((event.startTime - now) / MS_PER_MINUTE).toInt()
-                if (minutesUntil <= 0) return@let null
-                val timeText = if (minutesUntil >= MINUTES_PER_HOUR) {
-                    val h = minutesUntil / MINUTES_PER_HOUR
-                    val m = minutesUntil % MINUTES_PER_HOUR
-                    if (m > 0) "${h}h${m}m" else "${h}h"
-                } else {
-                    "${minutesUntil}m"
-                }
-                val velocity = com.psjostrom.strimma.graph.PredictionComputer.currentVelocity(recent)
-                val prediction = com.psjostrom.strimma.graph.PredictionComputer.compute(
-                    recent, FORECAST_HORIZON_MINUTES,
-                    bgLow.value.toDouble(), bgHigh.value.toDouble()
-                )
-                val forecastBg = prediction?.points?.lastOrNull()?.mgdl
-                val targetLow = settings.exerciseTargetLow(event.category).first()
-                val result = com.psjostrom.strimma.data.calendar.PreActivityAssessor.assess(
-                    currentBgMgdl = latest.sgv,
-                    velocityMgdlPerMin = velocity,
-                    iob = iob,
-                    forecastBgAt30minMgdl = forecastBg,
-                    timeToWorkoutMs = (event.startTime - now),
-                    targetLowMgdl = targetLow,
-                    glucoseUnit = glucoseUnit.value
-                )
-                val actionText = when {
-                    result.carbRecommendation != null -> "eat ${result.carbRecommendation.totalGrams}g"
-                    result.readiness == com.psjostrom.strimma.data.calendar.ReadinessLevel.WAIT ->
-                        "hold off"
-                    result.readiness == com.psjostrom.strimma.data.calendar.ReadinessLevel.CAUTION ->
-                        "monitor"
-                    else -> "ready"
-                }
-                "\uD83C\uDFC3 $timeText $actionText"
-            }
-        } else null
+        // Compute prediction once — reused by notification helper, graph renderer, and alert manager
+        val prediction = PredictionComputer.compute(
+            recent, predMinutes.value,
+            bgLow.value.toDouble(), bgHigh.value.toDouble()
+        )
+
+        val workoutText = computeWorkoutText(latest, recent, iob, now)
 
         notificationHelper.updateNotification(
             latest, recent, bgLow.value.toDouble(), bgHigh.value.toDouble(),
             graphWindowMs, predMinutes.value, glucoseUnit.value, iob, exerciseSessions,
-            workoutText
+            workoutText, prediction
         )
+
+        return prediction
     }
 
-    private fun broadcastBgIfEnabled(reading: com.psjostrom.strimma.data.GlucoseReading) {
+    private suspend fun computeWorkoutText(
+        latest: GlucoseReading?,
+        recent: List<GlucoseReading>,
+        iob: Double,
+        now: Long
+    ): String? {
+        if (!WorkoutAlarmReceiver.notificationTriggerFired.get() || latest == null) return null
+        val event = calendarPoller.nextEvent.value ?: return null
+        val minutesUntil = ((event.startTime - now) / MS_PER_MINUTE).toInt()
+        if (minutesUntil <= 0) return null
+        val timeText = if (minutesUntil >= MINUTES_PER_HOUR) {
+            val h = minutesUntil / MINUTES_PER_HOUR
+            val m = minutesUntil % MINUTES_PER_HOUR
+            if (m > 0) "${h}h${m}m" else "${h}h"
+        } else {
+            "${minutesUntil}m"
+        }
+        val velocity = PredictionComputer.currentVelocity(recent)
+        val forecastPrediction = PredictionComputer.compute(
+            recent, FORECAST_HORIZON_MINUTES,
+            bgLow.value.toDouble(), bgHigh.value.toDouble()
+        )
+        val forecastBg = forecastPrediction?.points?.lastOrNull()?.mgdl
+        val targetLow = settings.exerciseTargetLow(event.category).first()
+        val result = com.psjostrom.strimma.data.calendar.PreActivityAssessor.assess(
+            currentBgMgdl = latest.sgv,
+            velocityMgdlPerMin = velocity,
+            iob = iob,
+            forecastBgAt30minMgdl = forecastBg,
+            timeToWorkoutMs = (event.startTime - now),
+            targetLowMgdl = targetLow,
+            glucoseUnit = glucoseUnit.value
+        )
+        val actionText = when {
+            result.carbRecommendation != null -> "eat ${result.carbRecommendation.totalGrams}g"
+            result.readiness == com.psjostrom.strimma.data.calendar.ReadinessLevel.WAIT -> "hold off"
+            result.readiness == com.psjostrom.strimma.data.calendar.ReadinessLevel.CAUTION -> "monitor"
+            else -> "ready"
+        }
+        return "\uD83C\uDFC3 $timeText $actionText"
+    }
+
+    private fun broadcastBgIfEnabled(reading: GlucoseReading) {
         if (!bgBroadcastEnabled.value) return
         val intent = Intent("com.eveningoutpost.dexdrip.BgEstimate").apply {
             putExtra("com.eveningoutpost.dexdrip.Extras.BgEstimate", reading.sgv.toDouble())
@@ -489,61 +386,24 @@ class StrimmaService : Service() {
         DebugLog.log("Broadcast BG: ${reading.sgv} mg/dL")
     }
 
-    private fun startCalendarPoll() {
-        // React immediately when calendarId loads from DataStore
-        // (avoids the race where first poll sees -1 and cancels the alarm)
+    private fun observeCalendarForAlarms() {
+        var previousStartTime: Long? = null
         scope.launch {
-            workoutCalendarId.collect {
-                try {
-                    pollCalendar()
-                } catch (
-                    @Suppress("TooGenericExceptionCaught")
-                    e: Exception
-                ) {
-                    DebugLog.log("Calendar poll (reactive) failed: ${e.message}")
+            calendarPoller.nextEvent.collect { event ->
+                if (event != null && previousStartTime != event.startTime) {
+                    val triggerMs = workoutTriggerMinutes.value.toLong() * MS_PER_MINUTE
+                    val alarmTime = event.startTime - triggerMs
+                    if (alarmTime > System.currentTimeMillis()) {
+                        WorkoutAlarmReceiver.notificationTriggerFired.set(false)
+                    }
+                    scheduleWorkoutAlarm(event)
+                } else if (event == null && previousStartTime != null) {
+                    cancelWorkoutAlarm()
+                    WorkoutAlarmReceiver.notificationTriggerFired.set(false)
+                    updateNotification()
                 }
+                previousStartTime = event?.startTime
             }
-        }
-        // Background poll for calendar changes (events added/removed externally)
-        calendarPollJob = scope.launch {
-            while (isActive) {
-                delay(CALENDAR_POLL_INTERVAL_MINUTES * MS_PER_MINUTE)
-                try {
-                    pollCalendar()
-                } catch (
-                    @Suppress("TooGenericExceptionCaught")
-                    e: Exception
-                ) {
-                    DebugLog.log("Calendar poll failed: ${e.message}")
-                }
-            }
-        }
-    }
-
-    private suspend fun pollCalendar() {
-        val calId = workoutCalendarId.value
-        if (calId < 0) {
-            cachedWorkoutEvent = null
-            cancelWorkoutAlarm()
-            WorkoutAlarmReceiver.notificationTriggerFired.set(false)
-            return
-        }
-        val lookaheadMs = workoutLookaheadHours.value.toLong() * MS_PER_HOUR
-        val event = calendarReader.getNextWorkout(calId, lookaheadMs)
-        val previous = cachedWorkoutEvent
-        cachedWorkoutEvent = event
-
-        if (event != null && (previous == null || previous.startTime != event.startTime)) {
-            val triggerMs = workoutTriggerMinutes.value.toLong() * MS_PER_MINUTE
-            val alarmTime = event.startTime - triggerMs
-            if (alarmTime > System.currentTimeMillis()) {
-                WorkoutAlarmReceiver.notificationTriggerFired.set(false)
-            }
-            scheduleWorkoutAlarm(event)
-        } else if (event == null && previous != null) {
-            cancelWorkoutAlarm()
-            WorkoutAlarmReceiver.notificationTriggerFired.set(false)
-            scope.launch { updateNotification() }
         }
     }
 

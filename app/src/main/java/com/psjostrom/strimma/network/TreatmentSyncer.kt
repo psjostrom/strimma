@@ -1,5 +1,6 @@
 package com.psjostrom.strimma.network
 
+import android.database.sqlite.SQLiteException
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.MS_PER_DAY
 import com.psjostrom.strimma.data.TreatmentDao
@@ -12,6 +13,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.serialization.SerializationException
+import java.io.IOException
+import kotlin.coroutines.cancellation.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -98,13 +102,16 @@ class TreatmentSyncer @Inject constructor(
             }
             DebugLog.log(message = "Treatment pull: ${treatments.size} treatments for $days days")
             Result.success(treatments.size)
-        } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+        } catch (e: CancellationException) {
             throw e
-        } catch (
-            @Suppress("TooGenericExceptionCaught")
-            e: Exception
-        ) {
+        } catch (e: IOException) {
             DebugLog.log(message = "Treatment pull error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
+            Result.failure(e)
+        } catch (e: SerializationException) {
+            DebugLog.log(message = "Treatment pull parse error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
+            Result.failure(e)
+        } catch (e: SQLiteException) {
+            DebugLog.log(message = "Treatment pull DB error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
             Result.failure(e)
         }
     }
@@ -137,14 +144,17 @@ class TreatmentSyncer @Inject constructor(
             dao.deleteOlderThan(pruneThreshold)
 
             _status.value = IntegrationStatus.Connected(lastActivityTs = System.currentTimeMillis())
-        } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+        } catch (e: CancellationException) {
             throw e
-        } catch (
-            @Suppress("TooGenericExceptionCaught") // Room can throw various exceptions (disk full, DB locked)
-            e: Exception
-        ) {
+        } catch (e: IOException) {
             DebugLog.log(message = "Treatment sync error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
             _status.value = IntegrationStatus.Error(sanitizeErrorMessage(e))
+        } catch (e: SerializationException) {
+            DebugLog.log(message = "Treatment sync parse error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
+            _status.value = IntegrationStatus.Error("Sync failed")
+        } catch (e: SQLiteException) {
+            DebugLog.log(message = "Treatment sync DB error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
+            _status.value = IntegrationStatus.Error("Database error")
         }
     }
 }

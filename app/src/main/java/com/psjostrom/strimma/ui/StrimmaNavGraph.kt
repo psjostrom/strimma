@@ -24,6 +24,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
@@ -33,7 +34,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.psjostrom.strimma.R
-import com.psjostrom.strimma.data.IOBComputer
 import com.psjostrom.strimma.receiver.GlucoseNotificationListener
 import com.psjostrom.strimma.ui.settings.AlertsSettings
 import com.psjostrom.strimma.ui.settings.AlertsViewModel
@@ -46,6 +46,7 @@ import com.psjostrom.strimma.ui.settings.TreatmentsSettings
 import com.psjostrom.strimma.ui.setup.SetupScreen
 import com.psjostrom.strimma.ui.setup.SetupViewModel
 import com.psjostrom.strimma.ui.setup.defaultUnitForLocale
+import kotlinx.coroutines.launch
 
 private val TOP_LEVEL_ROUTES = setOf("main", "exercise", "stats", "settings")
 
@@ -141,28 +142,19 @@ fun StrimmaNavGraph(
     viewModel: MainViewModel,
     activity: MainActivity,
 ) {
+    val scope = rememberCoroutineScope()
     val bgLow by viewModel.bgLow.collectAsState()
     val bgHigh by viewModel.bgHigh.collectAsState()
     val graphWindowHours by viewModel.graphWindowHours.collectAsState()
-    val nightscoutUrl by viewModel.nightscoutUrl.collectAsState()
-    val notifGraphMinutes by viewModel.notifGraphMinutes.collectAsState()
     val predictionMinutes by viewModel.predictionMinutes.collectAsState()
     val glucoseUnit by viewModel.glucoseUnit.collectAsState()
-    val hbA1cUnit by viewModel.hbA1cUnit.collectAsState()
-    val bgBroadcastEnabled by viewModel.bgBroadcastEnabled.collectAsState()
-    val glucoseSource by viewModel.glucoseSource.collectAsState()
-    val followerPollSeconds by viewModel.followerPollSeconds.collectAsState()
     val nightscoutConfigured by viewModel.nightscoutConfigured.collectAsState()
-    val treatmentsSyncEnabled by viewModel.treatmentsSyncEnabled.collectAsState()
-    val insulinType by viewModel.insulinType.collectAsState()
-    val customDIA by viewModel.customDIA.collectAsState()
     val latestReading by viewModel.latestReading.collectAsState()
     val readings by viewModel.readings.collectAsState()
     val treatments by viewModel.treatments.collectAsState()
     val iob by viewModel.iob.collectAsState()
     val exerciseSessions by viewModel.exerciseSessions.collectAsState()
     val guidanceState by viewModel.guidanceState.collectAsState()
-    val themeMode by viewModel.themeMode.collectAsState()
 
     val startDest = if (viewModel.setupCompleted.collectAsState().value == true) "main" else "setup"
 
@@ -247,7 +239,7 @@ fun StrimmaNavGraph(
                 glucoseUnit = glucoseUnit,
                 treatments = treatments,
                 iob = iob,
-                iobTauMinutes = IOBComputer.tauForInsulinType(insulinType, customDIA),
+                iobTauMinutes = viewModel.tauMinutes.collectAsState().value,
                 exerciseSessions = exerciseSessions,
                 guidanceState = guidanceState,
                 pauseLowExpiryMs = pauseLowExpiryMs,
@@ -290,26 +282,31 @@ fun StrimmaNavGraph(
             val isNotifAccessGranted = remember(dsLifecycleState) {
                 GlucoseNotificationListener.isEnabled(activity)
             }
+            val glucoseSource by viewModel.settings.glucoseSource.collectAsState(
+                initial = com.psjostrom.strimma.data.GlucoseSource.COMPANION
+            )
+            val nightscoutUrl by viewModel.settings.nightscoutUrl.collectAsState(initial = "")
+            val followerPollSeconds by viewModel.settings.followerPollSeconds.collectAsState(initial = 60)
             val pushStatus by viewModel.pushStatus.collectAsState()
             val nsFollowerStatus by viewModel.nsFollowerStatus.collectAsState()
             val lluFollowerStatus by viewModel.lluFollowerStatus.collectAsState()
             DataSourceSettings(
                 glucoseSource = glucoseSource,
                 nightscoutUrl = nightscoutUrl,
-                nightscoutSecret = viewModel.nightscoutSecret,
+                nightscoutSecret = viewModel.settings.getNightscoutSecret(),
                 followerPollSeconds = followerPollSeconds,
-                lluEmail = viewModel.lluEmail,
-                lluPassword = viewModel.lluPassword,
+                lluEmail = viewModel.settings.getLluEmail(),
+                lluPassword = viewModel.settings.getLluPassword(),
                 pushStatus = pushStatus,
                 nsFollowerStatus = nsFollowerStatus,
                 lluFollowerStatus = lluFollowerStatus,
                 isNotificationAccessGranted = isNotifAccessGranted,
-                onGlucoseSourceChange = viewModel::setGlucoseSource,
-                onNightscoutUrlChange = viewModel::setNightscoutUrl,
-                onNightscoutSecretChange = viewModel::setNightscoutSecret,
-                onFollowerPollSecondsChange = viewModel::setFollowerPollSeconds,
-                onLluEmailChange = viewModel::setLluEmail,
-                onLluPasswordChange = viewModel::setLluPassword,
+                onGlucoseSourceChange = { scope.launch { viewModel.settings.setGlucoseSource(it) } },
+                onNightscoutUrlChange = { scope.launch { viewModel.settings.setNightscoutUrl(it) } },
+                onNightscoutSecretChange = { viewModel.settings.setNightscoutSecret(it) },
+                onFollowerPollSecondsChange = { scope.launch { viewModel.settings.setFollowerPollSeconds(it) } },
+                onLluEmailChange = { viewModel.settings.setLluEmail(it) },
+                onLluPasswordChange = { viewModel.settings.setLluPassword(it) },
                 onOpenNotificationAccess = {
                     GlucoseNotificationListener.openSettings(activity)
                 },
@@ -326,6 +323,11 @@ fun StrimmaNavGraph(
             )
         }
         composable("settings/treatments") {
+            val treatmentsSyncEnabled by viewModel.settings.treatmentsSyncEnabled.collectAsState(initial = false)
+            val insulinType by viewModel.settings.insulinType.collectAsState(
+                initial = com.psjostrom.strimma.data.InsulinType.FIASP
+            )
+            val customDIA by viewModel.settings.customDIA.collectAsState(initial = 5.0f)
             val treatmentSyncStatus by viewModel.treatmentSyncStatus.collectAsState()
             TreatmentsSettings(
                 treatmentsSyncEnabled = treatmentsSyncEnabled,
@@ -333,9 +335,9 @@ fun StrimmaNavGraph(
                 customDIA = customDIA,
                 nightscoutConfigured = nightscoutConfigured,
                 treatmentSyncStatus = treatmentSyncStatus,
-                onTreatmentsSyncEnabledChange = viewModel::setTreatmentsSyncEnabled,
-                onInsulinTypeChange = viewModel::setInsulinType,
-                onCustomDIAChange = viewModel::setCustomDIA,
+                onTreatmentsSyncEnabledChange = { scope.launch { viewModel.settings.setTreatmentsSyncEnabled(it) } },
+                onInsulinTypeChange = { scope.launch { viewModel.settings.setInsulinType(it) } },
+                onCustomDIAChange = { scope.launch { viewModel.settings.setCustomDIA(it) } },
                 onPullTreatments = { days ->
                     activity.pullWithToast(
                         days,
@@ -347,7 +349,7 @@ fun StrimmaNavGraph(
                 },
                 mealTimeSlotConfig = viewModel.mealTimeSlotConfig.collectAsState().value,
                 onMealSlotChange = { key, minutes ->
-                    activity.launchInScope { viewModel.setMealSlotBoundary(key, minutes) }
+                    activity.launchInScope { viewModel.settings.setMealSlotBoundary(key, minutes) }
                 },
                 onBack = { navController.popBackStack() }
             )
@@ -358,6 +360,12 @@ fun StrimmaNavGraph(
             )
         }
         composable("settings/display") {
+            val hbA1cUnit by viewModel.settings.hbA1cUnit.collectAsState(
+                initial = com.psjostrom.strimma.data.HbA1cUnit.MMOL_MOL
+            )
+            val themeMode by viewModel.settings.themeMode.collectAsState(
+                initial = com.psjostrom.strimma.ui.theme.ThemeMode.System
+            )
             DisplaySettings(
                 glucoseUnit = glucoseUnit,
                 hbA1cUnit = hbA1cUnit,
@@ -365,21 +373,22 @@ fun StrimmaNavGraph(
                 bgLow = bgLow,
                 bgHigh = bgHigh,
                 themeMode = themeMode,
-                onGlucoseUnitChange = viewModel::setGlucoseUnit,
-                onHbA1cUnitChange = viewModel::setHbA1cUnit,
-                onGraphWindowChange = viewModel::setGraphWindowHours,
-                onBgLowChange = viewModel::setBgLow,
-                onBgHighChange = viewModel::setBgHigh,
-                onThemeModeChange = viewModel::setThemeMode,
+                onGlucoseUnitChange = { scope.launch { viewModel.settings.setGlucoseUnit(it) } },
+                onHbA1cUnitChange = { scope.launch { viewModel.settings.setHbA1cUnit(it) } },
+                onGraphWindowChange = { scope.launch { viewModel.settings.setGraphWindowHours(it) } },
+                onBgLowChange = { scope.launch { viewModel.settings.setBgLow(it) } },
+                onBgHighChange = { scope.launch { viewModel.settings.setBgHigh(it) } },
+                onThemeModeChange = { scope.launch { viewModel.settings.setThemeMode(it) } },
                 onBack = { navController.popBackStack() }
             )
         }
         composable("settings/notifications") {
+            val notifGraphMinutes by viewModel.settings.notifGraphMinutes.collectAsState(initial = 60)
             NotificationSettings(
                 notifGraphMinutes = notifGraphMinutes,
                 predictionMinutes = predictionMinutes,
-                onNotifGraphMinutesChange = viewModel::setNotifGraphMinutes,
-                onPredictionMinutesChange = viewModel::setPredictionMinutes,
+                onNotifGraphMinutesChange = { scope.launch { viewModel.settings.setNotifGraphMinutes(it) } },
+                onPredictionMinutesChange = { scope.launch { viewModel.settings.setPredictionMinutes(it) } },
                 onBack = { navController.popBackStack() }
             )
         }
@@ -431,7 +440,7 @@ fun StrimmaNavGraph(
             )
         }
         composable("settings/general") {
-            val startOnBoot by viewModel.startOnBoot.collectAsState()
+            val startOnBoot by viewModel.settings.startOnBoot.collectAsState(initial = true)
             val updateCheckState by viewModel.updateCheckState.collectAsState()
             val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
             val lifecycleState by lifecycleOwner.lifecycle.currentStateFlow.collectAsState()
@@ -441,7 +450,7 @@ fun StrimmaNavGraph(
             }
             GeneralSettings(
                 startOnBoot = startOnBoot,
-                onStartOnBootChange = viewModel::setStartOnBoot,
+                onStartOnBootChange = { scope.launch { viewModel.settings.setStartOnBoot(it) } },
                 appVersion = activity.packageManager.getPackageInfo(
                     activity.packageName, 0
                 ).versionName ?: "",
@@ -456,19 +465,20 @@ fun StrimmaNavGraph(
             )
         }
         composable("settings/data") {
-            val webServerEnabled by viewModel.webServerEnabled.collectAsState()
-            val tidepoolEnabled by viewModel.tidepoolEnabled.collectAsState()
-            val tidepoolLastUploadTime by viewModel.tidepoolLastUploadTime.collectAsState()
-            val tidepoolLastError by viewModel.tidepoolLastError.collectAsState()
+            val bgBroadcastEnabled by viewModel.settings.bgBroadcastEnabled.collectAsState(initial = false)
+            val webServerEnabled by viewModel.settings.webServerEnabled.collectAsState(initial = false)
+            val tidepoolEnabled by viewModel.settings.tidepoolEnabled.collectAsState(initial = false)
+            val tidepoolLastUploadTime by viewModel.settings.tidepoolLastUploadTime.collectAsState(initial = 0L)
+            val tidepoolLastError by viewModel.settings.tidepoolLastError.collectAsState(initial = "")
             DataSettings(
                 bgBroadcastEnabled = bgBroadcastEnabled,
-                onBgBroadcastEnabledChange = viewModel::setBgBroadcastEnabled,
+                onBgBroadcastEnabledChange = { scope.launch { viewModel.settings.setBgBroadcastEnabled(it) } },
                 webServerEnabled = webServerEnabled,
-                webServerSecret = viewModel.webServerSecret,
-                onWebServerEnabledChange = viewModel::setWebServerEnabled,
-                onWebServerSecretChange = viewModel::setWebServerSecret,
+                webServerSecret = viewModel.settings.getWebServerSecret(),
+                onWebServerEnabledChange = { scope.launch { viewModel.settings.setWebServerEnabled(it) } },
+                onWebServerSecretChange = { viewModel.settings.setWebServerSecret(it) },
                 tidepoolEnabled = tidepoolEnabled,
-                onTidepoolEnabledChange = viewModel::setTidepoolEnabled,
+                onTidepoolEnabledChange = { scope.launch { viewModel.settings.setTidepoolEnabled(it) } },
                 isTidepoolLoggedIn = viewModel.tidepoolLoggedIn.collectAsState().value,
                 onTidepoolLogin = {
                     activity.launchTidepoolAuth(viewModel)
@@ -492,6 +502,11 @@ fun StrimmaNavGraph(
             )
         }
         composable("stats") {
+            val treatmentsSyncEnabled by viewModel.settings.treatmentsSyncEnabled.collectAsState(initial = false)
+            val hbA1cUnit by viewModel.settings.hbA1cUnit.collectAsState(
+                initial = com.psjostrom.strimma.data.HbA1cUnit.MMOL_MOL
+            )
+            val tauMinutes by viewModel.tauMinutes.collectAsState()
             val storyViewedMonth by viewModel.settings.storyViewedMonth.collectAsState(initial = "")
             StatsScreen(
                 bgLow = bgLow,
@@ -503,7 +518,7 @@ fun StrimmaNavGraph(
                 onLoadAllTreatments = viewModel::allTreatmentsSince,
                 treatmentsSyncEnabled = treatmentsSyncEnabled,
                 nightscoutConfigured = nightscoutConfigured,
-                tauMinutes = viewModel.currentTauMinutes(),
+                tauMinutes = tauMinutes,
                 mealAnalyzer = viewModel.mealAnalyzer,
                 mealTimeSlotConfig = viewModel.mealTimeSlotConfig.collectAsState().value,
                 onExportCsv = viewModel::exportCsv,
@@ -526,6 +541,9 @@ fun StrimmaNavGraph(
                 }
             )
         ) {
+            val hbA1cUnit by viewModel.settings.hbA1cUnit.collectAsState(
+                initial = com.psjostrom.strimma.data.HbA1cUnit.MMOL_MOL
+            )
             com.psjostrom.strimma.ui.story.StoryScreen(
                 glucoseUnit = glucoseUnit,
                 hbA1cUnit = hbA1cUnit,
