@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Feature request or idea
+    url: https://github.com/psjostrom/strimma/discussions/new?category=ideas
+    about: Propose new features or improvements in Discussions. Issues are reserved for confirmed bugs and committed work.
+  - name: Question or general discussion
+    url: https://github.com/psjostrom/strimma/discussions
+    about: Ask questions or discuss with other Strimma users.
