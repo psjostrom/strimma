@@ -325,4 +325,44 @@ class AlertManagerTest {
         alertManager.handlePushFailure(false)
         assertFalse(isNotificationActive(AlertManager.ALERT_PUSH_FAIL_ID))
     }
+
+    // -- Re-fire suppression (FLAG_ONLY_ALERT_ONCE) --
+    // Stale and push-fail can re-fire every reading cycle while the underlying
+    // condition persists. Each notify() with the same ID re-plays sound/vibration
+    // unless FLAG_ONLY_ALERT_ONCE is set. Without this flag the user gets alarmed
+    // every minute through the night when readings stop arriving.
+
+    @Test
+    fun `stale notification sets FLAG_ONLY_ALERT_ONCE so repeats do not re-sound`() = runTest {
+        val staleTs = System.currentTimeMillis() - (AlertManager.STALE_THRESHOLD_MINUTES + 1) * 60_000L
+        alertManager.checkStale(staleTs)
+
+        val notif = notificationManager.activeNotifications.first { it.id == AlertManager.ALERT_STALE_ID }
+        assertTrue(
+            "stale notification must set FLAG_ONLY_ALERT_ONCE",
+            (notif.notification.flags and android.app.Notification.FLAG_ONLY_ALERT_ONCE) != 0
+        )
+    }
+
+    @Test
+    fun `push failure notification sets FLAG_ONLY_ALERT_ONCE so repeats do not re-sound`() {
+        alertManager.handlePushFailure(true)
+
+        val notif = notificationManager.activeNotifications.first { it.id == AlertManager.ALERT_PUSH_FAIL_ID }
+        assertTrue(
+            "push fail notification must set FLAG_ONLY_ALERT_ONCE",
+            (notif.notification.flags and android.app.Notification.FLAG_ONLY_ALERT_ONCE) != 0
+        )
+    }
+
+    @Test
+    fun `low alert does NOT set FLAG_ONLY_ALERT_ONCE — dangerous BG must keep alarming`() = runTest {
+        alertManager.checkReading(reading(60), emptyList(), 0)
+
+        val notif = notificationManager.activeNotifications.first { it.id == AlertManager.ALERT_LOW_ID }
+        assertTrue(
+            "low alert must keep re-alerting (FLAG_ONLY_ALERT_ONCE must be unset)",
+            (notif.notification.flags and android.app.Notification.FLAG_ONLY_ALERT_ONCE) == 0
+        )
+    }
 }
