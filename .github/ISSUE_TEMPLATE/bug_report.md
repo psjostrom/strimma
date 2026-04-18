@@ -10,7 +10,7 @@ labels: bug
 **Strimma version:**
 
 
-**Data source:** Companion Mode / xDrip Broadcast
+**Data source:** Companion Mode / xDrip Broadcast / Nightscout Follower / LibreLinkUp
 
 **What happened:**
 
