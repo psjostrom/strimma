@@ -89,6 +89,7 @@ Configure units, graph window, thresholds, and theme.
 | **BG Low** | Low threshold for graph coloring and TIR | 4.0 mmol/L (72 mg/dL) |
 | **BG High** | High threshold for graph coloring and TIR | 10.0 mmol/L (180 mg/dL) |
 | **Theme** | App appearance — Light, Dark, or System | System |
+| **Language** | App language — System, English, Svenska, Deutsch, Español, Français | System |
 
 ---
 
@@ -159,14 +160,15 @@ Opens the [Statistics](statistics.md) screen with Metrics, AGP, and Meals tabs.
 
 ## General
 
-Startup behavior, language, battery, and version info.
+Startup behavior, battery, updates, and version info.
 
 | Setting | Description | Default |
 |---------|-------------|---------|
 | **Start on boot** | Automatically start Strimma when the phone restarts | On |
 | **Battery optimization** | Shows whether Strimma is exempt from battery optimization | — |
-| **Language** | App language — System, English, Svenska, Deutsch, Español, Français | System |
 | **Version** | Current app version | — |
+| **Check for updates** | Manually check GitHub for a new stable release | — |
+| **Check for beta** | Check for pre-release versions (release candidates, betas) | — |
 
 ---
 

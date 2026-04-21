@@ -10,6 +10,8 @@ Since Strimma is distributed via GitHub Releases (not Google Play), the app chec
 2. If a newer version is available, a dialog appears with the version number and changelog
 3. Tap **Update** to download and install, or **Later** to dismiss
 
+You can also check manually at any time via **Settings → General → Check for updates**. To try pre-release versions (release candidates, betas), tap **Check for beta**.
+
 ## Required Updates
 
 Some updates may be marked as **required** — for example, if a critical bug fix is needed. Required updates show a blocking dialog that cannot be dismissed. The app continues to function normally, but the dialog will reappear until you update.

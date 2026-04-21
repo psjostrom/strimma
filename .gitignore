@@ -101,6 +101,7 @@ app/release.keystore
 
 # Claude
 .claude.local.md
+.claude/settings.local.json
 .claude/worktrees/
 site/
 
