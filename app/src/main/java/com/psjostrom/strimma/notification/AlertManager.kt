@@ -417,7 +417,9 @@ class AlertManager @Inject constructor(
             if (!isSnoozed(ALERT_STALE_ID, now)) {
                 val title = context.getString(R.string.alert_stale_title)
                 val body = context.getString(R.string.alert_stale_body)
-                fireAlert(ALERT_STALE_ID, CHANNEL_STALE, title, body)
+                // alertOnce: stale persists across reading cycles — without this the
+                // user gets re-alarmed every minute the phone is awake.
+                fireAlert(ALERT_STALE_ID, CHANNEL_STALE, title, body, alertOnce = true)
             }
         } else {
             notificationManager.cancel(ALERT_STALE_ID)
@@ -430,7 +432,8 @@ class AlertManager @Inject constructor(
                 fireAlert(
                     ALERT_PUSH_FAIL_ID, CHANNEL_PUSH_FAIL,
                     context.getString(R.string.alert_push_fail_title),
-                    context.getString(R.string.alert_push_fail_body)
+                    context.getString(R.string.alert_push_fail_body),
+                    alertOnce = true
                 )
             }
         } else {
@@ -508,7 +511,13 @@ class AlertManager @Inject constructor(
         return true
     }
 
-    private fun fireAlert(alertId: Int, channelId: String, title: String, text: String) {
+    private fun fireAlert(
+        alertId: Int,
+        channelId: String,
+        title: String,
+        text: String,
+        alertOnce: Boolean = false
+    ) {
         DebugLog.log("ALERT: $title — $text")
 
         val contentIntent = PendingIntent.getActivity(
@@ -533,6 +542,7 @@ class AlertManager @Inject constructor(
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setContentIntent(contentIntent)
             .setAutoCancel(false)
+            .setOnlyAlertOnce(alertOnce)
             .addAction(0, context.getString(R.string.alert_snooze), snoozeIntent)
             .build()
 
