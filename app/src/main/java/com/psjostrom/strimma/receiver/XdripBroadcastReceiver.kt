@@ -41,7 +41,7 @@ class XdripBroadcastReceiver : BroadcastReceiver() {
             return
         }
 
-        DebugLog.log(message = "xDrip broadcast: ${sgv.toInt()} mg/dL")
+        DebugLog.log(message = "xDrip broadcast: ${sgv.toInt()} mg/dL ts=$timestamp")
 
         val serviceIntent = Intent(context, com.psjostrom.strimma.service.StrimmaService::class.java).apply {
             action = GlucoseNotificationListener.ACTION_GLUCOSE_RECEIVED
