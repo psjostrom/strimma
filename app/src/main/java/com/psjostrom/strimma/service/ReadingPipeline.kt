@@ -46,7 +46,9 @@ class ReadingPipeline @Inject constructor(
         val sgv = Math.round(mgdl).toInt()
 
         val existing = dao.lastN(1)
-        if (existing.isNotEmpty() && kotlin.math.abs(timestamp - existing[0].ts) < DUPLICATE_THRESHOLD_MS) {
+        val gapMs = if (existing.isNotEmpty()) timestamp - existing[0].ts else -1L
+        if (existing.isNotEmpty() && kotlin.math.abs(gapMs) < DUPLICATE_THRESHOLD_MS) {
+            DebugLog.log("Dedup-rejected: sgv=$sgv gapMs=$gapMs prevSgv=${existing[0].sgv}")
             return null
         }
 
@@ -63,7 +65,7 @@ class ReadingPipeline @Inject constructor(
         )
 
         dao.insert(reading)
-        DebugLog.log("Stored: ${reading.sgv} mg/dL ${direction.arrow}")
+        DebugLog.log("Stored: ${reading.sgv} mg/dL ${direction.arrow} gapMs=$gapMs")
         pusher.pushReading(reading)
         tidepoolUploader.onNewReading()
         return reading

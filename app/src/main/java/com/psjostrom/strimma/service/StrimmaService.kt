@@ -175,6 +175,7 @@ class StrimmaService : Service() {
             val mgdl = intent.getDoubleExtra(GlucoseNotificationListener.EXTRA_MGDL, 0.0)
             val timestamp = intent.getLongExtra(GlucoseNotificationListener.EXTRA_TIMESTAMP, 0L)
             if (mgdl > 0.0 && timestamp > 0L) {
+                DebugLog.log("Pipeline in: mgdl=${mgdl.toInt()} ts=$timestamp")
                 scope.launch {
                     val reading = readingPipeline.processReading(mgdl, timestamp)
                     if (reading != null) {
