@@ -103,6 +103,16 @@ Skip only for pure refactors with zero user-visible change.
 
 When a merge or push fails, ALWAYS check CI status (`gh pr checks`) and read the failure logs before retrying. Never blindly force or retry — diagnose the failure first.
 
+## Releasing
+
+1. Run `git log <last-tag>..main --oneline` to see ALL changes since the last release. Never assume the latest commit is all that changed.
+2. Create branch `release/vX.Y.Z` from main.
+3. Bump `versionName` in `app/build.gradle.kts`. Never bump `versionCode` (not on Google Play).
+4. Check docs for staleness against the changes (see Documentation Updates above).
+5. Create PR. Write release notes in the PR body inside a ` ```markdown ` fenced block — CI extracts this block and uses it as the GitHub Release body. If no fenced block is found, CI falls back to auto-generated notes from PR titles.
+6. Merge PR, then tag: `git tag -a vX.Y.Z -m "vX.Y.Z" && git push origin vX.Y.Z`. CI builds the APK and creates the GitHub Release.
+7. Always create releases by pushing a version tag. Never use `gh release create` manually.
+
 ## Spec
 
 Full spec in `docs/internal/spec.md`. Ideas in `docs/internal/ideas.md`. CGM app landscape in `docs/internal/cgm-landscape.md`.

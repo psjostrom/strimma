@@ -50,10 +50,24 @@ jobs:
           if [[ "$VERSION" == *-rc.* ]] || [[ "$VERSION" == *-beta.* ]]; then
             PRERELEASE_FLAG="--prerelease"
           fi
-          gh release create "${{ github.ref_name }}" \
-            "$APK" \
-            --generate-notes \
-            --notes-start-tag "$PREV_TAG" \
-            $PRERELEASE_FLAG
+          # Extract release notes from the merged release PR body (between ```markdown fences)
+          NOTES=$(gh pr list \
+            --search "Release v${VERSION} in:title" \
+            --state merged \
+            --json body -q '.[0].body' \
+          | sed -n '/^```markdown$/,/^```$/{ /^```/d; p; }')
+
+          if [ -n "$NOTES" ]; then
+            gh release create "${{ github.ref_name }}" \
+              "$APK" \
+              --notes "$NOTES" \
+              $PRERELEASE_FLAG
+          else
+            gh release create "${{ github.ref_name }}" \
+              "$APK" \
+              --generate-notes \
+              --notes-start-tag "$PREV_TAG" \
+              $PRERELEASE_FLAG
+          fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
