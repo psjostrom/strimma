@@ -179,6 +179,15 @@ class GlucoseNotificationListener : NotificationListenerService() {
         DebugLog.log(message = "Notification from: ${sbn.packageName}")
 
         val notification = sbn.notification ?: return
+        DebugLog.log(
+            message = "NotifMeta: pkg=${sbn.packageName} " +
+                "id=${sbn.id} tag=${sbn.tag ?: "-"} " +
+                "channel=${notification.channelId ?: "-"} " +
+                "when=${notification.`when`} " +
+                "postTime=${sbn.postTime} " +
+                "flags=${notification.flags} " +
+                "ongoing=${sbn.isOngoing}"
+        )
         val mgdl = extractGlucose(notification)
 
         if (mgdl != null && GlucoseReading.isValidSgv(mgdl)) {
