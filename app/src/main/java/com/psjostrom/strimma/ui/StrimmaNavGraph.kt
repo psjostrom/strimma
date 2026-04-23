@@ -26,6 +26,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
@@ -227,7 +228,7 @@ fun StrimmaNavGraph(
             val storyReady by viewModel.storyReady.collectAsState()
             val lastMonth = java.time.YearMonth.now().minusMonths(1)
             val storyMonthName = lastMonth.month.getDisplayName(
-                java.time.format.TextStyle.FULL, java.util.Locale.getDefault()
+                java.time.format.TextStyle.FULL, LocalConfiguration.current.locales[0]
             )
             MainScreen(
                 latestReading = latestReading,

@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChanged
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
@@ -512,7 +513,7 @@ private fun BgHeader(
 private fun IobDetailSheet(treatments: List<Treatment>, tauMinutes: Double, onDismiss: () -> Unit) {
     val now = System.currentTimeMillis()
     val cutoff = now - IOBComputer.lookbackMs(tauMinutes)
-    val timeFmt = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+    val timeFmt = java.text.SimpleDateFormat("HH:mm", LocalConfiguration.current.locales[0])
     val insulinTreatments = treatments
         .filter { (it.insulin ?: 0.0) > 0.0 && it.createdAt in cutoff..now }
         .sortedByDescending { it.createdAt }

@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -88,8 +89,9 @@ fun ExerciseDetailSheet(
                 val category = ExerciseCategory.fromHCType(session.type)
                 val typeName = stringResource(category.labelRes)
                 val durationMin = ((session.endTime - session.startTime) / MS_PER_MINUTE).toInt()
-                val timeFmt = SimpleDateFormat("HH:mm", Locale.getDefault())
-                val dateFmt = SimpleDateFormat("EEE d MMM", Locale.getDefault())
+                val locale = LocalConfiguration.current.locales[0]
+                val timeFmt = SimpleDateFormat("HH:mm", locale)
+                val dateFmt = SimpleDateFormat("EEE d MMM", locale)
                 val timeRange = "${timeFmt.format(Date(session.startTime))}\u2013${timeFmt.format(Date(session.endTime))}"
 
                 Text(
