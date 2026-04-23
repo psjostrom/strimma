@@ -16,6 +16,7 @@ kotlin {
 
 android {
     namespace = "com.psjostrom.strimma"
+    //noinspection GradleDependency
     compileSdk = 36
 
     signingConfigs {
@@ -59,6 +60,7 @@ android {
         }
         release {
             isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

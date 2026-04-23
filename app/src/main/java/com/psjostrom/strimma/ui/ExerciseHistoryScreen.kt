@@ -26,6 +26,7 @@ import androidx.compose.runtime.*
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -677,8 +678,9 @@ private fun ExerciseCard(
     val category = ExerciseCategory.fromHCType(session.type)
     val typeName = stringResource(category.labelRes)
     val durationMin = ((session.endTime - session.startTime) / MS_PER_MINUTE).toInt()
-    val timeFmt = SimpleDateFormat("HH:mm", Locale.getDefault())
-    val dateFmt = SimpleDateFormat("d MMM", Locale.getDefault())
+    val locale = LocalConfiguration.current.locales[0]
+    val timeFmt = SimpleDateFormat("HH:mm", locale)
+    val dateFmt = SimpleDateFormat("d MMM", locale)
     val timeRange = "${timeFmt.format(Date(session.startTime))}\u2013${timeFmt.format(Date(session.endTime))}"
     val dateStr = dateFmt.format(Date(session.startTime))
 
