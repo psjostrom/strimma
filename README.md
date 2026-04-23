@@ -98,6 +98,22 @@ cd strimma
 
 Requires Java 21.
 
+For screenshot refresh work, seed a realistic emulator DB with:
+
+```bash
+python3 scripts/seed_screenshot_data.py --install
+```
+
+This pulls the current debug app database from the connected emulator, writes deterministic CGM/treatment/exercise data, backs up the pre-seed DB under `tmp/screenshot-seed/backups/`, and installs the seeded DB back into `com.psjostrom.strimma.debug`.
+
+Capture a named app screen to PNG with:
+
+```bash
+python3 scripts/capture_doc_screenshot.py --target stats --output tmp/stats.png
+```
+
+Supported targets are `bg`, `exercise`, `stats`, `stats-agp`, `stats-meals`, `settings`, and `current`.
+
 ### Architecture
 
 Single-module app. Kotlin, Jetpack Compose, Material 3.

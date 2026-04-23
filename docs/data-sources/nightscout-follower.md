@@ -17,11 +17,11 @@ Follower mode lets you monitor someone else's glucose remotely by polling a Nigh
 
 1. Go to **Settings > Data Source**
 2. Select **Nightscout Follower**
-3. Enter the **Follower URL** — the Nightscout server you want to follow (e.g., `https://kids-nightscout.fly.dev`)
-4. Enter the **Follower API Secret** — the API secret for that server
+3. In the **Nightscout** section, enter the **Nightscout URL** — the server you want to follow (e.g., `https://kids-nightscout.fly.dev`)
+4. Enter the **API Secret** for that server
 5. Adjust the **Poll Interval** if needed (default: 60 seconds)
 
-Strimma will start polling immediately and display the first reading within one poll cycle.
+Strimma will start polling immediately and display the first reading within one poll cycle. The Nightscout URL and API secret are shared with manual Nightscout pulls and treatment sync.
 
 ---
 
@@ -84,15 +84,15 @@ Follower mode prevents duplicate readings using:
 
 ---
 
-## Nightscout Push
+## Shared Nightscout Server Settings
 
-In follower mode, Strimma does **not** push readings back to Nightscout — the data already came from Nightscout. The push URL settings are hidden when Follower mode is selected.
+In follower mode, Strimma does **not** push readings back to Nightscout — the data already came from Nightscout. The Nightscout URL and API secret remain visible in **Settings > Data Source** because Strimma uses one shared Nightscout server configuration for follower mode, manual pulls, and treatment sync.
 
 ---
 
 ## Treatment Sync in Follower Mode
 
-Treatment sync works in follower mode. If enabled, Strimma fetches treatments from the **follower URL** (the server you're following), not the push URL.
+Treatment sync works in follower mode. If enabled, Strimma fetches treatments from the configured Nightscout server.
 
 ---
 

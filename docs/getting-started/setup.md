@@ -81,7 +81,7 @@ If you have a Nightscout server and want to push your glucose data to it:
 2. Enter your **Nightscout URL** (e.g., `https://my-nightscout.fly.dev`)
 3. Enter your **API Secret**
 
-Strimma will immediately start pushing readings. See [Nightscout Push Setup](../nightscout/push-setup.md) for details.
+Strimma will immediately start using this Nightscout server. In Companion, xDrip Broadcast, and LibreLinkUp modes, new readings start uploading right away. See [Nightscout Server Setup](../nightscout/push-setup.md) for details.
 
 ---
 
