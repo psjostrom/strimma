@@ -8,7 +8,7 @@ LibreLinkUp mode polls Abbott's LibreLinkUp sharing API for glucose readings fro
 
 - **Libre 3 users** — Libre 3 notifications don't contain glucose values, so LibreLinkUp is the way to get Libre 3 data into Strimma
 - **Users without xDrip+ or Juggluco** — direct connection to Abbott's cloud
-- **Anyone sharing via LibreLinkUp** who wants Strimma's alerts, graph, and Nightscout push
+- **Anyone sharing via LibreLinkUp** who wants Strimma's alerts, graph, and Nightscout uploads
 
 ---
 
@@ -48,7 +48,7 @@ If you've already set up LibreLinkUp sharing previously, skip straight to config
 3. Enter your **Email** and **Password**
 4. Strimma connects immediately and starts polling every 60 seconds
 
-Optionally, configure Nightscout push below the credentials to forward readings to your Nightscout server.
+Optionally, configure the shared Nightscout server URL and API secret below the credentials to forward readings to your Nightscout server.
 
 ---
 
@@ -103,7 +103,7 @@ LibreLinkUp auth tokens expire after approximately 60 minutes. Strimma automatic
 
 ---
 
-## Nightscout Push
+## Nightscout Uploads
 
 Unlike Nightscout Follower mode, LibreLinkUp mode **supports pushing to Nightscout**. This lets you:
 
@@ -111,7 +111,7 @@ Unlike Nightscout Follower mode, LibreLinkUp mode **supports pushing to Nightsco
 - Use Nightscout reports and analysis tools
 - Feed data to downstream apps (Springa, watchfaces, etc.)
 
-Configure the Nightscout push URL and API secret in **Settings > Data Source** below your LibreLinkUp credentials.
+Configure the Nightscout URL and API secret in **Settings > Data Source** below your LibreLinkUp credentials. These same fields are also reused for manual Nightscout pulls, treatment sync, and Nightscout Follower mode.
 
 ---
 

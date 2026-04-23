@@ -1,6 +1,6 @@
-# Nightscout Push Setup
+# Nightscout Server Setup
 
-Configure Strimma to upload glucose readings to your Nightscout server.
+Configure the shared Nightscout server connection Strimma uses for uploads, manual pulls, treatment sync, and Nightscout Follower mode.
 
 ---
 
@@ -14,16 +14,23 @@ Configure Strimma to upload glucose readings to your Nightscout server.
 ## Configuration
 
 1. Open Strimma and go to **Settings > Data Source**
-2. In the **Nightscout Push** section:
-    - **URL** — enter your Nightscout base URL (e.g., `https://my-nightscout.fly.dev`)
-    - **API Secret** — enter your Nightscout API secret
+2. In the **Nightscout** section:
+   - **URL** — enter your Nightscout base URL (e.g., `https://my-nightscout.fly.dev`)
+   - **API Secret** — enter your Nightscout API secret
+
+Strimma reuses this same Nightscout URL and API secret for every Nightscout feature:
+
+- Uploading readings in Companion, xDrip Broadcast, and LibreLinkUp modes
+- Manual Nightscout history pulls
+- Treatment sync
+- Nightscout Follower mode when selected as the data source
 
 !!! warning "URL format"
     Enter only the base URL. Do **not** include `/api/v1/entries` or any path. Strimma adds the correct API paths automatically.
 
 ---
 
-## How Push Works
+## How Uploads Work
 
 When Strimma receives a new glucose reading:
 

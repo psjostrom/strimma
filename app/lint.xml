@@ -3,4 +3,11 @@
     <!-- AGP 9.1.0 only supports compileSdk 36; lint compares against whatever SDK
          is installed on the machine (including betas). Remove when AGP catches up. -->
     <issue id="OldTargetApi" severity="ignore" />
+
+    <!-- Dependency freshness is a release-management concern, not a PR-gating signal.
+         These checks query upstream repositories, so leaving them fatal makes CI fail
+         whenever a new version is published, even if no project code changed. -->
+    <issue id="AndroidGradlePluginVersion" severity="ignore" />
+    <issue id="GradleDependency" severity="ignore" />
+    <issue id="NewerVersionAvailable" severity="ignore" />
 </lint>
