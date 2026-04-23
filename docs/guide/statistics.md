@@ -8,7 +8,7 @@ Strimma computes standard diabetes metrics from your glucose data.
 
 ## Viewing Statistics
 
-Open statistics from **Settings > Statistics**.
+Open statistics from the **Stats** tab in the bottom navigation.
 
 ---
 

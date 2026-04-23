@@ -8,11 +8,12 @@ Complete reference for every Strimma setting.
 
 ## Settings Menu
 
-The settings screen has three groups:
+The settings tab has two main cards:
 
 - **Configuration:** Data Source, Treatments, Exercise, Display, Notifications, Alerts
-- **Analysis:** Statistics
 - **Tools:** General, Sharing, Debug Log
+
+**Statistics** is a separate bottom-tab, not part of Settings.
 
 ---
 
@@ -22,18 +23,16 @@ Choose how Strimma receives glucose data and configure Nightscout.
 
 | Setting | Description | Default |
 |---------|-------------|---------|
-| **Source** | How glucose data arrives — Companion, xDrip Broadcast, or Nightscout Follower | Companion |
-| **Nightscout URL** | Base URL for pushing readings (e.g., `https://my-ns.fly.dev`) | Empty |
-| **API Secret** | Nightscout API secret (stored encrypted) | Empty |
-| **Follower URL** | Nightscout URL to follow (only in Follower mode) | Empty |
-| **Follower Secret** | API secret for the followed server | Empty |
-| **Poll Interval** | How often to check for new readings in Follower mode (30–300 seconds) | 60s |
+| **Source** | How glucose data arrives — Companion, xDrip Broadcast, Nightscout Follower, or LibreLinkUp | Companion |
+| **Nightscout URL** | Shared Nightscout server URL used for uploads, manual pulls, follower mode, and treatment sync | Empty |
+| **API Secret** | API secret for the configured Nightscout server (stored encrypted) | Empty |
+| **Poll Interval** | How often to check for new readings in Nightscout Follower mode (30–300 seconds) | 60s |
 
 ### Nightscout Pull (Readings)
 
 | Action | Description |
 |--------|-------------|
-| **Pull 7 days** | Backfill 7 days of readings from Nightscout |
+| **Pull 7 days** | Backfill 7 days of readings from the configured Nightscout server |
 | **Pull 14 days** | Backfill 14 days |
 | **Pull 30 days** | Backfill 30 days |
 
@@ -152,12 +151,6 @@ See [Exercise](exercise.md) for details.
 
 ---
 
-## Statistics
-
-Opens the [Statistics](statistics.md) screen with Metrics, AGP, and Meals tabs.
-
----
-
 ## General
 
 Startup behavior, battery, updates, and version info.
@@ -192,7 +185,7 @@ Integrations and backup.
 | **Login with Tidepool** | Opens Tidepool's login page in your browser (OIDC with PKCE) | — |
 | **Force Upload Now** | Manually trigger an upload of recent readings | — |
 
-When enabled and logged in, Strimma uploads glucose readings to Tidepool in the background. This runs independently of Nightscout push — both can be active simultaneously.
+When enabled and logged in, Strimma uploads glucose readings to Tidepool in the background. This runs independently of Nightscout uploads — both can be active simultaneously.
 
 !!! info "Tidepool consent"
     On first login, Strimma shows a consent dialog explaining that uploaded data is subject to Tidepool's Privacy Policy and Terms of Use. You can disconnect at any time.

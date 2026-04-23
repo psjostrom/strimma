@@ -65,7 +65,7 @@ Strimma polls Abbott's LibreLinkUp sharing API for glucose readings from Libre 3
 
 - Direct connection to Abbott's cloud — no notification parsing or intermediary apps
 - Automatic regional API detection (EU, US, AU, etc.)
-- Supports Nightscout push (unlike Nightscout Follower)
+- Supports Nightscout uploads (unlike Nightscout Follower)
 - Simple setup — just email and password
 
 **See:** [LibreLinkUp](librelinkup.md) for details.
@@ -79,7 +79,7 @@ Strimma polls Abbott's LibreLinkUp sharing API for glucose readings from Libre 3
 | Needs CGM app on phone | Yes | Depends on source app | No | Yes (Libre 3) |
 | Needs Nightscout server | No (optional for push) | No (optional for push) | Yes | No (optional for push) |
 | Latency | Near-instant | Near-instant | Poll interval (30s–5m) | ~60s |
-| Push to Nightscout | Yes | Yes | No (already on NS) | Yes |
+| Nightscout uploads | Yes | Yes | No (already on NS) | Yes |
 | Supported CGM apps | All major variants | Any xDrip-compatible | Any Nightscout-connected | Libre 3 only |
 | Best for | Most users | xDrip+/AAPS/Juggluco users | Caregivers, remote monitoring | Libre 3 users without third-party apps |
 

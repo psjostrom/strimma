@@ -99,7 +99,7 @@ You can also receive glucose via **xDrip Broadcast** (from xDrip+, Juggluco, AAP
     - An app that sends xDrip-compatible broadcasts (xDrip+, Juggluco, AAPS)
     - A remote Nightscout server to follow
     - A LibreLinkUp account (for Libre 3 users)
-- For Nightscout push: a Nightscout server URL and API secret
+- For Nightscout features: a Nightscout server URL and API secret
 
 ---
 
