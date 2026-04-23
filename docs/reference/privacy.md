@@ -28,7 +28,7 @@ Strimma takes your medical data seriously. Here's exactly what it does with your
 
 ### On Your Nightscout Server
 
-If you configure Nightscout push, your glucose readings are sent to your server. Strimma has no control over data retention on your Nightscout server — that's configured on the server side.
+If you configure a Nightscout server, Strimma may upload glucose readings to it and may also download readings or treatments from it, depending on the selected mode and enabled features. Strimma has no control over data retention on your Nightscout server — that's configured on the server side.
 
 ---
 
@@ -36,10 +36,9 @@ If you configure Nightscout push, your glucose readings are sent to your server.
 
 Strimma only makes network requests to:
 
-1. **Your Nightscout server** (push URL) — to upload glucose readings
-2. **Your follower Nightscout server** (follower URL) — to download readings in Nightscout Follower mode
-3. **Abbott's LibreLinkUp API** — to download readings in LibreLinkUp mode (only if you configure LibreLinkUp credentials)
-4. **Tidepool** — to upload glucose readings to your Tidepool account (only if you configure Tidepool credentials)
+1. **Your configured Nightscout server** — to upload glucose readings, manually pull history, follow remotely, or sync treatments, depending on the selected mode and settings
+2. **Abbott's LibreLinkUp API** — to download readings in LibreLinkUp mode (only if you configure LibreLinkUp credentials)
+3. **Tidepool** — to upload glucose readings to your Tidepool account (only if you configure Tidepool credentials)
 
 No other network connections are made. No data is sent to Strimma's developers, third-party services, or any other endpoint.
 

@@ -52,7 +52,7 @@ Yes. Strimma reads notifications passively — it doesn't interfere with any clo
 
 ### Where is my data stored?
 
-Glucose readings are stored in a local database on your phone (Room database). If you configure Nightscout push or Tidepool upload, readings are also sent to those servers. Strimma sends no data anywhere else.
+Glucose readings are stored in a local database on your phone (Room database). If you configure a Nightscout server or Tidepool upload, readings may also be sent to those servers depending on the selected mode and enabled features. Strimma sends no data anywhere else.
 
 ### How long does Strimma keep my data?
 
@@ -60,7 +60,7 @@ Locally: 30 days of glucose readings, 100 days of treatments, 7 days of debug lo
 
 ### Can I export my data?
 
-Yes. Go to Settings > Statistics, then tap the share icon to export a CSV file. You can export 24 hours, 7 days, 14 days, or 30 days of data.
+Yes. Open the **Stats** tab and tap the share icon to export the currently selected period as CSV. For a quick 30-day export, **Settings > Sharing > Export Readings** also works.
 
 ### Can I back up my settings?
 

@@ -8,11 +8,11 @@ Follow a remote Nightscout server to monitor someone else's glucose.
 
 1. Go to **Settings > Data Source**
 2. Select **Nightscout Follower** as the data source
-3. Enter the **Follower URL** — the Nightscout server to follow
-4. Enter the **Follower API Secret** — the API secret for that server
+3. In the **Nightscout** section, enter the **Nightscout URL** — the server to follow
+4. Enter the **API Secret** for that server
 5. Set the **Poll Interval** — how often to check (default: 60 seconds)
 
-Strimma begins polling immediately.
+Strimma begins polling immediately. The same Nightscout URL and API secret are also used for manual pulls and treatment sync.
 
 ---
 
@@ -52,6 +52,6 @@ Connection status is shown inline in **Settings > Data Source**, below the poll 
 In follower mode:
 
 - Strimma does **not** push readings to Nightscout (they're already there)
-- The Nightscout Push URL settings are hidden
+- The Nightscout URL and API secret stay visible because the Nightscout server configuration is shared
 - Direction and delta are computed locally from the received data
-- Treatment sync (if enabled) fetches from the follower URL, not a separate push URL
+- Treatment sync (if enabled) fetches from the configured Nightscout server
