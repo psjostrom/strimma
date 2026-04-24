@@ -62,6 +62,8 @@ When Strimma connects to a Nightscout server for the first time (or if the datab
 
 Backfill happens in pages of 2016 entries, fetching until all available data in the 7-day window is retrieved.
 
+Strimma only treats the backfill as complete when Nightscout returns a short page. A full page that filters down to zero stored readings locally (for example because every item is invalid, non-SGV, or already present) does **not** stop the backfill.
+
 ---
 
 ## Connection Status

@@ -39,6 +39,9 @@ Choose how Strimma receives glucose data and configure Nightscout.
 !!! info "Auto-pull"
     When Strimma's database is empty (first install), it automatically pulls 100 days of history from Nightscout if a URL and secret are configured.
 
+!!! info "Large imports stay fast"
+    Manual Nightscout pulls preserve the server's `direction` and `delta` values and insert readings in batches. This keeps large imports network-bound instead of recomputing trend data one reading at a time.
+
 See [Data Sources](../data-sources/overview.md) for details on each mode.
 
 ---
@@ -62,6 +65,9 @@ When treatment sync is enabled:
 | **Pull 7 days** | Backfill 7 days of treatments from Nightscout |
 | **Pull 14 days** | Backfill 14 days |
 | **Pull 30 days** | Backfill 30 days |
+
+!!! info "Unsupported vs failed treatment fetches"
+    A Nightscout server that returns `404` for `/api/v1/treatments.json` is treated as not supporting treatments. Other HTTP and parse failures are treated as real sync errors and should be checked in the debug log.
 
 ### Meal Time Slots
 
@@ -186,6 +192,8 @@ Integrations and backup.
 | **Force Upload Now** | Manually trigger an upload of recent readings | — |
 
 When enabled and logged in, Strimma uploads glucose readings to Tidepool in the background. This runs independently of Nightscout uploads — both can be active simultaneously.
+
+Automatic Tidepool uploads are throttled to one background attempt every 20 minutes, even after a failed upload. **Force Upload Now** bypasses that background wait.
 
 !!! info "Tidepool consent"
     On first login, Strimma shows a consent dialog explaining that uploaded data is subject to Tidepool's Privacy Policy and Terms of Use. You can disconnect at any time.

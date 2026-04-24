@@ -76,6 +76,30 @@ Some manufacturers (Samsung, Xiaomi, Huawei, OnePlus) add extra battery restrict
 
 ---
 
+## Treatment Sync Issues
+
+### Treatments are missing or stop updating
+
+1. **Check that treatment sync is enabled:** Settings > Treatments > Treatment sync
+2. **Check the debug log:**
+    - `Treatments: 404` means the Nightscout server does not expose `/api/v1/treatments.json`
+    - `Treatments HTTP ...` or `Treatments fetch error ...` means a real server or network failure
+    - `Treatments parse error ...` means the server returned data Strimma could not parse
+3. **Check your Nightscout URL and API secret:** Strimma uses the same shared Nightscout configuration for glucose, follower mode, and treatments
+4. **Backfill after fixing the server:** Settings > Treatments > Pull 7 days / 14 days / 30 days
+
+---
+
+## Tidepool Upload Issues
+
+### Tidepool does not retry immediately after a failure
+
+- Automatic Tidepool uploads are rate-limited to one background attempt every 20 minutes, even after a failed upload
+- After fixing connectivity, login, or server issues, use **Settings > Sharing > Tidepool > Force Upload Now** to retry immediately
+- Check the debug log for `Tidepool upload` errors if uploads keep failing
+
+---
+
 ## Alerts Not Working
 
 ### No alert sound
