@@ -15,6 +15,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlin.coroutines.cancellation.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -63,6 +65,7 @@ class TidepoolUploader @Inject constructor(
 
     private var job = SupervisorJob()
     private var scope = CoroutineScope(job + Dispatchers.IO)
+    private val uploadMutex = Mutex()
 
     /** Cancels the upload scope. Called from StrimmaService.onDestroy(). */
     fun stop() {
@@ -96,44 +99,32 @@ class TidepoolUploader @Inject constructor(
      * Returns the number of records uploaded, or throws on failure.
      */
     suspend fun forceUpload(): Int {
-        val enabled = settings.tidepoolEnabled.first()
-        val loggedIn = authManager.isLoggedIn()
-        DebugLog.log(message = "Tidepool forceUpload: enabled=$enabled, loggedIn=$loggedIn")
-        check(enabled) { "Tidepool upload not enabled" }
-        check(loggedIn) { "Not logged in to Tidepool" }
-        return doUpload()
+        return uploadMutex.withLock {
+            val enabled = settings.tidepoolEnabled.first()
+            val loggedIn = authManager.isLoggedIn()
+            DebugLog.log(message = "Tidepool forceUpload: enabled=$enabled, loggedIn=$loggedIn")
+            check(enabled) { "Tidepool upload not enabled" }
+            check(loggedIn) { "Not logged in to Tidepool" }
+            doUpload()
+        }
     }
 
-    private suspend fun uploadIfReady() {
-        // Check if Tidepool upload is enabled
-        if (!settings.tidepoolEnabled.first()) {
-            return
-        }
+    internal suspend fun uploadIfReady() {
+        uploadMutex.withLock {
+            val now = System.currentTimeMillis()
+            val canUpload = settings.tidepoolEnabled.first() &&
+                authManager.isLoggedIn() &&
+                now - settings.tidepoolLastUploadTime.first() >= RATE_LIMIT_MS &&
+                (!settings.tidepoolOnlyWhileCharging.first() || isCharging()) &&
+                (!settings.tidepoolOnlyWhileWifi.first() || isOnWifi())
 
-        // Check if user is logged in
-        if (!authManager.isLoggedIn()) {
-            return
-        }
+            if (!canUpload) {
+                return
+            }
 
-        // Rate limit: at least 20 minutes since last attempt
-        val lastUploadTime = settings.tidepoolLastUploadTime.first()
-        val now = System.currentTimeMillis()
-        if (now - lastUploadTime < RATE_LIMIT_MS) {
-            return
+            settings.setTidepoolLastUploadTime(now)
+            doUpload()
         }
-
-        // Check charging condition if configured
-        if (settings.tidepoolOnlyWhileCharging.first() && !isCharging()) {
-            return
-        }
-
-        // Check wifi condition if configured
-        if (settings.tidepoolOnlyWhileWifi.first() && !isOnWifi()) {
-            return
-        }
-
-        // All checks passed, attempt upload
-        doUpload()
     }
 
     @Suppress("TooGenericExceptionCaught") // Top-level safety net for background upload

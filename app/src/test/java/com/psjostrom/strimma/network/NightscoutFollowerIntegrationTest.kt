@@ -169,8 +169,36 @@ class NightscoutFollowerIntegrationTest {
         job.cancel()
     }
 
+    @Test
+    fun `backfill continues past full invalid page to later valid readings`() = runTest {
+        val env = createEnv()
+        env.settings.setNightscoutUrl("https://ns.example.com")
+        env.settings.setNightscoutSecret("secret")
+
+        val invalidPage = (0 until 2016).map { i ->
+            NightscoutEntryResponse(sgv = 100 + (i % 20), date = baseTs - i * 60_000L, type = "cal")
+        }
+        val validPage = listOf(
+            entry(115, baseTs - 2016 * 60_000L),
+            entry(120, baseTs - 2017 * 60_000L)
+        )
+        env.fakeClient.entriesPages = mutableListOf(invalidPage, validPage)
+
+        val follower = NightscoutFollower(env.fakeClient, env.dao, env.directionComputer, env.settings)
+        val newReadings = mutableListOf<GlucoseReading>()
+        val job = follower.start(this) { newReadings.add(it) }
+        advanceAndSettle(env)
+
+        val readings = env.dao.lastN(10)
+        assertEquals("Backfill should continue to the later valid page", 2, readings.size)
+        assertEquals("Only the final backfill reading should trigger onNewReading", 1, newReadings.size)
+
+        job.cancel()
+    }
+
     private class FakeClient : NightscoutClient() {
         var entries: List<NightscoutEntryResponse> = emptyList()
+        var entriesPages: MutableList<List<NightscoutEntryResponse>>? = null
         var fetchReturnsNull = false
 
         override suspend fun fetchEntries(
@@ -181,6 +209,10 @@ class NightscoutFollowerIntegrationTest {
             before: Long?
         ): List<NightscoutEntryResponse>? {
             if (fetchReturnsNull) return null
+            val pages = entriesPages
+            if (pages != null && pages.isNotEmpty()) {
+                return pages.removeFirst()
+            }
             return entries
         }
 

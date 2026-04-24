@@ -96,7 +96,7 @@ open class NightscoutClient @Inject constructor() {
         }
     }
 
-    private val client = HttpClient(CIO) {
+    private var client = HttpClient(CIO) {
         install(HttpTimeout) {
             requestTimeoutMillis = REQUEST_TIMEOUT_MS
             socketTimeoutMillis = SOCKET_TIMEOUT_MS
@@ -104,6 +104,10 @@ open class NightscoutClient @Inject constructor() {
         install(ContentNegotiation) {
             json(Json { ignoreUnknownKeys = true })
         }
+    }
+
+    internal constructor(testClient: HttpClient) : this() {
+        client = testClient
     }
 
     private val isoFormatter get() = ISO_FORMATTER
@@ -248,54 +252,66 @@ open class NightscoutClient @Inject constructor() {
         val sinceIso = isoFormatter.format(Instant.ofEpochMilli(since))
         val fullUrl = "${normalizeUrl(baseUrl)}/api/v1/treatments.json?find[created_at][\$gte]=$sinceIso&count=$count"
 
-        return try {
+        val nsTreatments = try {
             val response = client.get(fullUrl) {
                 header("api-secret", hashedSecret)
             }
-            if (response.status.value == HTTP_NOT_FOUND) {
-                com.psjostrom.strimma.receiver.DebugLog.log(
-                    message = "Treatments: 404 — server doesn't support treatments"
-                )
-                return emptyList()
-            }
-            if (!response.status.isSuccess()) {
-                com.psjostrom.strimma.receiver.DebugLog.log(
-                    message = "Treatments HTTP ${response.status.value}: $fullUrl"
-                )
-                return emptyList()
-            }
-            val nsTreatments = response.body<List<NightscoutTreatment>>()
-            val now = System.currentTimeMillis()
-            nsTreatments.mapNotNull { ns ->
-                val createdAtStr = ns.createdAt ?: return@mapNotNull null
-                val eventType = ns.eventType ?: return@mapNotNull null
-                val createdAtMs = parseIsoTimestamp(createdAtStr) ?: return@mapNotNull null
-                val id = ns.id ?: generateTreatmentId(createdAtStr, eventType, ns.insulin, ns.carbs)
-                Treatment(
-                    id = id,
-                    createdAt = createdAtMs,
-                    eventType = eventType,
-                    insulin = ns.insulin,
-                    carbs = ns.carbs,
-                    basalRate = ns.absolute,
-                    duration = ns.duration,
-                    enteredBy = ns.enteredBy,
-                    fetchedAt = now
-                )
+            when {
+                response.status.value == HTTP_NOT_FOUND -> {
+                    com.psjostrom.strimma.receiver.DebugLog.log(
+                        message = "Treatments: 404 — server doesn't support treatments"
+                    )
+                    emptyList()
+                }
+
+                !response.status.isSuccess() -> failTreatmentsHttp(response.status.value, fullUrl)
+
+                else -> response.body<List<NightscoutTreatment>>()
             }
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            com.psjostrom.strimma.receiver.DebugLog.log(
-                message = "Treatments fetch error: ${e.message?.take(MAX_ERROR_LENGTH)}"
+            logAndRethrowTreatmentError(
+                e,
+                "Treatments fetch error: ${e.message?.take(MAX_ERROR_LENGTH)}"
             )
-            emptyList()
         } catch (e: SerializationException) {
-            com.psjostrom.strimma.receiver.DebugLog.log(
-                message = "Treatments parse error: ${e.message?.take(MAX_ERROR_LENGTH)}"
+            logAndRethrowTreatmentError(
+                e,
+                "Treatments parse error: ${e.message?.take(MAX_ERROR_LENGTH)}"
             )
-            emptyList()
         }
+
+        val now = System.currentTimeMillis()
+        return nsTreatments.mapNotNull { ns ->
+            val createdAtStr = ns.createdAt ?: return@mapNotNull null
+            val eventType = ns.eventType ?: return@mapNotNull null
+            val createdAtMs = parseIsoTimestamp(createdAtStr) ?: return@mapNotNull null
+            val id = ns.id ?: generateTreatmentId(createdAtStr, eventType, ns.insulin, ns.carbs)
+            Treatment(
+                id = id,
+                createdAt = createdAtMs,
+                eventType = eventType,
+                insulin = ns.insulin,
+                carbs = ns.carbs,
+                basalRate = ns.absolute,
+                duration = ns.duration,
+                enteredBy = ns.enteredBy,
+                fetchedAt = now
+            )
+        }
+    }
+
+    private fun failTreatmentsHttp(status: Int, fullUrl: String): Nothing {
+        com.psjostrom.strimma.receiver.DebugLog.log(
+            message = "Treatments HTTP $status: $fullUrl"
+        )
+        throw IOException("HTTP $status")
+    }
+
+    private fun <T : Exception> logAndRethrowTreatmentError(error: T, message: String): Nothing {
+        com.psjostrom.strimma.receiver.DebugLog.log(message = message)
+        throw error
     }
 
     private fun parseIsoTimestamp(iso: String): Long? {

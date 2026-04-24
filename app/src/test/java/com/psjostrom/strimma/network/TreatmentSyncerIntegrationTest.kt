@@ -189,6 +189,19 @@ class TreatmentSyncerIntegrationTest {
 
     }
 
+    @Test
+    fun `pullHistory returns failure when fetch fails`() = runTest {
+        val env = createEnv()
+        env.settings.setNightscoutUrl("https://ns.example.com")
+        env.settings.setNightscoutSecret("secret")
+        env.fakeClient.throwOnFetch = true
+
+        val syncer = TreatmentSyncer(env.fakeClient, env.treatmentDao, env.settings)
+        val result = syncer.pullHistory(7)
+
+        assertTrue(result.isFailure)
+    }
+
     private class FakeClient : NightscoutClient() {
         var treatments: List<Treatment> = emptyList()
         var throwOnFetch = false
