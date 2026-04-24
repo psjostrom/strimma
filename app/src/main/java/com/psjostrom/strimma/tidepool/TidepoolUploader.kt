@@ -67,6 +67,12 @@ class TidepoolUploader @Inject constructor(
     private var scope = CoroutineScope(job + Dispatchers.IO)
     private val uploadMutex = Mutex()
 
+    private data class UploadPlan(
+        val userId: String,
+        val chunkEnd: Long,
+        val records: List<CbgRecord>
+    )
+
     /** Cancels the upload scope. Called from StrimmaService.onDestroy(). */
     fun stop() {
         scope.cancel()
@@ -105,7 +111,8 @@ class TidepoolUploader @Inject constructor(
             DebugLog.log(message = "Tidepool forceUpload: enabled=$enabled, loggedIn=$loggedIn")
             check(enabled) { "Tidepool upload not enabled" }
             check(loggedIn) { "Not logged in to Tidepool" }
-            doUpload()
+            val plan = prepareUpload() ?: return@withLock 0
+            executeUpload(plan)
         }
     }
 
@@ -122,13 +129,48 @@ class TidepoolUploader @Inject constructor(
                 return
             }
 
+            val plan = prepareUpload() ?: return
             settings.setTidepoolLastUploadTime(now)
-            doUpload()
+            executeUpload(plan)
         }
     }
 
+    private suspend fun prepareUpload(): UploadPlan? {
+        val userId = settings.tidepoolUserId.first()
+        if (userId.isBlank()) {
+            DebugLog.log(message = "Tidepool upload: no user ID")
+            return null
+        }
+
+        val now = System.currentTimeMillis()
+        val storedLastEnd = settings.tidepoolLastUploadEnd.first()
+        val lastEnd = clampLastUploadEnd(storedLastEnd, now)
+        val chunkEnd = computeChunkEnd(lastEnd, now)
+
+        DebugLog.log(message = "Tidepool uploadChunk: lastEnd=$lastEnd, chunkEnd=$chunkEnd, now=$now")
+
+        if (chunkEnd <= lastEnd) {
+            return null
+        }
+
+        val readings = dao.since(lastEnd).filter { reading ->
+            reading.ts <= chunkEnd && CbgRecord.isValidForUpload(reading)
+        }
+
+        if (readings.isEmpty()) {
+            settings.setTidepoolLastUploadEnd(chunkEnd)
+            return null
+        }
+
+        return UploadPlan(
+            userId = userId,
+            chunkEnd = chunkEnd,
+            records = readings.map { CbgRecord.fromReading(it) }
+        )
+    }
+
     @Suppress("TooGenericExceptionCaught") // Top-level safety net for background upload
-    private suspend fun doUpload(): Int {
+    private suspend fun executeUpload(plan: UploadPlan): Int {
         try {
             val token = authManager.getValidAccessToken()
             if (token == null) {
@@ -139,14 +181,8 @@ class TidepoolUploader @Inject constructor(
                 return 0
             }
 
-            val userId = settings.tidepoolUserId.first()
-            if (userId.isBlank()) {
-                DebugLog.log(message = "Tidepool upload: no user ID")
-                return 0
-            }
-
-            val datasetId = getOrCreateDataset(userId, token) ?: return 0
-            return uploadChunk(datasetId, token)
+            val datasetId = getOrCreateDataset(plan.userId, token) ?: return 0
+            return uploadPreparedRecords(datasetId, token, plan)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -189,38 +225,19 @@ class TidepoolUploader @Inject constructor(
         return datasetId
     }
 
-    private suspend fun uploadChunk(datasetId: String, token: String): Int {
-        val now = System.currentTimeMillis()
-        val storedLastEnd = settings.tidepoolLastUploadEnd.first()
-        val lastEnd = clampLastUploadEnd(storedLastEnd, now)
-        val chunkEnd = computeChunkEnd(lastEnd, now)
-
-        DebugLog.log(message = "Tidepool uploadChunk: lastEnd=$lastEnd, chunkEnd=$chunkEnd, now=$now")
-
-        if (chunkEnd <= lastEnd) return 0
-
-        val readings = dao.since(lastEnd).filter { reading ->
-            reading.ts <= chunkEnd && CbgRecord.isValidForUpload(reading)
-        }
-
-        if (readings.isEmpty()) {
-            settings.setTidepoolLastUploadEnd(chunkEnd)
-            return 0
-        }
-
-        val records = readings.map { CbgRecord.fromReading(it) }
-        val success = client.uploadData(TidepoolAuthManager.API_BASE, datasetId, token, records)
+    private suspend fun uploadPreparedRecords(datasetId: String, token: String, plan: UploadPlan): Int {
+        val success = client.uploadData(TidepoolAuthManager.API_BASE, datasetId, token, plan.records)
 
         if (success) {
-            settings.setTidepoolLastUploadEnd(chunkEnd)
-            settings.setTidepoolLastUploadTime(now)
+            settings.setTidepoolLastUploadEnd(plan.chunkEnd)
+            settings.setTidepoolLastUploadTime(System.currentTimeMillis())
             settings.setTidepoolLastError("")
-            DebugLog.log(message = "Tidepool upload: ${records.size} records uploaded")
-            return records.size
+            DebugLog.log(message = "Tidepool upload: ${plan.records.size} records uploaded")
+            return plan.records.size
         } else {
             settings.setTidepoolLastError("Upload failed")
             settings.setTidepoolDatasetId("")
-            DebugLog.log(message = "Tidepool upload: failed to upload ${records.size} records, cleared dataset ID")
+            DebugLog.log(message = "Tidepool upload: failed to upload ${plan.records.size} records, cleared dataset ID")
             error("Upload failed")
         }
     }

@@ -107,7 +107,139 @@ class TidepoolUploaderTest {
     }
 
     @Test
-    fun `uploadIfReady rate limits failed attempts`() = runTest {
+    fun `uploadIfReady does not rate limit when userId is blank`() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val db = Room.inMemoryDatabaseBuilder(context, StrimmaDatabase::class.java)
+            .allowMainThreadQueries()
+            .build()
+        val settings = SettingsRepository(context, WidgetSettingsRepository(context), createTestDataStore())
+        val authManager = TidepoolAuthManager(context, settings)
+        seedLoggedIn(authManager, settings, token = "token-abc")
+
+        settings.setTidepoolEnabled(true)
+        settings.setTidepoolDatasetId("dataset-1")
+
+        val now = System.currentTimeMillis()
+        settings.setTidepoolLastUploadEnd(now - 30 * 60_000L)
+        db.readingDao().insert(
+            GlucoseReading(
+                ts = now - 20 * 60_000L,
+                sgv = 120,
+                direction = "Flat",
+                delta = 0.0,
+                pushed = 1
+            )
+        )
+
+        var uploadCalls = 0
+        val uploader = TidepoolUploader(
+            context = context,
+            client = mockClient { request ->
+                when (request.url.encodedPath) {
+                    "/v1/datasets/dataset-1/data" -> {
+                        uploadCalls += 1
+                        respond(
+                            content = "ok",
+                            status = HttpStatusCode.OK,
+                            headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                        )
+                    }
+
+                    else -> respond(
+                        content = "not found",
+                        status = HttpStatusCode.NotFound,
+                        headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                    )
+                }
+            },
+            authManager = authManager,
+            dao = db.readingDao(),
+            settings = settings
+        )
+
+        uploader.uploadIfReady()
+
+        assertEquals(0, uploadCalls)
+        assertEquals(0L, settings.tidepoolLastUploadTime.first())
+
+        settings.setTidepoolUserId("user123")
+        uploader.uploadIfReady()
+
+        assertEquals(1, uploadCalls)
+        assertNotEquals(0L, settings.tidepoolLastUploadTime.first())
+
+        db.close()
+    }
+
+    @Test
+    fun `uploadIfReady does not rate limit when there are no eligible readings`() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val db = Room.inMemoryDatabaseBuilder(context, StrimmaDatabase::class.java)
+            .allowMainThreadQueries()
+            .build()
+        val settings = SettingsRepository(context, WidgetSettingsRepository(context), createTestDataStore())
+        val authManager = TidepoolAuthManager(context, settings)
+        seedLoggedIn(authManager, settings, token = "token-abc")
+
+        settings.setTidepoolEnabled(true)
+        settings.setTidepoolUserId("user123")
+        settings.setTidepoolDatasetId("dataset-1")
+
+        val now = System.currentTimeMillis()
+        settings.setTidepoolLastUploadEnd(now - 30 * 60_000L)
+
+        var uploadCalls = 0
+        val uploader = TidepoolUploader(
+            context = context,
+            client = mockClient { request ->
+                when (request.url.encodedPath) {
+                    "/v1/datasets/dataset-1/data" -> {
+                        uploadCalls += 1
+                        respond(
+                            content = "ok",
+                            status = HttpStatusCode.OK,
+                            headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                        )
+                    }
+
+                    else -> respond(
+                        content = "not found",
+                        status = HttpStatusCode.NotFound,
+                        headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                    )
+                }
+            },
+            authManager = authManager,
+            dao = db.readingDao(),
+            settings = settings
+        )
+
+        uploader.uploadIfReady()
+
+        val noOpLastEnd = settings.tidepoolLastUploadEnd.first()
+        assertEquals(0, uploadCalls)
+        assertEquals(0L, settings.tidepoolLastUploadTime.first())
+
+        db.readingDao().insert(
+            GlucoseReading(
+                ts = noOpLastEnd,
+                sgv = 125,
+                direction = "Flat",
+                delta = 0.0,
+                pushed = 1
+            )
+        )
+
+        uploader.uploadIfReady()
+
+        assertEquals(1, uploadCalls)
+        assertNotEquals(0L, settings.tidepoolLastUploadTime.first())
+
+        db.close()
+    }
+
+    @Test
+    fun `uploadIfReady still rate limits real failed upload attempts`() = runTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val db = Room.inMemoryDatabaseBuilder(context, StrimmaDatabase::class.java)
             .allowMainThreadQueries()
