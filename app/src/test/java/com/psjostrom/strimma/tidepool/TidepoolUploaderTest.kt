@@ -307,4 +307,74 @@ class TidepoolUploaderTest {
 
         db.close()
     }
+
+    @Test
+    fun `forceUpload still rate limits subsequent background retry after failed attempt`() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val db = Room.inMemoryDatabaseBuilder(context, StrimmaDatabase::class.java)
+            .allowMainThreadQueries()
+            .build()
+        val settings = SettingsRepository(context, WidgetSettingsRepository(context), createTestDataStore())
+        val authManager = TidepoolAuthManager(context, settings)
+        seedLoggedIn(authManager, settings, token = "token-abc")
+
+        settings.setTidepoolEnabled(true)
+        settings.setTidepoolUserId("user123")
+        settings.setTidepoolDatasetId("dataset-1")
+
+        val now = System.currentTimeMillis()
+        settings.setTidepoolLastUploadEnd(now - 30 * 60_000L)
+        db.readingDao().insert(
+            GlucoseReading(
+                ts = now - 20 * 60_000L,
+                sgv = 120,
+                direction = "Flat",
+                delta = 0.0,
+                pushed = 1
+            )
+        )
+
+        var uploadCalls = 0
+        val uploader = TidepoolUploader(
+            context = context,
+            client = mockClient { request ->
+                when (request.url.encodedPath) {
+                    "/v1/datasets/dataset-1/data" -> {
+                        uploadCalls += 1
+                        respond(
+                            content = "failure",
+                            status = HttpStatusCode.InternalServerError,
+                            headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                        )
+                    }
+
+                    else -> respond(
+                        content = "not found",
+                        status = HttpStatusCode.NotFound,
+                        headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                    )
+                }
+            },
+            authManager = authManager,
+            dao = db.readingDao(),
+            settings = settings
+        )
+
+        try {
+            uploader.forceUpload()
+            fail("Expected forceUpload to throw on failed upload")
+        } catch (_: IllegalStateException) {
+        }
+
+        val firstAttempt = settings.tidepoolLastUploadTime.first()
+        assertNotEquals(0L, firstAttempt)
+        assertEquals(1, uploadCalls)
+
+        uploader.uploadIfReady()
+
+        assertEquals(1, uploadCalls)
+        assertEquals(firstAttempt, settings.tidepoolLastUploadTime.first())
+
+        db.close()
+    }
 }

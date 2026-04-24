@@ -112,7 +112,7 @@ class TidepoolUploader @Inject constructor(
             check(enabled) { "Tidepool upload not enabled" }
             check(loggedIn) { "Not logged in to Tidepool" }
             val plan = prepareUpload() ?: return@withLock 0
-            executeUpload(plan)
+            attemptUpload(plan)
         }
     }
 
@@ -130,9 +130,13 @@ class TidepoolUploader @Inject constructor(
             }
 
             val plan = prepareUpload() ?: return
-            settings.setTidepoolLastUploadTime(now)
-            executeUpload(plan)
+            attemptUpload(plan)
         }
+    }
+
+    private suspend fun attemptUpload(plan: UploadPlan): Int {
+        settings.setTidepoolLastUploadTime(System.currentTimeMillis())
+        return executeUpload(plan)
     }
 
     private suspend fun prepareUpload(): UploadPlan? {
