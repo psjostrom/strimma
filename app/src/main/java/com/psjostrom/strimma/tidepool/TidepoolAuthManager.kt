@@ -2,6 +2,7 @@ package com.psjostrom.strimma.tidepool
 
 import android.content.Context
 import android.content.Intent
+import androidx.annotation.VisibleForTesting
 import androidx.core.net.toUri
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.receiver.DebugLog
@@ -153,6 +154,16 @@ class TidepoolAuthManager @Inject constructor(
      * Returns true if a refresh token is stored (user has logged in before).
      */
     fun isLoggedIn(): Boolean = settings.getTidepoolRefreshToken().isNotBlank()
+
+    /**
+     * Test seam for seeding an in-memory access token without going through the
+     * AppAuth refresh flow. Production code must not call this — use [getValidAccessToken].
+     */
+    @VisibleForTesting
+    internal fun seedTokensForTest(token: String, expiryMs: Long) {
+        accessToken = token
+        accessTokenExpiry = expiryMs
+    }
 
     /**
      * Clears all stored tokens and user-specific state.

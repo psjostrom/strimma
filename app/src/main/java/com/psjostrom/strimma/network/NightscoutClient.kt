@@ -106,7 +106,13 @@ open class NightscoutClient @Inject constructor() {
         }
     }
 
+    /**
+     * Test seam: replaces the production CIO client with a [MockEngine]-backed one.
+     * The default client is constructed by the primary constructor and immediately
+     * closed here so its engine threads/selectors don't leak per test run.
+     */
     internal constructor(testClient: HttpClient) : this() {
+        client.close()
         client = testClient
     }
 
@@ -252,34 +258,31 @@ open class NightscoutClient @Inject constructor() {
         val sinceIso = isoFormatter.format(Instant.ofEpochMilli(since))
         val fullUrl = "${normalizeUrl(baseUrl)}/api/v1/treatments.json?find[created_at][\$gte]=$sinceIso&count=$count"
 
-        val nsTreatments = try {
-            val response = client.get(fullUrl) {
-                header("api-secret", hashedSecret)
-            }
-            when {
-                response.status.value == HTTP_NOT_FOUND -> {
-                    com.psjostrom.strimma.receiver.DebugLog.log(
-                        message = "Treatments: 404 — server doesn't support treatments"
-                    )
-                    emptyList()
-                }
-
-                !response.status.isSuccess() -> failTreatmentsHttp(response.status.value, fullUrl)
-
-                else -> response.body<List<NightscoutTreatment>>()
-            }
+        val response = try {
+            client.get(fullUrl) { header("api-secret", hashedSecret) }
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            logAndRethrowTreatmentError(
-                e,
-                "Treatments fetch error: ${e.message?.take(MAX_ERROR_LENGTH)}"
+            debugLogAndRethrow(e, "Treatments fetch error: ${e.message?.take(MAX_ERROR_LENGTH)}")
+        }
+
+        if (response.status.value == HTTP_NOT_FOUND) {
+            com.psjostrom.strimma.receiver.DebugLog.log(
+                message = "Treatments: 404 — server doesn't support treatments"
             )
+            return emptyList()
+        }
+        if (!response.status.isSuccess()) {
+            debugLogAndRethrow(
+                IOException("HTTP ${response.status.value}"),
+                "Treatments HTTP ${response.status.value}: $fullUrl"
+            )
+        }
+
+        val nsTreatments = try {
+            response.body<List<NightscoutTreatment>>()
         } catch (e: SerializationException) {
-            logAndRethrowTreatmentError(
-                e,
-                "Treatments parse error: ${e.message?.take(MAX_ERROR_LENGTH)}"
-            )
+            debugLogAndRethrow(e, "Treatments parse error: ${e.message?.take(MAX_ERROR_LENGTH)}")
         }
 
         val now = System.currentTimeMillis()
@@ -302,14 +305,7 @@ open class NightscoutClient @Inject constructor() {
         }
     }
 
-    private fun failTreatmentsHttp(status: Int, fullUrl: String): Nothing {
-        com.psjostrom.strimma.receiver.DebugLog.log(
-            message = "Treatments HTTP $status: $fullUrl"
-        )
-        throw IOException("HTTP $status")
-    }
-
-    private fun <T : Exception> logAndRethrowTreatmentError(error: T, message: String): Nothing {
+    private fun debugLogAndRethrow(error: Throwable, message: String): Nothing {
         com.psjostrom.strimma.receiver.DebugLog.log(message = message)
         throw error
     }

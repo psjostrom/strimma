@@ -212,6 +212,38 @@ class NightscoutPullerTest {
     }
 
     @Test
+    fun `pullHistory paginates without re-fetching the boundary entry`() = runTest {
+        settings.setNightscoutUrl("https://ns.example.com")
+        settings.setNightscoutSecret("secret")
+
+        // Page 1: exactly PAGE_SIZE entries, descending. nextBeforeCursor() = page1.minOf(date).
+        val page1 = (0 until 2016).map { i -> entry(100 + (i % 100), baseTs - i * 60_000L) }
+        val page1MinDate = page1.minOf { it.date!! }
+        // Page 2: a single entry strictly older than page 1's min, so it's not in page 1.
+        val page2 = listOf(entry(150, page1MinDate - 60_000L))
+        fakeClient.entriesPages = mutableListOf(page1, page2)
+
+        val result = puller.pullHistory(7)
+
+        assertTrue(result.isSuccess)
+        assertEquals(
+            "All 2017 unique entries must be inserted exactly once (no boundary double-count)",
+            2017,
+            result.getOrThrow()
+        )
+        assertEquals(2017, dao.lastN(3000).size)
+
+        val captured = fakeClient.capturedBefore
+        assertEquals("Two pages should be fetched", 2, captured.size)
+        assertNull("First fetch has no 'before' cursor", captured[0])
+        assertEquals(
+            "Second fetch's 'before' cursor must be the min date of page 1 (exclusive via find[date][\$lt])",
+            page1MinDate,
+            captured[1]
+        )
+    }
+
+    @Test
     fun `pullHistory preserves Nightscout payload direction and delta for speed`() = runTest {
         settings.setNightscoutUrl("https://ns.example.com")
         settings.setNightscoutSecret("secret")
@@ -234,6 +266,7 @@ class NightscoutPullerTest {
         var entries: List<NightscoutEntryResponse> = emptyList()
         var entriesPages: MutableList<List<NightscoutEntryResponse>>? = null
         var fetchReturnsNull = false
+        val capturedBefore: MutableList<Long?> = mutableListOf()
 
         override suspend fun fetchEntries(
             baseUrl: String,
@@ -242,6 +275,7 @@ class NightscoutPullerTest {
             count: Int,
             before: Long?
         ): List<NightscoutEntryResponse>? {
+            capturedBefore.add(before)
             if (fetchReturnsNull) return null
             val pages = entriesPages
             if (pages != null && pages.isNotEmpty()) {

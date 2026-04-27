@@ -58,23 +58,16 @@ class NightscoutPuller @Inject constructor(
     private suspend fun pullSince(url: String, secret: String, since: Long): Result<Int> {
         var beforeCursor: Long? = null
         var totalInserted = 0
-        var hasMore = true
 
         return try {
-            while (hasMore) {
+            while (true) {
                 val entries = client.fetchEntries(
                     url, secret, since = since, count = PAGE_SIZE, before = beforeCursor
                 ) ?: return Result.failure(IllegalStateException("Failed to fetch from Nightscout"))
 
-                if (entries.isEmpty()) {
-                    hasMore = false
-                } else {
-                    totalInserted += insertPulledEntries(entries)
-
-                    val nextCursor = nextBeforeCursor(entries)
-                    hasMore = nextCursor != null
-                    beforeCursor = nextCursor
-                }
+                if (entries.isEmpty()) break
+                totalInserted += insertPulledEntries(entries)
+                beforeCursor = nextBeforeCursor(entries) ?: break
             }
 
             DebugLog.log(message = "Pull: $totalInserted readings from Nightscout")

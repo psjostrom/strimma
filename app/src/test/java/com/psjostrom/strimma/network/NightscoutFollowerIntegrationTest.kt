@@ -170,6 +170,36 @@ class NightscoutFollowerIntegrationTest {
     }
 
     @Test
+    fun `poll skips duplicate entry already present in DB within dedup window`() = runTest {
+        val env = createEnv()
+        env.settings.setNightscoutUrl("https://ns.example.com")
+        env.settings.setNightscoutSecret("secret")
+        env.settings.setFollowerPollSeconds(60)
+
+        val existingTs = System.currentTimeMillis() - 60_000
+        env.dao.insert(
+            GlucoseReading(ts = existingTs, sgv = 110, direction = "Flat", delta = null, pushed = 1)
+        )
+
+        val follower = NightscoutFollower(env.fakeClient, env.dao, env.directionComputer, env.settings)
+        val newReadings = mutableListOf<GlucoseReading>()
+        val job = follower.start(this) { newReadings.add(it) }
+        advanceAndSettle(env)
+
+        // Poll receives an entry with the same ts (within the 3 s dedup window).
+        env.fakeClient.entries = listOf(entry(125, existingTs + 1_000))
+        advanceTimeBy(61_000)
+        advanceAndSettle(env)
+
+        val readings = env.dao.lastN(10)
+        assertEquals("Duplicate entry within 3 s of an existing reading must not be inserted", 1, readings.size)
+        assertEquals("Original reading must be preserved", 110, readings[0].sgv)
+        assertTrue("onNewReading must not fire for a deduplicated entry", newReadings.isEmpty())
+
+        job.cancel()
+    }
+
+    @Test
     fun `backfill continues past full invalid page to later valid readings`() = runTest {
         val env = createEnv()
         env.settings.setNightscoutUrl("https://ns.example.com")

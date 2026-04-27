@@ -5,18 +5,21 @@ import android.content.Context.BATTERY_SERVICE
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.BatteryManager
+import androidx.annotation.VisibleForTesting
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.receiver.DebugLog
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlin.coroutines.cancellation.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -103,6 +106,10 @@ class TidepoolUploader @Inject constructor(
     /**
      * Forces an upload attempt, bypassing rate limit and charging/wifi checks.
      * Returns the number of records uploaded, or throws on failure.
+     *
+     * A completed attempt — success or real failure — stamps `tidepoolLastUploadTime`,
+     * so a force-failed upload still rate-limits subsequent background attempts.
+     * A cancellation (e.g. caller scope dies) does not stamp the timestamp.
      */
     suspend fun forceUpload(): Int {
         return uploadMutex.withLock {
@@ -112,10 +119,11 @@ class TidepoolUploader @Inject constructor(
             check(enabled) { "Tidepool upload not enabled" }
             check(loggedIn) { "Not logged in to Tidepool" }
             val plan = prepareUpload() ?: return@withLock 0
-            attemptUpload(plan)
+            executeUpload(plan)
         }
     }
 
+    @VisibleForTesting
     internal suspend fun uploadIfReady() {
         uploadMutex.withLock {
             val now = System.currentTimeMillis()
@@ -130,13 +138,8 @@ class TidepoolUploader @Inject constructor(
             }
 
             val plan = prepareUpload() ?: return
-            attemptUpload(plan)
+            executeUpload(plan)
         }
-    }
-
-    private suspend fun attemptUpload(plan: UploadPlan): Int {
-        settings.setTidepoolLastUploadTime(System.currentTimeMillis())
-        return executeUpload(plan)
     }
 
     private suspend fun prepareUpload(): UploadPlan? {
@@ -182,18 +185,30 @@ class TidepoolUploader @Inject constructor(
                     settings.setTidepoolLastError("Session expired. Please log in again.")
                 }
                 DebugLog.log(message = "Tidepool upload: no valid token")
+                stampUploadAttempt()
                 return 0
             }
 
-            val datasetId = getOrCreateDataset(plan.userId, token) ?: return 0
+            val datasetId = getOrCreateDataset(plan.userId, token)
+            if (datasetId == null) {
+                stampUploadAttempt()
+                return 0
+            }
             return uploadPreparedRecords(datasetId, token, plan)
         } catch (e: CancellationException) {
+            // Don't stamp the rate-limit timestamp on caller cancellation —
+            // the upload didn't fail, the caller went away.
             throw e
         } catch (e: Exception) {
             DebugLog.log(message = "Tidepool upload error: ${e.javaClass.simpleName}: ${e.message?.take(MAX_LOG_ERROR_LENGTH)}")
             settings.setTidepoolLastError("Upload error: ${e.message?.take(MAX_USER_ERROR_LENGTH)}")
+            stampUploadAttempt()
             throw e
         }
+    }
+
+    private suspend fun stampUploadAttempt() {
+        settings.setTidepoolLastUploadTime(System.currentTimeMillis())
     }
 
     private suspend fun getOrCreateDataset(userId: String, token: String): String? {
@@ -225,7 +240,12 @@ class TidepoolUploader @Inject constructor(
             return null
         }
 
-        settings.setTidepoolDatasetId(datasetId)
+        // Persist the new dataset ID even if the caller is cancelled; otherwise
+        // a server-side dataset is created with no local record and the next
+        // upload would create another orphan dataset.
+        withContext(NonCancellable) {
+            settings.setTidepoolDatasetId(datasetId)
+        }
         return datasetId
     }
 
@@ -234,13 +254,14 @@ class TidepoolUploader @Inject constructor(
 
         if (success) {
             settings.setTidepoolLastUploadEnd(plan.chunkEnd)
-            settings.setTidepoolLastUploadTime(System.currentTimeMillis())
+            stampUploadAttempt()
             settings.setTidepoolLastError("")
             DebugLog.log(message = "Tidepool upload: ${plan.records.size} records uploaded")
             return plan.records.size
         } else {
             settings.setTidepoolLastError("Upload failed")
             settings.setTidepoolDatasetId("")
+            stampUploadAttempt()
             DebugLog.log(message = "Tidepool upload: failed to upload ${plan.records.size} records, cleared dataset ID")
             error("Upload failed")
         }

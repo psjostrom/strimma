@@ -138,31 +138,23 @@ class NightscoutFollower @Inject constructor(
         var since = if (latestTs > 0) latestTs else sevenDaysAgo
         var totalInserted = 0
         var lastReading: GlucoseReading? = null
-        var hasMore = true
 
-        while (hasMore) {
+        while (true) {
             val entries = client.fetchEntries(url, secret, since = since, count = FETCH_COUNT)
             if (entries == null) {
                 _status.value = IntegrationStatus.Error("Backfill failed")
                 DebugLog.log(message = "Follower: backfill fetch failed")
                 return
             }
+            if (entries.isEmpty()) break
 
-            if (entries.isEmpty()) {
-                hasMore = false
-            } else {
-                val pageResult = processBackfillEntries(entries)
-                totalInserted += pageResult.insertedCount
-                if (pageResult.lastReading != null) {
-                    lastReading = pageResult.lastReading
-                }
-
-                val nextSince = nextBackfillSince(entries)
-                hasMore = nextSince != null
-                if (nextSince != null) {
-                    since = nextSince
-                }
+            val pageResult = processBackfillEntries(entries)
+            totalInserted += pageResult.insertedCount
+            if (pageResult.lastReading != null) {
+                lastReading = pageResult.lastReading
             }
+
+            since = nextBackfillSince(entries) ?: break
         }
 
         if (lastReading != null) {

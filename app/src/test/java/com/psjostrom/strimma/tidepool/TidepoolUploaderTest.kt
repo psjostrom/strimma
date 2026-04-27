@@ -17,7 +17,10 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
@@ -46,14 +49,7 @@ class TidepoolUploaderTest {
 
     private fun seedLoggedIn(authManager: TidepoolAuthManager, settings: SettingsRepository, token: String) {
         settings.setTidepoolRefreshToken("refresh-token")
-
-        val accessTokenField = authManager::class.java.getDeclaredField("accessToken")
-        accessTokenField.isAccessible = true
-        accessTokenField.set(authManager, token)
-
-        val expiryField = authManager::class.java.getDeclaredField("accessTokenExpiry")
-        expiryField.isAccessible = true
-        expiryField.setLong(authManager, System.currentTimeMillis() + 60_000L)
+        authManager.seedTokensForTest(token, expiryMs = System.currentTimeMillis() + 60_000L)
     }
 
     @Test
@@ -304,6 +300,72 @@ class TidepoolUploaderTest {
 
         assertEquals(1, uploadCalls)
         assertEquals(firstAttempt, settings.tidepoolLastUploadTime.first())
+
+        db.close()
+    }
+
+    @Test
+    fun `concurrent forceUpload calls serialize via mutex without double-uploading`() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val db = Room.inMemoryDatabaseBuilder(context, StrimmaDatabase::class.java)
+            .allowMainThreadQueries()
+            .build()
+        val settings = SettingsRepository(context, WidgetSettingsRepository(context), createTestDataStore())
+        val authManager = TidepoolAuthManager(context, settings)
+        seedLoggedIn(authManager, settings, token = "token-abc")
+
+        settings.setTidepoolEnabled(true)
+        settings.setTidepoolUserId("user123")
+        settings.setTidepoolDatasetId("dataset-1")
+
+        val now = System.currentTimeMillis()
+        settings.setTidepoolLastUploadEnd(now - 30 * 60_000L)
+        db.readingDao().insert(
+            GlucoseReading(
+                ts = now - 20 * 60_000L,
+                sgv = 120,
+                direction = "Flat",
+                delta = 0.0,
+                pushed = 1
+            )
+        )
+
+        var uploadCalls = 0
+        val uploader = TidepoolUploader(
+            context = context,
+            client = mockClient { request ->
+                when (request.url.encodedPath) {
+                    "/v1/datasets/dataset-1/data" -> {
+                        uploadCalls += 1
+                        respond(
+                            content = "ok",
+                            status = HttpStatusCode.OK,
+                            headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                        )
+                    }
+
+                    else -> respond(
+                        content = "not found",
+                        status = HttpStatusCode.NotFound,
+                        headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                    )
+                }
+            },
+            authManager = authManager,
+            dao = db.readingDao(),
+            settings = settings
+        )
+
+        // Two simultaneous force uploads — the mutex must serialize them so only one
+        // POST is observed. The second call sees the first's advanced lastUploadEnd
+        // and returns 0 records.
+        val results = listOf(
+            async { uploader.forceUpload() },
+            async { uploader.forceUpload() }
+        ).awaitAll()
+
+        assertEquals("Mutex must serialize concurrent uploads — only one POST", 1, uploadCalls)
+        assertEquals("Total records uploaded must equal what was on disk", 1, results.sum())
 
         db.close()
     }

@@ -153,6 +153,44 @@ class NightscoutClientFetchTest {
     }
 
     @Test
+    fun `fetchEntries returns null on HTTP 500 so the follower stays in Error not crashes`() = runTest {
+        val client = mockClient {
+            respond(
+                content = "internal error",
+                status = HttpStatusCode.InternalServerError,
+                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            )
+        }
+
+        val result = client.fetchEntries(
+            baseUrl = "https://ns.example.com",
+            apiSecret = "secret",
+            since = 0L,
+            count = 100,
+            before = null
+        )
+
+        assertNull("HTTP 500 must surface as null (not throw, not empty list)", result)
+    }
+
+    @Test
+    fun `fetchEntries returns null on IOException so callers can treat it as transient`() = runTest {
+        val client = mockClient {
+            throw IOException("network down")
+        }
+
+        val result = client.fetchEntries(
+            baseUrl = "https://ns.example.com",
+            apiSecret = "secret",
+            since = 0L,
+            count = 100,
+            before = null
+        )
+
+        assertNull("IOException must surface as null, not propagate to the caller", result)
+    }
+
+    @Test
     fun `fetchTreatments returns empty list on 404 unsupported treatments`() = runTest {
         val client = mockClient {
             respond(
