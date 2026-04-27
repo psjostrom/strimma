@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -167,7 +168,7 @@ fun StatsScreen(
                 }
                 if (hasData && storyViewedMonth != lastMonthKey) {
                     val monthName = lastMonth.month.getDisplayName(
-                        java.time.format.TextStyle.FULL, java.util.Locale.getDefault()
+                        java.time.format.TextStyle.FULL, LocalConfiguration.current.locales[0]
                     )
                     Surface(
                         onClick = { navigate(lastMonth.year, lastMonth.monthValue) },
