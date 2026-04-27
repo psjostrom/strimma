@@ -52,7 +52,8 @@ api-secret: <sha1-hash>
 - `.json` suffix is required (Nightscout convention)
 - Query parameters use MongoDB-style operators
 - `find[date][$gt]` filters entries newer than the timestamp (milliseconds)
-- `count` limits the number of results (default 2016)
+- `count` limits the number of raw results per page (default 2016)
+- Pagination continues until Nightscout returns fewer than `count` raw entries, even if a full page filters down to zero locally stored readings
 
 ### Fetch Treatments
 
@@ -65,6 +66,7 @@ api-secret: <sha1-hash>
 - `find[created_at][$gte]` filters treatments created at or after the ISO 8601 timestamp
 - `count` scales with the lookback period (500 per day to handle looping pump systems)
 - Returns 404 gracefully (empty list) if the server doesn't support treatments
+- Other non-2xx HTTP responses are treated as real fetch failures and propagate to the caller
 
 ---
 
@@ -106,7 +108,12 @@ Strimma reads these fields from entry objects:
 | `sgv` | Int | Sensor Glucose Value in mg/dL |
 | `date` | Long | Unix timestamp in milliseconds |
 | `type` | String | Must be "sgv" (other types ignored) |
-| `direction` | String? | Trend direction (optional, Strimma recomputes locally) |
+| `direction` | String? | Trend direction from Nightscout (optional) |
+| `delta` | Double? | Numeric trend delta from Nightscout (optional) |
+
+Nightscout Follower recomputes `direction` and `delta` locally after deduplication so live followed data uses Strimma's local trend logic.
+
+Manual Nightscout history pulls preserve the server-provided `direction` and `delta` values and insert in batches to keep large imports fast.
 
 ---
 
@@ -121,10 +128,12 @@ Strimma reads these fields from entry objects:
 
 ## Deduplication
 
-When receiving entries (from pull or follower mode):
+When receiving entries in Nightscout Follower mode:
 
 - Readings within **3 seconds** of an existing reading are treated as duplicates
 - A **15-minute lookback window** is used for duplicate detection
+
+Manual Nightscout history pulls rely on the reading timestamp as the primary key. Batch inserts ignore rows that already exist locally.
 
 ---
 

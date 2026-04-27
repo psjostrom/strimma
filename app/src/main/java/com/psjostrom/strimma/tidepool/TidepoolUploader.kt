@@ -5,16 +5,21 @@ import android.content.Context.BATTERY_SERVICE
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.BatteryManager
+import androidx.annotation.VisibleForTesting
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.receiver.DebugLog
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlin.coroutines.cancellation.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -63,6 +68,13 @@ class TidepoolUploader @Inject constructor(
 
     private var job = SupervisorJob()
     private var scope = CoroutineScope(job + Dispatchers.IO)
+    private val uploadMutex = Mutex()
+
+    private data class UploadPlan(
+        val userId: String,
+        val chunkEnd: Long,
+        val records: List<CbgRecord>
+    )
 
     /** Cancels the upload scope. Called from StrimmaService.onDestroy(). */
     fun stop() {
@@ -94,50 +106,78 @@ class TidepoolUploader @Inject constructor(
     /**
      * Forces an upload attempt, bypassing rate limit and charging/wifi checks.
      * Returns the number of records uploaded, or throws on failure.
+     *
+     * A completed attempt — success or real failure — stamps `tidepoolLastUploadTime`,
+     * so a force-failed upload still rate-limits subsequent background attempts.
+     * A cancellation (e.g. caller scope dies) does not stamp the timestamp.
      */
     suspend fun forceUpload(): Int {
-        val enabled = settings.tidepoolEnabled.first()
-        val loggedIn = authManager.isLoggedIn()
-        DebugLog.log(message = "Tidepool forceUpload: enabled=$enabled, loggedIn=$loggedIn")
-        check(enabled) { "Tidepool upload not enabled" }
-        check(loggedIn) { "Not logged in to Tidepool" }
-        return doUpload()
+        return uploadMutex.withLock {
+            val enabled = settings.tidepoolEnabled.first()
+            val loggedIn = authManager.isLoggedIn()
+            DebugLog.log(message = "Tidepool forceUpload: enabled=$enabled, loggedIn=$loggedIn")
+            check(enabled) { "Tidepool upload not enabled" }
+            check(loggedIn) { "Not logged in to Tidepool" }
+            val plan = prepareUpload() ?: return@withLock 0
+            executeUpload(plan)
+        }
     }
 
-    private suspend fun uploadIfReady() {
-        // Check if Tidepool upload is enabled
-        if (!settings.tidepoolEnabled.first()) {
-            return
+    @VisibleForTesting
+    internal suspend fun uploadIfReady() {
+        uploadMutex.withLock {
+            val now = System.currentTimeMillis()
+            val canUpload = settings.tidepoolEnabled.first() &&
+                authManager.isLoggedIn() &&
+                now - settings.tidepoolLastUploadTime.first() >= RATE_LIMIT_MS &&
+                (!settings.tidepoolOnlyWhileCharging.first() || isCharging()) &&
+                (!settings.tidepoolOnlyWhileWifi.first() || isOnWifi())
+
+            if (!canUpload) {
+                return
+            }
+
+            val plan = prepareUpload() ?: return
+            executeUpload(plan)
+        }
+    }
+
+    private suspend fun prepareUpload(): UploadPlan? {
+        val userId = settings.tidepoolUserId.first()
+        if (userId.isBlank()) {
+            DebugLog.log(message = "Tidepool upload: no user ID")
+            return null
         }
 
-        // Check if user is logged in
-        if (!authManager.isLoggedIn()) {
-            return
-        }
-
-        // Rate limit: at least 20 minutes since last attempt
-        val lastUploadTime = settings.tidepoolLastUploadTime.first()
         val now = System.currentTimeMillis()
-        if (now - lastUploadTime < RATE_LIMIT_MS) {
-            return
+        val storedLastEnd = settings.tidepoolLastUploadEnd.first()
+        val lastEnd = clampLastUploadEnd(storedLastEnd, now)
+        val chunkEnd = computeChunkEnd(lastEnd, now)
+
+        DebugLog.log(message = "Tidepool uploadChunk: lastEnd=$lastEnd, chunkEnd=$chunkEnd, now=$now")
+
+        if (chunkEnd <= lastEnd) {
+            return null
         }
 
-        // Check charging condition if configured
-        if (settings.tidepoolOnlyWhileCharging.first() && !isCharging()) {
-            return
+        val readings = dao.since(lastEnd).filter { reading ->
+            reading.ts <= chunkEnd && CbgRecord.isValidForUpload(reading)
         }
 
-        // Check wifi condition if configured
-        if (settings.tidepoolOnlyWhileWifi.first() && !isOnWifi()) {
-            return
+        if (readings.isEmpty()) {
+            settings.setTidepoolLastUploadEnd(chunkEnd)
+            return null
         }
 
-        // All checks passed, attempt upload
-        doUpload()
+        return UploadPlan(
+            userId = userId,
+            chunkEnd = chunkEnd,
+            records = readings.map { CbgRecord.fromReading(it) }
+        )
     }
 
     @Suppress("TooGenericExceptionCaught") // Top-level safety net for background upload
-    private suspend fun doUpload(): Int {
+    private suspend fun executeUpload(plan: UploadPlan): Int {
         try {
             val token = authManager.getValidAccessToken()
             if (token == null) {
@@ -145,24 +185,30 @@ class TidepoolUploader @Inject constructor(
                     settings.setTidepoolLastError("Session expired. Please log in again.")
                 }
                 DebugLog.log(message = "Tidepool upload: no valid token")
+                stampUploadAttempt()
                 return 0
             }
 
-            val userId = settings.tidepoolUserId.first()
-            if (userId.isBlank()) {
-                DebugLog.log(message = "Tidepool upload: no user ID")
+            val datasetId = getOrCreateDataset(plan.userId, token)
+            if (datasetId == null) {
+                stampUploadAttempt()
                 return 0
             }
-
-            val datasetId = getOrCreateDataset(userId, token) ?: return 0
-            return uploadChunk(datasetId, token)
+            return uploadPreparedRecords(datasetId, token, plan)
         } catch (e: CancellationException) {
+            // Don't stamp the rate-limit timestamp on caller cancellation —
+            // the upload didn't fail, the caller went away.
             throw e
         } catch (e: Exception) {
             DebugLog.log(message = "Tidepool upload error: ${e.javaClass.simpleName}: ${e.message?.take(MAX_LOG_ERROR_LENGTH)}")
             settings.setTidepoolLastError("Upload error: ${e.message?.take(MAX_USER_ERROR_LENGTH)}")
+            stampUploadAttempt()
             throw e
         }
+    }
+
+    private suspend fun stampUploadAttempt() {
+        settings.setTidepoolLastUploadTime(System.currentTimeMillis())
     }
 
     private suspend fun getOrCreateDataset(userId: String, token: String): String? {
@@ -194,42 +240,29 @@ class TidepoolUploader @Inject constructor(
             return null
         }
 
-        settings.setTidepoolDatasetId(datasetId)
+        // Persist the new dataset ID even if the caller is cancelled; otherwise
+        // a server-side dataset is created with no local record and the next
+        // upload would create another orphan dataset.
+        withContext(NonCancellable) {
+            settings.setTidepoolDatasetId(datasetId)
+        }
         return datasetId
     }
 
-    private suspend fun uploadChunk(datasetId: String, token: String): Int {
-        val now = System.currentTimeMillis()
-        val storedLastEnd = settings.tidepoolLastUploadEnd.first()
-        val lastEnd = clampLastUploadEnd(storedLastEnd, now)
-        val chunkEnd = computeChunkEnd(lastEnd, now)
-
-        DebugLog.log(message = "Tidepool uploadChunk: lastEnd=$lastEnd, chunkEnd=$chunkEnd, now=$now")
-
-        if (chunkEnd <= lastEnd) return 0
-
-        val readings = dao.since(lastEnd).filter { reading ->
-            reading.ts <= chunkEnd && CbgRecord.isValidForUpload(reading)
-        }
-
-        if (readings.isEmpty()) {
-            settings.setTidepoolLastUploadEnd(chunkEnd)
-            return 0
-        }
-
-        val records = readings.map { CbgRecord.fromReading(it) }
-        val success = client.uploadData(TidepoolAuthManager.API_BASE, datasetId, token, records)
+    private suspend fun uploadPreparedRecords(datasetId: String, token: String, plan: UploadPlan): Int {
+        val success = client.uploadData(TidepoolAuthManager.API_BASE, datasetId, token, plan.records)
 
         if (success) {
-            settings.setTidepoolLastUploadEnd(chunkEnd)
-            settings.setTidepoolLastUploadTime(now)
+            settings.setTidepoolLastUploadEnd(plan.chunkEnd)
+            stampUploadAttempt()
             settings.setTidepoolLastError("")
-            DebugLog.log(message = "Tidepool upload: ${records.size} records uploaded")
-            return records.size
+            DebugLog.log(message = "Tidepool upload: ${plan.records.size} records uploaded")
+            return plan.records.size
         } else {
             settings.setTidepoolLastError("Upload failed")
             settings.setTidepoolDatasetId("")
-            DebugLog.log(message = "Tidepool upload: failed to upload ${records.size} records, cleared dataset ID")
+            stampUploadAttempt()
+            DebugLog.log(message = "Tidepool upload: failed to upload ${plan.records.size} records, cleared dataset ID")
             error("Upload failed")
         }
     }

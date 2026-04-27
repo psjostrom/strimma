@@ -52,8 +52,13 @@ class NightscoutPullerTest {
         db.close()
     }
 
-    private fun entry(sgv: Int, ts: Long): NightscoutEntryResponse =
-        NightscoutEntryResponse(sgv = sgv, date = ts, type = "sgv", direction = "Flat")
+    private fun entry(
+        sgv: Int,
+        ts: Long,
+        direction: String = "Flat",
+        delta: Double? = null
+    ): NightscoutEntryResponse =
+        NightscoutEntryResponse(sgv = sgv, date = ts, type = "sgv", direction = direction, delta = delta)
 
     // --- pullIfEmpty ---
 
@@ -188,10 +193,80 @@ class NightscoutPullerTest {
         assertEquals(1, result.getOrThrow())
     }
 
+    @Test
+    fun `pullHistory continues past full invalid page to older valid entries`() = runTest {
+        settings.setNightscoutUrl("https://ns.example.com")
+        settings.setNightscoutSecret("secret")
+
+        val invalidPage = (0 until 2016).map { i ->
+            NightscoutEntryResponse(sgv = 100 + (i % 20), date = baseTs - i * 60_000L, type = "cal")
+        }
+        val validPage = listOf(entry(115, baseTs - 2016 * 60_000L))
+        fakeClient.entriesPages = mutableListOf(invalidPage, validPage)
+
+        val result = puller.pullHistory(7)
+
+        assertTrue(result.isSuccess)
+        assertEquals("Pull should continue to the older valid page", 1, result.getOrThrow())
+        assertEquals(1, dao.lastN(10).size)
+    }
+
+    @Test
+    fun `pullHistory paginates without re-fetching the boundary entry`() = runTest {
+        settings.setNightscoutUrl("https://ns.example.com")
+        settings.setNightscoutSecret("secret")
+
+        // Page 1: exactly PAGE_SIZE entries, descending. nextBeforeCursor() = page1.minOf(date).
+        val page1 = (0 until 2016).map { i -> entry(100 + (i % 100), baseTs - i * 60_000L) }
+        val page1MinDate = page1.minOf { it.date!! }
+        // Page 2: a single entry strictly older than page 1's min, so it's not in page 1.
+        val page2 = listOf(entry(150, page1MinDate - 60_000L))
+        fakeClient.entriesPages = mutableListOf(page1, page2)
+
+        val result = puller.pullHistory(7)
+
+        assertTrue(result.isSuccess)
+        assertEquals(
+            "All 2017 unique entries must be inserted exactly once (no boundary double-count)",
+            2017,
+            result.getOrThrow()
+        )
+        assertEquals(2017, dao.lastN(3000).size)
+
+        val captured = fakeClient.capturedBefore
+        assertEquals("Two pages should be fetched", 2, captured.size)
+        assertNull("First fetch has no 'before' cursor", captured[0])
+        assertEquals(
+            "Second fetch's 'before' cursor must be the min date of page 1 (exclusive via find[date][\$lt])",
+            page1MinDate,
+            captured[1]
+        )
+    }
+
+    @Test
+    fun `pullHistory preserves Nightscout payload direction and delta for speed`() = runTest {
+        settings.setNightscoutUrl("https://ns.example.com")
+        settings.setNightscoutSecret("secret")
+
+        fakeClient.entries = listOf(
+            entry(100, baseTs - 10 * 60_000L, direction = "Flat", delta = 0.0),
+            entry(150, baseTs - 5 * 60_000L, direction = "Flat", delta = 0.0),
+            entry(200, baseTs, direction = "Flat", delta = 0.0)
+        )
+
+        val result = puller.pullHistory(7)
+
+        assertTrue(result.isSuccess)
+        val latest = dao.lastN(10).first()
+        assertEquals("Flat", latest.direction)
+        assertEquals(0.0, latest.delta ?: Double.NaN, 0.0)
+    }
+
     private class FakeClient : NightscoutClient() {
         var entries: List<NightscoutEntryResponse> = emptyList()
         var entriesPages: MutableList<List<NightscoutEntryResponse>>? = null
         var fetchReturnsNull = false
+        val capturedBefore: MutableList<Long?> = mutableListOf()
 
         override suspend fun fetchEntries(
             baseUrl: String,
@@ -200,6 +275,7 @@ class NightscoutPullerTest {
             count: Int,
             before: Long?
         ): List<NightscoutEntryResponse>? {
+            capturedBefore.add(before)
             if (fetchReturnsNull) return null
             val pages = entriesPages
             if (pages != null && pages.isNotEmpty()) {

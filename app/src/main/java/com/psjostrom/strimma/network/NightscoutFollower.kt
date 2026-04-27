@@ -146,20 +146,15 @@ class NightscoutFollower @Inject constructor(
                 DebugLog.log(message = "Follower: backfill fetch failed")
                 return
             }
+            if (entries.isEmpty()) break
 
-            val valid = filterValidEntries(entries)
-            if (valid.isEmpty()) break
-
-            for (entry in valid) {
-                val reading = processNightscoutEntry(entry, dao, directionComputer)
-                if (reading != null) {
-                    lastReading = reading
-                    totalInserted++
-                }
+            val pageResult = processBackfillEntries(entries)
+            totalInserted += pageResult.insertedCount
+            if (pageResult.lastReading != null) {
+                lastReading = pageResult.lastReading
             }
 
-            if (entries.size < FETCH_COUNT) break
-            since = entries.maxOf { it.date ?: 0L } + 1
+            since = nextBackfillSince(entries) ?: break
         }
 
         if (lastReading != null) {
@@ -169,5 +164,30 @@ class NightscoutFollower @Inject constructor(
         _status.value = IntegrationStatus.Connected(lastActivityTs = System.currentTimeMillis())
         DebugLog.log(message = "Follower: backfill complete, $totalInserted readings")
     }
+
+    private suspend fun processBackfillEntries(entries: List<NightscoutEntryResponse>): BackfillPageResult {
+        var insertedCount = 0
+        var lastReading: GlucoseReading? = null
+
+        for (entry in filterValidEntries(entries)) {
+            val reading = processNightscoutEntry(entry, dao, directionComputer)
+            if (reading != null) {
+                lastReading = reading
+                insertedCount += 1
+            }
+        }
+
+        return BackfillPageResult(insertedCount = insertedCount, lastReading = lastReading)
+    }
+
+    private fun nextBackfillSince(entries: List<NightscoutEntryResponse>): Long? {
+        if (entries.size < FETCH_COUNT) return null
+        return entries.mapNotNull { it.date }.maxOrNull()?.plus(1)
+    }
+
+    private data class BackfillPageResult(
+        val insertedCount: Int,
+        val lastReading: GlucoseReading?
+    )
 
 }

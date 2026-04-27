@@ -65,24 +65,9 @@ class NightscoutPuller @Inject constructor(
                     url, secret, since = since, count = PAGE_SIZE, before = beforeCursor
                 ) ?: return Result.failure(IllegalStateException("Failed to fetch from Nightscout"))
 
-                val valid = NightscoutFollower.filterValidEntries(entries)
-                if (valid.isEmpty()) break
-
-                val readings = valid.mapNotNull { entry ->
-                    val sgv = entry.sgv ?: return@mapNotNull null
-                    val ts = entry.date ?: return@mapNotNull null
-                    GlucoseReading(
-                        ts = ts, sgv = sgv,
-                        direction = entry.direction ?: "NONE",
-                        delta = entry.delta,
-                        pushed = 1
-                    )
-                }
-                dao.insertBatch(readings)
-                totalInserted += readings.size
-
-                if (entries.size < PAGE_SIZE) break
-                beforeCursor = entries.minOf { it.date ?: Long.MAX_VALUE }
+                if (entries.isEmpty()) break
+                totalInserted += insertPulledEntries(entries)
+                beforeCursor = nextBeforeCursor(entries) ?: break
             }
 
             DebugLog.log(message = "Pull: $totalInserted readings from Nightscout")
@@ -96,6 +81,31 @@ class NightscoutPuller @Inject constructor(
             DebugLog.log(message = "Pull parse error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
             Result.failure(e)
         }
+    }
+
+    private suspend fun insertPulledEntries(entries: List<NightscoutEntryResponse>): Int {
+        val readings = NightscoutFollower.filterValidEntries(entries).mapNotNull { entry ->
+            val sgv = entry.sgv ?: return@mapNotNull null
+            val ts = entry.date ?: return@mapNotNull null
+            GlucoseReading(
+                ts = ts,
+                sgv = sgv,
+                direction = entry.direction ?: "NONE",
+                delta = entry.delta,
+                pushed = 1
+            )
+        }
+
+        if (readings.isNotEmpty()) {
+            dao.insertBatch(readings)
+        }
+
+        return readings.size
+    }
+
+    private fun nextBeforeCursor(entries: List<NightscoutEntryResponse>): Long? {
+        if (entries.size < PAGE_SIZE) return null
+        return entries.mapNotNull { it.date }.minOrNull()
     }
 
 }

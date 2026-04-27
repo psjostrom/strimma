@@ -169,8 +169,66 @@ class NightscoutFollowerIntegrationTest {
         job.cancel()
     }
 
+    @Test
+    fun `poll skips duplicate entry already present in DB within dedup window`() = runTest {
+        val env = createEnv()
+        env.settings.setNightscoutUrl("https://ns.example.com")
+        env.settings.setNightscoutSecret("secret")
+        env.settings.setFollowerPollSeconds(60)
+
+        val existingTs = System.currentTimeMillis() - 60_000
+        env.dao.insert(
+            GlucoseReading(ts = existingTs, sgv = 110, direction = "Flat", delta = null, pushed = 1)
+        )
+
+        val follower = NightscoutFollower(env.fakeClient, env.dao, env.directionComputer, env.settings)
+        val newReadings = mutableListOf<GlucoseReading>()
+        val job = follower.start(this) { newReadings.add(it) }
+        advanceAndSettle(env)
+
+        // Poll receives an entry with the same ts (within the 3 s dedup window).
+        env.fakeClient.entries = listOf(entry(125, existingTs + 1_000))
+        advanceTimeBy(61_000)
+        advanceAndSettle(env)
+
+        val readings = env.dao.lastN(10)
+        assertEquals("Duplicate entry within 3 s of an existing reading must not be inserted", 1, readings.size)
+        assertEquals("Original reading must be preserved", 110, readings[0].sgv)
+        assertTrue("onNewReading must not fire for a deduplicated entry", newReadings.isEmpty())
+
+        job.cancel()
+    }
+
+    @Test
+    fun `backfill continues past full invalid page to later valid readings`() = runTest {
+        val env = createEnv()
+        env.settings.setNightscoutUrl("https://ns.example.com")
+        env.settings.setNightscoutSecret("secret")
+
+        val invalidPage = (0 until 2016).map { i ->
+            NightscoutEntryResponse(sgv = 100 + (i % 20), date = baseTs - i * 60_000L, type = "cal")
+        }
+        val validPage = listOf(
+            entry(115, baseTs - 2016 * 60_000L),
+            entry(120, baseTs - 2017 * 60_000L)
+        )
+        env.fakeClient.entriesPages = mutableListOf(invalidPage, validPage)
+
+        val follower = NightscoutFollower(env.fakeClient, env.dao, env.directionComputer, env.settings)
+        val newReadings = mutableListOf<GlucoseReading>()
+        val job = follower.start(this) { newReadings.add(it) }
+        advanceAndSettle(env)
+
+        val readings = env.dao.lastN(10)
+        assertEquals("Backfill should continue to the later valid page", 2, readings.size)
+        assertEquals("Only the final backfill reading should trigger onNewReading", 1, newReadings.size)
+
+        job.cancel()
+    }
+
     private class FakeClient : NightscoutClient() {
         var entries: List<NightscoutEntryResponse> = emptyList()
+        var entriesPages: MutableList<List<NightscoutEntryResponse>>? = null
         var fetchReturnsNull = false
 
         override suspend fun fetchEntries(
@@ -181,6 +239,10 @@ class NightscoutFollowerIntegrationTest {
             before: Long?
         ): List<NightscoutEntryResponse>? {
             if (fetchReturnsNull) return null
+            val pages = entriesPages
+            if (pages != null && pages.isNotEmpty()) {
+                return pages.removeFirst()
+            }
             return entries
         }
 

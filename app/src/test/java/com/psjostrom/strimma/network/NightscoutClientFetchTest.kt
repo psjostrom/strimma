@@ -1,12 +1,37 @@
 package com.psjostrom.strimma.network
 
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.MockRequestHandler
+import io.ktor.client.engine.mock.respond
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.headersOf
+import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import org.junit.Assert.*
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import java.io.IOException
 
+@RunWith(RobolectricTestRunner::class)
 class NightscoutClientFetchTest {
 
     private val json = Json { ignoreUnknownKeys = true }
+
+    private fun mockClient(handler: MockRequestHandler): NightscoutClient {
+        val httpClient = HttpClient(MockEngine) {
+            engine { addHandler(handler) }
+            install(ContentNegotiation) {
+                json(Json { ignoreUnknownKeys = true })
+            }
+        }
+        return NightscoutClient(httpClient)
+    }
 
     @Test
     fun `parse valid sgv entry`() {
@@ -102,5 +127,86 @@ class NightscoutClientFetchTest {
     fun `buildFetchUrl trims trailing slash`() {
         val url = NightscoutClient.buildFetchUrl("https://ns.example.com/", since = 1710700000000L, count = 50)
         assertEquals("https://ns.example.com/api/v1/entries.json?find[date][\$gt]=1710700000000&count=50", url)
+    }
+
+    @Test
+    fun `fetchTreatments throws on HTTP error instead of returning empty success`() = runTest {
+        val client = mockClient {
+            respond(
+                content = "server error",
+                status = HttpStatusCode.InternalServerError,
+                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            )
+        }
+
+        try {
+            client.fetchTreatments(
+                baseUrl = "https://ns.example.com",
+                secret = "secret",
+                since = 1710700000000L,
+                count = 100
+            )
+            fail("Expected fetchTreatments to throw on HTTP 500")
+        } catch (e: IOException) {
+            assertEquals("HTTP 500", e.message)
+        }
+    }
+
+    @Test
+    fun `fetchEntries returns null on HTTP 500 so the follower stays in Error not crashes`() = runTest {
+        val client = mockClient {
+            respond(
+                content = "internal error",
+                status = HttpStatusCode.InternalServerError,
+                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            )
+        }
+
+        val result = client.fetchEntries(
+            baseUrl = "https://ns.example.com",
+            apiSecret = "secret",
+            since = 0L,
+            count = 100,
+            before = null
+        )
+
+        assertNull("HTTP 500 must surface as null (not throw, not empty list)", result)
+    }
+
+    @Test
+    fun `fetchEntries returns null on IOException so callers can treat it as transient`() = runTest {
+        val client = mockClient {
+            throw IOException("network down")
+        }
+
+        val result = client.fetchEntries(
+            baseUrl = "https://ns.example.com",
+            apiSecret = "secret",
+            since = 0L,
+            count = 100,
+            before = null
+        )
+
+        assertNull("IOException must surface as null, not propagate to the caller", result)
+    }
+
+    @Test
+    fun `fetchTreatments returns empty list on 404 unsupported treatments`() = runTest {
+        val client = mockClient {
+            respond(
+                content = "not found",
+                status = HttpStatusCode.NotFound,
+                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            )
+        }
+
+        val treatments = client.fetchTreatments(
+            baseUrl = "https://ns.example.com",
+            secret = "secret",
+            since = 1710700000000L,
+            count = 100
+        )
+
+        assertTrue(treatments.isEmpty())
     }
 }
