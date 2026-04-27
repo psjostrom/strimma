@@ -48,10 +48,9 @@ fun UpdateDialog(
                 )
                 if (info.changelog.isNotBlank()) {
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        info.changelog,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    MarkdownText(
+                        markdown = info.changelog,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 if (info.isForced) {
