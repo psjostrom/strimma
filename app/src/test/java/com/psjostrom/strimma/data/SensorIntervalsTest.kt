@@ -31,10 +31,25 @@ class SensorIntervalsTest {
     }
 
     @Test
-    fun `aidex packages report 5-min sample period`() {
+    fun `aidex X LinX packages report 1-min sample period`() {
+        // Verified: com.microtech.aidexx.mgdl is "LinX CGM" app, linxneo.mmoll is
+        // "LinX vista" — both pair with AiDEX X / LinX hardware (1-min cadence). The
+        // previous 5-min entry caused in-bucket replacement to drop 4-of-5 real
+        // readings on every bucket.
+        assertEquals(oneMin, SensorIntervals.samplePeriodMs("com.microtech.aidexx.mgdl"))
+        assertEquals(oneMin, SensorIntervals.samplePeriodMs("com.microtech.aidexx.linxneo.mmoll"))
+    }
+
+    @Test
+    fun `aidex unverified regional variants stay at 5-min default pending confirmation`() {
+        // Equil (Chinese pump pairing), Brazilian "Smart", German "diaexport", and the
+        // no-suffix China app couldn't be confirmed directly (two Play Store listings
+        // 404'd; the others had truncated descriptions). The double-x prefix suggests
+        // AiDEX X family (1-min), but until verified, 5-min is the existing behavior.
         assertEquals(fiveMin, SensorIntervals.samplePeriodMs("com.microtech.aidexx"))
-        assertEquals(fiveMin, SensorIntervals.samplePeriodMs("com.microtech.aidexx.mgdl"))
-        assertEquals(fiveMin, SensorIntervals.samplePeriodMs("com.microtech.aidexx.linxneo.mmoll"))
+        assertEquals(fiveMin, SensorIntervals.samplePeriodMs("com.microtech.aidexx.equil.mmoll"))
+        assertEquals(fiveMin, SensorIntervals.samplePeriodMs("com.microtech.aidexx.smart.mmoll"))
+        assertEquals(fiveMin, SensorIntervals.samplePeriodMs("com.microtech.aidexx.diaexport.mmoll"))
     }
 
     @Test

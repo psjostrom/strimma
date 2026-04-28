@@ -73,11 +73,27 @@ object SensorIntervals {
         "com.senseonics.gen12androidapp" to FIVE_MIN_MS,
         "com.senseonics.eversense365.us" to FIVE_MIN_MS,
 
-        // Aidex — 5-min cadence across variants. NOTE: aidexx.mgdl and aidexx.linxneo.mmoll
-        // are AiDEX X / LinX hardware which is actually 1-min per MicroTech's spec; left at
-        // 5-min pending separate verification, since over-bucketing is the safer default.
-        "com.microtech.aidexx.mgdl" to FIVE_MIN_MS,
-        "com.microtech.aidexx.linxneo.mmoll" to FIVE_MIN_MS,
+        // MicroTech AiDEX X / LinX — 1-min cadence per MicroTech's spec ("readings every
+        // minute for 15 days"). Verified directly:
+        //   - com.microtech.aidexx.mgdl       → "LinX CGM" app on Google Play
+        //   - com.microtech.aidexx.linxneo.mmoll → "LinX vista" app (mmol variant)
+        // Both pair with the AiDEX X / LinX hardware. The previous 5-min entry would have
+        // dropped 4-of-5 real readings via in-bucket replacement (each new value evicts
+        // the prior row inside the bucket), not just deduped reposts.
+        "com.microtech.aidexx.mgdl" to ONE_MIN_MS,
+        "com.microtech.aidexx.linxneo.mmoll" to ONE_MIN_MS,
+
+        // Other com.microtech.aidexx.* variants — still 5-min pending direct verification.
+        // The `aidexx` (double-x) prefix is MicroTech's naming for the AiDEX X family
+        // (1-min), distinct from the older AiDEX (`com.microtechmd.cgms.{mg,mmol}`,
+        // 5-min) which Strimma does not catalogue. So these are PROBABLY 1-min too —
+        // but the regional variants (Equil, German "diaexport", Brazilian "Smart",
+        // China no-suffix) couldn't be confirmed directly (Play Store listings 404'd
+        // for two; the others had truncated descriptions). Leaving at 5-min until a
+        // user reports their region's app or until Play Store coverage improves. Worst
+        // case under 5-min: in-bucket replacement drops real readings from a 1-min
+        // sensor — the same bug we just fixed for mgdl/linxneo. If this PR ships and
+        // a LinX user reports missing readings on one of these regions, flip it then.
         "com.microtech.aidexx.equil.mmoll" to FIVE_MIN_MS,
         "com.microtech.aidexx.diaexport.mmoll" to FIVE_MIN_MS,
         "com.microtech.aidexx.smart.mmoll" to FIVE_MIN_MS,
