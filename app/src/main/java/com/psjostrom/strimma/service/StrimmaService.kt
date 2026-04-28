@@ -65,6 +65,7 @@ class StrimmaService : Service() {
     @Inject lateinit var dao: ReadingDao
     @Inject lateinit var pusher: NightscoutPusher
     @Inject lateinit var tidepoolUploader: TidepoolUploader
+    @Inject lateinit var readingFanOut: ReadingFanOut
     @Inject lateinit var notificationHelper: NotificationHelper
     @Inject lateinit var alertManager: AlertManager
     @Inject lateinit var settings: SettingsRepository
@@ -198,21 +199,45 @@ class StrimmaService : Service() {
         stopLluFollower()
         calendarPollJob?.cancel()
         syncOrchestrator.stop()
+        readingFanOut.stop()
         scope.cancel()
         super.onDestroy()
     }
 
     /**
-     * Side effects triggered after a new reading is stored via the pipeline.
-     * Also called by follower callbacks (NS/LLU) after their own storage path.
+     * Side effects triggered after a new reading lands in the DB. All four ingestion paths
+     * (COMPANION, XDRIP_BROADCAST, NIGHTSCOUT_FOLLOWER, LIBRELINKUP) converge here.
+     *
+     * Splits effects in two:
+     *  - **Eager** (notification + widgets) fires immediately so the user sees the latest BG
+     *    without delay.
+     *  - **Debounced** (alert, push, upload, HC, broadcast) fires via [readingFanOut] after a
+     *    short window. An Eversense cluster — OLD value stored, NEW value stored within
+     *    ~1 s — supersedes the OLD dispatch so the alert fires once on the settled value, no
+     *    spurious urgent-low audible, no stale Nightscout / Health Connect rows.
+     *
+     * @param includesPush whether to push to Nightscout. False for the Nightscout follower
+     *   path because we got the reading FROM Nightscout — pushing back is a wasted round-trip.
      */
-    private suspend fun onNewReading(reading: GlucoseReading) {
-        val prediction = updateNotification()
-        val alertReadings = dao.since(reading.ts - ReadingPipeline.LOOKBACK_MINUTES * MS_PER_MINUTE)
-        alertManager.checkReading(reading, alertReadings, predMinutes.value, prediction)
-        broadcastBgIfEnabled(reading)
-        writeToHealthConnectIfEnabled(reading)
+    private suspend fun onNewReading(reading: GlucoseReading, includesPush: Boolean = true) {
+        // Eager: UI feedback the user sees immediately.
+        updateNotification()
         updateWidgets()
+
+        // Debounced: downstream consequences. ReadingFanOut.fire cancels any in-flight
+        // dispatch, so a cluster's NEW value supersedes the OLD before any of these run.
+        readingFanOut.fire(reading) { settled ->
+            val alertReadings = dao.since(
+                settled.ts - ReadingPipeline.LOOKBACK_MINUTES * MS_PER_MINUTE
+            )
+            // Pass null prediction — alertManager recomputes from the freshest data, which
+            // is what we want after the cluster has settled.
+            alertManager.checkReading(settled, alertReadings, predMinutes.value, null)
+            if (includesPush) pusher.pushReading(settled)
+            tidepoolUploader.onNewReading()
+            broadcastBgIfEnabled(settled)
+            writeToHealthConnectIfEnabled(settled)
+        }
     }
 
     private fun registerXdripReceiver() {
@@ -235,12 +260,8 @@ class StrimmaService : Service() {
     private fun startFollower() {
         if (followerJob != null) return
         followerJob = nightscoutFollower.start(scope) { reading ->
-            val prediction = updateNotification()
-            val alertReadings = dao.since(reading.ts - ReadingPipeline.LOOKBACK_MINUTES * MS_PER_MINUTE)
-            alertManager.checkReading(reading, alertReadings, predMinutes.value, prediction)
-            broadcastBgIfEnabled(reading)
-            tidepoolUploader.onNewReading()
-            updateWidgets()
+            // Don't push back to Nightscout — we just GOT the reading from Nightscout.
+            onNewReading(reading, includesPush = false)
         }
         DebugLog.log("Nightscout follower started")
     }
@@ -255,14 +276,7 @@ class StrimmaService : Service() {
     private fun startLluFollower() {
         if (lluFollowerJob != null) return
         lluFollowerJob = libreLinkUpFollower.start(scope) { reading ->
-            pusher.pushReading(reading)
-            val prediction = updateNotification()
-            val alertReadings = dao.since(reading.ts - ReadingPipeline.LOOKBACK_MINUTES * MS_PER_MINUTE)
-            alertManager.checkReading(reading, alertReadings, predMinutes.value, prediction)
-            broadcastBgIfEnabled(reading)
-            writeToHealthConnectIfEnabled(reading)
-            tidepoolUploader.onNewReading()
-            updateWidgets()
+            onNewReading(reading)
         }
         DebugLog.log("LibreLinkUp follower started")
     }

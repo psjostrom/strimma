@@ -36,7 +36,7 @@ class TidepoolUploader @Inject constructor(
     private val authManager: TidepoolAuthManager,
     private val dao: ReadingDao,
     private val settings: SettingsRepository
-) : com.psjostrom.strimma.service.ReadingUploader {
+) {
 
     companion object {
         const val MAX_CHUNK_MS = 7L * 86_400_000L     // 7 days
@@ -87,7 +87,7 @@ class TidepoolUploader @Inject constructor(
      * Called when a new glucose reading arrives.
      * Launches uploadIfReady() in background scope.
      */
-    override fun onNewReading() {
+    fun onNewReading() {
         scope.launch {
             uploadIfReady()
         }
@@ -181,22 +181,27 @@ class TidepoolUploader @Inject constructor(
         try {
             val token = authManager.getValidAccessToken()
             if (token == null) {
-                // Distinguish "user is not logged in" (genuine failure — rate-limit so we
-                // don't hammer auth on every reading) from "transient network error during
-                // token refresh" (don't stamp — let the next reading retry immediately).
+                // Always stamp on null token — without distinguishing transient
+                // (network blip during refresh) from permanent (genuinely logged out
+                // or refresh endpoint broken), under-throttling is the worse failure
+                // mode (60+ HTTP round-trips/hour against a broken endpoint). The
+                // earlier attempt to skip the stamp on transient failures backfired
+                // because client.getValidAccessToken swallows IOException internally.
                 if (!authManager.isLoggedIn()) {
                     settings.setTidepoolLastError("Session expired. Please log in again.")
-                    stampUploadAttempt()
                 }
                 DebugLog.log(message = "Tidepool upload: no valid token")
+                stampUploadAttempt()
                 return 0
             }
 
             val datasetId = getOrCreateDataset(plan.userId, token)
             if (datasetId == null) {
-                // Don't stamp on transient dataset-fetch failure — could be a network
-                // hiccup that resolves on the next reading. Real upload failures fall
-                // through to the catch block below, which does stamp.
+                // Same reasoning as the no-token branch — getOrCreateDataset returns
+                // null on both transient (HTTP error swallowed by client) and
+                // permanent (server refused dataset creation) failures. Stamp the
+                // rate-limit clock to avoid hammering a broken endpoint.
+                stampUploadAttempt()
                 return 0
             }
             return uploadPreparedRecords(datasetId, token, plan)
