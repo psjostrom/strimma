@@ -9,14 +9,20 @@ package com.psjostrom.strimma.data
  *
  * Defaults to a conservative 1 min for unknown sources so we never silently drop a real reading
  * from a sensor we haven't catalogued.
+ *
+ * Buckets are wall-clock-aligned to UTC midnight (`ts / period * period`), not to the sensor's
+ * actual emit cadence. For typical 5-min sensors whose real reads fall well inside a bucket
+ * this is fine. For a sensor whose real reads happen to straddle a wall-clock bucket boundary
+ * by milliseconds, two real readings can land in adjacent buckets — both stored. The opposite
+ * (two readings collapsed because they jittered into the same bucket) requires sub-period
+ * jitter, which is rare. Both edge cases are acceptable; the alternative (sliding-window
+ * dedup keyed on the previous reading) has its own boundary failure modes (see prior 5/6
+ * sample-period attempt before bucketing was adopted).
  */
 object SensorIntervals {
     private const val ONE_MIN_MS = 60_000L
     private const val FIVE_MIN_MS = 300_000L
     private const val DEFAULT_MS = ONE_MIN_MS
-
-    /** Special source tag used by [com.psjostrom.strimma.receiver.XdripBroadcastReceiver]. */
-    const val SOURCE_XDRIP_BROADCAST = "xdrip-broadcast"
 
     // Only sensor-bound apps are listed — apps that read directly from a specific hardware
     // family. Sensor-agnostic middleware (CamAPS FX, Juggluco, xDrip+, AAPS, etc.) is

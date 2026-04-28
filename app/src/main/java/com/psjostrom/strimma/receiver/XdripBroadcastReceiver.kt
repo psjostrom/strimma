@@ -4,7 +4,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.psjostrom.strimma.data.GlucoseReading
-import com.psjostrom.strimma.data.SensorIntervals
 
 /**
  * Receives xDrip-compatible BG broadcasts from other CGM apps.
@@ -22,6 +21,15 @@ class XdripBroadcastReceiver : BroadcastReceiver() {
 
     companion object {
         const val ACTION = "com.eveningoutpost.dexdrip.BgEstimate"
+
+        /**
+         * Source tag stamped on the [GlucoseNotificationListener.EXTRA_SOURCE] extra so
+         * downstream code (debug logs, [com.psjostrom.strimma.data.SensorIntervals] lookup)
+         * can identify a reading as having arrived via the xDrip broadcast path. Falls
+         * through to the 1-min default in [com.psjostrom.strimma.data.SensorIntervals]
+         * because xDrip-style broadcasts originate from sensor-agnostic middleware.
+         */
+        const val SOURCE_TAG = "xdrip-broadcast"
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -48,7 +56,7 @@ class XdripBroadcastReceiver : BroadcastReceiver() {
             action = GlucoseNotificationListener.ACTION_GLUCOSE_RECEIVED
             putExtra(GlucoseNotificationListener.EXTRA_MGDL, sgv)
             putExtra(GlucoseNotificationListener.EXTRA_TIMESTAMP, timestamp)
-            putExtra(GlucoseNotificationListener.EXTRA_SOURCE, SensorIntervals.SOURCE_XDRIP_BROADCAST)
+            putExtra(GlucoseNotificationListener.EXTRA_SOURCE, SOURCE_TAG)
         }
         context.startForegroundService(serviceIntent)
     }
