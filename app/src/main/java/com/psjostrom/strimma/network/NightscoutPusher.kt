@@ -20,7 +20,7 @@ class NightscoutPusher @Inject constructor(
     private val settings: SettingsRepository,
     private val alertManager: AlertManager,
     @IoDispatcher private val dispatcher: CoroutineDispatcher
-) {
+) : com.psjostrom.strimma.service.ReadingPusher {
     companion object {
         private const val MAX_RETRY_ATTEMPTS = 12
         private const val RETRY_BASE_DELAY_MS = 5000L
@@ -45,7 +45,7 @@ class NightscoutPusher @Inject constructor(
         }
     )
 
-    fun pushReading(reading: GlucoseReading) {
+    override fun pushReading(reading: GlucoseReading) {
         scope.launch {
             val url = settings.nightscoutUrl.first()
             val secret = settings.getNightscoutSecret()

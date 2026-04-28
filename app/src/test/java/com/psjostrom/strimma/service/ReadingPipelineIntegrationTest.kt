@@ -7,6 +7,7 @@ import com.psjostrom.strimma.data.Direction
 import com.psjostrom.strimma.data.DirectionComputer
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.ReadingDao
+import com.psjostrom.strimma.data.SensorIntervals
 import com.psjostrom.strimma.data.StrimmaDatabase
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -19,36 +20,31 @@ import org.robolectric.RobolectricTestRunner
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
- * Integration test for the reading pipeline as implemented in StrimmaService.processReading().
+ * Integration test for the real [ReadingPipeline].
  *
- * Mirrors the real processReading signature (mgdl: Double, timestamp: Long) and tests:
- * - SGV validation (isValidSgv) before any processing
- * - Double→Int rounding of mg/dL values
- * - Duplicate detection with abs() timestamp diff
- * - Direction computation via real DirectionComputer
- * - Delta rounding to 0.1 mg/dL precision
- * - Push triggered after successful store
- * - Alert checking called with correct recent readings window
+ * Wires:
+ *  - real [ReadingDao] (Room in-memory)
+ *  - real [DirectionComputer]
+ *  - hand-written [FakePusher] / [FakeUploader] standing in for the network and Tidepool
+ *    side-effects (we own the [ReadingPusher] / [ReadingUploader] interfaces specifically
+ *    so the pipeline can be tested without dragging in HTTP, settings, alerts, etc.).
  *
- * Uses real Room (in-memory), real DirectionComputer, real SettingsRepository.
- * Fakes only at the network boundary (FakePushTracker) and notification boundary (FakeAlertChecker).
+ * Covers SGV validation, mg/dL rounding, source-aware bucketed dedup, in-bucket
+ * replacement (Eversense cluster behavior), direction/delta integration, and that
+ * the side-effects fire on store but not on dedup.
  */
 @RunWith(RobolectricTestRunner::class)
 class ReadingPipelineIntegrationTest {
 
     private lateinit var db: StrimmaDatabase
     private lateinit var dao: ReadingDao
-    private val directionComputer = DirectionComputer()
-    private lateinit var pushTracker: FakePushTracker
-    private lateinit var alertChecker: FakeAlertChecker
-    private val baseTs = 1_700_000_000_000L
+    private lateinit var pusher: FakePusher
+    private lateinit var uploader: FakeUploader
+    private lateinit var pipeline: ReadingPipeline
 
-    companion object {
-        private const val DUPLICATE_THRESHOLD_MS = 3_000L
-        private const val LOOKBACK_MINUTES = 15
-        private const val MS_PER_MINUTE = 60_000L
-        private const val DELTA_ROUNDING_FACTOR = 10.0
-    }
+    private val baseTs = 1_700_000_000_000L
+    private val eversense = "com.senseonics.eversense365.us"
+    private val libre3 = "com.freestylelibre3.app"
 
     @Before
     fun setUp() {
@@ -57,8 +53,14 @@ class ReadingPipelineIntegrationTest {
             .allowMainThreadQueries()
             .build()
         dao = db.readingDao()
-        pushTracker = FakePushTracker()
-        alertChecker = FakeAlertChecker()
+        pusher = FakePusher()
+        uploader = FakeUploader()
+        pipeline = ReadingPipeline(
+            dao = dao,
+            directionComputer = DirectionComputer(),
+            pusher = pusher,
+            uploader = uploader,
+        )
     }
 
     @After
@@ -66,245 +68,295 @@ class ReadingPipelineIntegrationTest {
         db.close()
     }
 
-    /**
-     * Mirrors StrimmaService.processReading() exactly, but replaces push/alert/notification
-     * side effects with test-observable fakes.
-     */
-    private suspend fun processReading(mgdl: Double, timestamp: Long) {
-        if (!GlucoseReading.isValidSgv(mgdl)) return
-        val sgv = Math.round(mgdl).toInt()
-
-        val existing = dao.lastN(1)
-        if (existing.isNotEmpty() && kotlin.math.abs(timestamp - existing[0].ts) < DUPLICATE_THRESHOLD_MS) return
-
-        val recentReadings = dao.since(timestamp - LOOKBACK_MINUTES * MS_PER_MINUTE)
-        val tempReading = GlucoseReading(
-            ts = timestamp, sgv = sgv,
-            direction = "NONE", delta = null, pushed = 0
-        )
-        val (direction, deltaMgdl) = directionComputer.compute(recentReadings, tempReading)
-
-        val reading = tempReading.copy(
-            direction = direction.name,
-            delta = deltaMgdl?.let { Math.round(it * DELTA_ROUNDING_FACTOR) / DELTA_ROUNDING_FACTOR }
-        )
-
-        dao.insert(reading)
-        pushTracker.onPush(reading)
-        val alertReadings = recentReadings + reading
-        alertChecker.onCheck(reading, alertReadings)
-    }
-
     // --- SGV validation ---
 
     @Test
     fun `sgv below minimum is rejected`() = runTest {
-        processReading(17.0, baseTs) // MIN_VALID_SGV is 18
-        val all = dao.since(0)
-        assertTrue("SGV 17 should be rejected", all.isEmpty())
-        assertEquals(0, pushTracker.pushCount.get())
+        pipeline.processReading(17.0, baseTs)
+        assertTrue(dao.since(0).isEmpty())
+        assertEquals(0, pusher.count.get())
+        assertEquals(0, uploader.count.get())
     }
 
     @Test
     fun `sgv of zero is rejected`() = runTest {
-        processReading(0.0, baseTs)
+        pipeline.processReading(0.0, baseTs)
         assertTrue(dao.since(0).isEmpty())
     }
 
     @Test
     fun `negative sgv is rejected`() = runTest {
-        processReading(-5.0, baseTs)
+        pipeline.processReading(-5.0, baseTs)
         assertTrue(dao.since(0).isEmpty())
     }
 
     @Test
     fun `sgv above maximum is rejected`() = runTest {
-        processReading(901.0, baseTs) // MAX_VALID_SGV is 900
+        pipeline.processReading(901.0, baseTs)
         assertTrue(dao.since(0).isEmpty())
     }
 
     @Test
     fun `sgv at minimum boundary is accepted`() = runTest {
-        processReading(18.0, baseTs)
+        pipeline.processReading(18.0, baseTs)
         assertEquals(1, dao.since(0).size)
     }
 
     @Test
     fun `sgv at maximum boundary is accepted`() = runTest {
-        processReading(900.0, baseTs)
-        val all = dao.since(0)
-        assertEquals(1, all.size)
-        assertEquals(900, all[0].sgv)
+        pipeline.processReading(900.0, baseTs)
+        assertEquals(900, dao.since(0)[0].sgv)
     }
 
-    // --- Double to Int rounding ---
+    // --- mg/dL → Int rounding ---
 
     @Test
-    fun `mgdl value is rounded to nearest int`() = runTest {
-        processReading(108.7, baseTs)
-        val stored = dao.since(0)
-        assertEquals(1, stored.size)
-        assertEquals(109, stored[0].sgv) // Math.round(108.7) == 109
+    fun `mgdl is rounded to nearest int`() = runTest {
+        pipeline.processReading(108.7, baseTs)
+        assertEquals(109, dao.since(0)[0].sgv)
     }
 
     @Test
     fun `mgdl halfway rounds up`() = runTest {
-        processReading(108.5, baseTs)
-        val stored = dao.since(0)
-        assertEquals(109, stored[0].sgv) // Math.round(108.5) == 109
+        pipeline.processReading(108.5, baseTs)
+        assertEquals(109, dao.since(0)[0].sgv)
     }
 
     @Test
     fun `mgdl just below half rounds down`() = runTest {
-        processReading(108.4, baseTs)
-        val stored = dao.since(0)
-        assertEquals(108, stored[0].sgv)
+        pipeline.processReading(108.4, baseTs)
+        assertEquals(108, dao.since(0)[0].sgv)
     }
 
-    // --- Duplicate detection (abs() timestamp diff) ---
+    // --- In-bucket replacement (changing value within one sample period) ---
 
     @Test
-    fun `reading 1ms after previous is deduplicated`() = runTest {
-        processReading(108.0, baseTs)
-        processReading(120.0, baseTs + 1)
-        assertEquals(1, dao.since(0).size)
-    }
+    fun `same bucket - changing value replaces the prior reading at the new ts`() = runTest {
+        pipeline.processReading(108.0, baseTs)
+        pipeline.processReading(120.0, baseTs + 1)
 
-    @Test
-    fun `reading 2999ms after previous is deduplicated`() = runTest {
-        processReading(108.0, baseTs)
-        processReading(120.0, baseTs + 2999)
-        assertEquals(1, dao.since(0).size)
+        val all = dao.since(0)
+        assertEquals(1, all.size)
+        assertEquals(120, all[0].sgv)
+        assertEquals("the new reading's ts is preserved", baseTs + 1, all[0].ts)
     }
 
     @Test
-    fun `reading exactly 3000ms after previous is deduplicated`() = runTest {
-        // abs(diff) < 3000, so exactly 3000 is NOT < 3000 — NOT deduplicated
-        // Wait, the code says < 3000, so 3000 is NOT less than 3000. It's accepted.
-        processReading(108.0, baseTs)
-        processReading(120.0, baseTs + 3000)
+    fun `same bucket - cluster of changing values keeps only the last`() = runTest {
+        pipeline.processReading(103.0, baseTs)
+        pipeline.processReading(101.0, baseTs + 50)
+        pipeline.processReading(100.0, baseTs + 100)
+
+        val all = dao.since(0)
+        assertEquals(1, all.size)
+        assertEquals(100, all[0].sgv)
+        assertEquals(baseTs + 100, all[0].ts)
+    }
+
+    @Test
+    fun `different bucket - different value is stored as a new reading`() = runTest {
+        // Default 1-min bucket; baseTs is at +20 s offset within its bucket, so +41 s
+        // crosses into the next bucket.
+        pipeline.processReading(108.0, baseTs)
+        pipeline.processReading(120.0, baseTs + 41_000)
+        val all = dao.since(0).sortedBy { it.ts }
+        assertEquals(2, all.size)
+        assertEquals(108, all[0].sgv)
+        assertEquals(120, all[1].sgv)
+    }
+
+    @Test
+    fun `same bucket replacement triggers push and uploader with the new value`() = runTest {
+        pipeline.processReading(108.0, baseTs)
+        pipeline.processReading(120.0, baseTs + 100)
+
+        assertEquals(2, pusher.count.get())
+        assertEquals(120, pusher.last!!.sgv)
+        assertEquals(2, uploader.count.get())
+    }
+
+    // --- Same-value repost dedup (source-aware) ---
+
+    @Test
+    fun `eversense - same-value repost within sample period is dropped`() = runTest {
+        pipeline.processReading(103.0, baseTs, source = eversense)
+        // Stays in the same 5-min bucket — both reposts collapse to the first stored value.
+        pipeline.processReading(103.0, baseTs + 30_000, source = eversense)
+        pipeline.processReading(103.0, baseTs + 90_000, source = eversense)
+
+        val all = dao.since(0)
+        assertEquals(1, all.size)
+        assertEquals(baseTs, all[0].ts)
+    }
+
+    @Test
+    fun `eversense - same value in next bucket is stored separately`() = runTest {
+        pipeline.processReading(103.0, baseTs, source = eversense)
+        // baseTs is +200 s into its bucket; +101 s lands in the next 5-min bucket.
+        pipeline.processReading(103.0, baseTs + 101_000, source = eversense)
         assertEquals(2, dao.since(0).size)
     }
 
     @Test
-    fun `reading 3001ms after previous is accepted`() = runTest {
-        processReading(108.0, baseTs)
-        processReading(120.0, baseTs + 3001)
+    fun `eversense - changing value within same 5-min bucket replaces at new ts`() = runTest {
+        // The late-cluster value (101) supersedes the leading stale 103, with the real
+        // notification ts preserved rather than the earlier repost's ts.
+        pipeline.processReading(103.0, baseTs, source = eversense)
+        pipeline.processReading(101.0, baseTs + 90_000, source = eversense)
+
+        val all = dao.since(0)
+        assertEquals(1, all.size)
+        assertEquals(101, all[0].sgv)
+        assertEquals(baseTs + 90_000, all[0].ts)
+    }
+
+    @Test
+    fun `eversense - changing value across 5-min buckets is stored separately`() = runTest {
+        pipeline.processReading(103.0, baseTs, source = eversense)
+        pipeline.processReading(101.0, baseTs + 101_000, source = eversense)
+        val all = dao.since(0).sortedBy { it.ts }
+        assertEquals(2, all.size)
+        assertEquals(103, all[0].sgv)
+        assertEquals(101, all[1].sgv)
+    }
+
+    @Test
+    fun `libre 3 - same value at 60s gap is stored, not deduped`() = runTest {
+        // Each Libre 3 reading lands in its own 1-min bucket.
+        pipeline.processReading(108.0, baseTs, source = libre3)
+        pipeline.processReading(108.0, baseTs + 60_000, source = libre3)
         assertEquals(2, dao.since(0).size)
     }
 
     @Test
-    fun `reading with past timestamp within 3s is deduplicated`() = runTest {
-        // Real code uses abs() — a reading arriving with a slightly earlier timestamp
-        // than the latest stored should also be deduplicated
-        processReading(108.0, baseTs)
-        processReading(120.0, baseTs - 2000)
+    fun `libre 3 - same value within same bucket is dropped as repost`() = runTest {
+        pipeline.processReading(108.0, baseTs, source = libre3)
+        pipeline.processReading(108.0, baseTs + 30_000, source = libre3)
         assertEquals(1, dao.since(0).size)
     }
 
     @Test
-    fun `reading with past timestamp beyond 3s is accepted`() = runTest {
-        processReading(108.0, baseTs)
-        processReading(120.0, baseTs - 3001)
+    fun `unknown source defaults to 1-min bucketing`() = runTest {
+        pipeline.processReading(108.0, baseTs)
+        pipeline.processReading(108.0, baseTs + 30_000) // same bucket → drop
+        pipeline.processReading(108.0, baseTs + 60_000) // next bucket → store
         assertEquals(2, dao.since(0).size)
     }
 
-    // --- Push triggered on successful store ---
+    // --- Eversense replay (issue #192) ---
 
     @Test
-    fun `push is triggered after valid reading is stored`() = runTest {
-        processReading(108.0, baseTs)
-        assertEquals(1, pushTracker.pushCount.get())
-        assertEquals(108, pushTracker.lastPushedReading!!.sgv)
-    }
+    fun `eversense replay - repost spam collapses to one reading per 5-min bucket`() = runTest {
+        // Mirrors halprewitt's log on issue #192: two notifications per minute (at :31 and
+        // :46 of each minute) plus a sub-second value-change cluster at the 5-min mark.
+        // The cluster's first notification still carries the OLD value; the new value
+        // arrives within ~1 s.
 
-    @Test
-    fun `push is not triggered when reading is deduplicated`() = runTest {
-        processReading(108.0, baseTs)
-        processReading(120.0, baseTs + 1000)
-        assertEquals(1, pushTracker.pushCount.get())
-    }
+        val secsToMs = 1000L
 
-    @Test
-    fun `push is not triggered when sgv is invalid`() = runTest {
-        processReading(0.0, baseTs)
-        assertEquals(0, pushTracker.pushCount.get())
-    }
+        pipeline.processReading(103.0, baseTs + 31 * secsToMs, source = eversense)
 
-    @Test
-    fun `pushed reading has computed direction and delta`() = runTest {
-        // Seed steady readings for direction computation
-        for (i in 6 downTo 1) {
-            processReading(108.0, baseTs - i * 60_000L)
+        for (m in 0..10) {
+            pipeline.processReading(103.0, baseTs + (m * 60 + 46) * secsToMs, source = eversense)
+            if (m < 10) {
+                pipeline.processReading(
+                    103.0, baseTs + ((m + 1) * 60 + 31) * secsToMs, source = eversense
+                )
+            }
         }
-        pushTracker.reset()
-        processReading(108.0, baseTs)
-        val pushed = pushTracker.lastPushedReading!!
-        assertEquals("Flat", pushed.direction)
+
+        val cluster1Ts = baseTs + (11 * 60 + 31) * secsToMs
+        pipeline.processReading(103.0, cluster1Ts, source = eversense)
+        for (offsetMs in listOf(57L, 64L, 97L, 148L, 285L, 922L)) {
+            pipeline.processReading(101.0, cluster1Ts + offsetMs, source = eversense)
+        }
+
+        for (offsetSecs in listOf(46, 91, 106, 151, 166, 211, 226, 271, 286, 331)) {
+            pipeline.processReading(
+                101.0, baseTs + (11 * 60 + offsetSecs) * secsToMs, source = eversense
+            )
+        }
+
+        val all = dao.since(0).sortedBy { it.ts }
+        // baseTs is +200 s into its 5-min bucket, so the test data spans four wall-clock
+        // buckets: one for the initial :31 read, one for the late-:46 reposts that
+        // crossed the bucket boundary, one containing the 5-min value-change cluster, and
+        // one for the 101 reposts after the cluster.
+        assertEquals(
+            "test traffic should land at most one stored reading per 5-min bucket",
+            4, all.size
+        )
+        assertEquals(2, all.count { it.sgv == 103 })
+        assertEquals(2, all.count { it.sgv == 101 })
+
+        val cluster101 = all.single { it.sgv == 101 && it.ts == cluster1Ts + 57L }
+        assertEquals(
+            "the bucket replacement keeps the first new-value notification's ts",
+            cluster1Ts + 57L, cluster101.ts
+        )
+
+        assertNull(
+            "reading at +151 s should have been dropped as a same-value repost",
+            all.find { it.ts == baseTs + 151 * secsToMs }
+        )
     }
 
-    // --- Alert checking ---
+    // --- Side-effect plumbing ---
 
     @Test
-    fun `alert check is called with the reading on valid store`() = runTest {
-        processReading(108.0, baseTs)
-        assertEquals(1, alertChecker.checkCount.get())
-        assertEquals(108, alertChecker.lastCheckedReading!!.sgv)
+    fun `push fires when a reading is stored`() = runTest {
+        pipeline.processReading(108.0, baseTs)
+        assertEquals(1, pusher.count.get())
+        assertEquals(108, pusher.last!!.sgv)
     }
 
     @Test
-    fun `alert check is not called on dedup`() = runTest {
-        processReading(108.0, baseTs)
-        processReading(120.0, baseTs + 1000)
-        assertEquals(1, alertChecker.checkCount.get())
+    fun `push does not fire when a same-value repost is dropped`() = runTest {
+        pipeline.processReading(108.0, baseTs, source = eversense)
+        pipeline.processReading(108.0, baseTs + 30_000, source = eversense)
+        assertEquals(1, pusher.count.get())
     }
 
     @Test
-    fun `alert check is not called on invalid sgv`() = runTest {
-        processReading(-1.0, baseTs)
-        assertEquals(0, alertChecker.checkCount.get())
+    fun `push does not fire when sgv is invalid`() = runTest {
+        pipeline.processReading(0.0, baseTs)
+        assertEquals(0, pusher.count.get())
     }
 
     @Test
-    fun `alert check receives recent readings including the new one`() = runTest {
-        processReading(100.0, baseTs - 5 * 60_000L)
-        processReading(110.0, baseTs - 4 * 60_000L)
-        processReading(120.0, baseTs)
-
-        val alertReadings = alertChecker.lastAlertReadings!!
-        // Should include all readings within 15-min lookback + the new reading
-        assertEquals(3, alertReadings.size)
-        // Last reading in the list should be the newly inserted one
-        assertEquals(120, alertReadings.last().sgv)
+    fun `pushed reading carries computed direction and delta`() = runTest {
+        for (i in 6 downTo 1) {
+            pipeline.processReading(108.0, baseTs - i * 60_000L, source = libre3)
+        }
+        pusher.reset()
+        pipeline.processReading(108.0, baseTs, source = libre3)
+        assertEquals("Flat", pusher.last!!.direction)
     }
 
     @Test
-    fun `alert check excludes readings older than 15 minutes`() = runTest {
-        processReading(90.0, baseTs - 20 * 60_000L) // 20 min ago — outside window
-        processReading(100.0, baseTs - 10 * 60_000L) // 10 min ago — inside window
-        processReading(110.0, baseTs)
+    fun `uploader fires on store`() = runTest {
+        pipeline.processReading(108.0, baseTs)
+        assertEquals(1, uploader.count.get())
+    }
 
-        val alertReadings = alertChecker.lastAlertReadings!!
-        // The 20-min-ago reading should NOT be in the alert window
-        // (recentReadings is dao.since(timestamp - 15*60000))
-        assertEquals(2, alertReadings.size)
-        assertEquals(100, alertReadings[0].sgv)
-        assertEquals(110, alertReadings[1].sgv)
+    @Test
+    fun `uploader does not fire on same-value repost dedup`() = runTest {
+        pipeline.processReading(108.0, baseTs, source = eversense)
+        pipeline.processReading(108.0, baseTs + 30_000, source = eversense)
+        assertEquals(1, uploader.count.get())
     }
 
     // --- Delta rounding precision ---
 
     @Test
     fun `delta is rounded to 0_1 precision`() = runTest {
-        // Seed 6 minutes of readings at 100 mg/dL, then jump to 107
         for (i in 6 downTo 1) {
-            processReading(100.0, baseTs - i * 60_000L)
+            pipeline.processReading(100.0, baseTs - i * 60_000L, source = libre3)
         }
-        processReading(107.0, baseTs)
+        pipeline.processReading(107.0, baseTs, source = libre3)
 
         val latest = dao.latest().first()!!
         assertNotNull(latest.delta)
-        // Verify delta has at most 1 decimal place
         val scaledDelta = latest.delta!! * 10.0
         assertEquals(
             "Delta should be rounded to 0.1: was ${latest.delta}",
@@ -315,37 +367,31 @@ class ReadingPipelineIntegrationTest {
     }
 
     @Test
-    fun `delta rounding example with known values`() = runTest {
-        // Seed: 5 readings at 100 mg/dL, 1 minute apart
+    fun `delta of zero for an unchanged reading`() = runTest {
         for (i in 5 downTo 1) {
-            processReading(100.0, baseTs - i * 60_000L)
+            pipeline.processReading(100.0, baseTs - i * 60_000L, source = libre3)
         }
-        // New reading at 100 — delta should be 0.0
-        processReading(100.0, baseTs)
-        val latest = dao.latest().first()!!
-        assertNotNull(latest.delta)
-        assertEquals(0.0, latest.delta!!, 0.001)
+        pipeline.processReading(100.0, baseTs, source = libre3)
+        assertEquals(0.0, dao.latest().first()!!.delta!!, 0.001)
     }
 
-    // --- Direction follows EASD thresholds (integration with real DirectionComputer) ---
+    // --- Direction follows EASD thresholds (real DirectionComputer) ---
 
     @Test
     fun `steady readings produce Flat direction`() = runTest {
         for (i in 6 downTo 1) {
-            processReading(108.0, baseTs - i * 60_000L)
+            pipeline.processReading(108.0, baseTs - i * 60_000L, source = libre3)
         }
-        processReading(108.0, baseTs)
-        val latest = dao.latest().first()!!
-        assertEquals("Flat", latest.direction)
+        pipeline.processReading(108.0, baseTs, source = libre3)
+        assertEquals("Flat", dao.latest().first()!!.direction)
     }
 
     @Test
     fun `rapidly rising readings produce upward direction`() = runTest {
-        // +4 mg/dL per minute over 6 min
         for (i in 6 downTo 1) {
-            processReading(100.0 + (6 - i) * 4.0, baseTs - i * 60_000L)
+            pipeline.processReading(100.0 + (6 - i) * 4.0, baseTs - i * 60_000L, source = libre3)
         }
-        processReading(124.0, baseTs)
+        pipeline.processReading(124.0, baseTs, source = libre3)
         val dir = Direction.valueOf(dao.latest().first()!!.direction)
         assertTrue(
             "Expected upward direction, got $dir",
@@ -356,9 +402,9 @@ class ReadingPipelineIntegrationTest {
     @Test
     fun `rapidly falling readings produce downward direction`() = runTest {
         for (i in 6 downTo 1) {
-            processReading(180.0 - (6 - i) * 4.0, baseTs - i * 60_000L)
+            pipeline.processReading(180.0 - (6 - i) * 4.0, baseTs - i * 60_000L, source = libre3)
         }
-        processReading(156.0, baseTs)
+        pipeline.processReading(156.0, baseTs, source = libre3)
         val dir = Direction.valueOf(dao.latest().first()!!.direction)
         assertTrue(
             "Expected downward direction, got $dir",
@@ -368,61 +414,64 @@ class ReadingPipelineIntegrationTest {
 
     @Test
     fun `first reading has NONE direction and null delta`() = runTest {
-        processReading(108.0, baseTs)
+        pipeline.processReading(108.0, baseTs)
         val latest = dao.latest().first()!!
         assertEquals("NONE", latest.direction)
         assertNull(latest.delta)
+    }
+
+    @Test
+    fun `gap in data resets direction to NONE`() = runTest {
+        // Only a single reading 20 min ago — nothing within 10 min of the 5-min target.
+        pipeline.processReading(108.0, baseTs - 20 * 60_000L, source = libre3)
+        pipeline.processReading(108.0, baseTs, source = libre3)
+        assertEquals("NONE", dao.latest().first()!!.direction)
     }
 
     // --- Stored state ---
 
     @Test
     fun `reading is stored as unpushed`() = runTest {
-        processReading(108.0, baseTs)
+        pipeline.processReading(108.0, baseTs)
         val unpushed = dao.unpushed()
         assertEquals(1, unpushed.size)
         assertEquals(0, unpushed[0].pushed)
     }
 
     @Test
-    fun `multiple valid readings are all stored`() = runTest {
+    fun `multiple changing readings are all stored in chronological order`() = runTest {
         for (i in 0..4) {
-            processReading(90.0 + i * 10, baseTs + i * 60_000L)
+            pipeline.processReading(90.0 + i * 10, baseTs + i * 60_000L, source = libre3)
         }
         val all = dao.since(0)
         assertEquals(5, all.size)
-        // Verify chronological order
         for (i in 1 until all.size) {
             assertTrue(all[i].ts > all[i - 1].ts)
         }
     }
 
-    // --- Test doubles ---
+    // --- Test doubles for the side-effect interfaces ---
 
-    private class FakePushTracker {
-        val pushCount = AtomicInteger(0)
-        var lastPushedReading: GlucoseReading? = null
+    private class FakePusher : ReadingPusher {
+        val count = AtomicInteger(0)
+        var last: GlucoseReading? = null
 
-        fun onPush(reading: GlucoseReading) {
-            pushCount.incrementAndGet()
-            lastPushedReading = reading
+        override fun pushReading(reading: GlucoseReading) {
+            count.incrementAndGet()
+            last = reading
         }
 
         fun reset() {
-            pushCount.set(0)
-            lastPushedReading = null
+            count.set(0)
+            last = null
         }
     }
 
-    private class FakeAlertChecker {
-        val checkCount = AtomicInteger(0)
-        var lastCheckedReading: GlucoseReading? = null
-        var lastAlertReadings: List<GlucoseReading>? = null
+    private class FakeUploader : ReadingUploader {
+        val count = AtomicInteger(0)
 
-        fun onCheck(reading: GlucoseReading, alertReadings: List<GlucoseReading>) {
-            checkCount.incrementAndGet()
-            lastCheckedReading = reading
-            lastAlertReadings = alertReadings
+        override fun onNewReading() {
+            count.incrementAndGet()
         }
     }
 }

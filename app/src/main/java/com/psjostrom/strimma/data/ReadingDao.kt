@@ -39,6 +39,9 @@ interface ReadingDao {
     @Query("DELETE FROM readings WHERE ts < :before")
     suspend fun pruneBefore(before: Long)
 
+    @Query("DELETE FROM readings WHERE ts = :ts")
+    suspend fun deleteByTs(ts: Long)
+
     @Query("SELECT * FROM readings WHERE ts >= :start AND ts <= :end ORDER BY ts ASC")
     suspend fun readingsInRange(start: Long, end: Long): List<GlucoseReading>
 }

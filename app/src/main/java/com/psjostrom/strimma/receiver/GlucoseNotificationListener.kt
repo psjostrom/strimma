@@ -115,6 +115,7 @@ class GlucoseNotificationListener : NotificationListenerService() {
         const val ACTION_GLUCOSE_RECEIVED = "com.psjostrom.strimma.GLUCOSE_RECEIVED"
         const val EXTRA_MGDL = "mgdl"
         const val EXTRA_TIMESTAMP = "timestamp"
+        const val EXTRA_SOURCE = "source"
 
 
         fun isEnabled(context: Context): Boolean {
@@ -196,6 +197,7 @@ class GlucoseNotificationListener : NotificationListenerService() {
                 action = ACTION_GLUCOSE_RECEIVED
                 putExtra(EXTRA_MGDL, mgdl)
                 putExtra(EXTRA_TIMESTAMP, System.currentTimeMillis())
+                putExtra(EXTRA_SOURCE, sbn.packageName)
             }
             startForegroundService(intent)
         } else {
