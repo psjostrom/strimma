@@ -33,12 +33,12 @@ class ReadingDispatcherTest {
 
     private suspend fun ReadingDispatcher.dispatch(
         reading: GlucoseReading,
-        originatedRemotely: Boolean,
+        cameFromNightscout: Boolean,
         spies: Spies,
     ) {
         dispatch(
             reading = reading,
-            originatedRemotely = originatedRemotely,
+            cameFromNightscout = cameFromNightscout,
             eager = { spies.eagerCount.incrementAndGet() },
             alert = { settled -> spies.alerted.add(settled.sgv) },
             push = { settled -> spies.pushed.add(settled.sgv) },
@@ -53,7 +53,7 @@ class ReadingDispatcherTest {
         val dispatcher = ReadingDispatcher(ReadingFanOut(StandardTestDispatcher(testScheduler)))
         val spies = Spies()
 
-        dispatcher.dispatch(reading(100, 108), originatedRemotely = false, spies)
+        dispatcher.dispatch(reading(100, 108), cameFromNightscout = false, spies)
 
         assertEquals("eager runs without waiting for the debounce window", 1, spies.eagerCount.get())
         assertTrue("debounced effects haven't fired yet", spies.pushed.isEmpty())
@@ -73,8 +73,8 @@ class ReadingDispatcherTest {
         val spies = Spies()
 
         // Eversense OLD→NEW within 1 ms — the case from issue #192.
-        dispatcher.dispatch(reading(100, 68), originatedRemotely = false, spies)
-        dispatcher.dispatch(reading(101, 85), originatedRemotely = false, spies)
+        dispatcher.dispatch(reading(100, 68), cameFromNightscout = false, spies)
+        dispatcher.dispatch(reading(101, 85), cameFromNightscout = false, spies)
         advanceUntilIdle()
 
         assertEquals("eager fires for every dispatch", 2, spies.eagerCount.get())
@@ -86,11 +86,11 @@ class ReadingDispatcherTest {
     }
 
     @Test
-    fun `originatedRemotely true skips push but fires every other debounced effect`() = runTest {
+    fun `cameFromNightscout true skips push but fires every other debounced effect`() = runTest {
         val dispatcher = ReadingDispatcher(ReadingFanOut(StandardTestDispatcher(testScheduler)))
         val spies = Spies()
 
-        dispatcher.dispatch(reading(100, 108), originatedRemotely = true, spies)
+        dispatcher.dispatch(reading(100, 108), cameFromNightscout = true, spies)
         advanceUntilIdle()
 
         assertEquals(
@@ -106,12 +106,12 @@ class ReadingDispatcherTest {
     }
 
     @Test
-    fun `originatedRemotely true on cluster - still skips push for both`() = runTest {
+    fun `cameFromNightscout true on cluster - still skips push for both`() = runTest {
         val dispatcher = ReadingDispatcher(ReadingFanOut(StandardTestDispatcher(testScheduler)))
         val spies = Spies()
 
-        dispatcher.dispatch(reading(100, 68), originatedRemotely = true, spies)
-        dispatcher.dispatch(reading(101, 85), originatedRemotely = true, spies)
+        dispatcher.dispatch(reading(100, 68), cameFromNightscout = true, spies)
+        dispatcher.dispatch(reading(101, 85), cameFromNightscout = true, spies)
         advanceUntilIdle()
 
         assertEquals(emptyList<Int>(), spies.pushed)

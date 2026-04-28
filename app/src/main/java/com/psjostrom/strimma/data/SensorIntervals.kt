@@ -21,6 +21,7 @@ package com.psjostrom.strimma.data
  */
 object SensorIntervals {
     private const val ONE_MIN_MS = 60_000L
+    private const val THREE_MIN_MS = 180_000L
     private const val FIVE_MIN_MS = 300_000L
     private const val DEFAULT_MS = ONE_MIN_MS
 
@@ -72,13 +73,36 @@ object SensorIntervals {
         "com.senseonics.gen12androidapp" to FIVE_MIN_MS,
         "com.senseonics.eversense365.us" to FIVE_MIN_MS,
 
-        // Aidex — 5-min cadence across variants
+        // Aidex — 5-min cadence across variants. NOTE: aidexx.mgdl and aidexx.linxneo.mmoll
+        // are AiDEX X / LinX hardware which is actually 1-min per MicroTech's spec; left at
+        // 5-min pending separate verification, since over-bucketing is the safer default.
         "com.microtech.aidexx.mgdl" to FIVE_MIN_MS,
         "com.microtech.aidexx.linxneo.mmoll" to FIVE_MIN_MS,
         "com.microtech.aidexx.equil.mmoll" to FIVE_MIN_MS,
         "com.microtech.aidexx.diaexport.mmoll" to FIVE_MIN_MS,
         "com.microtech.aidexx.smart.mmoll" to FIVE_MIN_MS,
         "com.microtech.aidexx" to FIVE_MIN_MS,
+
+        // Ottai SEAS / TAG — 5-min cadence per the Ottai user manual ("readings every 5
+        // minutes", 14-day wear, 2-25 mmol/L range).
+        "com.ottai.seas" to FIVE_MIN_MS,
+        "com.ottai.tag" to FIVE_MIN_MS,
+
+        // Sinocare iCan i3 family — 3-min cadence per Sinocare's spec (15-day wear,
+        // ~7160 readings per sensor = 15 days × 24 h × 60 min / 3 min). The CE-region
+        // app and the iCan Health app share the same hardware and cadence.
+        "com.sinocare.cgm.ce" to THREE_MIN_MS,
+        "com.sinocare.ican.health.ce" to THREE_MIN_MS,
+        "com.sinocare.ican.health.ru" to THREE_MIN_MS,
+
+        // SusWel LinX — 1-min cadence per SusWel's spec ("every minute for up to 15
+        // days"). Same as the default but listed explicitly so a future maintainer
+        // doesn't have to re-verify.
+        "com.suswel.ai" to ONE_MIN_MS,
+
+        // Glucotech (com.glucotech.app.android) is intentionally absent — no public
+        // spec, the Play Store listing 404s, and xDrip+ catalogues the package without
+        // documenting cadence. Falls through to the 1-min default until verified.
     )
 
     /** Returns the sensor sample period in milliseconds for [source], or a 1-min default. */

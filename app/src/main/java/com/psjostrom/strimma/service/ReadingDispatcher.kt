@@ -14,7 +14,7 @@ import javax.inject.Singleton
  * - The remaining effects (alert, push, upload, broadcast, HC write) run via [fanOut] after
  *   the debounce window, with cluster supersession handling the Eversense OLD→NEW case.
  *
- * `originatedRemotely=true` skips [push] only — used by the Nightscout follower path so we
+ * `cameFromNightscout=true` skips [push] only — used by the Nightscout follower path so we
  * don't echo a reading back to the server we just got it from.
  */
 @Singleton
@@ -24,7 +24,7 @@ class ReadingDispatcher @Inject constructor(
     @Suppress("LongParameterList") // Each effect is an independent collaborator the caller wires explicitly
     suspend fun dispatch(
         reading: GlucoseReading,
-        originatedRemotely: Boolean,
+        cameFromNightscout: Boolean,
         eager: suspend () -> Unit,
         alert: suspend (GlucoseReading) -> Unit,
         push: suspend (GlucoseReading) -> Unit,
@@ -35,7 +35,7 @@ class ReadingDispatcher @Inject constructor(
         eager()
         fanOut.fire(reading) { settled ->
             alert(settled)
-            if (!originatedRemotely) push(settled)
+            if (!cameFromNightscout) push(settled)
             upload()
             broadcast(settled)
             hc(settled)

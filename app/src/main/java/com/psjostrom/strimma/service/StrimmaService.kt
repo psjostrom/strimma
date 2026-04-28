@@ -214,13 +214,15 @@ class StrimmaService : Service() {
      * and why `broadcastBgIfEnabled` is on the debounced path (downstream xdrip-compatible
      * consumers like Garmin watchfaces should also see the settled NEW value, not the OLD).
      *
-     * @param originatedRemotely true when the reading came FROM Nightscout (follower path)
-     *   so we don't echo back to the source — wasted round-trip and corrupts NS pageination.
+     * @param cameFromNightscout true when the reading came FROM Nightscout (follower path)
+     *   so we don't echo back to the source — wasted round-trip and corrupts NS pagination.
+     *   LLU and xdrip-broadcast paths are also "remote" but we DO want to push them to NS,
+     *   so the parameter is named for the specific case (NS) rather than the general one.
      */
-    private suspend fun onNewReading(reading: GlucoseReading, originatedRemotely: Boolean = false) {
+    private suspend fun onNewReading(reading: GlucoseReading, cameFromNightscout: Boolean = false) {
         readingDispatcher.dispatch(
             reading = reading,
-            originatedRemotely = originatedRemotely,
+            cameFromNightscout = cameFromNightscout,
             eager = {
                 updateNotification()
                 updateWidgets()
@@ -260,7 +262,7 @@ class StrimmaService : Service() {
     private fun startFollower() {
         if (followerJob != null) return
         followerJob = nightscoutFollower.start(scope) { reading ->
-            onNewReading(reading, originatedRemotely = true)
+            onNewReading(reading, cameFromNightscout = true)
         }
         DebugLog.log("Nightscout follower started")
     }

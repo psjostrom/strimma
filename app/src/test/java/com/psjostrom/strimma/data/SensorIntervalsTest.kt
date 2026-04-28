@@ -7,6 +7,7 @@ import org.junit.Test
 class SensorIntervalsTest {
 
     private val oneMin = 60_000L
+    private val threeMin = 180_000L
     private val fiveMin = 300_000L
 
     @Test
@@ -66,6 +67,32 @@ class SensorIntervalsTest {
         // The constant lives on XdripBroadcastReceiver where it's emitted, not on
         // SensorIntervals — verify the default fallback is what we expect.
         assertEquals(oneMin, SensorIntervals.samplePeriodMs(XdripBroadcastReceiver.SOURCE_TAG))
+    }
+
+    @Test
+    fun `ottai packages report 5-min sample period`() {
+        assertEquals(fiveMin, SensorIntervals.samplePeriodMs("com.ottai.seas"))
+        assertEquals(fiveMin, SensorIntervals.samplePeriodMs("com.ottai.tag"))
+    }
+
+    @Test
+    fun `sinocare ican family reports 3-min sample period`() {
+        assertEquals(threeMin, SensorIntervals.samplePeriodMs("com.sinocare.cgm.ce"))
+        assertEquals(threeMin, SensorIntervals.samplePeriodMs("com.sinocare.ican.health.ce"))
+        assertEquals(threeMin, SensorIntervals.samplePeriodMs("com.sinocare.ican.health.ru"))
+    }
+
+    @Test
+    fun `suswel reports 1-min sample period`() {
+        assertEquals(oneMin, SensorIntervals.samplePeriodMs("com.suswel.ai"))
+    }
+
+    @Test
+    fun `glucotech falls back to 1-min default - no published spec`() {
+        // Cadence unverified; xDrip+ catalogues the package but doesn't document the
+        // cadence, and the Play Store listing 404s. Pre-PR behavior (1-min default) is
+        // the conservative choice until the manufacturer publishes a spec.
+        assertEquals(oneMin, SensorIntervals.samplePeriodMs("com.glucotech.app.android"))
     }
 
     @Test

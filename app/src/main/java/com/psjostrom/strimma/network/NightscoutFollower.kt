@@ -24,16 +24,13 @@ private const val DELTA_ROUNDING_FACTOR = 10.0
 
 /**
  * Storage path for Nightscout-follower entries. Intentionally bypasses
- * [com.psjostrom.strimma.service.ReadingPipeline] — the pipeline's source-aware bucketing
- * is wrong for follower data because:
- *  1. The upstream NS server has already deduped on its end (NS rejects duplicates by
- *     ts), so re-bucketing here would just reapply weaker logic.
- *  2. Pipeline bucketing keys off the local CGM source package; the follower has no
- *     equivalent and would always fall through to the 1-min default, which throws away
- *     legitimate consecutive readings from a 1-min Libre 3 upstream.
+ * [com.psjostrom.strimma.service.ReadingPipeline]: the upstream NS server already dedupes
+ * on its end (NS rejects duplicate timestamps), so re-bucketing here would just reapply
+ * weaker logic on already-clean data. The 3-second proximity check below catches the rare
+ * pathological case where a follower poll re-fetches an entry already in our DB.
  *
  * Side-effect dispatch (alert, push, HC, broadcast, upload) DOES converge on
- * `StrimmaService.onNewReading` via `originatedRemotely=true`, so the follower path is
+ * `StrimmaService.onNewReading` via `cameFromNightscout=true`, so the follower path is
  * unified at the side-effects level even though storage is direct.
  */
 suspend fun processNightscoutEntry(
