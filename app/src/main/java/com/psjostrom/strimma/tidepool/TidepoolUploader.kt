@@ -36,7 +36,7 @@ class TidepoolUploader @Inject constructor(
     private val authManager: TidepoolAuthManager,
     private val dao: ReadingDao,
     private val settings: SettingsRepository
-) {
+) : com.psjostrom.strimma.service.ReadingUploader {
 
     companion object {
         const val MAX_CHUNK_MS = 7L * 86_400_000L     // 7 days
@@ -87,7 +87,7 @@ class TidepoolUploader @Inject constructor(
      * Called when a new glucose reading arrives.
      * Launches uploadIfReady() in background scope.
      */
-    fun onNewReading() {
+    override fun onNewReading() {
         scope.launch {
             uploadIfReady()
         }

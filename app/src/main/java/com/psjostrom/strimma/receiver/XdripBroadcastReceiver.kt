@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.psjostrom.strimma.data.GlucoseReading
+import com.psjostrom.strimma.data.SensorIntervals
 
 /**
  * Receives xDrip-compatible BG broadcasts from other CGM apps.
@@ -47,6 +48,7 @@ class XdripBroadcastReceiver : BroadcastReceiver() {
             action = GlucoseNotificationListener.ACTION_GLUCOSE_RECEIVED
             putExtra(GlucoseNotificationListener.EXTRA_MGDL, sgv)
             putExtra(GlucoseNotificationListener.EXTRA_TIMESTAMP, timestamp)
+            putExtra(GlucoseNotificationListener.EXTRA_SOURCE, SensorIntervals.SOURCE_XDRIP_BROADCAST)
         }
         context.startForegroundService(serviceIntent)
     }
