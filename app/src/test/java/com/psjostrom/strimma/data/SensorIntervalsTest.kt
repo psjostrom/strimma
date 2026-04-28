@@ -1,5 +1,6 @@
 package com.psjostrom.strimma.data
 
+import com.psjostrom.strimma.receiver.XdripBroadcastReceiver
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -29,6 +30,18 @@ class SensorIntervalsTest {
     }
 
     @Test
+    fun `aidex packages report 5-min sample period`() {
+        assertEquals(fiveMin, SensorIntervals.samplePeriodMs("com.microtech.aidexx"))
+        assertEquals(fiveMin, SensorIntervals.samplePeriodMs("com.microtech.aidexx.mgdl"))
+        assertEquals(fiveMin, SensorIntervals.samplePeriodMs("com.microtech.aidexx.linxneo.mmoll"))
+    }
+
+    @Test
+    fun `diabox reports 1-min sample period`() {
+        assertEquals(oneMin, SensorIntervals.samplePeriodMs("com.outshineiot.diabox"))
+    }
+
+    @Test
     fun `freestyle libre 3 reports 1-min sample period`() {
         assertEquals(oneMin, SensorIntervals.samplePeriodMs("com.freestylelibre3.app"))
         assertEquals(oneMin, SensorIntervals.samplePeriodMs("com.freestylelibre3.app.de"))
@@ -48,9 +61,11 @@ class SensorIntervalsTest {
 
     @Test
     fun `xdrip broadcast tag falls back to 1-min default`() {
-        // xDrip-style broadcasts also originate from sensor-agnostic middleware
-        // (Juggluco, AAPS, GlucoDataHandler), so the broadcast tag is not in the table.
-        assertEquals(oneMin, SensorIntervals.samplePeriodMs(SensorIntervals.SOURCE_XDRIP_BROADCAST))
+        // xDrip-style broadcasts originate from sensor-agnostic middleware (Juggluco,
+        // AAPS, GlucoDataHandler), so the broadcast tag is not in the intervals table.
+        // The constant lives on XdripBroadcastReceiver where it's emitted, not on
+        // SensorIntervals — verify the default fallback is what we expect.
+        assertEquals(oneMin, SensorIntervals.samplePeriodMs(XdripBroadcastReceiver.SOURCE_TAG))
     }
 
     @Test

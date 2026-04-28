@@ -181,17 +181,22 @@ class TidepoolUploader @Inject constructor(
         try {
             val token = authManager.getValidAccessToken()
             if (token == null) {
+                // Distinguish "user is not logged in" (genuine failure — rate-limit so we
+                // don't hammer auth on every reading) from "transient network error during
+                // token refresh" (don't stamp — let the next reading retry immediately).
                 if (!authManager.isLoggedIn()) {
                     settings.setTidepoolLastError("Session expired. Please log in again.")
+                    stampUploadAttempt()
                 }
                 DebugLog.log(message = "Tidepool upload: no valid token")
-                stampUploadAttempt()
                 return 0
             }
 
             val datasetId = getOrCreateDataset(plan.userId, token)
             if (datasetId == null) {
-                stampUploadAttempt()
+                // Don't stamp on transient dataset-fetch failure — could be a network
+                // hiccup that resolves on the next reading. Real upload failures fall
+                // through to the catch block below, which does stamp.
                 return 0
             }
             return uploadPreparedRecords(datasetId, token, plan)

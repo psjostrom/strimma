@@ -18,6 +18,7 @@ import com.psjostrom.strimma.data.health.HealthConnectManager
 import com.psjostrom.strimma.network.LibreLinkUpFollower
 import com.psjostrom.strimma.network.NightscoutFollower
 import com.psjostrom.strimma.network.NightscoutPusher
+import com.psjostrom.strimma.tidepool.TidepoolUploader
 import com.psjostrom.strimma.graph.Prediction
 import com.psjostrom.strimma.graph.PredictionComputer
 import com.psjostrom.strimma.notification.AlertManager
@@ -63,6 +64,7 @@ class StrimmaService : Service() {
 
     @Inject lateinit var dao: ReadingDao
     @Inject lateinit var pusher: NightscoutPusher
+    @Inject lateinit var tidepoolUploader: TidepoolUploader
     @Inject lateinit var notificationHelper: NotificationHelper
     @Inject lateinit var alertManager: AlertManager
     @Inject lateinit var settings: SettingsRepository
@@ -237,6 +239,7 @@ class StrimmaService : Service() {
             val alertReadings = dao.since(reading.ts - ReadingPipeline.LOOKBACK_MINUTES * MS_PER_MINUTE)
             alertManager.checkReading(reading, alertReadings, predMinutes.value, prediction)
             broadcastBgIfEnabled(reading)
+            tidepoolUploader.onNewReading()
             updateWidgets()
         }
         DebugLog.log("Nightscout follower started")
@@ -258,6 +261,7 @@ class StrimmaService : Service() {
             alertManager.checkReading(reading, alertReadings, predMinutes.value, prediction)
             broadcastBgIfEnabled(reading)
             writeToHealthConnectIfEnabled(reading)
+            tidepoolUploader.onNewReading()
             updateWidgets()
         }
         DebugLog.log("LibreLinkUp follower started")

@@ -11,6 +11,14 @@ import com.psjostrom.strimma.data.GlucoseReading
  */
 interface ReadingPusher {
     fun pushReading(reading: GlucoseReading)
+
+    /**
+     * Cancel any in-flight push for [ts]. Called when a stored row is being deleted
+     * and replaced by a same-bucket value change, so the superseded value never
+     * reaches the upstream server. No-op if no push is in flight or has already
+     * completed.
+     */
+    fun cancelPushFor(ts: Long)
 }
 
 interface ReadingUploader {

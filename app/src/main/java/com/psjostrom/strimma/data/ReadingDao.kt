@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 
 @Suppress("TooManyFunctions") // Room DAO — each query is a distinct data access need
@@ -14,6 +15,18 @@ interface ReadingDao {
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertBatch(readings: List<GlucoseReading>)
+
+    /**
+     * Atomic in-bucket replacement used by [com.psjostrom.strimma.service.ReadingPipeline]
+     * when an Eversense-style cluster's late value supersedes an earlier stale repost.
+     * Concurrent readers (notification update, UI Flow, stale-check loop) never observe
+     * the bucket as empty between the delete and the insert.
+     */
+    @Transaction
+    suspend fun replaceInBucket(oldTs: Long, newReading: GlucoseReading) {
+        if (oldTs != newReading.ts) deleteByTs(oldTs)
+        insert(newReading)
+    }
 
     @Query("SELECT * FROM readings ORDER BY ts DESC LIMIT 1")
     fun latest(): Flow<GlucoseReading?>

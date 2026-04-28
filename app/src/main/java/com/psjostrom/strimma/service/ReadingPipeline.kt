@@ -22,6 +22,13 @@ import javax.inject.Singleton
  * bucket holds at most one reading. New notifications landing in a bucket that already has a
  * reading either drop (same value — Eversense-style notification reposts) or replace in place
  * (different value — late-arriving cluster value supersedes the earlier stale one).
+ *
+ * On in-bucket replacement, the prior row's in-flight Nightscout push (if any) is cancelled
+ * before the row is deleted so the superseded value never reaches the upstream server. The
+ * delete + insert are atomic via [ReadingDao.replaceInBucket]. Already-completed pushes,
+ * Health Connect writes, and alerts triggered by the prior row are NOT retracted — see
+ * docs/internal/follow-up-bucketing-fanout.md for the cluster-aware fan-out plan that closes
+ * that gap.
  */
 @Singleton
 class ReadingPipeline @Inject constructor(
@@ -58,8 +65,10 @@ class ReadingPipeline @Inject constructor(
 
         val samplePeriod = SensorIntervals.samplePeriodMs(source)
         val bucketStart = (timestamp / samplePeriod) * samplePeriod
+        // Pick the most recent in-bucket reading — same-bucket duplicates from
+        // NightscoutPuller backfill should not mask the latest pipeline-stored value.
         val existing = dao.readingsInRange(bucketStart, bucketStart + samplePeriod - 1)
-            .firstOrNull()
+            .maxByOrNull { it.ts }
 
         if (existing != null && existing.sgv == sgv) {
             DebugLog.log(
@@ -74,11 +83,11 @@ class ReadingPipeline @Inject constructor(
         // Eversense-style clusters where the real reading lands several minutes after the
         // first repost in the bucket.
         val isReplace = existing != null
-        if (existing != null && existing.ts != timestamp) {
-            dao.deleteByTs(existing.ts)
-        }
         val storeTs = timestamp
 
+        // Defensive filter: excludes both the just-being-inserted ts and the about-to-be-
+        // deleted existing ts so DirectionComputer sees neither the row we're replacing
+        // nor a phantom self-reference. Survives even if Room observers re-order writes.
         val recentReadings = dao.since(storeTs - LOOKBACK_MINUTES * MS_PER_MINUTE)
             .filter { it.ts != storeTs && (existing == null || it.ts != existing.ts) }
         val tempReading = GlucoseReading(
@@ -92,7 +101,16 @@ class ReadingPipeline @Inject constructor(
             delta = deltaMgdl?.let { Math.round(it * DELTA_ROUNDING_FACTOR) / DELTA_ROUNDING_FACTOR }
         )
 
-        dao.insert(reading)
+        if (existing != null) {
+            // Cancel any in-flight push for the row we're replacing, BEFORE the delete,
+            // so the superseded value doesn't reach Nightscout. Best-effort: an
+            // already-completed push is not retractable here.
+            pusher.cancelPushFor(existing.ts)
+            dao.replaceInBucket(oldTs = existing.ts, newReading = reading)
+        } else {
+            dao.insert(reading)
+        }
+
         val tag = if (isReplace) "Replaced" else "Stored"
         DebugLog.log(
             "$tag: ${reading.sgv} mg/dL ${direction.arrow} bucketStart=$bucketStart source=$source"
