@@ -25,22 +25,21 @@ import javax.inject.Singleton
  * [NonCancellable] so a service-shutdown after the dispatch starts doesn't drop the alert
  * partway through.
  *
- * **Vulnerability window.** The [delay] before the dispatch IS cancellable — that's how
- * supersession (and explicit [stop]) work. If the OS kills the process or [stop] is called
- * during the [DEBOUNCE_MS] window, the dispatch is dropped: no alert, no push, no HC write
- * for that cluster. Pre-debounce behavior had a much narrower window (~ms, the duration of
- * an inline alert call); this design accepts a 1.5 s window in exchange for cluster
- * suppression. The next reading from the sensor (≤1 min later for Libre 3, ≤5 min for
- * Eversense) resumes the side-effect chain on a fresh service instance under START_STICKY.
+ * **Shutdown semantics.** [stop] is suspending and FLUSHES any pending dispatch — it does
+ * NOT silently drop it. Supersession (a new [fire] before the window elapses) drops the
+ * prior dispatch as before; only [stop] flushes. This closes the medical-critical window
+ * where a service kill within [DEBOUNCE_MS] would otherwise drop an urgent-low alert that
+ * might not re-fire for up to 5 minutes (Eversense cadence). The flush runs under
+ * [NonCancellable] so the OS shutdown grace can't truncate it.
  *
  * UI-visible side effects (notification update, widget refresh) MUST NOT go through here —
  * the user wants to see the latest BG immediately. Only call [fire] for effects whose
  * downstream-noise / spurious-alarm cost outweighs [DEBOUNCE_MS] of latency.
  *
- * **Threading.** [fire] and [stop] guard the cancel-and-reassign of [pending] via
- * `synchronized(this)` so concurrent fires from different dispatchers can't leak a launch.
- * Today every callsite runs on `Dispatchers.Main` (the service's [CoroutineScope]), but the
- * future-WorkManager-job case is a one-line cost we'd rather not regret.
+ * **Threading.** [fire] and [stop] guard `pending`/`pendingJob` via `synchronized(this)` so
+ * concurrent fires from different dispatchers can't leak a launch. Today every callsite
+ * runs on `Dispatchers.Main` (the service's [CoroutineScope]), but the future-WorkManager-
+ * job case is a one-line cost we'd rather not regret.
  */
 @Singleton
 class ReadingFanOut @Inject constructor(
@@ -49,37 +48,69 @@ class ReadingFanOut @Inject constructor(
     private var job = SupervisorJob()
     private var scope = CoroutineScope(job + dispatcher)
 
-    private var pending: Job? = null
+    private data class Pending(
+        val reading: GlucoseReading,
+        val onSettled: suspend (GlucoseReading) -> Unit,
+    )
+
+    private var pending: Pending? = null
+    private var pendingJob: Job? = null
 
     fun fire(reading: GlucoseReading, onSettled: suspend (GlucoseReading) -> Unit) {
         synchronized(this) {
-            pending?.cancel()
-            pending = scope.launch {
+            pendingJob?.cancel()
+            pending = Pending(reading, onSettled)
+            pendingJob = scope.launch {
                 delay(DEBOUNCE_MS)
+                // Snapshot + clear under the lock so a superseding fire() that lands
+                // between this delay completing and the dispatch starting still wins
+                // (the snapshot will be null because supersession overwrote it).
+                val toFire = synchronized(this@ReadingFanOut) {
+                    val snapshot = pending
+                    pending = null
+                    pendingJob = null
+                    snapshot
+                } ?: return@launch
                 // NonCancellable so a service shutdown after the dispatch starts can't drop
                 // an alert mid-fire. The delay above IS cancellable, so a superseding fire()
                 // still cancels this coroutine before it reaches dispatch.
                 withContext(NonCancellable) {
-                    onSettled(reading)
+                    toFire.onSettled(toFire.reading)
                 }
             }
         }
     }
 
     /**
-     * Cancel any pending dispatch and rebuild the scope.
+     * Flush any pending dispatch and rebuild the scope.
      *
-     * The rebuild matters because the FanOut is a `@Singleton` whose lifetime exceeds the
-     * service's: when the foreground service is destroyed and re-created (settings change,
-     * START_STICKY restart), the new service instance fires into the same FanOut. Without
-     * the rebuild, the cancelled scope would refuse new launches forever.
+     * Suspending so the caller can `runBlocking { withTimeoutOrNull(N) { stop() } }` from
+     * a non-suspend lifecycle hook (e.g. Service.onDestroy). The flush runs the latest
+     * pending [fire]'s callback synchronously under [NonCancellable] — this is the
+     * shutdown-safety guarantee the class contract is designed around.
+     *
+     * The scope rebuild matters because the FanOut is a `@Singleton` whose lifetime
+     * exceeds the service's: when the foreground service is destroyed and re-created
+     * (settings change, START_STICKY restart), the new service instance fires into the
+     * same FanOut. Without the rebuild, the cancelled scope would refuse new launches
+     * forever.
      */
-    fun stop() {
+    suspend fun stop() {
+        val toFlush = synchronized(this) {
+            val snapshot = pending
+            pendingJob?.cancel()
+            pending = null
+            pendingJob = null
+            snapshot
+        }
+        // Flush — shutdown shouldn't silently drop a critical alert.
+        toFlush?.let {
+            withContext(NonCancellable) { it.onSettled(it.reading) }
+        }
         synchronized(this) {
             scope.cancel()
             job = SupervisorJob()
             scope = CoroutineScope(job + dispatcher)
-            pending = null
         }
     }
 
@@ -87,7 +118,8 @@ class ReadingFanOut @Inject constructor(
         // 1500 ms covers Eversense's typical OLD→NEW cluster gap (~1 s observed in #192
         // logs) with margin. Smaller values let the OLD push/alert escape ahead of the
         // settled NEW; larger values add user-visible latency to alerts. 1.5 s is
-        // imperceptible vs. the sensor cadence (1–5 min).
+        // imperceptible vs. the sensor cadence (1–5 min). The shutdown-flush in [stop]
+        // means the user-visible cost of a longer window is bounded.
         internal const val DEBOUNCE_MS = 1500L
     }
 }

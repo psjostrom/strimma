@@ -60,6 +60,10 @@ class StrimmaService : Service() {
         private const val FORECAST_HORIZON_MINUTES = 30
 
         private const val SLOPE_WINDOW_MS = 5.0 * 60.0 * 1000.0 // 5 min in ms
+
+        // onDestroy bound for the fan-out flush — long enough for an HC write + alert post,
+        // short enough to never approach the OS shutdown grace (~5 s on most devices).
+        private const val FANOUT_FLUSH_TIMEOUT_MS = 2_000L
     }
 
     @Inject lateinit var dao: ReadingDao
@@ -200,7 +204,12 @@ class StrimmaService : Service() {
         stopLluFollower()
         calendarPollJob?.cancel()
         syncOrchestrator.stop()
-        readingFanOut.stop()
+        // Flush any pending fan-out dispatch synchronously — a service kill within the
+        // debounce window must not drop an urgent-low alert. Bounded by FANOUT_FLUSH_TIMEOUT_MS
+        // so a misbehaving callback can't hold onDestroy past the OS grace period.
+        runBlocking {
+            withTimeoutOrNull(FANOUT_FLUSH_TIMEOUT_MS) { readingFanOut.stop() }
+        }
         scope.cancel()
         super.onDestroy()
     }
