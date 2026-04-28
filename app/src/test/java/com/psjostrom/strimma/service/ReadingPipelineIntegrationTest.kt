@@ -27,6 +27,7 @@ class ReadingPipelineIntegrationTest {
     private val baseTs = 1_700_000_000_000L
     private val eversense = "com.senseonics.eversense365.us"
     private val libre3 = "com.freestylelibre3.app"
+    private val xdrip = com.psjostrom.strimma.receiver.XdripBroadcastReceiver.SOURCE_TAG
 
     private data class Env(
         val db: StrimmaDatabase,
@@ -175,18 +176,47 @@ class ReadingPipelineIntegrationTest {
     // --- Backwards-in-time guard ---
 
     @Test
-    fun `backwards-in-time reading in the same bucket is rejected`() = runTest {
+    fun `xdrip-broadcast - backwards-in-time reading in the same bucket is rejected`() = runTest {
         withPipeline { env ->
-            env.pipeline.processReading(108.0, baseTs + 1_000)
-            // A new reading with an OLDER ts than what's in the bucket would have
-            // corrupted dao.latestOnce/since chronological order.
-            val result = env.pipeline.processReading(120.0, baseTs)
+            // xdrip broadcast carries its own ts extra — defending against replay attacks
+            // is the ONLY reason the guard exists.
+            env.pipeline.processReading(108.0, baseTs + 1_000, source = xdrip)
+            val result = env.pipeline.processReading(120.0, baseTs, source = xdrip)
             assertNull(result)
 
             val all = env.dao.since(0)
             assertEquals("prior reading preserved", 1, all.size)
             assertEquals(108, all[0].sgv)
             assertEquals(baseTs + 1_000, all[0].ts)
+        }
+    }
+
+    @Test
+    fun `companion - backwards-in-time reading replaces, not rejects`() = runTest {
+        withPipeline { env ->
+            // Realistic scenario: NightscoutPuller backfilled at startup with a partner
+            // device's slightly-ahead clock; live notification then arrives with an
+            // earlier ts in the same bucket. The OLD guard rejected this — a real loss
+            // of fresh data. New behavior: replace, since notification ts is trusted.
+            env.pipeline.processReading(108.0, baseTs + 1_000, source = eversense)
+            val result = env.pipeline.processReading(120.0, baseTs, source = eversense)
+            assertNotNull(result)
+            assertEquals(120, result!!.sgv)
+            val all = env.dao.since(0)
+            assertEquals(1, all.size)
+            assertEquals(120, all[0].sgv)
+            assertEquals("stored at the actual notification ts", baseTs, all[0].ts)
+        }
+    }
+
+    @Test
+    fun `nightscout-follower - backwards-in-time reading replaces, not rejects`() = runTest {
+        withPipeline { env ->
+            // NS follower path uses entry.date from upstream NS, also trusted.
+            env.pipeline.processReading(108.0, baseTs + 1_000, source = "nightscout-follower")
+            val result = env.pipeline.processReading(120.0, baseTs, source = "nightscout-follower")
+            assertNotNull(result)
+            assertEquals(120, env.dao.since(0)[0].sgv)
         }
     }
 

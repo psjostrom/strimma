@@ -6,6 +6,7 @@ import com.psjostrom.strimma.data.MS_PER_MINUTE
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SensorIntervals
 import com.psjostrom.strimma.receiver.DebugLog
+import com.psjostrom.strimma.receiver.XdripBroadcastReceiver
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
@@ -18,7 +19,7 @@ import javax.inject.Singleton
  * absorbs Eversense-style cluster transients before firing downstream consumers.
  *
  * Returns the stored [GlucoseReading] if accepted, or null if dropped (invalid SGV,
- * duplicate value in the bucket, or backwards-in-time).
+ * duplicate value in the bucket, or — for xdrip-broadcast only — backwards-in-time).
  *
  * Dedup is wall-clock-bucketed by the source's sample period (see [SensorIntervals]). A new
  * reading is dropped if its value matches ANY existing reading in the bucket — same-value
@@ -26,6 +27,9 @@ import javax.inject.Singleton
  * matches a backfilled puller row in the same bucket is also dropped. A different value
  * triggers an in-bucket replacement: the prior latest row is removed and the new row stored
  * at its actual notification ts inside an atomic [ReadingDao.replaceInBucket] transaction.
+ *
+ * Logging via [DebugLog] is intentionally excluded from this contract — it's observability,
+ * not behavior, and is safe to call from any caller without coupling them to the pipeline.
  */
 @Singleton
 class ReadingPipeline @Inject constructor(
@@ -74,14 +78,20 @@ class ReadingPipeline @Inject constructor(
             return null
         }
 
-        // Reject backwards-in-time readings. xDrip-broadcast carries its own ts and a
-        // misbehaving (or replayed) broadcast could carry a ts older than what's in the
-        // bucket — silently swapping a newer row for an older-tagged one would corrupt
-        // dao.latestOnce()/since() chronological ordering.
-        if (latestExisting != null && timestamp < latestExisting.ts) {
+        // Reject backwards-in-time readings ONLY for xdrip-broadcast — it's the only path
+        // that carries its own ts as an extra, so a misbehaving (or replayed) broadcast
+        // could swap a newer row for an older-tagged one. All other paths are trusted:
+        // notification mode uses System.currentTimeMillis() at receive time, follower modes
+        // use the upstream API's authoritative timestamp. Applying this guard universally
+        // dropped legitimate live readings when the puller had backfilled rows from a
+        // partner device whose clock was a few seconds ahead.
+        if (latestExisting != null &&
+            source == XdripBroadcastReceiver.SOURCE_TAG &&
+            timestamp < latestExisting.ts
+        ) {
             DebugLog.log(
-                "Rejected backwards-in-time: ts=$timestamp < existing.ts=${latestExisting.ts} " +
-                    "source=$source"
+                "Rejected backwards-in-time xdrip broadcast: ts=$timestamp " +
+                    "< existing.ts=${latestExisting.ts}"
             )
             return null
         }

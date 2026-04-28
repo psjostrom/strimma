@@ -66,6 +66,7 @@ class StrimmaService : Service() {
     @Inject lateinit var pusher: NightscoutPusher
     @Inject lateinit var tidepoolUploader: TidepoolUploader
     @Inject lateinit var readingFanOut: ReadingFanOut
+    @Inject lateinit var readingDispatcher: ReadingDispatcher
     @Inject lateinit var notificationHelper: NotificationHelper
     @Inject lateinit var alertManager: AlertManager
     @Inject lateinit var settings: SettingsRepository
@@ -208,36 +209,35 @@ class StrimmaService : Service() {
      * Side effects triggered after a new reading lands in the DB. All four ingestion paths
      * (COMPANION, XDRIP_BROADCAST, NIGHTSCOUT_FOLLOWER, LIBRELINKUP) converge here.
      *
-     * Splits effects in two:
-     *  - **Eager** (notification + widgets) fires immediately so the user sees the latest BG
-     *    without delay.
-     *  - **Debounced** (alert, push, upload, HC, broadcast) fires via [readingFanOut] after a
-     *    short window. An Eversense cluster — OLD value stored, NEW value stored within
-     *    ~1 s — supersedes the OLD dispatch so the alert fires once on the settled value, no
-     *    spurious urgent-low audible, no stale Nightscout / Health Connect rows.
+     * Wiring is delegated to [readingDispatcher] so the eager-vs-debounced contract is
+     * pinned by `ReadingDispatcherTest` — see that class's KDoc for what each effect does
+     * and why `broadcastBgIfEnabled` is on the debounced path (downstream xdrip-compatible
+     * consumers like Garmin watchfaces should also see the settled NEW value, not the OLD).
      *
-     * @param includesPush whether to push to Nightscout. False for the Nightscout follower
-     *   path because we got the reading FROM Nightscout — pushing back is a wasted round-trip.
+     * @param originatedRemotely true when the reading came FROM Nightscout (follower path)
+     *   so we don't echo back to the source — wasted round-trip and corrupts NS pageination.
      */
-    private suspend fun onNewReading(reading: GlucoseReading, includesPush: Boolean = true) {
-        // Eager: UI feedback the user sees immediately.
-        updateNotification()
-        updateWidgets()
-
-        // Debounced: downstream consequences. ReadingFanOut.fire cancels any in-flight
-        // dispatch, so a cluster's NEW value supersedes the OLD before any of these run.
-        readingFanOut.fire(reading) { settled ->
-            val alertReadings = dao.since(
-                settled.ts - ReadingPipeline.LOOKBACK_MINUTES * MS_PER_MINUTE
-            )
-            // Pass null prediction — alertManager recomputes from the freshest data, which
-            // is what we want after the cluster has settled.
-            alertManager.checkReading(settled, alertReadings, predMinutes.value, null)
-            if (includesPush) pusher.pushReading(settled)
-            tidepoolUploader.onNewReading()
-            broadcastBgIfEnabled(settled)
-            writeToHealthConnectIfEnabled(settled)
-        }
+    private suspend fun onNewReading(reading: GlucoseReading, originatedRemotely: Boolean = false) {
+        readingDispatcher.dispatch(
+            reading = reading,
+            originatedRemotely = originatedRemotely,
+            eager = {
+                updateNotification()
+                updateWidgets()
+            },
+            alert = { settled ->
+                val alertReadings = dao.since(
+                    settled.ts - ReadingPipeline.LOOKBACK_MINUTES * MS_PER_MINUTE
+                )
+                // null prediction — alertManager recomputes from the freshest data, which
+                // is what we want after the cluster has settled.
+                alertManager.checkReading(settled, alertReadings, predMinutes.value, null)
+            },
+            push = { settled -> pusher.pushReading(settled) },
+            upload = { tidepoolUploader.onNewReading() },
+            broadcast = { settled -> broadcastBgIfEnabled(settled) },
+            hc = { settled -> writeToHealthConnectIfEnabled(settled) },
+        )
     }
 
     private fun registerXdripReceiver() {
@@ -260,8 +260,7 @@ class StrimmaService : Service() {
     private fun startFollower() {
         if (followerJob != null) return
         followerJob = nightscoutFollower.start(scope) { reading ->
-            // Don't push back to Nightscout — we just GOT the reading from Nightscout.
-            onNewReading(reading, includesPush = false)
+            onNewReading(reading, originatedRemotely = true)
         }
         DebugLog.log("Nightscout follower started")
     }
@@ -302,18 +301,22 @@ class StrimmaService : Service() {
         }
     }
 
-    private fun writeToHealthConnectIfEnabled(reading: GlucoseReading) {
+    /**
+     * Suspending so the call inherits the [readingFanOut] dispatch's `NonCancellable`
+     * context — a service shutdown that arrives mid-write doesn't drop the row. A previous
+     * implementation `scope.launch { ... }`'d onto the cancellable service scope, which
+     * silently no-op'd whenever onDestroy's `scope.cancel()` raced an in-flight dispatch.
+     */
+    private suspend fun writeToHealthConnectIfEnabled(reading: GlucoseReading) {
         if (!hcWriteEnabled.value) return
-        scope.launch {
-            try {
-                if (!healthConnectManager.hasPermissions()) return@launch
-                healthConnectManager.writeGlucoseReading(reading)
-            } catch (
-                @Suppress("TooGenericExceptionCaught") // HC SDK can throw various platform exceptions
-                e: Exception
-            ) {
-                DebugLog.log("HC write skipped: ${e.javaClass.simpleName}: ${e.message}")
-            }
+        try {
+            if (!healthConnectManager.hasPermissions()) return
+            healthConnectManager.writeGlucoseReading(reading)
+        } catch (
+            @Suppress("TooGenericExceptionCaught") // HC SDK can throw various platform exceptions
+            e: Exception
+        ) {
+            DebugLog.log("HC write skipped: ${e.javaClass.simpleName}: ${e.message}")
         }
     }
 

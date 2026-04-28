@@ -145,4 +145,78 @@ class ReadingDaoTest {
         val latest = dao.latest().first()
         assertNull(latest)
     }
+
+    // --- replaceInBucket: load-bearing @Transaction contract ---
+    //
+    // Direct tests for the DAO method that ReadingPipeline relies on. The @Transaction is
+    // the guarantee that concurrent readers (notification update, UI Flow, stale-check
+    // loop) never observe the bucket as empty between the delete and the insert. A future
+    // maintainer who removes @Transaction thinking "two statements doesn't need one"
+    // breaks the guarantee silently — these tests pin the contract.
+
+    @Test
+    fun `replaceInBucket - oldTs equals newTs uses REPLACE without delete`() = runTest {
+        // Same-ts case: deleteByTs would remove the row we're about to insert. The
+        // replaceInBucket impl must skip the delete in this case and rely on
+        // OnConflictStrategy.REPLACE.
+        dao.insert(reading(0, 108).copy(direction = "Flat", delta = 0.0))
+        dao.replaceInBucket(
+            oldTs = baseTs,
+            newReading = GlucoseReading(baseTs, 120, "SingleUp", 12.0, 0)
+        )
+        val all = dao.since(0)
+        assertEquals(1, all.size)
+        assertEquals(120, all[0].sgv)
+        assertEquals("SingleUp", all[0].direction)
+        assertEquals(0, all[0].pushed)
+    }
+
+    @Test
+    fun `replaceInBucket - oldTs differs swaps row at new ts`() = runTest {
+        dao.insert(reading(0, 108))
+        dao.replaceInBucket(
+            oldTs = baseTs,
+            newReading = GlucoseReading(baseTs + 100, 120, "SingleUp", 12.0, 0)
+        )
+        val all = dao.since(0)
+        assertEquals("old row deleted, new row inserted", 1, all.size)
+        assertEquals(120, all[0].sgv)
+        assertEquals(baseTs + 100, all[0].ts)
+    }
+
+    @Test
+    fun `replaceInBucket - bucket has exactly one row regardless of starting state`() = runTest {
+        // Multi-row bucket (pre-existing puller backfill); replaceInBucket only touches
+        // the named oldTs and inserts the new one. Other rows are untouched.
+        dao.insert(GlucoseReading(baseTs - 100, 90, "Flat", null, 1))
+        dao.insert(GlucoseReading(baseTs - 50, 95, "Flat", null, 1))
+        dao.insert(GlucoseReading(baseTs, 100, "Flat", null, 1))
+
+        dao.replaceInBucket(
+            oldTs = baseTs,
+            newReading = GlucoseReading(baseTs + 10, 110, "SingleUp", 10.0, 0)
+        )
+
+        val all = dao.since(0).sortedBy { it.ts }
+        assertEquals(3, all.size)
+        assertEquals("oldest puller row preserved", 90, all[0].sgv)
+        assertEquals("middle puller row preserved", 95, all[1].sgv)
+        assertEquals("named row replaced by new", 110, all[2].sgv)
+        assertEquals(baseTs + 10, all[2].ts)
+    }
+
+    @Test
+    fun `replaceInBucket - newReading is unpushed by default flow`() = runTest {
+        dao.insert(reading(0, 108).copy(pushed = 1))
+        dao.replaceInBucket(
+            oldTs = baseTs,
+            newReading = GlucoseReading(baseTs + 10, 120, "Flat", 0.0, 0)
+        )
+        val unpushed = dao.unpushed()
+        assertEquals(
+            "fresh reading should be marked unpushed for the next push attempt",
+            1, unpushed.size
+        )
+        assertEquals(120, unpushed[0].sgv)
+    }
 }
