@@ -27,7 +27,6 @@ class TreatmentSyncerIntegrationTest {
 
     private val now = System.currentTimeMillis()
     private val context: Context get() = ApplicationProvider.getApplicationContext()
-    private val roomExecutor = Executors.newSingleThreadExecutor()
 
     private fun treatment(id: String, createdAt: Long, insulin: Double? = null, carbs: Double? = null) =
         Treatment(
@@ -38,15 +37,15 @@ class TreatmentSyncerIntegrationTest {
 
     /**
      * Advances virtual time and waits for async executors to complete.
-     * Room dispatches to [roomExecutor] (drained via submit/get).
+     * Room dispatches to the per-test executor (drained via submit/get).
      * DataStore dispatches to Dispatchers.IO (brief sleep between rounds).
      * Uses advanceTimeBy (not advanceUntilIdle) to avoid hanging on the infinite polling loop.
      */
-    private fun TestScope.advanceAndSettle() {
+    private fun TestScope.advanceAndSettle(env: Env) {
         repeat(10) {
             advanceTimeBy(100)
             runCurrent()
-            roomExecutor.submit {}.get()
+            env.roomExecutor.submit {}.get()
             Thread.sleep(10)
         }
     }
@@ -55,151 +54,178 @@ class TreatmentSyncerIntegrationTest {
         val db: StrimmaDatabase,
         val treatmentDao: TreatmentDao,
         val settings: SettingsRepository,
-        val fakeClient: FakeClient
-    )
+        val fakeClient: FakeClient,
+        val roomExecutor: java.util.concurrent.ExecutorService
+    ) {
+        fun close() {
+            // Graceful shutdown — let any in-flight Room queries from the polling loop
+            // finish before we close the underlying DB. shutdownNow() would interrupt
+            // those queries and surface as SQLException ("DB already closed") in tests
+            // that didn't explicitly cancelAndJoin their syncer job.
+            roomExecutor.shutdown()
+            roomExecutor.awaitTermination(2, java.util.concurrent.TimeUnit.SECONDS)
+            db.close()
+        }
+    }
 
     private fun TestScope.createEnv(): Env {
+        val executor = Executors.newSingleThreadExecutor()
         val db = Room.inMemoryDatabaseBuilder(context, StrimmaDatabase::class.java)
             .allowMainThreadQueries()
-            .setQueryExecutor(roomExecutor)
-            .setTransactionExecutor(roomExecutor)
+            .setQueryExecutor(executor)
+            .setTransactionExecutor(executor)
             .build()
         return Env(
             db = db,
             treatmentDao = db.treatmentDao(),
             settings = SettingsRepository(context, WidgetSettingsRepository(context), createTestDataStore()),
-            fakeClient = FakeClient()
+            fakeClient = FakeClient(),
+            roomExecutor = executor
         )
+    }
+
+    private suspend fun TestScope.withEnv(block: suspend TestScope.(Env) -> Unit) {
+        val env = createEnv()
+        try {
+            block(env)
+        } finally {
+            env.close()
+        }
     }
 
     @Test
     fun `start performs full sync when no prior fetch`() = runTest {
-        val env = createEnv()
-        env.settings.setNightscoutUrl("https://ns.example.com")
-        env.settings.setNightscoutSecret("secret")
-        env.fakeClient.treatments = listOf(
-            treatment("t1", now - 60_000, insulin = 2.0),
-            treatment("t2", now - 30_000, carbs = 15.0)
-        )
+        withEnv { env ->
+            env.settings.setNightscoutUrl("https://ns.example.com")
+            env.settings.setNightscoutSecret("secret")
+            env.fakeClient.treatments = listOf(
+                treatment("t1", now - 60_000, insulin = 2.0),
+                treatment("t2", now - 30_000, carbs = 15.0)
+            )
 
-        val syncer = TreatmentSyncer(env.fakeClient, env.treatmentDao, env.settings)
-        val job = syncer.start(this)
-        advanceAndSettle()
+            val syncer = TreatmentSyncer(env.fakeClient, env.treatmentDao, env.settings)
+            val job = syncer.start(this)
+            advanceAndSettle(env)
 
-        assertEquals(2, env.treatmentDao.allSince(0).size)
+            assertEquals(2, env.treatmentDao.allSince(0).size)
 
-        job.cancel()
+            job.cancel()
+        }
     }
 
     @Test
     fun `start inserts treatments and prunes old ones`() = runTest {
-        val env = createEnv()
-        env.settings.setNightscoutUrl("https://ns.example.com")
-        env.settings.setNightscoutSecret("secret")
+        withEnv { env ->
+            env.settings.setNightscoutUrl("https://ns.example.com")
+            env.settings.setNightscoutSecret("secret")
 
-        val oldTs = now - 101L * 24 * 60 * 60 * 1000
-        env.treatmentDao.upsert(listOf(treatment("old", oldTs, insulin = 1.0)))
-        env.fakeClient.treatments = listOf(treatment("new", now - 60_000, insulin = 2.0))
+            val oldTs = now - 101L * 24 * 60 * 60 * 1000
+            env.treatmentDao.upsert(listOf(treatment("old", oldTs, insulin = 1.0)))
+            env.fakeClient.treatments = listOf(treatment("new", now - 60_000, insulin = 2.0))
 
-        val syncer = TreatmentSyncer(env.fakeClient, env.treatmentDao, env.settings)
-        val job = syncer.start(this)
-        advanceAndSettle()
+            val syncer = TreatmentSyncer(env.fakeClient, env.treatmentDao, env.settings)
+            val job = syncer.start(this)
+            advanceAndSettle(env)
 
-        val stored = env.treatmentDao.allSince(0)
-        assertEquals("Old treatment should be pruned", 1, stored.size)
-        assertEquals("new", stored[0].id)
+            val stored = env.treatmentDao.allSince(0)
+            assertEquals("Old treatment should be pruned", 1, stored.size)
+            assertEquals("new", stored[0].id)
 
-        job.cancel()
+            job.cancel()
+        }
     }
 
     @Test
     fun `start skips sync when NS not configured`() = runTest {
-        val env = createEnv()
-        // URL blank by default — not configured
-        env.fakeClient.treatments = listOf(treatment("t1", now, insulin = 1.0))
+        withEnv { env ->
+            // URL blank by default — not configured
+            env.fakeClient.treatments = listOf(treatment("t1", now, insulin = 1.0))
 
-        val syncer = TreatmentSyncer(env.fakeClient, env.treatmentDao, env.settings)
-        val job = syncer.start(this)
-        advanceAndSettle()
+            val syncer = TreatmentSyncer(env.fakeClient, env.treatmentDao, env.settings)
+            val job = syncer.start(this)
+            advanceAndSettle(env)
 
-        assertTrue("DB should remain empty", env.treatmentDao.allSince(0).isEmpty())
+            assertTrue("DB should remain empty", env.treatmentDao.allSince(0).isEmpty())
 
-        job.cancel()
+            job.cancel()
+        }
     }
 
     @Test
     fun `start updates status to Connected on success`() = runTest {
-        val env = createEnv()
-        env.settings.setNightscoutUrl("https://ns.example.com")
-        env.settings.setNightscoutSecret("secret")
-        env.fakeClient.treatments = listOf(treatment("t1", now, insulin = 1.0))
+        withEnv { env ->
+            env.settings.setNightscoutUrl("https://ns.example.com")
+            env.settings.setNightscoutSecret("secret")
+            env.fakeClient.treatments = listOf(treatment("t1", now, insulin = 1.0))
 
-        val syncer = TreatmentSyncer(env.fakeClient, env.treatmentDao, env.settings)
-        val job = syncer.start(this)
-        advanceAndSettle()
+            val syncer = TreatmentSyncer(env.fakeClient, env.treatmentDao, env.settings)
+            val job = syncer.start(this)
+            advanceAndSettle(env)
 
-        assertTrue(syncer.status.value is IntegrationStatus.Connected)
+            assertTrue(syncer.status.value is IntegrationStatus.Connected)
 
-        job.cancel()
+            job.cancel()
+        }
     }
 
     @Test
     fun `start updates status to Error on fetch failure`() = runTest {
-        val env = createEnv()
-        env.settings.setNightscoutUrl("https://ns.example.com")
-        env.settings.setNightscoutSecret("secret")
-        env.fakeClient.throwOnFetch = true
+        withEnv { env ->
+            env.settings.setNightscoutUrl("https://ns.example.com")
+            env.settings.setNightscoutSecret("secret")
+            env.fakeClient.throwOnFetch = true
 
-        val syncer = TreatmentSyncer(env.fakeClient, env.treatmentDao, env.settings)
-        val job = syncer.start(this)
-        advanceAndSettle()
+            val syncer = TreatmentSyncer(env.fakeClient, env.treatmentDao, env.settings)
+            val job = syncer.start(this)
+            advanceAndSettle(env)
 
-        assertTrue(syncer.status.value is IntegrationStatus.Error)
+            assertTrue(syncer.status.value is IntegrationStatus.Error)
 
-        job.cancel()
+            job.cancel()
+        }
     }
 
     @Test
     fun `pullHistory inserts treatments`() = runTest {
-        val env = createEnv()
-        env.settings.setNightscoutUrl("https://ns.example.com")
-        env.settings.setNightscoutSecret("secret")
-        env.fakeClient.treatments = listOf(
-            treatment("t1", now - 60_000, insulin = 2.0),
-            treatment("t2", now - 30_000, carbs = 20.0)
-        )
+        withEnv { env ->
+            env.settings.setNightscoutUrl("https://ns.example.com")
+            env.settings.setNightscoutSecret("secret")
+            env.fakeClient.treatments = listOf(
+                treatment("t1", now - 60_000, insulin = 2.0),
+                treatment("t2", now - 30_000, carbs = 20.0)
+            )
 
-        val syncer = TreatmentSyncer(env.fakeClient, env.treatmentDao, env.settings)
-        val result = syncer.pullHistory(7)
+            val syncer = TreatmentSyncer(env.fakeClient, env.treatmentDao, env.settings)
+            val result = syncer.pullHistory(7)
 
-        assertTrue(result.isSuccess)
-        assertEquals(2, result.getOrThrow())
-        assertEquals(2, env.treatmentDao.allSince(0).size)
-
+            assertTrue(result.isSuccess)
+            assertEquals(2, result.getOrThrow())
+            assertEquals(2, env.treatmentDao.allSince(0).size)
+        }
     }
 
     @Test
     fun `pullHistory returns failure when not configured`() = runTest {
-        val env = createEnv()
+        withEnv { env ->
+            val syncer = TreatmentSyncer(env.fakeClient, env.treatmentDao, env.settings)
+            val result = syncer.pullHistory(7)
 
-        val syncer = TreatmentSyncer(env.fakeClient, env.treatmentDao, env.settings)
-        val result = syncer.pullHistory(7)
-
-        assertTrue(result.isFailure)
-
+            assertTrue(result.isFailure)
+        }
     }
 
     @Test
     fun `pullHistory returns failure when fetch fails`() = runTest {
-        val env = createEnv()
-        env.settings.setNightscoutUrl("https://ns.example.com")
-        env.settings.setNightscoutSecret("secret")
-        env.fakeClient.throwOnFetch = true
+        withEnv { env ->
+            env.settings.setNightscoutUrl("https://ns.example.com")
+            env.settings.setNightscoutSecret("secret")
+            env.fakeClient.throwOnFetch = true
 
-        val syncer = TreatmentSyncer(env.fakeClient, env.treatmentDao, env.settings)
-        val result = syncer.pullHistory(7)
+            val syncer = TreatmentSyncer(env.fakeClient, env.treatmentDao, env.settings)
+            val result = syncer.pullHistory(7)
 
-        assertTrue(result.isFailure)
+            assertTrue(result.isFailure)
+        }
     }
 
     private class FakeClient : NightscoutClient() {

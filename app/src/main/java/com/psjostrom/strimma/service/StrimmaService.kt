@@ -18,6 +18,7 @@ import com.psjostrom.strimma.data.health.HealthConnectManager
 import com.psjostrom.strimma.network.LibreLinkUpFollower
 import com.psjostrom.strimma.network.NightscoutFollower
 import com.psjostrom.strimma.network.NightscoutPusher
+import com.psjostrom.strimma.tidepool.TidepoolUploader
 import com.psjostrom.strimma.graph.Prediction
 import com.psjostrom.strimma.graph.PredictionComputer
 import com.psjostrom.strimma.notification.AlertManager
@@ -59,10 +60,17 @@ class StrimmaService : Service() {
         private const val FORECAST_HORIZON_MINUTES = 30
 
         private const val SLOPE_WINDOW_MS = 5.0 * 60.0 * 1000.0 // 5 min in ms
+
+        // onDestroy bound for the fan-out flush — long enough for an HC write + alert post,
+        // short enough to never approach the OS shutdown grace (~5 s on most devices).
+        private const val FANOUT_FLUSH_TIMEOUT_MS = 2_000L
     }
 
     @Inject lateinit var dao: ReadingDao
     @Inject lateinit var pusher: NightscoutPusher
+    @Inject lateinit var tidepoolUploader: TidepoolUploader
+    @Inject lateinit var readingFanOut: ReadingFanOut
+    @Inject lateinit var readingDispatcher: ReadingDispatcher
     @Inject lateinit var notificationHelper: NotificationHelper
     @Inject lateinit var alertManager: AlertManager
     @Inject lateinit var settings: SettingsRepository
@@ -174,10 +182,11 @@ class StrimmaService : Service() {
         if (intent?.action == GlucoseNotificationListener.ACTION_GLUCOSE_RECEIVED) {
             val mgdl = intent.getDoubleExtra(GlucoseNotificationListener.EXTRA_MGDL, 0.0)
             val timestamp = intent.getLongExtra(GlucoseNotificationListener.EXTRA_TIMESTAMP, 0L)
+            val source = intent.getStringExtra(GlucoseNotificationListener.EXTRA_SOURCE)
             if (mgdl > 0.0 && timestamp > 0L) {
-                DebugLog.log("Pipeline in: mgdl=${mgdl.toInt()} ts=$timestamp")
+                DebugLog.log("Pipeline in: mgdl=${mgdl.toInt()} ts=$timestamp source=$source")
                 scope.launch {
-                    val reading = readingPipeline.processReading(mgdl, timestamp)
+                    val reading = readingPipeline.processReading(mgdl, timestamp, source)
                     if (reading != null) {
                         onNewReading(reading)
                     }
@@ -195,21 +204,51 @@ class StrimmaService : Service() {
         stopLluFollower()
         calendarPollJob?.cancel()
         syncOrchestrator.stop()
+        // Flush any pending fan-out dispatch synchronously — a service kill within the
+        // debounce window must not drop an urgent-low alert. Bounded by FANOUT_FLUSH_TIMEOUT_MS
+        // so a misbehaving callback can't hold onDestroy past the OS grace period.
+        runBlocking {
+            withTimeoutOrNull(FANOUT_FLUSH_TIMEOUT_MS) { readingFanOut.stop() }
+        }
         scope.cancel()
         super.onDestroy()
     }
 
     /**
-     * Side effects triggered after a new reading is stored via the pipeline.
-     * Also called by follower callbacks (NS/LLU) after their own storage path.
+     * Side effects triggered after a new reading lands in the DB. All four ingestion paths
+     * (COMPANION, XDRIP_BROADCAST, NIGHTSCOUT_FOLLOWER, LIBRELINKUP) converge here.
+     *
+     * Wiring is delegated to [readingDispatcher] so the eager-vs-debounced contract is
+     * pinned by `ReadingDispatcherTest` — see that class's KDoc for what each effect does
+     * and why `broadcastBgIfEnabled` is on the debounced path (downstream xdrip-compatible
+     * consumers like Garmin watchfaces should also see the settled NEW value, not the OLD).
+     *
+     * @param cameFromNightscout true when the reading came FROM Nightscout (follower path)
+     *   so we don't echo back to the source — wasted round-trip and corrupts NS pagination.
+     *   LLU and xdrip-broadcast paths are also "remote" but we DO want to push them to NS,
+     *   so the parameter is named for the specific case (NS) rather than the general one.
      */
-    private suspend fun onNewReading(reading: GlucoseReading) {
-        val prediction = updateNotification()
-        val alertReadings = dao.since(reading.ts - ReadingPipeline.LOOKBACK_MINUTES * MS_PER_MINUTE)
-        alertManager.checkReading(reading, alertReadings, predMinutes.value, prediction)
-        broadcastBgIfEnabled(reading)
-        writeToHealthConnectIfEnabled(reading)
-        updateWidgets()
+    private suspend fun onNewReading(reading: GlucoseReading, cameFromNightscout: Boolean = false) {
+        readingDispatcher.dispatch(
+            reading = reading,
+            cameFromNightscout = cameFromNightscout,
+            eager = {
+                updateNotification()
+                updateWidgets()
+            },
+            alert = { settled ->
+                val alertReadings = dao.since(
+                    settled.ts - ReadingPipeline.LOOKBACK_MINUTES * MS_PER_MINUTE
+                )
+                // null prediction — alertManager recomputes from the freshest data, which
+                // is what we want after the cluster has settled.
+                alertManager.checkReading(settled, alertReadings, predMinutes.value, null)
+            },
+            push = { settled -> pusher.pushReading(settled) },
+            upload = { tidepoolUploader.onNewReading() },
+            broadcast = { settled -> broadcastBgIfEnabled(settled) },
+            hc = { settled -> writeToHealthConnectIfEnabled(settled) },
+        )
     }
 
     private fun registerXdripReceiver() {
@@ -232,11 +271,7 @@ class StrimmaService : Service() {
     private fun startFollower() {
         if (followerJob != null) return
         followerJob = nightscoutFollower.start(scope) { reading ->
-            val prediction = updateNotification()
-            val alertReadings = dao.since(reading.ts - ReadingPipeline.LOOKBACK_MINUTES * MS_PER_MINUTE)
-            alertManager.checkReading(reading, alertReadings, predMinutes.value, prediction)
-            broadcastBgIfEnabled(reading)
-            updateWidgets()
+            onNewReading(reading, cameFromNightscout = true)
         }
         DebugLog.log("Nightscout follower started")
     }
@@ -251,13 +286,7 @@ class StrimmaService : Service() {
     private fun startLluFollower() {
         if (lluFollowerJob != null) return
         lluFollowerJob = libreLinkUpFollower.start(scope) { reading ->
-            pusher.pushReading(reading)
-            val prediction = updateNotification()
-            val alertReadings = dao.since(reading.ts - ReadingPipeline.LOOKBACK_MINUTES * MS_PER_MINUTE)
-            alertManager.checkReading(reading, alertReadings, predMinutes.value, prediction)
-            broadcastBgIfEnabled(reading)
-            writeToHealthConnectIfEnabled(reading)
-            updateWidgets()
+            onNewReading(reading)
         }
         DebugLog.log("LibreLinkUp follower started")
     }
@@ -283,18 +312,22 @@ class StrimmaService : Service() {
         }
     }
 
-    private fun writeToHealthConnectIfEnabled(reading: GlucoseReading) {
+    /**
+     * Suspending so the call inherits the [readingFanOut] dispatch's `NonCancellable`
+     * context — a service shutdown that arrives mid-write doesn't drop the row. A previous
+     * implementation `scope.launch { ... }`'d onto the cancellable service scope, which
+     * silently no-op'd whenever onDestroy's `scope.cancel()` raced an in-flight dispatch.
+     */
+    private suspend fun writeToHealthConnectIfEnabled(reading: GlucoseReading) {
         if (!hcWriteEnabled.value) return
-        scope.launch {
-            try {
-                if (!healthConnectManager.hasPermissions()) return@launch
-                healthConnectManager.writeGlucoseReading(reading)
-            } catch (
-                @Suppress("TooGenericExceptionCaught") // HC SDK can throw various platform exceptions
-                e: Exception
-            ) {
-                DebugLog.log("HC write skipped: ${e.javaClass.simpleName}: ${e.message}")
-            }
+        try {
+            if (!healthConnectManager.hasPermissions()) return
+            healthConnectManager.writeGlucoseReading(reading)
+        } catch (
+            @Suppress("TooGenericExceptionCaught") // HC SDK can throw various platform exceptions
+            e: Exception
+        ) {
+            DebugLog.log("HC write skipped: ${e.javaClass.simpleName}: ${e.message}")
         }
     }
 

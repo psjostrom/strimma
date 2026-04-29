@@ -1,0 +1,127 @@
+package com.psjostrom.strimma.data
+
+/**
+ * Per-source sensor sample period — the minimum interval at which a CGM produces a real reading.
+ *
+ * Used by [com.psjostrom.strimma.service.ReadingPipeline] to dedupe same-value notification
+ * reposts. Some CGM apps (notably Eversense) re-emit the same notification every ~30 s as a
+ * UI refresh tick; without source-aware dedupe those reposts land in the DB as separate readings.
+ *
+ * Defaults to a conservative 1 min for unknown sources so we never silently drop a real reading
+ * from a sensor we haven't catalogued.
+ *
+ * Buckets are wall-clock-aligned to UTC midnight (`ts / period * period`), not to the sensor's
+ * actual emit cadence. For typical 5-min sensors whose real reads fall well inside a bucket
+ * this is fine. For a sensor whose real reads happen to straddle a wall-clock bucket boundary
+ * by milliseconds, two real readings can land in adjacent buckets — both stored. The opposite
+ * (two readings collapsed because they jittered into the same bucket) requires sub-period
+ * jitter, which is rare. Both edge cases are acceptable; the alternative (sliding-window
+ * dedup keyed on the previous reading) has its own boundary failure modes (see prior 5/6
+ * sample-period attempt before bucketing was adopted).
+ */
+object SensorIntervals {
+    private const val ONE_MIN_MS = 60_000L
+    private const val THREE_MIN_MS = 180_000L
+    private const val FIVE_MIN_MS = 300_000L
+    private const val DEFAULT_MS = ONE_MIN_MS
+
+    // Only sensor-bound apps are listed — apps that read directly from a specific hardware
+    // family. Sensor-agnostic middleware (CamAPS FX, Juggluco, xDrip+, AAPS, etc.) is
+    // intentionally absent: those apps relay whichever sensor the user has paired, so we
+    // can't infer a sample period from the package name. They fall back to [DEFAULT_MS],
+    // which is conservative — matches today's behavior of not dedupping same-value
+    // notifications beyond the cluster window.
+    private val INTERVALS: Map<String, Long> = mapOf(
+        // Dexcom — 5-min cadence across the family
+        "com.dexcom.g6" to FIVE_MIN_MS,
+        "com.dexcom.g6.region1.mmol" to FIVE_MIN_MS,
+        "com.dexcom.g6.region2.mgdl" to FIVE_MIN_MS,
+        "com.dexcom.g6.region3.mgdl" to FIVE_MIN_MS,
+        "com.dexcom.g6.region4.mmol" to FIVE_MIN_MS,
+        "com.dexcom.g6.region5.mmol" to FIVE_MIN_MS,
+        "com.dexcom.g6.region6.mgdl" to FIVE_MIN_MS,
+        "com.dexcom.g6.region7.mmol" to FIVE_MIN_MS,
+        "com.dexcom.g6.region8.mmol" to FIVE_MIN_MS,
+        "com.dexcom.g6.region9.mgdl" to FIVE_MIN_MS,
+        "com.dexcom.g6.region10.mgdl" to FIVE_MIN_MS,
+        "com.dexcom.g6.region11.mmol" to FIVE_MIN_MS,
+        "com.dexcom.g7" to FIVE_MIN_MS,
+        "com.dexcom.dexcomone" to FIVE_MIN_MS,
+        "com.dexcom.d1plus" to FIVE_MIN_MS,
+        "com.dexcom.stelo" to FIVE_MIN_MS,
+
+        // FreeStyle Libre — 1-min cadence (Libre 3 native; Libre 2 in continuous mode)
+        "com.freestylelibre3.app" to ONE_MIN_MS,
+        "com.freestylelibre3.app.de" to ONE_MIN_MS,
+        "com.freestylelibre.app" to ONE_MIN_MS,
+        "com.freestylelibre.app.de" to ONE_MIN_MS,
+
+        // Diabox — Libre-specific bridge, 1-min
+        "com.outshineiot.diabox" to ONE_MIN_MS,
+
+        // Medtronic — 5-min cadence
+        "com.medtronic.diabetes.guardian" to FIVE_MIN_MS,
+        "com.medtronic.diabetes.guardianconnect" to FIVE_MIN_MS,
+        "com.medtronic.diabetes.guardianconnect.us" to FIVE_MIN_MS,
+        "com.medtronic.diabetes.minimedmobile.eu" to FIVE_MIN_MS,
+        "com.medtronic.diabetes.minimedmobile.us" to FIVE_MIN_MS,
+        "com.medtronic.diabetes.simplera.eu" to FIVE_MIN_MS,
+
+        // Eversense — 5-min cadence; the official app reposts the same notification every
+        // ~30 s as a foreground-service tick (see issue #192).
+        "com.senseonics.androidapp" to FIVE_MIN_MS,
+        "com.senseonics.gen12androidapp" to FIVE_MIN_MS,
+        "com.senseonics.eversense365.us" to FIVE_MIN_MS,
+
+        // MicroTech AiDEX X / LinX — 1-min cadence per MicroTech's spec ("readings every
+        // minute for 15 days"). Verified directly:
+        //   - com.microtech.aidexx.mgdl       → "LinX CGM" app on Google Play
+        //   - com.microtech.aidexx.linxneo.mmoll → "LinX vista" app (mmol variant)
+        // Both pair with the AiDEX X / LinX hardware. The previous 5-min entry would have
+        // dropped 4-of-5 real readings via in-bucket replacement (each new value evicts
+        // the prior row inside the bucket), not just deduped reposts.
+        "com.microtech.aidexx.mgdl" to ONE_MIN_MS,
+        "com.microtech.aidexx.linxneo.mmoll" to ONE_MIN_MS,
+
+        // Other com.microtech.aidexx.* variants — still 5-min pending direct verification.
+        // The `aidexx` (double-x) prefix is MicroTech's naming for the AiDEX X family
+        // (1-min), distinct from the older AiDEX (`com.microtechmd.cgms.{mg,mmol}`,
+        // 5-min) which Strimma does not catalogue. So these are PROBABLY 1-min too —
+        // but the regional variants (Equil, German "diaexport", Brazilian "Smart",
+        // China no-suffix) couldn't be confirmed directly (Play Store listings 404'd
+        // for two; the others had truncated descriptions). Leaving at 5-min until a
+        // user reports their region's app or until Play Store coverage improves. Worst
+        // case under 5-min: in-bucket replacement drops real readings from a 1-min
+        // sensor — the same bug we just fixed for mgdl/linxneo. If this PR ships and
+        // a LinX user reports missing readings on one of these regions, flip it then.
+        "com.microtech.aidexx.equil.mmoll" to FIVE_MIN_MS,
+        "com.microtech.aidexx.diaexport.mmoll" to FIVE_MIN_MS,
+        "com.microtech.aidexx.smart.mmoll" to FIVE_MIN_MS,
+        "com.microtech.aidexx" to FIVE_MIN_MS,
+
+        // Ottai SEAS / TAG — 5-min cadence per the Ottai user manual ("readings every 5
+        // minutes", 14-day wear, 2-25 mmol/L range).
+        "com.ottai.seas" to FIVE_MIN_MS,
+        "com.ottai.tag" to FIVE_MIN_MS,
+
+        // Sinocare iCan i3 family — 3-min cadence per Sinocare's spec (15-day wear,
+        // ~7160 readings per sensor = 15 days × 24 h × 60 min / 3 min). The CE-region
+        // app and the iCan Health app share the same hardware and cadence.
+        "com.sinocare.cgm.ce" to THREE_MIN_MS,
+        "com.sinocare.ican.health.ce" to THREE_MIN_MS,
+        "com.sinocare.ican.health.ru" to THREE_MIN_MS,
+
+        // SusWel LinX — 1-min cadence per SusWel's spec ("every minute for up to 15
+        // days"). Same as the default but listed explicitly so a future maintainer
+        // doesn't have to re-verify.
+        "com.suswel.ai" to ONE_MIN_MS,
+
+        // Glucotech (com.glucotech.app.android) is intentionally absent — no public
+        // spec, the Play Store listing 404s, and xDrip+ catalogues the package without
+        // documenting cadence. Falls through to the 1-min default until verified.
+    )
+
+    /** Returns the sensor sample period in milliseconds for [source], or a 1-min default. */
+    fun samplePeriodMs(source: String?): Long =
+        source?.let { INTERVALS[it] } ?: DEFAULT_MS
+}

@@ -181,6 +181,12 @@ class TidepoolUploader @Inject constructor(
         try {
             val token = authManager.getValidAccessToken()
             if (token == null) {
+                // Always stamp on null token — without distinguishing transient
+                // (network blip during refresh) from permanent (genuinely logged out
+                // or refresh endpoint broken), under-throttling is the worse failure
+                // mode (60+ HTTP round-trips/hour against a broken endpoint). The
+                // earlier attempt to skip the stamp on transient failures backfired
+                // because client.getValidAccessToken swallows IOException internally.
                 if (!authManager.isLoggedIn()) {
                     settings.setTidepoolLastError("Session expired. Please log in again.")
                 }
@@ -191,6 +197,10 @@ class TidepoolUploader @Inject constructor(
 
             val datasetId = getOrCreateDataset(plan.userId, token)
             if (datasetId == null) {
+                // Same reasoning as the no-token branch — getOrCreateDataset returns
+                // null on both transient (HTTP error swallowed by client) and
+                // permanent (server refused dataset creation) failures. Stamp the
+                // rate-limit clock to avoid hammering a broken endpoint.
                 stampUploadAttempt()
                 return 0
             }

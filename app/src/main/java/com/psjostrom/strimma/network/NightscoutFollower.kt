@@ -22,6 +22,17 @@ private const val DUPLICATE_THRESHOLD_MS = 3_000L
 private const val SECONDS_TO_MS = 1000L
 private const val DELTA_ROUNDING_FACTOR = 10.0
 
+/**
+ * Storage path for Nightscout-follower entries. Intentionally bypasses
+ * [com.psjostrom.strimma.service.ReadingPipeline]: the upstream NS server already dedupes
+ * on its end (NS rejects duplicate timestamps), so re-bucketing here would just reapply
+ * weaker logic on already-clean data. The 3-second proximity check below catches the rare
+ * pathological case where a follower poll re-fetches an entry already in our DB.
+ *
+ * Side-effect dispatch (alert, push, HC, broadcast, upload) DOES converge on
+ * `StrimmaService.onNewReading` via `cameFromNightscout=true`, so the follower path is
+ * unified at the side-effects level even though storage is direct.
+ */
 suspend fun processNightscoutEntry(
     entry: NightscoutEntryResponse,
     dao: ReadingDao,
