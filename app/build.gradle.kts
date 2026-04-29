@@ -39,7 +39,7 @@ android {
         minSdk = 33 // Only targets devices still receiving security updates — this is medical data
         targetSdk = 36
         versionCode = 2
-        versionName = "1.2.0-rc.2"
+        versionName = "1.2.0-rc.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
