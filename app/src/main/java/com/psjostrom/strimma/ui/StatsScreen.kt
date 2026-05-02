@@ -1,6 +1,5 @@
 package com.psjostrom.strimma.ui
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -8,7 +7,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -30,6 +28,7 @@ import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseStats
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.story.toMillisRange
+import com.psjostrom.strimma.ui.components.StoryEntryCard
 import com.psjostrom.strimma.data.HbA1cUnit
 import com.psjostrom.strimma.data.StatsCalculator
 import com.psjostrom.strimma.data.Treatment
@@ -150,7 +149,7 @@ fun StatsScreen(
         ) {
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Monthly Story entry card — last completed month only, hidden if insufficient data or already viewed
+            // Monthly Story entry card — last completed month only, hidden if insufficient data
             onNavigateToStory?.let { navigate ->
                 val lastMonth = java.time.YearMonth.now().minusMonths(1)
                 val lastMonthKey = "%d-%02d".format(lastMonth.year, lastMonth.monthValue)
@@ -170,36 +169,11 @@ fun StatsScreen(
                     val monthName = lastMonth.month.getDisplayName(
                         java.time.format.TextStyle.FULL, LocalConfiguration.current.locales[0]
                     )
-                    Surface(
-                        onClick = { navigate(lastMonth.year, lastMonth.monthValue) },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.medium,
-                        color = MaterialTheme.colorScheme.surfaceVariant,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-                    ) {
-                        Row(
-                            Modifier.padding(16.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    stringResource(R.string.story_entry_title, monthName),
-                                    style = MaterialTheme.typography.titleSmall
-                                )
-                                Text(
-                                    stringResource(R.string.story_entry_subtitle),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Icon(
-                                Icons.AutoMirrored.Filled.ArrowForward,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
+                    StoryEntryCard(
+                        monthName = monthName,
+                        viewed = false,
+                        onClick = { navigate(lastMonth.year, lastMonth.monthValue) }
+                    )
                 }
             }
 
