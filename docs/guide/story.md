@@ -4,7 +4,7 @@ A curated monthly glucose summary, inspired by Spotify Wrapped. View your highli
 
 ## How it works
 
-At the start of each month, Strimma generates a Story for the previous month. The Story appears as a card at the top of the Statistics screen.
+At the start of each month, Strimma generates a Story for the previous month. The Story appears as a card at the top of the Statistics screen. After you've opened it, the card stays in place but switches to a muted style — tap it any time to revisit the same month's Story.
 
 Tap the card to open a full-screen pager with 6 pages:
 
