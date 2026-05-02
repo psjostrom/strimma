@@ -511,7 +511,7 @@ fun StrimmaNavGraph(
                 initial = com.psjostrom.strimma.data.HbA1cUnit.MMOL_MOL
             )
             val tauMinutes by viewModel.tauMinutes.collectAsState()
-            val storyViewedMonth by viewModel.settings.storyViewedMonth.collectAsState(initial = "")
+            val storyViewedMonth by viewModel.settings.storyViewedMonth.collectAsState(initial = null)
             StatsScreen(
                 bgLow = bgLow,
                 bgHigh = bgHigh,

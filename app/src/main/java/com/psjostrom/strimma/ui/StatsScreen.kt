@@ -15,7 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -27,8 +26,7 @@ import com.psjostrom.strimma.data.AgpResult
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseStats
 import com.psjostrom.strimma.data.GlucoseUnit
-import com.psjostrom.strimma.data.story.toMillisRange
-import com.psjostrom.strimma.ui.components.StoryEntryCard
+import com.psjostrom.strimma.ui.components.MonthlyStoryEntry
 import com.psjostrom.strimma.data.HbA1cUnit
 import com.psjostrom.strimma.data.StatsCalculator
 import com.psjostrom.strimma.data.Treatment
@@ -75,7 +73,7 @@ fun StatsScreen(
     mealTimeSlotConfig: MealTimeSlotConfig,
     onExportCsv: suspend (Int) -> String,
     onNavigateToStory: ((Int, Int) -> Unit)? = null,
-    storyViewedMonth: String = "",
+    storyViewedMonth: String? = null,
     onBack: (() -> Unit)? = null
 ) {
     val bg = MaterialTheme.colorScheme.background
@@ -151,30 +149,11 @@ fun StatsScreen(
 
             // Monthly Story entry card — last completed month only, hidden if insufficient data
             onNavigateToStory?.let { navigate ->
-                val lastMonth = java.time.YearMonth.now().minusMonths(1)
-                val lastMonthKey = "%d-%02d".format(lastMonth.year, lastMonth.monthValue)
-                var hasData by remember { mutableStateOf(false) }
-                LaunchedEffect(Unit) {
-                    val zone = java.time.ZoneId.systemDefault()
-                    val (start, end) = lastMonth.toMillisRange(zone)
-                    val hoursAgo = ((System.currentTimeMillis() - start) / 3_600_000L).toInt()
-                    val readings = onLoadReadings(hoursAgo)
-                    val inMonth = readings.filter { it.ts in start..end }
-                    val days = inMonth.map {
-                        java.time.Instant.ofEpochMilli(it.ts).atZone(zone).toLocalDate()
-                    }.distinct().size
-                    hasData = days >= 7
-                }
-                if (hasData) {
-                    val monthName = lastMonth.month.getDisplayName(
-                        java.time.format.TextStyle.FULL, LocalConfiguration.current.locales[0]
-                    )
-                    StoryEntryCard(
-                        monthName = monthName,
-                        viewed = storyViewedMonth == lastMonthKey,
-                        onClick = { navigate(lastMonth.year, lastMonth.monthValue) }
-                    )
-                }
+                MonthlyStoryEntry(
+                    storyViewedMonth = storyViewedMonth,
+                    onLoadReadings = onLoadReadings,
+                    onNavigate = navigate
+                )
             }
 
             // Tab selector

@@ -53,7 +53,6 @@ fun PauseAlertsSheet(
     pauseLowExpiryMs: Long?,
     pauseHighExpiryMs: Long?,
     onPause: (AlertCategory, Long) -> Unit,
-    onPauseAll: (Long) -> Unit,
     onCancel: (AlertCategory) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -68,10 +67,6 @@ fun PauseAlertsSheet(
                 onPause(cat, dur)
                 onDismiss()
             },
-            onPauseAll = { dur ->
-                onPauseAll(dur)
-                onDismiss()
-            },
             onCancel = onCancel
         )
     }
@@ -82,7 +77,6 @@ fun PauseAlertsSheetContent(
     pauseLowExpiryMs: Long?,
     pauseHighExpiryMs: Long?,
     onPause: (AlertCategory, Long) -> Unit,
-    onPauseAll: (Long) -> Unit,
     onCancel: (AlertCategory) -> Unit
 ) {
     Column(
@@ -98,7 +92,7 @@ fun PauseAlertsSheetContent(
             modifier = Modifier.padding(bottom = 20.dp)
         )
 
-        PauseAllRow(onPauseAll = onPauseAll)
+        PauseAllRow(onPause = onPause)
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
 
@@ -127,7 +121,7 @@ fun PauseAlertsSheetContent(
 
 @Composable
 private fun PauseAllRow(
-    onPauseAll: (Long) -> Unit
+    onPause: (AlertCategory, Long) -> Unit
 ) {
     Column {
         Text(
@@ -135,6 +129,12 @@ private fun PauseAllRow(
             color = MaterialTheme.colorScheme.onSurface,
             fontSize = 14.sp,
             fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(bottom = 2.dp)
+        )
+        Text(
+            text = stringResource(R.string.pause_low_warning),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 12.sp,
             modifier = Modifier.padding(bottom = 8.dp)
         )
         Row(
@@ -142,7 +142,9 @@ private fun PauseAllRow(
         ) {
             DURATIONS.forEach { (durationMs, labelRes) ->
                 FilledTonalButton(
-                    onClick = { onPauseAll(durationMs) },
+                    onClick = {
+                        AlertCategory.entries.forEach { cat -> onPause(cat, durationMs) }
+                    },
                     shape = RoundedCornerShape(8.dp),
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                     modifier = Modifier.height(36.dp)
