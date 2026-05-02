@@ -92,17 +92,9 @@ fun PauseAlertsSheetContent(
             modifier = Modifier.padding(bottom = 20.dp)
         )
 
-        PauseCategoryRow(
-            label = stringResource(R.string.pause_low_alerts),
-            color = BelowLow,
-            expiryMs = pauseLowExpiryMs,
-            category = AlertCategory.LOW,
-            onPause = onPause,
-            onCancel = onCancel,
-            warning = stringResource(R.string.pause_low_warning)
-        )
+        PauseAllRow(onPause = onPause)
 
-        Spacer(modifier = Modifier.height(16.dp))
+        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
 
         PauseCategoryRow(
             label = stringResource(R.string.pause_high_alerts),
@@ -112,6 +104,48 @@ fun PauseAlertsSheetContent(
             onPause = onPause,
             onCancel = onCancel
         )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        PauseCategoryRow(
+            label = stringResource(R.string.pause_low_alerts),
+            color = BelowLow,
+            expiryMs = pauseLowExpiryMs,
+            category = AlertCategory.LOW,
+            onPause = onPause,
+            onCancel = onCancel
+        )
+    }
+}
+
+@Composable
+private fun PauseAllRow(
+    onPause: (AlertCategory, Long) -> Unit
+) {
+    Column {
+        Text(
+            text = stringResource(R.string.pause_all_alerts),
+            color = MaterialTheme.colorScheme.onSurface,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            DURATIONS.forEach { (durationMs, labelRes) ->
+                FilledTonalButton(
+                    onClick = {
+                        AlertCategory.entries.forEach { cat -> onPause(cat, durationMs) }
+                    },
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                    modifier = Modifier.height(36.dp)
+                ) {
+                    Text(stringResource(labelRes), fontSize = 13.sp)
+                }
+            }
+        }
     }
 }
 
@@ -122,8 +156,7 @@ private fun PauseCategoryRow(
     expiryMs: Long?,
     category: AlertCategory,
     onPause: (AlertCategory, Long) -> Unit,
-    onCancel: (AlertCategory) -> Unit,
-    warning: String? = null
+    onCancel: (AlertCategory) -> Unit
 ) {
     Column {
         Text(
@@ -131,17 +164,8 @@ private fun PauseCategoryRow(
             color = color,
             fontSize = 14.sp,
             fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(bottom = if (warning != null && expiryMs == null) 2.dp else 8.dp)
+            modifier = Modifier.padding(bottom = 8.dp)
         )
-
-        if (warning != null && (expiryMs == null || expiryMs <= System.currentTimeMillis())) {
-            Text(
-                text = warning,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 12.sp,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-        }
 
         if (expiryMs != null && expiryMs > System.currentTimeMillis()) {
             // Active pause — show countdown + cancel

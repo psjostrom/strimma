@@ -414,8 +414,9 @@
 
     <!-- Alert pause -->
     <string name="pause_alerts">Alarme pausieren</string>
-    <string name="pause_low_alerts">Tief-Alarme</string>
-    <string name="pause_high_alerts">Hoch-Alarme</string>
+    <string name="pause_all_alerts">Alle Alarme</string>
+    <string name="pause_low_alerts">Alle Tief-Alarme</string>
+    <string name="pause_high_alerts">Alle Hoch-Alarme</string>
     <string name="pause_duration_30m">30m</string>
     <string name="pause_duration_1h">1h</string>
     <string name="pause_duration_1_5h">1,5h</string>
@@ -427,7 +428,6 @@
     <string name="pause_low_paused">Tief-Alarme pausiert</string>
     <string name="pause_high_paused">Hoch-Alarme pausiert</string>
     <string name="pause_countdown">Pausiert · %1$s</string>
-    <string name="pause_low_warning">Einschließlich Akut-tief-Alarm</string>
 
     <string name="settings_sharing">Teilen</string>
     <string name="settings_sharing_subtitle">Broadcast, Webserver, Export</string>

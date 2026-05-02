@@ -414,8 +414,9 @@
 
     <!-- Alert pause -->
     <string name="pause_alerts">Suspendre les alertes</string>
-    <string name="pause_low_alerts">Alertes basses</string>
-    <string name="pause_high_alerts">Alertes hautes</string>
+    <string name="pause_all_alerts">Toutes les alertes</string>
+    <string name="pause_low_alerts">Toutes les alertes basses</string>
+    <string name="pause_high_alerts">Toutes les alertes hautes</string>
     <string name="pause_duration_30m">30m</string>
     <string name="pause_duration_1h">1h</string>
     <string name="pause_duration_1_5h">1,5h</string>
@@ -427,7 +428,6 @@
     <string name="pause_low_paused">Alertes basses suspendues</string>
     <string name="pause_high_paused">Alertes hautes suspendues</string>
     <string name="pause_countdown">Suspendu · %1$s</string>
-    <string name="pause_low_warning">Inclut l\u0027alerte bas urgent</string>
 
     <string name="settings_sharing">Partage</string>
     <string name="settings_sharing_subtitle">Broadcast, serveur web, export</string>

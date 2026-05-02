@@ -33,8 +33,8 @@ class PauseAlertsSheetTest {
             }
         }
         composeRule.waitForIdle()
-        composeRule.onNodeWithText("Low alerts").assertExists()
-        composeRule.onNodeWithText("High alerts").assertExists()
+        composeRule.onNodeWithText("All low alerts").assertExists()
+        composeRule.onNodeWithText("All high alerts").assertExists()
     }
 
     @Test
@@ -55,8 +55,8 @@ class PauseAlertsSheetTest {
                 )
             }
         }
-        // There are two "1h" chips — the first is for Low
-        composeRule.onAllNodes(hasText("1h"))[0].performClick()
+        // Three "1h" chips render in source order: [0] All alerts, [1] All high alerts, [2] All low alerts
+        composeRule.onAllNodes(hasText("1h"))[2].performClick()
 
         assertEquals(AlertCategory.LOW, pausedCategory)
         assertEquals(3600_000L, pausedDuration)
@@ -99,21 +99,6 @@ class PauseAlertsSheetTest {
     }
 
     @Test
-    fun `shows urgent low warning when LOW is not paused`() {
-        composeRule.setContent {
-            StrimmaTheme {
-                PauseAlertsSheetContent(
-                    pauseLowExpiryMs = null,
-                    pauseHighExpiryMs = null,
-                    onPause = { _, _ -> },
-                    onCancel = {}
-                )
-            }
-        }
-        composeRule.onNodeWithText("Includes urgent low alerts").assertExists()
-    }
-
-    @Test
     fun `shows countdown text when pause is active`() {
         val futureExpiry = System.currentTimeMillis() + 5_400_000L // 1.5h from now
 
@@ -130,5 +115,50 @@ class PauseAlertsSheetTest {
         composeRule.waitForIdle()
         // Should show "Paused · 1h Xm" (approximately)
         composeRule.onNode(hasText("Paused", substring = true)).assertExists()
+    }
+
+    @Test
+    fun `renders Pause all alerts section above per-category rows`() {
+        composeRule.setContent {
+            StrimmaTheme {
+                PauseAlertsSheetContent(
+                    pauseLowExpiryMs = null,
+                    pauseHighExpiryMs = null,
+                    onPause = { _, _ -> },
+                    onCancel = {}
+                )
+            }
+        }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("All alerts").assertExists()
+        // Sanity: per-category labels are still present below
+        composeRule.onNodeWithText("All high alerts").assertExists()
+        composeRule.onNodeWithText("All low alerts").assertExists()
+    }
+
+    @Test
+    fun `tapping a Pause all chip invokes onPause for both LOW and HIGH`() {
+        var pausedLow: Long? = null
+        var pausedHigh: Long? = null
+        composeRule.setContent {
+            StrimmaTheme {
+                PauseAlertsSheetContent(
+                    pauseLowExpiryMs = null,
+                    pauseHighExpiryMs = null,
+                    onPause = { cat, dur ->
+                        when (cat) {
+                            AlertCategory.LOW -> pausedLow = dur
+                            AlertCategory.HIGH -> pausedHigh = dur
+                        }
+                    },
+                    onCancel = {}
+                )
+            }
+        }
+        // The first "1h" chip on screen belongs to the "All alerts" row,
+        // which renders above the per-category rows.
+        composeRule.onAllNodes(hasText("1h"))[0].performClick()
+        assertEquals(3_600_000L, pausedLow)
+        assertEquals(3_600_000L, pausedHigh)
     }
 }

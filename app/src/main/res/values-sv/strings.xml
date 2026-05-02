@@ -414,8 +414,9 @@
 
     <!-- Alert pause -->
     <string name="pause_alerts">Pausa larm</string>
-    <string name="pause_low_alerts">Låga larm</string>
-    <string name="pause_high_alerts">Höga larm</string>
+    <string name="pause_all_alerts">Alla larm</string>
+    <string name="pause_low_alerts">Alla låga larm</string>
+    <string name="pause_high_alerts">Alla höga larm</string>
     <string name="pause_duration_30m">30m</string>
     <string name="pause_duration_1h">1h</string>
     <string name="pause_duration_1_5h">1,5h</string>
@@ -427,7 +428,6 @@
     <string name="pause_low_paused">Låga larm pausade</string>
     <string name="pause_high_paused">Höga larm pausade</string>
     <string name="pause_countdown">Pausad · %1$s</string>
-    <string name="pause_low_warning">Inkluderar akut lågt-larm</string>
     <string name="settings_sharing">Delning</string>
     <string name="settings_sharing_subtitle">Broadcast, webbserver, export</string>
     <string name="settings_meal_slots_title">Måltidstider</string>

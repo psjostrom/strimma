@@ -311,8 +311,9 @@
 
     <!-- Alert pause -->
     <string name="pause_alerts">Pause alerts</string>
-    <string name="pause_low_alerts">Low alerts</string>
-    <string name="pause_high_alerts">High alerts</string>
+    <string name="pause_all_alerts">All alerts</string>
+    <string name="pause_low_alerts">All low alerts</string>
+    <string name="pause_high_alerts">All high alerts</string>
     <string name="pause_duration_30m">30m</string>
     <string name="pause_duration_1h">1h</string>
     <string name="pause_duration_1_5h">1.5h</string>
@@ -324,7 +325,6 @@
     <string name="pause_low_paused">Low alerts paused</string>
     <string name="pause_high_paused">High alerts paused</string>
     <string name="pause_countdown">Paused · %1$s</string>
-    <string name="pause_low_warning">Includes urgent low alerts</string>
 
     <!-- Foreground Notification -->
     <string name="notif_channel_name">Glucose Readings</string>
