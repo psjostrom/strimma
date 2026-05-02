@@ -1,9 +1,7 @@
 package com.psjostrom.strimma.ui.components
 
-import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.psjostrom.strimma.notification.AlertCategory
@@ -35,8 +33,8 @@ class PauseAlertsSheetTest {
             }
         }
         composeRule.waitForIdle()
-        composeRule.onNodeWithText("Low alerts").assertExists()
-        composeRule.onNodeWithText("High alerts").assertExists()
+        composeRule.onNodeWithText("All low alerts").assertExists()
+        composeRule.onNodeWithText("All high alerts").assertExists()
     }
 
     @Test
@@ -57,8 +55,8 @@ class PauseAlertsSheetTest {
                 )
             }
         }
-        // Three "1h" chips render: [0] All alerts, [1] Low, [2] High
-        composeRule.onAllNodes(hasText("1h"))[1].performClick()
+        // Three "1h" chips render in source order: [0] All alerts, [1] All high alerts, [2] All low alerts
+        composeRule.onAllNodes(hasText("1h"))[2].performClick()
 
         assertEquals(AlertCategory.LOW, pausedCategory)
         assertEquals(3600_000L, pausedDuration)
@@ -101,23 +99,6 @@ class PauseAlertsSheetTest {
     }
 
     @Test
-    fun `urgent low warning is shown on both All and Low rows when LOW is not paused`() {
-        composeRule.setContent {
-            StrimmaTheme {
-                PauseAlertsSheetContent(
-                    pauseLowExpiryMs = null,
-                    pauseHighExpiryMs = null,
-                    onPause = { _, _ -> },
-                    onCancel = {}
-                )
-            }
-        }
-        // Warning renders unconditionally on the All-alerts row and
-        // conditionally on the Low row when LOW is not paused.
-        composeRule.onAllNodesWithText("Includes urgent low alerts").assertCountEquals(2)
-    }
-
-    @Test
     fun `shows countdown text when pause is active`() {
         val futureExpiry = System.currentTimeMillis() + 5_400_000L // 1.5h from now
 
@@ -151,8 +132,8 @@ class PauseAlertsSheetTest {
         composeRule.waitForIdle()
         composeRule.onNodeWithText("All alerts").assertExists()
         // Sanity: per-category labels are still present below
-        composeRule.onNodeWithText("Low alerts").assertExists()
-        composeRule.onNodeWithText("High alerts").assertExists()
+        composeRule.onNodeWithText("All high alerts").assertExists()
+        composeRule.onNodeWithText("All low alerts").assertExists()
     }
 
     @Test
@@ -174,28 +155,10 @@ class PauseAlertsSheetTest {
                 )
             }
         }
-        // The first "1h" chip on screen belongs to the new "All alerts" row,
+        // The first "1h" chip on screen belongs to the "All alerts" row,
         // which renders above the per-category rows.
         composeRule.onAllNodes(hasText("1h"))[0].performClick()
         assertEquals(3_600_000L, pausedLow)
         assertEquals(3_600_000L, pausedHigh)
-    }
-
-    @Test
-    fun `low alert warning is still shown when only HIGH is paused`() {
-        // After "Pause all" sets both expiries, each row renders independently.
-        // This verifies the inverse: when only HIGH is paused (LOW is not),
-        // the LOW warning must still be visible (alongside the All-row warning).
-        composeRule.setContent {
-            StrimmaTheme {
-                PauseAlertsSheetContent(
-                    pauseLowExpiryMs = null,
-                    pauseHighExpiryMs = System.currentTimeMillis() + 1_800_000L,
-                    onPause = { _, _ -> },
-                    onCancel = {}
-                )
-            }
-        }
-        composeRule.onAllNodesWithText("Includes urgent low alerts").assertCountEquals(2)
     }
 }

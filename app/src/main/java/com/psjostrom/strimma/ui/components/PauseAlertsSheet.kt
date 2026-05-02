@@ -97,22 +97,21 @@ fun PauseAlertsSheetContent(
         HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
 
         PauseCategoryRow(
-            label = stringResource(R.string.pause_low_alerts),
-            color = BelowLow,
-            expiryMs = pauseLowExpiryMs,
-            category = AlertCategory.LOW,
+            label = stringResource(R.string.pause_high_alerts),
+            color = AboveHigh,
+            expiryMs = pauseHighExpiryMs,
+            category = AlertCategory.HIGH,
             onPause = onPause,
-            onCancel = onCancel,
-            warning = stringResource(R.string.pause_low_warning)
+            onCancel = onCancel
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
         PauseCategoryRow(
-            label = stringResource(R.string.pause_high_alerts),
-            color = AboveHigh,
-            expiryMs = pauseHighExpiryMs,
-            category = AlertCategory.HIGH,
+            label = stringResource(R.string.pause_low_alerts),
+            color = BelowLow,
+            expiryMs = pauseLowExpiryMs,
+            category = AlertCategory.LOW,
             onPause = onPause,
             onCancel = onCancel
         )
@@ -129,12 +128,6 @@ private fun PauseAllRow(
             color = MaterialTheme.colorScheme.onSurface,
             fontSize = 14.sp,
             fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(bottom = 2.dp)
-        )
-        Text(
-            text = stringResource(R.string.pause_low_warning),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 12.sp,
             modifier = Modifier.padding(bottom = 8.dp)
         )
         Row(
@@ -163,8 +156,7 @@ private fun PauseCategoryRow(
     expiryMs: Long?,
     category: AlertCategory,
     onPause: (AlertCategory, Long) -> Unit,
-    onCancel: (AlertCategory) -> Unit,
-    warning: String? = null
+    onCancel: (AlertCategory) -> Unit
 ) {
     Column {
         Text(
@@ -172,17 +164,8 @@ private fun PauseCategoryRow(
             color = color,
             fontSize = 14.sp,
             fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(bottom = if (warning != null && expiryMs == null) 2.dp else 8.dp)
+            modifier = Modifier.padding(bottom = 8.dp)
         )
-
-        if (warning != null && (expiryMs == null || expiryMs <= System.currentTimeMillis())) {
-            Text(
-                text = warning,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 12.sp,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-        }
 
         if (expiryMs != null && expiryMs > System.currentTimeMillis()) {
             // Active pause — show countdown + cancel
