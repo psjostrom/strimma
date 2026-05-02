@@ -311,6 +311,7 @@
 
     <!-- Alert pause -->
     <string name="pause_alerts">Pause alerts</string>
+    <string name="pause_all_alerts">All alerts</string>
     <string name="pause_low_alerts">Low alerts</string>
     <string name="pause_high_alerts">High alerts</string>
     <string name="pause_duration_30m">30m</string>

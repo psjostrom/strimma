@@ -53,6 +53,7 @@ fun PauseAlertsSheet(
     pauseLowExpiryMs: Long?,
     pauseHighExpiryMs: Long?,
     onPause: (AlertCategory, Long) -> Unit,
+    onPauseAll: (Long) -> Unit,
     onCancel: (AlertCategory) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -67,6 +68,10 @@ fun PauseAlertsSheet(
                 onPause(cat, dur)
                 onDismiss()
             },
+            onPauseAll = { dur ->
+                onPauseAll(dur)
+                onDismiss()
+            },
             onCancel = onCancel
         )
     }
@@ -77,6 +82,7 @@ fun PauseAlertsSheetContent(
     pauseLowExpiryMs: Long?,
     pauseHighExpiryMs: Long?,
     onPause: (AlertCategory, Long) -> Unit,
+    onPauseAll: (Long) -> Unit,
     onCancel: (AlertCategory) -> Unit
 ) {
     Column(
@@ -91,6 +97,10 @@ fun PauseAlertsSheetContent(
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(bottom = 20.dp)
         )
+
+        PauseAllRow(onPauseAll = onPauseAll)
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
 
         PauseCategoryRow(
             label = stringResource(R.string.pause_low_alerts),
@@ -112,6 +122,35 @@ fun PauseAlertsSheetContent(
             onPause = onPause,
             onCancel = onCancel
         )
+    }
+}
+
+@Composable
+private fun PauseAllRow(
+    onPauseAll: (Long) -> Unit
+) {
+    Column {
+        Text(
+            text = stringResource(R.string.pause_all_alerts),
+            color = MaterialTheme.colorScheme.onSurface,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            DURATIONS.forEach { (durationMs, labelRes) ->
+                FilledTonalButton(
+                    onClick = { onPauseAll(durationMs) },
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                    modifier = Modifier.height(36.dp)
+                ) {
+                    Text(stringResource(labelRes), fontSize = 13.sp)
+                }
+            }
+        }
     }
 }
 

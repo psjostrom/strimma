@@ -115,6 +115,10 @@ fun AlertsSettings(
                 pauseLowExpiryMs = pauseLowExpiryMs,
                 pauseHighExpiryMs = pauseHighExpiryMs,
                 onPause = onPauseAlerts,
+                onPauseAll = { dur ->
+                    onPauseAlerts(AlertCategory.LOW, dur)
+                    onPauseAlerts(AlertCategory.HIGH, dur)
+                },
                 onCancel = onCancelPause,
                 onDismiss = { showPauseSheet = false }
             )

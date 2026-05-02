@@ -28,6 +28,7 @@ class PauseAlertsSheetTest {
                     pauseLowExpiryMs = null,
                     pauseHighExpiryMs = null,
                     onPause = { _, _ -> },
+                    onPauseAll = {},
                     onCancel = {}
                 )
             }
@@ -51,12 +52,13 @@ class PauseAlertsSheetTest {
                         pausedCategory = cat
                         pausedDuration = dur
                     },
+                    onPauseAll = {},
                     onCancel = {}
                 )
             }
         }
-        // There are two "1h" chips — the first is for Low
-        composeRule.onAllNodes(hasText("1h"))[0].performClick()
+        // Three "1h" chips render: [0] All alerts, [1] Low, [2] High
+        composeRule.onAllNodes(hasText("1h"))[1].performClick()
 
         assertEquals(AlertCategory.LOW, pausedCategory)
         assertEquals(3600_000L, pausedDuration)
@@ -72,6 +74,7 @@ class PauseAlertsSheetTest {
                     pauseLowExpiryMs = null,
                     pauseHighExpiryMs = futureExpiry,
                     onPause = { _, _ -> },
+                    onPauseAll = {},
                     onCancel = {}
                 )
             }
@@ -90,6 +93,7 @@ class PauseAlertsSheetTest {
                     pauseLowExpiryMs = futureExpiry,
                     pauseHighExpiryMs = null,
                     onPause = { _, _ -> },
+                    onPauseAll = {},
                     onCancel = { cancelledCategory = it }
                 )
             }
@@ -106,6 +110,7 @@ class PauseAlertsSheetTest {
                     pauseLowExpiryMs = null,
                     pauseHighExpiryMs = null,
                     onPause = { _, _ -> },
+                    onPauseAll = {},
                     onCancel = {}
                 )
             }
@@ -123,6 +128,7 @@ class PauseAlertsSheetTest {
                     pauseLowExpiryMs = futureExpiry,
                     pauseHighExpiryMs = null,
                     onPause = { _, _ -> },
+                    onPauseAll = {},
                     onCancel = {}
                 )
             }
@@ -130,5 +136,64 @@ class PauseAlertsSheetTest {
         composeRule.waitForIdle()
         // Should show "Paused · 1h Xm" (approximately)
         composeRule.onNode(hasText("Paused", substring = true)).assertExists()
+    }
+
+    @Test
+    fun `renders Pause all alerts section above per-category rows`() {
+        composeRule.setContent {
+            StrimmaTheme {
+                PauseAlertsSheetContent(
+                    pauseLowExpiryMs = null,
+                    pauseHighExpiryMs = null,
+                    onPause = { _, _ -> },
+                    onPauseAll = {},
+                    onCancel = {}
+                )
+            }
+        }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("All alerts").assertExists()
+        // Sanity: per-category labels are still present below
+        composeRule.onNodeWithText("Low alerts").assertExists()
+        composeRule.onNodeWithText("High alerts").assertExists()
+    }
+
+    @Test
+    fun `tapping a Pause all chip invokes onPauseAll with the chosen duration`() {
+        var pausedAllDuration: Long? = null
+        composeRule.setContent {
+            StrimmaTheme {
+                PauseAlertsSheetContent(
+                    pauseLowExpiryMs = null,
+                    pauseHighExpiryMs = null,
+                    onPause = { _, _ -> },
+                    onPauseAll = { pausedAllDuration = it },
+                    onCancel = {}
+                )
+            }
+        }
+        // The first "1h" chip on screen belongs to the new "All alerts" row,
+        // which renders above the per-category rows.
+        composeRule.onAllNodes(hasText("1h"))[0].performClick()
+        assertEquals(3_600_000L, pausedAllDuration)
+    }
+
+    @Test
+    fun `low alert warning is still shown when only HIGH is paused`() {
+        // After "Pause all" sets both expiries, each row renders independently.
+        // This verifies the inverse: when only HIGH is paused (LOW is not),
+        // the LOW warning must still be visible.
+        composeRule.setContent {
+            StrimmaTheme {
+                PauseAlertsSheetContent(
+                    pauseLowExpiryMs = null,
+                    pauseHighExpiryMs = System.currentTimeMillis() + 1_800_000L,
+                    onPause = { _, _ -> },
+                    onPauseAll = {},
+                    onCancel = {}
+                )
+            }
+        }
+        composeRule.onNodeWithText("Includes urgent low alerts").assertExists()
     }
 }
