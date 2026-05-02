@@ -165,13 +165,13 @@ fun StatsScreen(
                     }.distinct().size
                     hasData = days >= 7
                 }
-                if (hasData && storyViewedMonth != lastMonthKey) {
+                if (hasData) {
                     val monthName = lastMonth.month.getDisplayName(
                         java.time.format.TextStyle.FULL, LocalConfiguration.current.locales[0]
                     )
                     StoryEntryCard(
                         monthName = monthName,
-                        viewed = false,
+                        viewed = storyViewedMonth == lastMonthKey,
                         onClick = { navigate(lastMonth.year, lastMonth.monthValue) }
                     )
                 }
