@@ -414,6 +414,7 @@
 
     <!-- Alert pause -->
     <string name="pause_alerts">Pausa larm</string>
+    <string name="pause_all_alerts">Alla larm</string>
     <string name="pause_low_alerts">Låga larm</string>
     <string name="pause_high_alerts">Höga larm</string>
     <string name="pause_duration_30m">30m</string>
