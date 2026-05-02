@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: read
 
 jobs:
   build:
@@ -50,11 +51,12 @@ jobs:
           if [[ "$VERSION" == *-rc.* ]] || [[ "$VERSION" == *-beta.* ]]; then
             PRERELEASE_FLAG="--prerelease"
           fi
-          # Extract release notes from the merged release PR body (between ```markdown fences)
-          NOTES=$(gh pr list \
-            --search "Release v${VERSION} in:title" \
-            --state merged \
-            --json body -q '.[0].body' \
+          # Extract release notes from the release PR body (between ```markdown fences).
+          # Look up the PR by the tagged commit SHA — the tag points to the squash-merge
+          # commit on main, which maps to exactly one PR. Title-based search is too loose
+          # (e.g. "Release v1.2.0" matches "Release v1.2.0-rc.2").
+          NOTES=$(gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/pulls" \
+            -q '.[0].body' \
           | sed -n '/^```markdown$/,/^```$/{ /^```/d; p; }')
 
           if [ -n "$NOTES" ]; then
