@@ -256,9 +256,11 @@ class PauseAlertsSheetTest {
     }
 
     @Test
-    fun `cancelling LOW under a unified pause splits the sheet back into per-category rows`() {
-        // Reactive flow: unified state collapses when the VM-derived unifiedExpiryMs goes to
-        // null. Per-category rows must reappear so the user can manage the remaining HIGH pause.
+    fun `unified state collapsing back to a single category re-shows per-category rows`() {
+        // Pure rendering test: when unifiedExpiryMs flips to null while one per-category
+        // expiry is still set, the sheet must recompose into the split per-category view.
+        // The "what produces the unified-vs-split flip" rule belongs in AlertsViewModelTest;
+        // this test only verifies the sheet honors whatever props it receives.
         val sharedExpiry = System.currentTimeMillis() + 1_800_000L
         var lowExpiry by mutableStateOf<Long?>(sharedExpiry)
         var unifiedExpiry by mutableStateOf<Long?>(sharedExpiry)
@@ -270,23 +272,14 @@ class PauseAlertsSheetTest {
                     unifiedExpiryMs = unifiedExpiry,
                     onPause = { _, _ -> },
                     onPauseAll = {},
-                    onCancel = {
-                        if (it == AlertCategory.LOW) {
-                            lowExpiry = null
-                            unifiedExpiry = null
-                        }
-                    },
+                    onCancel = {},
                     onCancelAll = {}
                 )
             }
         }
-        // Unified state hides per-category rows.
         composeRule.onNodeWithText("All low alerts").assertDoesNotExist()
         composeRule.onNodeWithText("All high alerts").assertDoesNotExist()
 
-        // Simulate a LOW cancel coming in via some other surface (notification action, etc).
-        // The sheet recomposes from the new props; the unified state collapses and the
-        // per-category rows reappear so the user can still see/cancel the HIGH pause.
         composeRule.runOnIdle {
             lowExpiry = null
             unifiedExpiry = null

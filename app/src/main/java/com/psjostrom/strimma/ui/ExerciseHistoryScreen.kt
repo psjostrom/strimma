@@ -55,7 +55,6 @@ import com.psjostrom.strimma.data.health.ExerciseBGContext
 import com.psjostrom.strimma.data.health.ExerciseCategory
 import com.psjostrom.strimma.data.health.ExerciseDao
 import com.psjostrom.strimma.data.health.StoredExerciseSession
-import com.psjostrom.strimma.ui.theme.Warning
 import com.psjostrom.strimma.ui.theme.Danger
 import com.psjostrom.strimma.ui.theme.InRange
 import com.psjostrom.strimma.ui.theme.LightTintDanger
@@ -64,6 +63,7 @@ import com.psjostrom.strimma.ui.theme.LightTintWarning
 import com.psjostrom.strimma.ui.theme.TintDanger
 import com.psjostrom.strimma.ui.theme.TintInRange
 import com.psjostrom.strimma.ui.theme.TintWarning
+import com.psjostrom.strimma.ui.theme.Warning
 import kotlinx.coroutines.flow.first
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay

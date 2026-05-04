@@ -32,11 +32,11 @@ import com.psjostrom.strimma.data.StatsCalculator
 import com.psjostrom.strimma.data.Treatment
 import com.psjostrom.strimma.data.meal.MealAnalyzer
 import com.psjostrom.strimma.data.meal.MealTimeSlotConfig
-import com.psjostrom.strimma.ui.theme.Warning
 import com.psjostrom.strimma.ui.theme.Danger
 import com.psjostrom.strimma.ui.theme.InRange
 import com.psjostrom.strimma.ui.theme.VeryHigh
 import com.psjostrom.strimma.ui.theme.VeryLow
+import com.psjostrom.strimma.ui.theme.Warning
 import kotlinx.coroutines.launch
 
 private const val HOURS_24 = 24

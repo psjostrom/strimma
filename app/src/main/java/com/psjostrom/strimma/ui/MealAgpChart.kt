@@ -19,11 +19,11 @@ import androidx.compose.ui.unit.dp
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.meal.MealAgpBucket
 import com.psjostrom.strimma.graph.computeYRange
-import com.psjostrom.strimma.ui.theme.Warning
 import com.psjostrom.strimma.ui.theme.Danger
 import com.psjostrom.strimma.ui.theme.GraphAxisText
 import com.psjostrom.strimma.ui.theme.InRange
 import com.psjostrom.strimma.ui.theme.InRangeZone
+import com.psjostrom.strimma.ui.theme.Warning
 
 private const val LEFT_MARGIN = 48f
 private const val RIGHT_MARGIN = 12f

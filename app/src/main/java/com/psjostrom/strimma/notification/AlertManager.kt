@@ -64,14 +64,19 @@ class AlertManager @Inject constructor(
         // Legacy channel — delete if it exists from previous version
         private const val LEGACY_CHANNEL = "strimma_alerts"
 
-        const val ALERT_URGENT_LOW_ID = 101
-        const val ALERT_LOW_ID = 100
-        const val ALERT_HIGH_ID = 102
-        const val ALERT_URGENT_HIGH_ID = 104
+        // Category-related notification IDs — single source of truth is AlertCategory.
+        // The companion exposes them as named properties for backward compatibility with
+        // call sites and tests. Adding a new category just means adding it to the enum.
+        val ALERT_URGENT_LOW_ID = AlertCategory.LOW.urgentId
+        val ALERT_LOW_ID = AlertCategory.LOW.regularId
+        val ALERT_LOW_SOON_ID = AlertCategory.LOW.soonId
+        val ALERT_URGENT_HIGH_ID = AlertCategory.HIGH.urgentId
+        val ALERT_HIGH_ID = AlertCategory.HIGH.regularId
+        val ALERT_HIGH_SOON_ID = AlertCategory.HIGH.soonId
+
+        // Non-category alerts keep their own const ids
         const val ALERT_STALE_ID = 103
         const val ALERT_PUSH_FAIL_ID = 107
-        const val ALERT_LOW_SOON_ID = 105
-        const val ALERT_HIGH_SOON_ID = 106
 
         private const val SNOOZE_DURATION_MS = 30 * 60 * 1000L
 
@@ -464,15 +469,19 @@ class AlertManager @Inject constructor(
         DebugLog.log("Alert $alertId snoozed for 30 min")
     }
 
-    private fun alertCategoryAndLevel(alertId: Int): Pair<AlertCategory, Int>? = when (alertId) {
-        ALERT_LOW_SOON_ID -> AlertCategory.LOW to ALERT_LEVEL_SOON
-        ALERT_LOW_ID -> AlertCategory.LOW to ALERT_LEVEL_REGULAR
-        ALERT_URGENT_LOW_ID -> AlertCategory.LOW to ALERT_LEVEL_URGENT
-        ALERT_HIGH_SOON_ID -> AlertCategory.HIGH to ALERT_LEVEL_SOON
-        ALERT_HIGH_ID -> AlertCategory.HIGH to ALERT_LEVEL_REGULAR
-        ALERT_URGENT_HIGH_ID -> AlertCategory.HIGH to ALERT_LEVEL_URGENT
-        else -> null
-    }
+    // Reverse lookup of (alertId -> category, level) derived from AlertCategory.entries
+    // so that a new category gets reverse mapping for free, no hand-rolled when needed.
+    private val alertIdToCategoryLevel: Map<Int, Pair<AlertCategory, Int>> =
+        AlertCategory.entries.flatMap { cat ->
+            listOf(
+                cat.urgentId to (cat to ALERT_LEVEL_URGENT),
+                cat.regularId to (cat to ALERT_LEVEL_REGULAR),
+                cat.soonId to (cat to ALERT_LEVEL_SOON),
+            )
+        }.toMap()
+
+    private fun alertCategoryAndLevel(alertId: Int): Pair<AlertCategory, Int>? =
+        alertIdToCategoryLevel[alertId]
 
     // One MutableStateFlow per category, keyed by the enum so iteration over
     // AlertCategory.entries can never silently bypass a category.

@@ -40,7 +40,6 @@ import com.psjostrom.strimma.data.meal.MealAnalyzer
 import com.psjostrom.strimma.data.meal.MealPostprandialResult
 import com.psjostrom.strimma.data.meal.MealTimeSlot
 import com.psjostrom.strimma.data.meal.MealTimeSlotConfig
-import com.psjostrom.strimma.ui.theme.Warning
 import com.psjostrom.strimma.ui.theme.Danger
 import com.psjostrom.strimma.ui.theme.GraphAxisText
 import com.psjostrom.strimma.ui.theme.InRange
@@ -49,6 +48,7 @@ import com.psjostrom.strimma.ui.theme.TintDanger
 import com.psjostrom.strimma.ui.theme.TintGood
 import com.psjostrom.strimma.ui.theme.TintWarning
 import com.psjostrom.strimma.ui.theme.TirGood
+import com.psjostrom.strimma.ui.theme.Warning
 import java.time.ZoneId
 import kotlin.math.max
 import kotlin.math.min

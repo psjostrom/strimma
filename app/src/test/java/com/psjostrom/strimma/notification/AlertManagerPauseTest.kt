@@ -35,7 +35,7 @@ class AlertManagerPauseTest {
     )
 
     @Test
-    fun `pauseCategory stores expiry timestamp`() {
+    fun `pauseCategoryAt stores expiry timestamp`() {
         val durationMs = 60 * 60 * 1000L // 1 hour
         val beforePause = System.currentTimeMillis()
 
@@ -144,14 +144,14 @@ class AlertManagerPauseTest {
     // --- Severity-aware pause tests ---
 
     @Test
-    fun `pauseCategory stores level in prefs`() {
+    fun `pauseCategoryAt stores level in prefs`() {
         pauseCategoryDuration(AlertCategory.LOW, 3_600_000L, AlertManager.ALERT_LEVEL_SOON)
 
         assertEquals(AlertManager.ALERT_LEVEL_SOON, prefs.getInt("pause_low_level", -1))
     }
 
     @Test
-    fun `pauseCategory defaults to URGENT level`() {
+    fun `pauseCategoryAt defaults to URGENT level`() {
         pauseCategoryDuration(AlertCategory.LOW, 3_600_000L)
 
         assertEquals(AlertManager.ALERT_LEVEL_URGENT, prefs.getInt("pause_low_level", -1))

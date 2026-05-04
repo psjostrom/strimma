@@ -34,9 +34,9 @@ import com.psjostrom.strimma.data.calendar.CalendarReader
 import com.psjostrom.strimma.data.health.ExerciseCategory
 import com.psjostrom.strimma.data.health.HealthConnectManager
 import com.psjostrom.strimma.data.health.HealthConnectStatus
-import com.psjostrom.strimma.ui.theme.Warning
 import com.psjostrom.strimma.ui.theme.InRange
 import com.psjostrom.strimma.ui.theme.Stale
+import com.psjostrom.strimma.ui.theme.Warning
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted

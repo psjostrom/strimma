@@ -12,8 +12,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.psjostrom.strimma.R
 import com.psjostrom.strimma.notification.AlertCategory
-import com.psjostrom.strimma.ui.theme.Warning
 import com.psjostrom.strimma.ui.theme.Danger
+import com.psjostrom.strimma.ui.theme.Warning
 import kotlinx.coroutines.delay
 
 private val DURATIONS = listOf(

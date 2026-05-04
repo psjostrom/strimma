@@ -51,12 +51,22 @@ class AlertsViewModel @Inject constructor(
      * expiry timestamp when both categories are paused with identical expiries (the
      * state [pauseAllAlerts] produces); null otherwise. Both the header pill and the
      * pause sheet read this so the unified rule lives in exactly one place.
+     *
+     * Started eagerly so first-render readers (Compose `collectAsState`) see the
+     * already-computed value instead of the placeholder `null`. Without this, a user
+     * navigating to Main with a persisted unified pause sees a one-frame flash of the
+     * per-category pills before the pill collapses to "All alerts paused".
      */
     val unifiedPauseExpiryMs: StateFlow<Long?> = combine(
         alertManager.pauseLowExpiryMs,
         alertManager.pauseHighExpiryMs
     ) { low, high -> if (low != null && low == high) low else null }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+        .stateIn(
+            viewModelScope,
+            SharingStarted.Eagerly,
+            alertManager.pauseLowExpiryMs.value
+                ?.takeIf { it == alertManager.pauseHighExpiryMs.value }
+        )
 
     fun setAlertLowEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertLowEnabled(enabled) }
     fun setAlertHighEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertHighEnabled(enabled) }

@@ -42,7 +42,6 @@ import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.story.MealStoryData
 import com.psjostrom.strimma.data.story.StoryData
-import com.psjostrom.strimma.ui.theme.Warning
 import com.psjostrom.strimma.ui.theme.Danger
 import com.psjostrom.strimma.ui.theme.InRange
 import com.psjostrom.strimma.ui.theme.TintDanger
@@ -50,6 +49,7 @@ import com.psjostrom.strimma.ui.theme.TintGood
 import com.psjostrom.strimma.ui.theme.TintInRange
 import com.psjostrom.strimma.ui.theme.TintWarning
 import com.psjostrom.strimma.ui.theme.TirGood
+import com.psjostrom.strimma.ui.theme.Warning
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

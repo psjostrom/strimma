@@ -24,7 +24,6 @@ import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.MS_PER_MINUTE
 import com.psjostrom.strimma.data.calendar.GuidanceState
 import com.psjostrom.strimma.data.calendar.ReadinessLevel
-import com.psjostrom.strimma.ui.theme.Warning
 import com.psjostrom.strimma.ui.theme.Danger
 import com.psjostrom.strimma.ui.theme.InRange
 import com.psjostrom.strimma.ui.theme.LightTintDanger
@@ -33,6 +32,7 @@ import com.psjostrom.strimma.ui.theme.LightTintWarning
 import com.psjostrom.strimma.ui.theme.TintDanger
 import com.psjostrom.strimma.ui.theme.TintInRange
 import com.psjostrom.strimma.ui.theme.TintWarning
+import com.psjostrom.strimma.ui.theme.Warning
 
 private const val MINUTES_PER_HOUR = 60
 

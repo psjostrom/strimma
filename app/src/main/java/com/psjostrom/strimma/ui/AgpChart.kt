@@ -19,11 +19,11 @@ import com.psjostrom.strimma.data.AgpBucket
 import com.psjostrom.strimma.data.AgpCalculator
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.graph.computeYRange
-import com.psjostrom.strimma.ui.theme.Warning
 import com.psjostrom.strimma.ui.theme.Danger
 import com.psjostrom.strimma.ui.theme.GraphAxisText
 import com.psjostrom.strimma.ui.theme.InRange
 import com.psjostrom.strimma.ui.theme.InRangeZone
+import com.psjostrom.strimma.ui.theme.Warning
 
 private const val MINUTES_PER_DAY = 1440f
 private const val LEFT_MARGIN = 48f

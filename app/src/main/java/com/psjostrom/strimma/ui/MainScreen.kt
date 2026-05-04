@@ -61,18 +61,18 @@ import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.ui.components.PauseAlertsSheet
 import com.psjostrom.strimma.ui.components.rememberCountdownText
 import com.psjostrom.strimma.ui.components.rememberTickingNowMs
-import com.psjostrom.strimma.ui.theme.Warning
-import com.psjostrom.strimma.ui.theme.Danger
 import com.psjostrom.strimma.ui.theme.BolusBlue
 import com.psjostrom.strimma.ui.theme.CarbGreen
+import com.psjostrom.strimma.ui.theme.Danger
 import com.psjostrom.strimma.ui.theme.ExerciseDefault
 import com.psjostrom.strimma.ui.theme.InRange
 import com.psjostrom.strimma.ui.theme.InRangeZone
+import com.psjostrom.strimma.ui.theme.LightTintDanger
+import com.psjostrom.strimma.ui.theme.LightTintWarning
 import com.psjostrom.strimma.ui.theme.Stale
 import com.psjostrom.strimma.ui.theme.TintDanger
 import com.psjostrom.strimma.ui.theme.TintWarning
-import com.psjostrom.strimma.ui.theme.LightTintDanger
-import com.psjostrom.strimma.ui.theme.LightTintWarning
+import com.psjostrom.strimma.ui.theme.Warning
 import androidx.compose.ui.graphics.Path
 import kotlinx.coroutines.delay
 
@@ -385,8 +385,12 @@ private fun BgHeader(
         var showPredictionDetail by remember { mutableStateOf(false) }
         val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
 
-        // Reactive clock so pills disappear on expiry without waiting for an unrelated recomposition
-        val nowMs = rememberTickingNowMs()
+        // Only tick the wall-clock when an expiry actually exists to compare against.
+        // Without this gate the ticker recomposes BgHeader every 10s for nothing whenever
+        // no pause is set — which is nearly always.
+        val anyPauseScheduled =
+            pauseLowExpiryMs != null || pauseHighExpiryMs != null || unifiedPauseExpiryMs != null
+        val nowMs = if (anyPauseScheduled) rememberTickingNowMs() else System.currentTimeMillis()
 
         val activeHigh = pauseHighExpiryMs != null && pauseHighExpiryMs > nowMs
         val activeLow = pauseLowExpiryMs != null && pauseLowExpiryMs > nowMs

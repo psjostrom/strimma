@@ -47,6 +47,13 @@ Status colors are named for the semantic role, not the threshold position — th
 pill, because all of those carry the same "danger" semantic. Tints follow the same naming
 (`TintWarning`/`TintDanger`).
 
+**Threshold lines use `Warning`, regions use `Danger`.** On the graph, the dashed lines at
+`bgLow` / `bgHigh` are amber (`Warning`) — they mark a boundary, not a danger state. The
+dashed lines at `CRITICAL_LOW` / `CRITICAL_HIGH` are `Danger`. A reading that lands below
+`bgLow` or above `bgHigh` is rendered in `Danger` (the region semantic), even though the
+boundary line itself is amber. The boundary is "this is the line"; the region past it is
+"this is dangerous".
+
 ### Semantic Tinted Backgrounds
 
 Transparent overlays of status colors. Surface-adaptive — they blend with whatever

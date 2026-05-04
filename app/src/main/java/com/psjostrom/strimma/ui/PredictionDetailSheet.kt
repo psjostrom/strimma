@@ -20,13 +20,13 @@ import com.psjostrom.strimma.graph.Prediction
 import com.psjostrom.strimma.graph.PredictionComputer
 import com.psjostrom.strimma.graph.ThresholdCrossing
 import com.psjostrom.strimma.notification.AlertCategory
-import com.psjostrom.strimma.ui.theme.Warning
 import com.psjostrom.strimma.ui.theme.Danger
 import com.psjostrom.strimma.ui.theme.InRange
 import com.psjostrom.strimma.ui.theme.LightTintDanger
 import com.psjostrom.strimma.ui.theme.LightTintWarning
 import com.psjostrom.strimma.ui.theme.TintDanger
 import com.psjostrom.strimma.ui.theme.TintWarning
+import com.psjostrom.strimma.ui.theme.Warning
 
 internal const val QUICK_PAUSE_MS = 1_800_000L // 30 min
 
