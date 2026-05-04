@@ -40,8 +40,8 @@ import com.psjostrom.strimma.data.meal.MealAnalyzer
 import com.psjostrom.strimma.data.meal.MealPostprandialResult
 import com.psjostrom.strimma.data.meal.MealTimeSlot
 import com.psjostrom.strimma.data.meal.MealTimeSlotConfig
-import com.psjostrom.strimma.ui.theme.AboveHigh
-import com.psjostrom.strimma.ui.theme.BelowLow
+import com.psjostrom.strimma.ui.theme.Warning
+import com.psjostrom.strimma.ui.theme.Danger
 import com.psjostrom.strimma.ui.theme.GraphAxisText
 import com.psjostrom.strimma.ui.theme.InRange
 import com.psjostrom.strimma.ui.theme.Stale
@@ -295,8 +295,8 @@ private fun MealAggregateHeader(
 private fun getTirColor(tir: Double): Color {
     return when {
         tir >= 80 -> TirGood
-        tir >= 50 -> AboveHigh
-        else -> BelowLow
+        tir >= 50 -> Warning
+        else -> Danger
     }
 }
 
@@ -436,7 +436,7 @@ private fun MealSparkline(
 
     val zoneFill = InRange.copy(alpha = 0.08f)
     val thresholdColor = Stale
-    val excursionFill = AboveHigh.copy(alpha = 0.15f)
+    val excursionFill = Warning.copy(alpha = 0.15f)
     val baselineColor = Stale
     val curveColor = InRange
 

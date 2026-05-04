@@ -55,8 +55,8 @@ import com.psjostrom.strimma.data.health.ExerciseBGContext
 import com.psjostrom.strimma.data.health.ExerciseCategory
 import com.psjostrom.strimma.data.health.ExerciseDao
 import com.psjostrom.strimma.data.health.StoredExerciseSession
-import com.psjostrom.strimma.ui.theme.AboveHigh
-import com.psjostrom.strimma.ui.theme.BelowLow
+import com.psjostrom.strimma.ui.theme.Warning
+import com.psjostrom.strimma.ui.theme.Danger
 import com.psjostrom.strimma.ui.theme.InRange
 import com.psjostrom.strimma.ui.theme.LightTintDanger
 import com.psjostrom.strimma.ui.theme.LightTintInRange
@@ -758,7 +758,7 @@ private fun ExerciseCard(
                         StatChip(
                             label = stringResource(R.string.exercise_detail_min_bg),
                             value = glucoseUnit.format(min),
-                            valueColor = if (min < bgLow.toInt()) BelowLow else null
+                            valueColor = if (min < bgLow.toInt()) Danger else null
                         )
                     }
                     ctx.avgHR?.let { hr ->
@@ -787,8 +787,8 @@ internal fun PlannedWorkoutSheet(
             val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
             val (tintBg, badgeColor, badgeTextRes) = when (guidance.readiness) {
                 ReadinessLevel.READY -> Triple(if (isDark) TintInRange else LightTintInRange, InRange, R.string.preactivity_ready)
-                ReadinessLevel.CAUTION -> Triple(if (isDark) TintWarning else LightTintWarning, AboveHigh, R.string.preactivity_caution)
-                ReadinessLevel.WAIT -> Triple(if (isDark) TintDanger else LightTintDanger, BelowLow, R.string.preactivity_wait)
+                ReadinessLevel.CAUTION -> Triple(if (isDark) TintWarning else LightTintWarning, Warning, R.string.preactivity_caution)
+                ReadinessLevel.WAIT -> Triple(if (isDark) TintDanger else LightTintDanger, Danger, R.string.preactivity_wait)
             }
             val badgeText = stringResource(badgeTextRes)
             val timeText = formatTimeUntil(event.startTime - System.currentTimeMillis())
@@ -1017,10 +1017,10 @@ private fun PatternCard(
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val (badgeText, badgeColor, badgeBg) = when {
         stats.hypoRate >= HYPO_HIGH_RISK_THRESHOLD -> Triple(
-            stringResource(R.string.exercise_patterns_high_risk), BelowLow, if (isDark) TintDanger else LightTintDanger
+            stringResource(R.string.exercise_patterns_high_risk), Danger, if (isDark) TintDanger else LightTintDanger
         )
         stats.hypoRate >= HYPO_SOME_RISK_THRESHOLD -> Triple(
-            stringResource(R.string.exercise_patterns_some_risk), AboveHigh, if (isDark) TintWarning else LightTintWarning
+            stringResource(R.string.exercise_patterns_some_risk), Warning, if (isDark) TintWarning else LightTintWarning
         )
         else -> Triple(
             stringResource(R.string.exercise_patterns_low_risk), InRange, if (isDark) TintInRange else LightTintInRange
@@ -1096,7 +1096,7 @@ private fun PatternCard(
                         stats.sessionCount
                     ),
                     fontSize = 14.sp,
-                    color = if (stats.hypoRate >= HYPO_HIGH_RISK_THRESHOLD) BelowLow
+                    color = if (stats.hypoRate >= HYPO_HIGH_RISK_THRESHOLD) Danger
                         else MaterialTheme.colorScheme.onSurface
                 )
                 // Actionable tip based on risk level
@@ -1131,10 +1131,10 @@ private fun PatternCard(
                     val bandHypoPercent = (bandStats.hypoRate * 100).toInt()
                     val hasRisk = bandStats.hypoRate >= BAND_HYPO_WARNING_THRESHOLD
                     val bandColor = when (band) {
-                        BGBand.LOW -> BelowLow
-                        BGBand.LOW_RANGE -> BelowLow.copy(alpha = 0.7f)
+                        BGBand.LOW -> Danger
+                        BGBand.LOW_RANGE -> Danger.copy(alpha = 0.7f)
                         BGBand.MID_RANGE -> InRange
-                        BGBand.HIGH -> AboveHigh
+                        BGBand.HIGH -> Warning
                     }
 
                     Row(
@@ -1163,7 +1163,7 @@ private fun PatternCard(
                                 text = "low $bandHypoPercent%",
                                 fontSize = 13.sp,
                                 fontWeight = if (hasRisk) FontWeight.SemiBold else FontWeight.Normal,
-                                color = if (hasRisk) BelowLow else MaterialTheme.colorScheme.onSurfaceVariant
+                                color = if (hasRisk) Danger else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         } else {
                             Text(

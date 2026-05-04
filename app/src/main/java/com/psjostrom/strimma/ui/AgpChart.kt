@@ -19,8 +19,8 @@ import com.psjostrom.strimma.data.AgpBucket
 import com.psjostrom.strimma.data.AgpCalculator
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.graph.computeYRange
-import com.psjostrom.strimma.ui.theme.AboveHigh
-import com.psjostrom.strimma.ui.theme.BelowLow
+import com.psjostrom.strimma.ui.theme.Warning
+import com.psjostrom.strimma.ui.theme.Danger
 import com.psjostrom.strimma.ui.theme.GraphAxisText
 import com.psjostrom.strimma.ui.theme.InRange
 import com.psjostrom.strimma.ui.theme.InRangeZone
@@ -108,14 +108,14 @@ fun AgpChart(
 
         // Threshold lines (dashed)
         drawLine(
-            color = BelowLow.copy(alpha = THRESHOLD_ALPHA),
+            color = Danger.copy(alpha = THRESHOLD_ALPHA),
             start = Offset(bounds.left, yForMgdl(AgpCalculator.LOW)),
             end = Offset(bounds.right, yForMgdl(AgpCalculator.LOW)),
             strokeWidth = THRESHOLD_STROKE_WIDTH,
             pathEffect = dashEffect
         )
         drawLine(
-            color = AboveHigh.copy(alpha = THRESHOLD_ALPHA),
+            color = Warning.copy(alpha = THRESHOLD_ALPHA),
             start = Offset(bounds.left, yForMgdl(AgpCalculator.HIGH)),
             end = Offset(bounds.right, yForMgdl(AgpCalculator.HIGH)),
             strokeWidth = THRESHOLD_STROKE_WIDTH,

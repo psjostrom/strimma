@@ -20,8 +20,8 @@ class GraphColorsTest {
 
     @Test
     fun `above high returns orange`() {
-        assertEquals(CANVAS_HIGH, canvasColorFor(182.0, bgLow, bgHigh))
-        assertEquals(CANVAS_HIGH, canvasColorFor(232.0, bgLow, bgHigh))
+        assertEquals(CANVAS_WARNING, canvasColorFor(182.0, bgLow, bgHigh))
+        assertEquals(CANVAS_WARNING, canvasColorFor(232.0, bgLow, bgHigh))
     }
 
     @Test

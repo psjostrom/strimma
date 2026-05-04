@@ -12,8 +12,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.psjostrom.strimma.R
 import com.psjostrom.strimma.notification.AlertCategory
-import com.psjostrom.strimma.ui.theme.AboveHigh
-import com.psjostrom.strimma.ui.theme.BelowLow
+import com.psjostrom.strimma.ui.theme.Warning
+import com.psjostrom.strimma.ui.theme.Danger
 import kotlinx.coroutines.delay
 
 private val DURATIONS = listOf(
@@ -140,7 +140,7 @@ fun PauseAlertsSheetContent(
 
             PauseCategoryRow(
                 label = stringResource(R.string.pause_high_alerts),
-                color = AboveHigh,
+                color = Warning,
                 expiryMs = pauseHighExpiryMs,
                 nowMs = nowMs,
                 category = AlertCategory.HIGH,
@@ -152,7 +152,7 @@ fun PauseAlertsSheetContent(
 
             PauseCategoryRow(
                 label = stringResource(R.string.pause_low_alerts),
-                color = BelowLow,
+                color = Danger,
                 expiryMs = pauseLowExpiryMs,
                 nowMs = nowMs,
                 category = AlertCategory.LOW,
@@ -172,7 +172,7 @@ private fun PauseAllRow(
     Column {
         Text(
             text = stringResource(R.string.pause_all_alerts),
-            color = MaterialTheme.colorScheme.onSurface,
+            color = Danger,
             fontSize = 14.sp,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(bottom = 8.dp)

@@ -34,7 +34,7 @@ import com.psjostrom.strimma.data.calendar.CalendarReader
 import com.psjostrom.strimma.data.health.ExerciseCategory
 import com.psjostrom.strimma.data.health.HealthConnectManager
 import com.psjostrom.strimma.data.health.HealthConnectStatus
-import com.psjostrom.strimma.ui.theme.AboveHigh
+import com.psjostrom.strimma.ui.theme.Warning
 import com.psjostrom.strimma.ui.theme.InRange
 import com.psjostrom.strimma.ui.theme.Stale
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -153,7 +153,7 @@ fun ExerciseSettings(
                 hasPermissions ->
                     InRange to stringResource(R.string.exercise_hc_status_connected)
                 else ->
-                    AboveHigh to stringResource(R.string.exercise_hc_status_permissions)
+                    Warning to stringResource(R.string.exercise_hc_status_permissions)
             }
 
             Row(

@@ -19,8 +19,8 @@ import androidx.compose.ui.unit.dp
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.meal.MealAgpBucket
 import com.psjostrom.strimma.graph.computeYRange
-import com.psjostrom.strimma.ui.theme.AboveHigh
-import com.psjostrom.strimma.ui.theme.BelowLow
+import com.psjostrom.strimma.ui.theme.Warning
+import com.psjostrom.strimma.ui.theme.Danger
 import com.psjostrom.strimma.ui.theme.GraphAxisText
 import com.psjostrom.strimma.ui.theme.InRange
 import com.psjostrom.strimma.ui.theme.InRangeZone
@@ -94,13 +94,13 @@ fun MealAgpChart(
 
         // Threshold lines
         drawLine(
-            color = BelowLow.copy(alpha = THRESHOLD_ALPHA),
+            color = Danger.copy(alpha = THRESHOLD_ALPHA),
             start = Offset(left, yForMgdl(bgLow.toDouble())),
             end = Offset(right, yForMgdl(bgLow.toDouble())),
             strokeWidth = THRESHOLD_STROKE_WIDTH, pathEffect = dashEffect
         )
         drawLine(
-            color = AboveHigh.copy(alpha = THRESHOLD_ALPHA),
+            color = Warning.copy(alpha = THRESHOLD_ALPHA),
             start = Offset(left, yForMgdl(bgHigh.toDouble())),
             end = Offset(right, yForMgdl(bgHigh.toDouble())),
             strokeWidth = THRESHOLD_STROKE_WIDTH, pathEffect = dashEffect

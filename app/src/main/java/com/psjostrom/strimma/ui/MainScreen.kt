@@ -61,8 +61,8 @@ import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.ui.components.PauseAlertsSheet
 import com.psjostrom.strimma.ui.components.rememberCountdownText
 import com.psjostrom.strimma.ui.components.rememberTickingNowMs
-import com.psjostrom.strimma.ui.theme.AboveHigh
-import com.psjostrom.strimma.ui.theme.BelowLow
+import com.psjostrom.strimma.ui.theme.Warning
+import com.psjostrom.strimma.ui.theme.Danger
 import com.psjostrom.strimma.ui.theme.BolusBlue
 import com.psjostrom.strimma.ui.theme.CarbGreen
 import com.psjostrom.strimma.ui.theme.ExerciseDefault
@@ -70,10 +70,8 @@ import com.psjostrom.strimma.ui.theme.InRange
 import com.psjostrom.strimma.ui.theme.InRangeZone
 import com.psjostrom.strimma.ui.theme.Stale
 import com.psjostrom.strimma.ui.theme.TintDanger
-import com.psjostrom.strimma.ui.theme.TintStale
 import com.psjostrom.strimma.ui.theme.TintWarning
 import com.psjostrom.strimma.ui.theme.LightTintDanger
-import com.psjostrom.strimma.ui.theme.LightTintStale
 import com.psjostrom.strimma.ui.theme.LightTintWarning
 import androidx.compose.ui.graphics.Path
 import kotlinx.coroutines.delay
@@ -338,8 +336,8 @@ private fun BgHeader(
 
     val bgColor = when {
         reading == null || isStale -> Stale
-        reading.sgv < bgLow -> BelowLow
-        reading.sgv > bgHigh -> AboveHigh
+        reading.sgv < bgLow -> Danger
+        reading.sgv > bgHigh -> Warning
         else -> InRange
     }
 
@@ -378,7 +376,7 @@ private fun BgHeader(
         }
         Text(
             text = subtitleParts.joinToString(" · "),
-            color = if (isStale) BelowLow else MaterialTheme.colorScheme.onSurfaceVariant,
+            color = if (isStale) Danger else MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 14.sp
         )
 
@@ -406,8 +404,8 @@ private fun BgHeader(
                 // Prediction pill
                 if (crossing != null) {
                     val crossingColor = when (crossing.type) {
-                        CrossingType.LOW -> BelowLow
-                        CrossingType.HIGH -> AboveHigh
+                        CrossingType.LOW -> Danger
+                        CrossingType.HIGH -> Warning
                     }
                     val crossingText = when (crossing.type) {
                         CrossingType.LOW -> stringResource(R.string.main_prediction_low, crossing.minutesUntil)
@@ -451,18 +449,19 @@ private fun BgHeader(
                 }
 
                 if (unifiedActive) {
-                    // Single "All alerts paused" pill — shown when Pause All set both expiries
-                    // to the same timestamp. Uses the Stale (muted lavender) palette so the pill
-                    // reads as "intentionally quiet" rather than borrowing severity from low/high.
+                    // Single "All alerts paused" pill. Reuses Danger — the existing palette's
+                    // most-severe color — because a unified pause silences urgent low (the most
+                    // dangerous category) along with high. This pill is mutually exclusive with
+                    // the per-category low pill, and the text disambiguates "All" from "Low".
                     val countdownText = rememberCountdownText(unifiedPauseExpiryMs)
                     Surface(
                         onClick = onPausePillClick,
                         shape = RoundedCornerShape(100),
-                        color = if (isDark) TintStale else LightTintStale
+                        color = if (isDark) TintDanger else LightTintDanger
                     ) {
                         Text(
                             text = stringResource(R.string.pause_all_active, countdownText),
-                            color = Stale,
+                            color = Danger,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
@@ -479,7 +478,7 @@ private fun BgHeader(
                         ) {
                             Text(
                                 text = stringResource(R.string.pause_high_active, countdownText),
-                                color = AboveHigh,
+                                color = Warning,
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
@@ -497,7 +496,7 @@ private fun BgHeader(
                         ) {
                             Text(
                                 text = stringResource(R.string.pause_low_active, countdownText),
-                                color = BelowLow,
+                                color = Danger,
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
@@ -952,10 +951,10 @@ fun GlucoseGraph(
         // Threshold lines
         val dashEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 6f))
         val thresholds = listOf(
-            CRITICAL_LOW to BelowLow.copy(alpha = 0.5f),
-            bgLow to AboveHigh.copy(alpha = 0.4f),
-            bgHigh to AboveHigh.copy(alpha = 0.4f),
-            CRITICAL_HIGH to BelowLow.copy(alpha = 0.5f),
+            CRITICAL_LOW to Danger.copy(alpha = 0.5f),
+            bgLow to Warning.copy(alpha = 0.4f),
+            bgHigh to Warning.copy(alpha = 0.4f),
+            CRITICAL_HIGH to Danger.copy(alpha = 0.5f),
         )
         for ((level, color) in thresholds) {
             val y = yFor(level)
@@ -1269,11 +1268,11 @@ fun Minimap(
         // Threshold lines (subtle)
         val dashEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 4f))
         drawLine(
-            color = AboveHigh.copy(alpha = 0.25f), start = Offset(0f, yFor(bgLow)),
+            color = Warning.copy(alpha = 0.25f), start = Offset(0f, yFor(bgLow)),
             end = Offset(w, yFor(bgLow)), pathEffect = dashEffect, strokeWidth = 1f
         )
         drawLine(
-            color = AboveHigh.copy(alpha = 0.25f), start = Offset(0f, yFor(bgHigh)),
+            color = Warning.copy(alpha = 0.25f), start = Offset(0f, yFor(bgHigh)),
             end = Offset(w, yFor(bgHigh)), pathEffect = dashEffect, strokeWidth = 1f
         )
 
@@ -1328,8 +1327,8 @@ fun Minimap(
 private fun dotColor(mgdl: Double, bgLow: Double, bgHigh: Double): Color =
     when (bgStatusFor(mgdl, bgLow, bgHigh)) {
         BgStatus.IN_RANGE -> InRange
-        BgStatus.HIGH -> AboveHigh
-        BgStatus.DANGER -> BelowLow
+        BgStatus.HIGH -> Warning
+        BgStatus.DANGER -> Danger
     }
 
 internal const val GRAPH_MARGIN_TOP = 16f
