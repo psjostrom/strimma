@@ -309,6 +309,33 @@ class AlertManagerTest {
         assertFalse(isNotificationActive(AlertManager.ALERT_LOW_SOON_ID))
     }
 
+    @Test
+    fun `pauseAllAlerts sets identical expiry timestamps for both categories`() = runTest {
+        // The Pause All shortcut must produce equal expiries so MainScreen can collapse
+        // the two pause pills into a single "All alerts paused" pill via exact equality.
+        alertManager.pauseAllAlerts(3_600_000L)
+
+        val low = alertManager.pauseLowExpiryMs.value
+        val high = alertManager.pauseHighExpiryMs.value
+        assertTrue("LOW expiry should be set", low != null)
+        assertTrue("HIGH expiry should be set", high != null)
+        org.junit.Assert.assertEquals(low, high)
+    }
+
+    @Test
+    fun `pauseAlertCategory in succession yields different expiry timestamps`() = runTest {
+        // Confirms the bug this change fixes: per-category pauses fired back-to-back
+        // each compute their own System.currentTimeMillis() and so do NOT compare equal.
+        alertManager.pauseAlertCategory(AlertCategory.LOW, 3_600_000L)
+        Thread.sleep(2)
+        alertManager.pauseAlertCategory(AlertCategory.HIGH, 3_600_000L)
+
+        val low = alertManager.pauseLowExpiryMs.value
+        val high = alertManager.pauseHighExpiryMs.value
+        assertTrue(low != null && high != null)
+        org.junit.Assert.assertNotEquals(low, high)
+    }
+
     // -- Push failure --
 
     @Test

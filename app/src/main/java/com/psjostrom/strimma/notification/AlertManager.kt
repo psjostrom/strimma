@@ -101,7 +101,15 @@ class AlertManager @Inject constructor(
             durationMs: Long,
             level: Int = ALERT_LEVEL_URGENT
         ) {
-            val expiryMs = System.currentTimeMillis() + durationMs
+            pauseCategoryAt(prefs, category, System.currentTimeMillis() + durationMs, level)
+        }
+
+        fun pauseCategoryAt(
+            prefs: android.content.SharedPreferences,
+            category: AlertCategory,
+            expiryMs: Long,
+            level: Int = ALERT_LEVEL_URGENT
+        ) {
             prefs.edit {
                 putLong(category.prefsKey, expiryMs)
                 putInt(category.levelKey, level)
@@ -469,8 +477,16 @@ class AlertManager @Inject constructor(
     val pauseHighExpiryMs: StateFlow<Long?> = _pauseHighExpiryMs
 
     fun pauseAlertCategory(category: AlertCategory, durationMs: Long, level: Int = ALERT_LEVEL_URGENT) {
-        pauseCategory(snoozePrefs, category, durationMs, level)
+        pauseAlertCategoryAt(category, System.currentTimeMillis() + durationMs, level)
+    }
+
+    fun pauseAllAlerts(durationMs: Long, level: Int = ALERT_LEVEL_URGENT) {
         val expiryMs = System.currentTimeMillis() + durationMs
+        AlertCategory.entries.forEach { pauseAlertCategoryAt(it, expiryMs, level) }
+    }
+
+    private fun pauseAlertCategoryAt(category: AlertCategory, expiryMs: Long, level: Int) {
+        pauseCategoryAt(snoozePrefs, category, expiryMs, level)
         when (category) {
             AlertCategory.LOW -> {
                 _pauseLowExpiryMs.value = expiryMs

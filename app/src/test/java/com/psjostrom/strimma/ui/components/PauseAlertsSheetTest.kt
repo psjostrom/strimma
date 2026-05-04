@@ -1,5 +1,6 @@
 package com.psjostrom.strimma.ui.components
 
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -28,6 +29,7 @@ class PauseAlertsSheetTest {
                     pauseLowExpiryMs = null,
                     pauseHighExpiryMs = null,
                     onPause = { _, _ -> },
+                    onPauseAll = {},
                     onCancel = {}
                 )
             }
@@ -51,6 +53,7 @@ class PauseAlertsSheetTest {
                         pausedCategory = cat
                         pausedDuration = dur
                     },
+                    onPauseAll = {},
                     onCancel = {}
                 )
             }
@@ -72,6 +75,7 @@ class PauseAlertsSheetTest {
                     pauseLowExpiryMs = null,
                     pauseHighExpiryMs = futureExpiry,
                     onPause = { _, _ -> },
+                    onPauseAll = {},
                     onCancel = {}
                 )
             }
@@ -90,6 +94,7 @@ class PauseAlertsSheetTest {
                     pauseLowExpiryMs = futureExpiry,
                     pauseHighExpiryMs = null,
                     onPause = { _, _ -> },
+                    onPauseAll = {},
                     onCancel = { cancelledCategory = it }
                 )
             }
@@ -108,6 +113,7 @@ class PauseAlertsSheetTest {
                     pauseLowExpiryMs = futureExpiry,
                     pauseHighExpiryMs = null,
                     onPause = { _, _ -> },
+                    onPauseAll = {},
                     onCancel = {}
                 )
             }
@@ -125,6 +131,7 @@ class PauseAlertsSheetTest {
                     pauseLowExpiryMs = null,
                     pauseHighExpiryMs = null,
                     onPause = { _, _ -> },
+                    onPauseAll = {},
                     onCancel = {}
                 )
             }
@@ -137,20 +144,16 @@ class PauseAlertsSheetTest {
     }
 
     @Test
-    fun `tapping a Pause all chip invokes onPause for both LOW and HIGH`() {
-        var pausedLow: Long? = null
-        var pausedHigh: Long? = null
+    fun `tapping a Pause all chip invokes onPauseAll once and skips per-category onPause`() {
+        var allDuration: Long? = null
+        var perCategoryCalls = 0
         composeRule.setContent {
             StrimmaTheme {
                 PauseAlertsSheetContent(
                     pauseLowExpiryMs = null,
                     pauseHighExpiryMs = null,
-                    onPause = { cat, dur ->
-                        when (cat) {
-                            AlertCategory.LOW -> pausedLow = dur
-                            AlertCategory.HIGH -> pausedHigh = dur
-                        }
-                    },
+                    onPause = { _, _ -> perCategoryCalls += 1 },
+                    onPauseAll = { dur -> allDuration = dur },
                     onCancel = {}
                 )
             }
@@ -158,7 +161,71 @@ class PauseAlertsSheetTest {
         // The first "1h" chip on screen belongs to the "All alerts" row,
         // which renders above the per-category rows.
         composeRule.onAllNodes(hasText("1h"))[0].performClick()
-        assertEquals(3_600_000L, pausedLow)
-        assertEquals(3_600_000L, pausedHigh)
+        assertEquals(3_600_000L, allDuration)
+        assertEquals(0, perCategoryCalls)
+    }
+
+    @Test
+    fun `unified pause shows single Cancel on All row and hides per-category rows`() {
+        // Same expiry for both = the state Pause All produces. The sheet should
+        // mirror the unified pill: one Cancel control on the All row, no per-category rows.
+        val sharedExpiry = System.currentTimeMillis() + 1_800_000L
+        composeRule.setContent {
+            StrimmaTheme {
+                PauseAlertsSheetContent(
+                    pauseLowExpiryMs = sharedExpiry,
+                    pauseHighExpiryMs = sharedExpiry,
+                    onPause = { _, _ -> },
+                    onPauseAll = {},
+                    onCancel = {}
+                )
+            }
+        }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("All alerts").assertExists()
+        composeRule.onNodeWithText("All high alerts").assertDoesNotExist()
+        composeRule.onNodeWithText("All low alerts").assertDoesNotExist()
+        composeRule.onAllNodes(hasText("Cancel")).assertCountEquals(1)
+    }
+
+    @Test
+    fun `unified pause Cancel cancels both LOW and HIGH`() {
+        val sharedExpiry = System.currentTimeMillis() + 1_800_000L
+        val cancelled = mutableListOf<AlertCategory>()
+        composeRule.setContent {
+            StrimmaTheme {
+                PauseAlertsSheetContent(
+                    pauseLowExpiryMs = sharedExpiry,
+                    pauseHighExpiryMs = sharedExpiry,
+                    onPause = { _, _ -> },
+                    onPauseAll = {},
+                    onCancel = { cancelled.add(it) }
+                )
+            }
+        }
+        composeRule.onNodeWithText("Cancel").performClick()
+        assertEquals(setOf(AlertCategory.LOW, AlertCategory.HIGH), cancelled.toSet())
+    }
+
+    @Test
+    fun `mismatched expiries keep per-category rows visible`() {
+        // Two independent pauses at different times -> still split, no unified row.
+        val now = System.currentTimeMillis()
+        composeRule.setContent {
+            StrimmaTheme {
+                PauseAlertsSheetContent(
+                    pauseLowExpiryMs = now + 1_800_000L,
+                    pauseHighExpiryMs = now + 3_600_000L,
+                    onPause = { _, _ -> },
+                    onPauseAll = {},
+                    onCancel = {}
+                )
+            }
+        }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("All high alerts").assertExists()
+        composeRule.onNodeWithText("All low alerts").assertExists()
+        // Two cancel buttons (one per category), zero on the All row (which shows chips).
+        composeRule.onAllNodes(hasText("Cancel")).assertCountEquals(2)
     }
 }

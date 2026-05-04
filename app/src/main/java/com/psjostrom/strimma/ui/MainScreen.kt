@@ -95,6 +95,7 @@ fun MainScreen(
     pauseLowExpiryMs: Long? = null,
     pauseHighExpiryMs: Long? = null,
     onPauseAlerts: (AlertCategory, Long) -> Unit = { _, _ -> },
+    onPauseAllAlerts: (Long) -> Unit = {},
     onCancelPause: (AlertCategory) -> Unit = {},
     storyReady: Boolean = false,
     storyMonthName: String = "",
@@ -147,6 +148,7 @@ fun MainScreen(
             pauseLowExpiryMs = pauseLowExpiryMs,
             pauseHighExpiryMs = pauseHighExpiryMs,
             onPause = onPauseAlerts,
+            onPauseAll = onPauseAllAlerts,
             onCancel = onCancelPause,
             onDismiss = { showPauseSheet = false }
         )
@@ -385,9 +387,11 @@ private fun BgHeader(
             }
         }
 
-        val hasPills = crossing != null || iob > 0.0 ||
-            (pauseHighExpiryMs != null && pauseHighExpiryMs > nowMs) ||
-            (pauseLowExpiryMs != null && pauseLowExpiryMs > nowMs)
+        val activeHigh = pauseHighExpiryMs != null && pauseHighExpiryMs > nowMs
+        val activeLow = pauseLowExpiryMs != null && pauseLowExpiryMs > nowMs
+        val unifiedPause = activeHigh && activeLow && pauseHighExpiryMs == pauseLowExpiryMs
+
+        val hasPills = crossing != null || iob > 0.0 || activeHigh || activeLow
 
         if (hasPills) {
             Spacer(modifier = Modifier.height(8.dp))
@@ -443,39 +447,59 @@ private fun BgHeader(
                     }
                 }
 
-                // Pause high pill
-                if (pauseHighExpiryMs != null && pauseHighExpiryMs > nowMs) {
+                if (unifiedPause) {
+                    // Single "All alerts paused" pill — shown when Pause All set both expiries
+                    // to the same timestamp. Uses the more severe (low) styling because urgent
+                    // low alerts are silenced.
                     val countdownText = rememberCountdownText(pauseHighExpiryMs)
-                    Surface(
-                        onClick = onPausePillClick,
-                        shape = RoundedCornerShape(100),
-                        color = if (isDark) TintWarning else LightTintWarning
-                    ) {
-                        Text(
-                            text = stringResource(R.string.pause_high_active, countdownText),
-                            color = AboveHigh,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
-                        )
-                    }
-                }
-
-                // Pause low pill
-                if (pauseLowExpiryMs != null && pauseLowExpiryMs > nowMs) {
-                    val countdownText = rememberCountdownText(pauseLowExpiryMs)
                     Surface(
                         onClick = onPausePillClick,
                         shape = RoundedCornerShape(100),
                         color = if (isDark) TintDanger else LightTintDanger
                     ) {
                         Text(
-                            text = stringResource(R.string.pause_low_active, countdownText),
+                            text = stringResource(R.string.pause_all_active, countdownText),
                             color = BelowLow,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
                         )
+                    }
+                } else {
+                    // Pause high pill
+                    if (activeHigh) {
+                        val countdownText = rememberCountdownText(pauseHighExpiryMs)
+                        Surface(
+                            onClick = onPausePillClick,
+                            shape = RoundedCornerShape(100),
+                            color = if (isDark) TintWarning else LightTintWarning
+                        ) {
+                            Text(
+                                text = stringResource(R.string.pause_high_active, countdownText),
+                                color = AboveHigh,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
+                            )
+                        }
+                    }
+
+                    // Pause low pill
+                    if (activeLow) {
+                        val countdownText = rememberCountdownText(pauseLowExpiryMs)
+                        Surface(
+                            onClick = onPausePillClick,
+                            shape = RoundedCornerShape(100),
+                            color = if (isDark) TintDanger else LightTintDanger
+                        ) {
+                            Text(
+                                text = stringResource(R.string.pause_low_active, countdownText),
+                                color = BelowLow,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
+                            )
+                        }
                     }
                 }
             }

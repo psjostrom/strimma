@@ -63,6 +63,10 @@ class AlertsViewModel @Inject constructor(
         alertManager.pauseAlertCategory(category, durationMs)
     }
 
+    fun pauseAllAlerts(durationMs: Long) {
+        alertManager.pauseAllAlerts(durationMs)
+    }
+
     fun cancelAlertPause(category: AlertCategory) {
         alertManager.cancelAlertPause(category)
     }

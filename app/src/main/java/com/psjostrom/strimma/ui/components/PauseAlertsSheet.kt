@@ -53,6 +53,7 @@ fun PauseAlertsSheet(
     pauseLowExpiryMs: Long?,
     pauseHighExpiryMs: Long?,
     onPause: (AlertCategory, Long) -> Unit,
+    onPauseAll: (Long) -> Unit,
     onCancel: (AlertCategory) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -67,6 +68,10 @@ fun PauseAlertsSheet(
                 onPause(cat, dur)
                 onDismiss()
             },
+            onPauseAll = { dur ->
+                onPauseAll(dur)
+                onDismiss()
+            },
             onCancel = onCancel
         )
     }
@@ -77,8 +82,13 @@ fun PauseAlertsSheetContent(
     pauseLowExpiryMs: Long?,
     pauseHighExpiryMs: Long?,
     onPause: (AlertCategory, Long) -> Unit,
+    onPauseAll: (Long) -> Unit,
     onCancel: (AlertCategory) -> Unit
 ) {
+    val now = System.currentTimeMillis()
+    val unifiedExpiryMs = pauseHighExpiryMs
+        ?.takeIf { it > now && it == pauseLowExpiryMs }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -92,35 +102,49 @@ fun PauseAlertsSheetContent(
             modifier = Modifier.padding(bottom = 20.dp)
         )
 
-        PauseAllRow(onPause = onPause)
-
-        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
-
-        PauseCategoryRow(
-            label = stringResource(R.string.pause_high_alerts),
-            color = AboveHigh,
-            expiryMs = pauseHighExpiryMs,
-            category = AlertCategory.HIGH,
-            onPause = onPause,
-            onCancel = onCancel
+        PauseAllRow(
+            unifiedExpiryMs = unifiedExpiryMs,
+            onPauseAll = onPauseAll,
+            onCancelAll = {
+                onCancel(AlertCategory.LOW)
+                onCancel(AlertCategory.HIGH)
+            }
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        // When the unified pause is active the per-category rows would just duplicate
+        // a control the user already silenced together; hide them so the only cancel is
+        // the one matching the original "Pause all" intent.
+        if (unifiedExpiryMs == null) {
+            HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
 
-        PauseCategoryRow(
-            label = stringResource(R.string.pause_low_alerts),
-            color = BelowLow,
-            expiryMs = pauseLowExpiryMs,
-            category = AlertCategory.LOW,
-            onPause = onPause,
-            onCancel = onCancel
-        )
+            PauseCategoryRow(
+                label = stringResource(R.string.pause_high_alerts),
+                color = AboveHigh,
+                expiryMs = pauseHighExpiryMs,
+                category = AlertCategory.HIGH,
+                onPause = onPause,
+                onCancel = onCancel
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            PauseCategoryRow(
+                label = stringResource(R.string.pause_low_alerts),
+                color = BelowLow,
+                expiryMs = pauseLowExpiryMs,
+                category = AlertCategory.LOW,
+                onPause = onPause,
+                onCancel = onCancel
+            )
+        }
     }
 }
 
 @Composable
 private fun PauseAllRow(
-    onPause: (AlertCategory, Long) -> Unit
+    unifiedExpiryMs: Long?,
+    onPauseAll: (Long) -> Unit,
+    onCancelAll: () -> Unit
 ) {
     Column {
         Text(
@@ -130,19 +154,35 @@ private fun PauseAllRow(
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(bottom = 8.dp)
         )
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            DURATIONS.forEach { (durationMs, labelRes) ->
-                FilledTonalButton(
-                    onClick = {
-                        AlertCategory.entries.forEach { cat -> onPause(cat, durationMs) }
-                    },
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                    modifier = Modifier.height(36.dp)
-                ) {
-                    Text(stringResource(labelRes), fontSize = 13.sp)
+        if (unifiedExpiryMs != null) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                val countdownText = rememberCountdownText(unifiedExpiryMs)
+                Text(
+                    text = stringResource(R.string.pause_countdown, countdownText),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 14.sp,
+                    modifier = Modifier.weight(1f)
+                )
+                TextButton(onClick = onCancelAll) {
+                    Text(stringResource(R.string.pause_cancel))
+                }
+            }
+        } else {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                DURATIONS.forEach { (durationMs, labelRes) ->
+                    FilledTonalButton(
+                        onClick = { onPauseAll(durationMs) },
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                        modifier = Modifier.height(36.dp)
+                    ) {
+                        Text(stringResource(labelRes), fontSize = 13.sp)
+                    }
                 }
             }
         }
