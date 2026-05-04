@@ -7,7 +7,7 @@ const val CRITICAL_HIGH = 234.0
 
 // Android Canvas colors (ARGB int) — keep in sync with Color.kt status colors
 const val CANVAS_IN_RANGE = 0xFF56CCF2.toInt()
-const val CANVAS_HIGH = 0xFFFFB800.toInt()
+const val CANVAS_WARNING = 0xFFFFB800.toInt()
 const val CANVAS_DANGER = 0xFFFF4D6A.toInt()
 
 // Treatment marker colors — keep in sync with Color.kt (BolusBlue, CarbGreen)
@@ -34,7 +34,7 @@ fun bgStatusFor(mgdl: Double, bgLow: Double, bgHigh: Double): BgStatus = when {
 fun canvasColorFor(mgdl: Double, bgLow: Double, bgHigh: Double): Int =
     when (bgStatusFor(mgdl, bgLow, bgHigh)) {
         BgStatus.IN_RANGE -> CANVAS_IN_RANGE
-        BgStatus.HIGH -> CANVAS_HIGH
+        BgStatus.HIGH -> CANVAS_WARNING
         BgStatus.DANGER -> CANVAS_DANGER
     }
 

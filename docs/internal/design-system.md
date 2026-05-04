@@ -38,9 +38,21 @@ These are Strimma's identity. They never change between themes.
 | Token | Hex | Meaning |
 |-------|-----|---------|
 | `InRange` | `#56CCF2` | Glucose in target range. Strimma's brand accent. |
-| `AboveHigh` | `#FFB800` | Glucose above target |
-| `BelowLow` | `#FF4D6A` | Glucose below target or critical |
+| `Warning` | `#FFB800` | High glucose / non-urgent caution (above target, below critical high) |
+| `Danger` | `#FF4D6A` | Low glucose / critical (urgent low, urgent high, below target, paused-all pill) |
 | `Stale` | `#6A5F80` | No data / outdated (matches tertiary text) |
+
+Status colors are named for the semantic role, not the threshold position — the same
+`Danger` coral marks urgent low, urgent high, below-target text, and the all-alerts-paused
+pill, because all of those carry the same "danger" semantic. Tints follow the same naming
+(`TintWarning`/`TintDanger`).
+
+**Threshold lines use `Warning`, regions use `Danger`.** On the graph, the dashed lines at
+`bgLow` / `bgHigh` are amber (`Warning`) — they mark a boundary, not a danger state. The
+dashed lines at `CRITICAL_LOW` / `CRITICAL_HIGH` are `Danger`. A reading that lands below
+`bgLow` or above `bgHigh` is rendered in `Danger` (the region semantic), even though the
+boundary line itself is amber. The boundary is "this is the line"; the region past it is
+"this is dangerous".
 
 ### Semantic Tinted Backgrounds
 
@@ -52,11 +64,11 @@ surface they sit on, so they work on both the main background and elevated surfa
 |-------|-----------|-------|
 | `TintInRange` | `InRange` @ 10% alpha | Cyan tint, in-range context |
 | `TintGood` | `TirGood` @ 10% alpha | Green tint, good TIR |
-| `TintWarning` | `AboveHigh` @ 12% alpha | Amber tint, high glucose / caution |
-| `TintDanger` | `BelowLow` @ 10% alpha | Coral tint, low glucose / danger |
+| `TintWarning` | `Warning` @ 12% alpha | Amber tint, high glucose / caution |
+| `TintDanger` | `Danger` @ 10% alpha | Coral tint, low glucose / danger |
 | `LightTintInRange` | `InRange` @ 12% alpha | Light theme cyan tint |
-| `LightTintWarning` | `AboveHigh` @ 14% alpha | Light theme amber tint |
-| `LightTintDanger` | `BelowLow` @ 12% alpha | Light theme coral tint |
+| `LightTintWarning` | `Warning` @ 14% alpha | Light theme amber tint |
+| `LightTintDanger` | `Danger` @ 12% alpha | Light theme coral tint |
 
 **Why transparent, not hardcoded hex?** Hardcoded tint colors are designed for one
 specific surface. Transparent status colors adapt to any surface — the underlying
@@ -68,8 +80,8 @@ automatically updates its tint.
 | Token | Alpha | Usage |
 |-------|-------|-------|
 | `InRangeZone` | 7% of InRange | Subtle in-range band |
-| `ZoneLow` | 12% of BelowLow | Low region background |
-| `ZoneHigh` | 12% of AboveHigh | High region background |
+| `ZoneLow` | 12% of Danger | Low region background |
+| `ZoneHigh` | 12% of Warning | High region background |
 
 ### Canvas Colors (Android Graphics)
 
@@ -79,8 +91,8 @@ Always update these when status colors change.
 | Constant | Value | Compose Equivalent |
 |----------|-------|-------------------|
 | `CANVAS_IN_RANGE` | `0xFF56CCF2` | `InRange` |
-| `CANVAS_HIGH` | `0xFFFFB800` | `AboveHigh` |
-| `CANVAS_LOW` | `0xFFFF4D6A` | `BelowLow` |
+| `CANVAS_WARNING` | `0xFFFFB800` | `Warning` |
+| `CANVAS_DANGER` | `0xFFFF4D6A` | `Danger` |
 
 ## Typography
 

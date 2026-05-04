@@ -27,9 +27,21 @@ import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
 
-enum class AlertCategory(val prefsKey: String, val levelKey: String) {
-    LOW("pause_low", "pause_low_level"),
-    HIGH("pause_high", "pause_high_level")
+/**
+ * Alert categories the user can pause. The notification IDs MUST match the
+ * companion-object ALERT_*_ID constants in [AlertManager]. Encoding them on the enum
+ * lets pause/cancel logic iterate categories without hand-rolled `when` blocks that
+ * silently bypass new categories.
+ */
+enum class AlertCategory(
+    val prefsKey: String,
+    val levelKey: String,
+    val urgentId: Int,
+    val regularId: Int,
+    val soonId: Int
+) {
+    LOW("pause_low", "pause_low_level", urgentId = 101, regularId = 100, soonId = 105),
+    HIGH("pause_high", "pause_high_level", urgentId = 104, regularId = 102, soonId = 106)
 }
 
 @Suppress("TooManyFunctions") // Alert channels + management methods
@@ -52,14 +64,19 @@ class AlertManager @Inject constructor(
         // Legacy channel — delete if it exists from previous version
         private const val LEGACY_CHANNEL = "strimma_alerts"
 
-        const val ALERT_URGENT_LOW_ID = 101
-        const val ALERT_LOW_ID = 100
-        const val ALERT_HIGH_ID = 102
-        const val ALERT_URGENT_HIGH_ID = 104
+        // Category-related notification IDs — single source of truth is AlertCategory.
+        // The companion exposes them as named properties for backward compatibility with
+        // call sites and tests. Adding a new category just means adding it to the enum.
+        val ALERT_URGENT_LOW_ID = AlertCategory.LOW.urgentId
+        val ALERT_LOW_ID = AlertCategory.LOW.regularId
+        val ALERT_LOW_SOON_ID = AlertCategory.LOW.soonId
+        val ALERT_URGENT_HIGH_ID = AlertCategory.HIGH.urgentId
+        val ALERT_HIGH_ID = AlertCategory.HIGH.regularId
+        val ALERT_HIGH_SOON_ID = AlertCategory.HIGH.soonId
+
+        // Non-category alerts keep their own const ids
         const val ALERT_STALE_ID = 103
         const val ALERT_PUSH_FAIL_ID = 107
-        const val ALERT_LOW_SOON_ID = 105
-        const val ALERT_HIGH_SOON_ID = 106
 
         private const val SNOOZE_DURATION_MS = 30 * 60 * 1000L
 
@@ -95,13 +112,12 @@ class AlertManager @Inject constructor(
 
         // --- Category-level pause (static methods for testability) ---
 
-        fun pauseCategory(
+        fun pauseCategoryAt(
             prefs: android.content.SharedPreferences,
             category: AlertCategory,
-            durationMs: Long,
+            expiryMs: Long,
             level: Int = ALERT_LEVEL_URGENT
         ) {
-            val expiryMs = System.currentTimeMillis() + durationMs
             prefs.edit {
                 putLong(category.prefsKey, expiryMs)
                 putInt(category.levelKey, level)
@@ -453,46 +469,51 @@ class AlertManager @Inject constructor(
         DebugLog.log("Alert $alertId snoozed for 30 min")
     }
 
-    private fun alertCategoryAndLevel(alertId: Int): Pair<AlertCategory, Int>? = when (alertId) {
-        ALERT_LOW_SOON_ID -> AlertCategory.LOW to ALERT_LEVEL_SOON
-        ALERT_LOW_ID -> AlertCategory.LOW to ALERT_LEVEL_REGULAR
-        ALERT_URGENT_LOW_ID -> AlertCategory.LOW to ALERT_LEVEL_URGENT
-        ALERT_HIGH_SOON_ID -> AlertCategory.HIGH to ALERT_LEVEL_SOON
-        ALERT_HIGH_ID -> AlertCategory.HIGH to ALERT_LEVEL_REGULAR
-        ALERT_URGENT_HIGH_ID -> AlertCategory.HIGH to ALERT_LEVEL_URGENT
-        else -> null
-    }
+    // Reverse lookup of (alertId -> category, level) derived from AlertCategory.entries
+    // so that a new category gets reverse mapping for free, no hand-rolled when needed.
+    private val alertIdToCategoryLevel: Map<Int, Pair<AlertCategory, Int>> =
+        AlertCategory.entries.flatMap { cat ->
+            listOf(
+                cat.urgentId to (cat to ALERT_LEVEL_URGENT),
+                cat.regularId to (cat to ALERT_LEVEL_REGULAR),
+                cat.soonId to (cat to ALERT_LEVEL_SOON),
+            )
+        }.toMap()
 
-    private val _pauseLowExpiryMs = MutableStateFlow<Long?>(alertPauseExpiryMs(AlertCategory.LOW))
-    private val _pauseHighExpiryMs = MutableStateFlow<Long?>(alertPauseExpiryMs(AlertCategory.HIGH))
-    val pauseLowExpiryMs: StateFlow<Long?> = _pauseLowExpiryMs
-    val pauseHighExpiryMs: StateFlow<Long?> = _pauseHighExpiryMs
+    private fun alertCategoryAndLevel(alertId: Int): Pair<AlertCategory, Int>? =
+        alertIdToCategoryLevel[alertId]
+
+    // One MutableStateFlow per category, keyed by the enum so iteration over
+    // AlertCategory.entries can never silently bypass a category.
+    private val pauseExpiryFlows: Map<AlertCategory, MutableStateFlow<Long?>> =
+        AlertCategory.entries.associateWith { MutableStateFlow(alertPauseExpiryMs(it)) }
+    val pauseLowExpiryMs: StateFlow<Long?> = pauseExpiryFlows.getValue(AlertCategory.LOW)
+    val pauseHighExpiryMs: StateFlow<Long?> = pauseExpiryFlows.getValue(AlertCategory.HIGH)
 
     fun pauseAlertCategory(category: AlertCategory, durationMs: Long, level: Int = ALERT_LEVEL_URGENT) {
-        pauseCategory(snoozePrefs, category, durationMs, level)
+        pauseAlertCategoryAt(category, System.currentTimeMillis() + durationMs, level)
+    }
+
+    fun pauseAllAlerts(durationMs: Long, level: Int = ALERT_LEVEL_URGENT) {
         val expiryMs = System.currentTimeMillis() + durationMs
-        when (category) {
-            AlertCategory.LOW -> {
-                _pauseLowExpiryMs.value = expiryMs
-                if (level >= ALERT_LEVEL_URGENT) notificationManager.cancel(ALERT_URGENT_LOW_ID)
-                if (level >= ALERT_LEVEL_REGULAR) notificationManager.cancel(ALERT_LOW_ID)
-                if (level >= ALERT_LEVEL_SOON) notificationManager.cancel(ALERT_LOW_SOON_ID)
-            }
-            AlertCategory.HIGH -> {
-                _pauseHighExpiryMs.value = expiryMs
-                if (level >= ALERT_LEVEL_URGENT) notificationManager.cancel(ALERT_URGENT_HIGH_ID)
-                if (level >= ALERT_LEVEL_REGULAR) notificationManager.cancel(ALERT_HIGH_ID)
-                if (level >= ALERT_LEVEL_SOON) notificationManager.cancel(ALERT_HIGH_SOON_ID)
-            }
-        }
+        AlertCategory.entries.forEach { pauseAlertCategoryAt(it, expiryMs, level) }
     }
 
     fun cancelAlertPause(category: AlertCategory) {
         cancelPause(snoozePrefs, category)
-        when (category) {
-            AlertCategory.LOW -> _pauseLowExpiryMs.value = null
-            AlertCategory.HIGH -> _pauseHighExpiryMs.value = null
-        }
+        pauseExpiryFlows.getValue(category).value = null
+    }
+
+    fun cancelAllAlerts() {
+        AlertCategory.entries.forEach(::cancelAlertPause)
+    }
+
+    private fun pauseAlertCategoryAt(category: AlertCategory, expiryMs: Long, level: Int) {
+        pauseCategoryAt(snoozePrefs, category, expiryMs, level)
+        pauseExpiryFlows.getValue(category).value = expiryMs
+        if (level >= ALERT_LEVEL_URGENT) notificationManager.cancel(category.urgentId)
+        if (level >= ALERT_LEVEL_REGULAR) notificationManager.cancel(category.regularId)
+        if (level >= ALERT_LEVEL_SOON) notificationManager.cancel(category.soonId)
     }
 
     fun isAlertCategoryPaused(category: AlertCategory): Boolean =

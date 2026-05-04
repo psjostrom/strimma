@@ -50,12 +50,12 @@ import com.psjostrom.strimma.data.health.StoredExerciseSession
 import com.psjostrom.strimma.data.health.Trend
 import com.psjostrom.strimma.graph.computeYAxisLabels
 import com.psjostrom.strimma.graph.computeYRange
-import com.psjostrom.strimma.ui.theme.AboveHigh
-import com.psjostrom.strimma.ui.theme.BelowLow
+import com.psjostrom.strimma.ui.theme.Danger
 import com.psjostrom.strimma.ui.theme.ExerciseDefault
 import com.psjostrom.strimma.ui.theme.InRange
 import com.psjostrom.strimma.ui.theme.LightTintDanger
 import com.psjostrom.strimma.ui.theme.TintDanger
+import com.psjostrom.strimma.ui.theme.Warning
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -211,7 +211,7 @@ fun ExerciseDetailSheet(
                             label = stringResource(R.string.exercise_detail_lowest_bg),
                             value = glucoseUnit.format(lowest),
                             timing = minutesAfter?.takeIf { it > 0 }?.let { "${formatDuration(it)} after" },
-                            valueColor = if (isHypo) BelowLow else null
+                            valueColor = if (isHypo) Danger else null
                         )
                     }
 
@@ -250,7 +250,7 @@ fun ExerciseDetailSheet(
                         ) {
                             Text(
                                 text = stringResource(R.string.exercise_detail_post_hypo),
-                                color = BelowLow,
+                                color = Danger,
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
@@ -280,7 +280,7 @@ private fun StatsRow(bgContext: ExerciseBGContext, glucoseUnit: GlucoseUnit, bgL
         StatBlock(
             label = stringResource(R.string.exercise_detail_min_bg),
             value = bgContext.minBG?.let { glucoseUnit.format(it) } ?: noValue,
-            valueColor = bgContext.minBG?.let { if (it < bgLow) BelowLow else null }
+            valueColor = bgContext.minBG?.let { if (it < bgLow) Danger else null }
         )
         bgContext.avgHR?.let {
             StatBlock(
@@ -338,8 +338,8 @@ private fun ExerciseBGGraph(
     modifier: Modifier = Modifier
 ) {
     val dotColor = InRange
-    val lowColor = BelowLow
-    val highColor = AboveHigh
+    val lowColor = Danger
+    val highColor = Warning
     val exerciseBandColor = ExerciseDefault.copy(alpha = 0.15f)
     val exerciseBorderColor = ExerciseDefault.copy(alpha = 0.5f)
     val thresholdDash = PathEffect.dashPathEffect(floatArrayOf(6f, 6f))

@@ -42,14 +42,14 @@ import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.story.MealStoryData
 import com.psjostrom.strimma.data.story.StoryData
-import com.psjostrom.strimma.ui.theme.AboveHigh
-import com.psjostrom.strimma.ui.theme.BelowLow
+import com.psjostrom.strimma.ui.theme.Danger
 import com.psjostrom.strimma.ui.theme.InRange
 import com.psjostrom.strimma.ui.theme.TintDanger
 import com.psjostrom.strimma.ui.theme.TintGood
 import com.psjostrom.strimma.ui.theme.TintInRange
 import com.psjostrom.strimma.ui.theme.TintWarning
 import com.psjostrom.strimma.ui.theme.TirGood
+import com.psjostrom.strimma.ui.theme.Warning
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -119,7 +119,7 @@ fun OverviewPage(data: StoryData, glucoseUnit: GlucoseUnit, hbA1cUnit: com.psjos
             Text(
                 "${sign}${"%.1f".format(delta)}% vs last month",
                 style = MaterialTheme.typography.bodySmall,
-                color = if (delta >= 0) TirGood else BelowLow
+                color = if (delta >= 0) TirGood else Danger
             )
         }
 
@@ -318,7 +318,7 @@ fun EventsPage(data: StoryData, glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL) {
                     "${data.events.lowEvents}",
                     fontSize = 48.sp,
                     fontWeight = FontWeight.Bold,
-                    color = BelowLow
+                    color = Danger
                 )
                 Text(
                     "Low events",
@@ -335,7 +335,7 @@ fun EventsPage(data: StoryData, glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL) {
                     Text(
                         "$arrow vs last month",
                         style = MaterialTheme.typography.bodySmall,
-                        color = if (delta <= 0) TirGood else BelowLow
+                        color = if (delta <= 0) TirGood else Danger
                     )
                 }
             }
@@ -349,7 +349,7 @@ fun EventsPage(data: StoryData, glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL) {
                     "${data.events.highEvents}",
                     fontSize = 48.sp,
                     fontWeight = FontWeight.Bold,
-                    color = AboveHigh
+                    color = Warning
                 )
                 Text(
                     "High events",
@@ -366,7 +366,7 @@ fun EventsPage(data: StoryData, glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL) {
                     Text(
                         "$arrow vs last month",
                         style = MaterialTheme.typography.bodySmall,
-                        color = if (delta <= 0) TirGood else AboveHigh
+                        color = if (delta <= 0) TirGood else Warning
                     )
                 }
             }
@@ -436,8 +436,8 @@ fun PatternsPage(data: StoryData) {
             }) {
                 val tirColor = when {
                     block.tirPercent >= TIR_GOOD_THRESHOLD -> InRange
-                    block.tirPercent >= TIR_OK_THRESHOLD -> AboveHigh
-                    else -> BelowLow
+                    block.tirPercent >= TIR_OK_THRESHOLD -> Warning
+                    else -> Danger
                 }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -517,7 +517,7 @@ fun MealsPage(meals: MealStoryData, glucoseUnit: GlucoseUnit) {
                         worst.slot.label,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        color = AboveHigh
+                        color = Warning
                     )
                     Spacer(Modifier.height(4.dp))
                     MetricRow("TIR", "%.0f%%".format(worst.tirPercent))

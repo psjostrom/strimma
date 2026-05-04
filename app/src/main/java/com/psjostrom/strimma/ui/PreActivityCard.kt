@@ -24,8 +24,7 @@ import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.MS_PER_MINUTE
 import com.psjostrom.strimma.data.calendar.GuidanceState
 import com.psjostrom.strimma.data.calendar.ReadinessLevel
-import com.psjostrom.strimma.ui.theme.AboveHigh
-import com.psjostrom.strimma.ui.theme.BelowLow
+import com.psjostrom.strimma.ui.theme.Danger
 import com.psjostrom.strimma.ui.theme.InRange
 import com.psjostrom.strimma.ui.theme.LightTintDanger
 import com.psjostrom.strimma.ui.theme.LightTintInRange
@@ -33,6 +32,7 @@ import com.psjostrom.strimma.ui.theme.LightTintWarning
 import com.psjostrom.strimma.ui.theme.TintDanger
 import com.psjostrom.strimma.ui.theme.TintInRange
 import com.psjostrom.strimma.ui.theme.TintWarning
+import com.psjostrom.strimma.ui.theme.Warning
 
 private const val MINUTES_PER_HOUR = 60
 
@@ -45,8 +45,8 @@ fun PreActivityCard(
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val (bgColor, badgeColor, badgeTextRes) = when (state.readiness) {
         ReadinessLevel.READY -> Triple(if (isDark) TintInRange else LightTintInRange, InRange, R.string.preactivity_ready)
-        ReadinessLevel.CAUTION -> Triple(if (isDark) TintWarning else LightTintWarning, AboveHigh, R.string.preactivity_caution)
-        ReadinessLevel.WAIT -> Triple(if (isDark) TintDanger else LightTintDanger, BelowLow, R.string.preactivity_wait)
+        ReadinessLevel.CAUTION -> Triple(if (isDark) TintWarning else LightTintWarning, Warning, R.string.preactivity_caution)
+        ReadinessLevel.WAIT -> Triple(if (isDark) TintDanger else LightTintDanger, Danger, R.string.preactivity_wait)
     }
 
     val timeText = formatTimeUntil(state.event.startTime - System.currentTimeMillis())

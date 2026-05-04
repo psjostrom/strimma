@@ -32,11 +32,11 @@ import com.psjostrom.strimma.data.StatsCalculator
 import com.psjostrom.strimma.data.Treatment
 import com.psjostrom.strimma.data.meal.MealAnalyzer
 import com.psjostrom.strimma.data.meal.MealTimeSlotConfig
-import com.psjostrom.strimma.ui.theme.AboveHigh
-import com.psjostrom.strimma.ui.theme.BelowLow
+import com.psjostrom.strimma.ui.theme.Danger
 import com.psjostrom.strimma.ui.theme.InRange
 import com.psjostrom.strimma.ui.theme.VeryHigh
 import com.psjostrom.strimma.ui.theme.VeryLow
+import com.psjostrom.strimma.ui.theme.Warning
 import kotlinx.coroutines.launch
 
 private const val HOURS_24 = 24
@@ -297,7 +297,7 @@ private fun MetricsTab(
 
                     if (belowW > 0) {
                         drawRoundRect(
-                            color = BelowLow,
+                            color = Danger,
                             topLeft = Offset.Zero,
                             size = Size(belowW + r, h),
                             cornerRadius = CornerRadius(r)
@@ -312,7 +312,7 @@ private fun MetricsTab(
                     }
                     if (aboveW > 0) {
                         drawRoundRect(
-                            color = AboveHigh,
+                            color = Warning,
                             topLeft = Offset(belowW + inRangeW - r, 0f),
                             size = Size(aboveW + r, h),
                             cornerRadius = CornerRadius(r)
@@ -333,9 +333,9 @@ private fun MetricsTab(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    TirLabel("%.0f%%".format(s.belowPercent), stringResource(R.string.stats_low), BelowLow, onSurfaceVar)
+                    TirLabel("%.0f%%".format(s.belowPercent), stringResource(R.string.stats_low), Danger, onSurfaceVar)
                     TirLabel("%.0f%%".format(s.tirPercent), stringResource(R.string.stats_in_range), InRange, onSurfaceVar)
-                    TirLabel("%.0f%%".format(s.abovePercent), stringResource(R.string.stats_high), AboveHigh, onSurfaceVar)
+                    TirLabel("%.0f%%".format(s.abovePercent), stringResource(R.string.stats_high), Warning, onSurfaceVar)
                 }
             }
         }
@@ -464,9 +464,9 @@ private fun AgpTab(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 TirLabel("%.0f%%".format(m.veryLowPercent), stringResource(R.string.agp_very_low), VeryLow, onSurfaceVar)
-                TirLabel("%.0f%%".format(m.lowPercent), stringResource(R.string.agp_low), BelowLow, onSurfaceVar)
+                TirLabel("%.0f%%".format(m.lowPercent), stringResource(R.string.agp_low), Danger, onSurfaceVar)
                 TirLabel("%.0f%%".format(m.inRangePercent), stringResource(R.string.agp_in_range), InRange, onSurfaceVar)
-                TirLabel("%.0f%%".format(m.highPercent), stringResource(R.string.agp_high), AboveHigh, onSurfaceVar)
+                TirLabel("%.0f%%".format(m.highPercent), stringResource(R.string.agp_high), Warning, onSurfaceVar)
                 TirLabel("%.0f%%".format(m.veryHighPercent), stringResource(R.string.agp_very_high), VeryHigh, onSurfaceVar)
             }
         }
@@ -530,7 +530,7 @@ private fun FiveTierTirBar(
 
         val widths = listOf(veryLowPct, lowPct, inRangePct, highPct, veryHighPct)
             .map { (it / total * w).toFloat() }
-        val colors = listOf(VeryLow, BelowLow, InRange, AboveHigh, VeryHigh)
+        val colors = listOf(VeryLow, Danger, InRange, Warning, VeryHigh)
 
         var x = 0f
         val firstNonZero = widths.indexOfFirst { it > 0 }

@@ -309,6 +309,49 @@ class AlertManagerTest {
         assertFalse(isNotificationActive(AlertManager.ALERT_LOW_SOON_ID))
     }
 
+    @Test
+    fun `pauseAllAlerts sets identical expiry timestamps for both categories`() {
+        // The Pause All shortcut must produce equal expiries so MainScreen can collapse
+        // the two pause pills into a single "All alerts paused" pill via exact equality.
+        alertManager.pauseAllAlerts(3_600_000L)
+
+        val low = alertManager.pauseLowExpiryMs.value
+        val high = alertManager.pauseHighExpiryMs.value
+        assertTrue("LOW expiry should be set", low != null)
+        assertTrue("HIGH expiry should be set", high != null)
+        org.junit.Assert.assertEquals(low, high)
+    }
+
+    @Test
+    fun `pauseAllAlerts called twice replaces the previous expiry on both categories`() {
+        alertManager.pauseAllAlerts(3_600_000L) // 1h
+        val firstExpiry = alertManager.pauseLowExpiryMs.value!!
+
+        val before2 = System.currentTimeMillis()
+        alertManager.pauseAllAlerts(1_800_000L) // 30m — shorter than the first
+        val secondExpiry = alertManager.pauseLowExpiryMs.value!!
+
+        // Same expiry on both categories (the unified property the sheet/pill rely on)
+        org.junit.Assert.assertEquals(secondExpiry, alertManager.pauseHighExpiryMs.value)
+        // The second call must actually shift the expiry — a silent no-op would leave
+        // both flows on the first 1h timestamp and `secondExpiry == firstExpiry` would
+        // pass a weaker `low == high` assertion.
+        assertTrue("second pauseAllAlerts must shorten the expiry", secondExpiry < firstExpiry)
+        assertTrue(
+            "second expiry should be ≈ now + 30m",
+            secondExpiry in (before2 + 1_800_000L)..(before2 + 1_800_000L + 1_000L)
+        )
+    }
+
+    @Test
+    fun `cancelAllAlerts clears both categories`() {
+        alertManager.pauseAllAlerts(3_600_000L)
+        alertManager.cancelAllAlerts()
+
+        org.junit.Assert.assertNull(alertManager.pauseLowExpiryMs.value)
+        org.junit.Assert.assertNull(alertManager.pauseHighExpiryMs.value)
+    }
+
     // -- Push failure --
 
     @Test

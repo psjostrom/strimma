@@ -33,7 +33,7 @@ private val DarkColorScheme = darkColorScheme(
     onSurfaceVariant = DarkTextSecondary,
     outline = DarkTextTertiary,
     outlineVariant = DarkSurfaceBorder,
-    error = BelowLow
+    error = Danger
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -49,7 +49,7 @@ private val LightColorScheme = lightColorScheme(
     onSurfaceVariant = LightTextSecondary,
     outline = LightTextTertiary,
     outlineVariant = LightSurfaceBorder,
-    error = BelowLow
+    error = Danger
 )
 
 private val StrimmaShapes = Shapes(

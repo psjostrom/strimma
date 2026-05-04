@@ -12,7 +12,7 @@ import com.psjostrom.strimma.graph.canvasColorFor
 import com.psjostrom.strimma.graph.computeYAxisLabels
 import com.psjostrom.strimma.graph.computeYRange
 import com.psjostrom.strimma.graph.CANVAS_EXERCISE
-import com.psjostrom.strimma.graph.CANVAS_HIGH
+import com.psjostrom.strimma.graph.CANVAS_WARNING
 import com.psjostrom.strimma.graph.CANVAS_DANGER
 import com.psjostrom.strimma.graph.CRITICAL_HIGH
 import com.psjostrom.strimma.graph.CRITICAL_LOW
@@ -118,7 +118,7 @@ object GraphRenderer {
             strokeWidth = LINE_WIDTH
             style = Paint.Style.STROKE
         }
-        thresholdPaint.color = CANVAS_HIGH
+        thresholdPaint.color = CANVAS_WARNING
         thresholdPaint.pathEffect = DashPathEffect(floatArrayOf(DASH_LENGTH, DASH_GAP), 0f)
         canvas.drawLine(marginLeft, lowY, width - marginRight, lowY, thresholdPaint)
         canvas.drawLine(marginLeft, highY, width - marginRight, highY, thresholdPaint)
