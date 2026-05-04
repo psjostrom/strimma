@@ -426,8 +426,6 @@
     <string name="pause_all_active">Alla larm pausade · %1$s</string>
     <string name="pause_low_active">Låga larm pausade · %1$s</string>
     <string name="pause_high_active">Höga larm pausade · %1$s</string>
-    <string name="pause_low_paused">Låga larm pausade</string>
-    <string name="pause_high_paused">Höga larm pausade</string>
     <string name="pause_countdown">Pausad · %1$s</string>
     <string name="settings_sharing">Delning</string>
     <string name="settings_sharing_subtitle">Broadcast, webbserver, export</string>

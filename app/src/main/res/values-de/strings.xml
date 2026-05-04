@@ -426,8 +426,6 @@
     <string name="pause_all_active">Alle Alarme pausiert · %1$s</string>
     <string name="pause_low_active">Tief-Alarme pausiert · %1$s</string>
     <string name="pause_high_active">Hoch-Alarme pausiert · %1$s</string>
-    <string name="pause_low_paused">Tief-Alarme pausiert</string>
-    <string name="pause_high_paused">Hoch-Alarme pausiert</string>
     <string name="pause_countdown">Pausiert · %1$s</string>
 
     <string name="settings_sharing">Teilen</string>

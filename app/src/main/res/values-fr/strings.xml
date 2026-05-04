@@ -426,8 +426,6 @@
     <string name="pause_all_active">Toutes les alertes suspendues · %1$s</string>
     <string name="pause_low_active">Alertes basses suspendues · %1$s</string>
     <string name="pause_high_active">Alertes hautes suspendues · %1$s</string>
-    <string name="pause_low_paused">Alertes basses suspendues</string>
-    <string name="pause_high_paused">Alertes hautes suspendues</string>
     <string name="pause_countdown">Suspendu · %1$s</string>
 
     <string name="settings_sharing">Partage</string>
