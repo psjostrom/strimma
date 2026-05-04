@@ -23,12 +23,23 @@ class AlertManagerPauseTest {
         prefs.edit().clear().apply()
     }
 
+    // Test-local helper: production's static API takes an absolute expiry timestamp,
+    // but every test below thinks in durations. Keep the duration-style call ergonomic
+    // here so the assertions stay readable; the helper still goes through the real API.
+    private fun pauseCategoryDuration(
+        category: AlertCategory,
+        durationMs: Long,
+        level: Int = AlertManager.ALERT_LEVEL_URGENT
+    ) = AlertManager.pauseCategoryAt(
+        prefs, category, System.currentTimeMillis() + durationMs, level
+    )
+
     @Test
     fun `pauseCategory stores expiry timestamp`() {
         val durationMs = 60 * 60 * 1000L // 1 hour
         val beforePause = System.currentTimeMillis()
 
-        AlertManager.pauseCategory(prefs, AlertCategory.LOW, durationMs)
+        pauseCategoryDuration(AlertCategory.LOW, durationMs)
 
         val afterPause = System.currentTimeMillis()
         val stored = prefs.getLong("pause_low", 0L)
@@ -41,7 +52,7 @@ class AlertManagerPauseTest {
     @Test
     fun `isCategoryPaused returns true when pause is active`() {
         val durationMs = 60 * 60 * 1000L // 1 hour
-        AlertManager.pauseCategory(prefs, AlertCategory.LOW, durationMs)
+        pauseCategoryDuration(AlertCategory.LOW, durationMs)
 
         assertTrue(AlertManager.isCategoryPaused(prefs, AlertCategory.LOW))
     }
@@ -66,7 +77,7 @@ class AlertManagerPauseTest {
 
     @Test
     fun `cancelPause removes the key`() {
-        AlertManager.pauseCategory(prefs, AlertCategory.LOW, 60 * 60 * 1000L)
+        pauseCategoryDuration(AlertCategory.LOW, 60 * 60 * 1000L)
         assertTrue("Pause should be active before cancel",
             AlertManager.isCategoryPaused(prefs, AlertCategory.LOW))
 
@@ -83,7 +94,7 @@ class AlertManagerPauseTest {
         val durationMs = 60 * 60 * 1000L // 1 hour
         val beforePause = System.currentTimeMillis()
 
-        AlertManager.pauseCategory(prefs, AlertCategory.LOW, durationMs)
+        pauseCategoryDuration(AlertCategory.LOW, durationMs)
 
         val afterPause = System.currentTimeMillis()
         val expiry = AlertManager.pauseExpiryMs(prefs, AlertCategory.LOW)
@@ -114,12 +125,12 @@ class AlertManagerPauseTest {
 
     @Test
     fun `low and high pauses are independent`() {
-        AlertManager.pauseCategory(prefs, AlertCategory.LOW, 60 * 60 * 1000L)
+        pauseCategoryDuration(AlertCategory.LOW, 60 * 60 * 1000L)
 
         assertTrue("Low should be paused", AlertManager.isCategoryPaused(prefs, AlertCategory.LOW))
         assertFalse("High should not be paused", AlertManager.isCategoryPaused(prefs, AlertCategory.HIGH))
 
-        AlertManager.pauseCategory(prefs, AlertCategory.HIGH, 30 * 60 * 1000L)
+        pauseCategoryDuration(AlertCategory.HIGH, 30 * 60 * 1000L)
 
         assertTrue("Low should still be paused", AlertManager.isCategoryPaused(prefs, AlertCategory.LOW))
         assertTrue("High should now be paused", AlertManager.isCategoryPaused(prefs, AlertCategory.HIGH))
@@ -134,21 +145,21 @@ class AlertManagerPauseTest {
 
     @Test
     fun `pauseCategory stores level in prefs`() {
-        AlertManager.pauseCategory(prefs, AlertCategory.LOW, 3_600_000L, AlertManager.ALERT_LEVEL_SOON)
+        pauseCategoryDuration(AlertCategory.LOW, 3_600_000L, AlertManager.ALERT_LEVEL_SOON)
 
         assertEquals(AlertManager.ALERT_LEVEL_SOON, prefs.getInt("pause_low_level", -1))
     }
 
     @Test
     fun `pauseCategory defaults to URGENT level`() {
-        AlertManager.pauseCategory(prefs, AlertCategory.LOW, 3_600_000L)
+        pauseCategoryDuration(AlertCategory.LOW, 3_600_000L)
 
         assertEquals(AlertManager.ALERT_LEVEL_URGENT, prefs.getInt("pause_low_level", -1))
     }
 
     @Test
     fun `isCategoryPausedAtLevel with SOON level blocks only SOON alerts`() {
-        AlertManager.pauseCategory(prefs, AlertCategory.LOW, 3_600_000L, AlertManager.ALERT_LEVEL_SOON)
+        pauseCategoryDuration(AlertCategory.LOW, 3_600_000L, AlertManager.ALERT_LEVEL_SOON)
 
         assertTrue(AlertManager.isCategoryPausedAtLevel(prefs, AlertCategory.LOW, AlertManager.ALERT_LEVEL_SOON))
         assertFalse(AlertManager.isCategoryPausedAtLevel(prefs, AlertCategory.LOW, AlertManager.ALERT_LEVEL_REGULAR))
@@ -157,7 +168,7 @@ class AlertManagerPauseTest {
 
     @Test
     fun `isCategoryPausedAtLevel with REGULAR level blocks SOON and REGULAR`() {
-        AlertManager.pauseCategory(prefs, AlertCategory.LOW, 3_600_000L, AlertManager.ALERT_LEVEL_REGULAR)
+        pauseCategoryDuration(AlertCategory.LOW, 3_600_000L, AlertManager.ALERT_LEVEL_REGULAR)
 
         assertTrue(AlertManager.isCategoryPausedAtLevel(prefs, AlertCategory.LOW, AlertManager.ALERT_LEVEL_SOON))
         assertTrue(AlertManager.isCategoryPausedAtLevel(prefs, AlertCategory.LOW, AlertManager.ALERT_LEVEL_REGULAR))
@@ -166,7 +177,7 @@ class AlertManagerPauseTest {
 
     @Test
     fun `isCategoryPausedAtLevel with URGENT level blocks all alerts`() {
-        AlertManager.pauseCategory(prefs, AlertCategory.LOW, 3_600_000L, AlertManager.ALERT_LEVEL_URGENT)
+        pauseCategoryDuration(AlertCategory.LOW, 3_600_000L, AlertManager.ALERT_LEVEL_URGENT)
 
         assertTrue(AlertManager.isCategoryPausedAtLevel(prefs, AlertCategory.LOW, AlertManager.ALERT_LEVEL_SOON))
         assertTrue(AlertManager.isCategoryPausedAtLevel(prefs, AlertCategory.LOW, AlertManager.ALERT_LEVEL_REGULAR))
@@ -190,7 +201,7 @@ class AlertManagerPauseTest {
 
     @Test
     fun `cancelPause clears level key`() {
-        AlertManager.pauseCategory(prefs, AlertCategory.LOW, 3_600_000L, AlertManager.ALERT_LEVEL_REGULAR)
+        pauseCategoryDuration(AlertCategory.LOW, 3_600_000L, AlertManager.ALERT_LEVEL_REGULAR)
 
         AlertManager.cancelPause(prefs, AlertCategory.LOW)
 
@@ -202,7 +213,7 @@ class AlertManagerPauseTest {
 
     @Test
     fun `paused LOW gates all low alert checks`() {
-        AlertManager.pauseCategory(prefs, AlertCategory.LOW, 3_600_000L)
+        pauseCategoryDuration(AlertCategory.LOW, 3_600_000L)
 
         val lowPaused = AlertManager.isCategoryPaused(prefs, AlertCategory.LOW)
         val highPaused = AlertManager.isCategoryPaused(prefs, AlertCategory.HIGH)
@@ -225,7 +236,7 @@ class AlertManagerPauseTest {
 
     @Test
     fun `paused HIGH gates all high alert checks`() {
-        AlertManager.pauseCategory(prefs, AlertCategory.HIGH, 3_600_000L)
+        pauseCategoryDuration(AlertCategory.HIGH, 3_600_000L)
 
         val highPaused = AlertManager.isCategoryPaused(prefs, AlertCategory.HIGH)
 
@@ -254,7 +265,7 @@ class AlertManagerPauseTest {
 
     @Test
     fun `pause then cancel allows alerts again`() {
-        AlertManager.pauseCategory(prefs, AlertCategory.LOW, 3_600_000L)
+        pauseCategoryDuration(AlertCategory.LOW, 3_600_000L)
         assertTrue("Should be paused", AlertManager.isCategoryPaused(prefs, AlertCategory.LOW))
 
         AlertManager.cancelPause(prefs, AlertCategory.LOW)

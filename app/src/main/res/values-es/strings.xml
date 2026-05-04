@@ -423,6 +423,7 @@
     <string name="pause_duration_2h">2h</string>
     <string name="pause_duration_3h">3h</string>
     <string name="pause_cancel">Cancelar</string>
+    <string name="pause_all_active">Todas las alertas pausadas · %1$s</string>
     <string name="pause_low_active">Alertas de bajo pausadas · %1$s</string>
     <string name="pause_high_active">Alertas de alto pausadas · %1$s</string>
     <string name="pause_low_paused">Alertas de bajo pausadas</string>

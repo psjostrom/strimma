@@ -320,6 +320,7 @@
     <string name="pause_duration_2h">2h</string>
     <string name="pause_duration_3h">3h</string>
     <string name="pause_cancel">Cancel</string>
+    <string name="pause_all_active">All alerts paused · %1$s</string>
     <string name="pause_low_active">Low alerts paused · %1$s</string>
     <string name="pause_high_active">High alerts paused · %1$s</string>
     <string name="pause_low_paused">Low alerts paused</string>

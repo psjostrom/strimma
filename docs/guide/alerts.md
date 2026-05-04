@@ -66,7 +66,7 @@ You can pause entire alert categories for a custom duration — useful during ex
 - Set a custom duration when pausing
 - The pause auto-clears when the duration expires
 - Pause state survives app restarts
-- The **All alerts** shortcut at the top of the pause sheet sets both Low and High to the same duration in one tap; afterward each category can be cancelled or extended independently
+- The **All alerts** shortcut at the top of the pause sheet sets both Low and High to the same duration in one tap. The header shows a single **All alerts paused** pill while the two expiries match; cancelling or rescheduling one category from the sheet splits it back into per-category pills
 
 !!! note "Snooze vs Pause"
     **Snooze** silences an alert and any less severe alerts in the same category for 30 minutes. **Pause** silences an entire category (all low alerts or all high alerts) for a duration you choose.

@@ -225,6 +225,7 @@ fun StrimmaNavGraph(
             val alertsViewModel: AlertsViewModel = hiltViewModel()
             val pauseLowExpiryMs by alertsViewModel.pauseLowExpiryMs.collectAsState()
             val pauseHighExpiryMs by alertsViewModel.pauseHighExpiryMs.collectAsState()
+            val unifiedPauseExpiryMs by alertsViewModel.unifiedPauseExpiryMs.collectAsState()
             val storyReady by viewModel.storyReady.collectAsState()
             val lastMonth = java.time.YearMonth.now().minusMonths(1)
             val storyMonthName = lastMonth.month.getDisplayName(
@@ -245,8 +246,11 @@ fun StrimmaNavGraph(
                 guidanceState = guidanceState,
                 pauseLowExpiryMs = pauseLowExpiryMs,
                 pauseHighExpiryMs = pauseHighExpiryMs,
+                unifiedPauseExpiryMs = unifiedPauseExpiryMs,
                 onPauseAlerts = alertsViewModel::pauseAlerts,
+                onPauseAllAlerts = alertsViewModel::pauseAllAlerts,
                 onCancelPause = alertsViewModel::cancelAlertPause,
+                onCancelAllAlertPauses = alertsViewModel::cancelAllAlertPauses,
                 onComputeBGContext = viewModel::computeExerciseBGContext,
                 storyReady = storyReady,
                 storyMonthName = storyMonthName,
@@ -406,8 +410,6 @@ fun StrimmaNavGraph(
             val alertStaleEnabled by alertsViewModel.alertStaleEnabled.collectAsState()
             val alertLowSoonEnabled by alertsViewModel.alertLowSoonEnabled.collectAsState()
             val alertHighSoonEnabled by alertsViewModel.alertHighSoonEnabled.collectAsState()
-            val pauseLowExpiryMs by alertsViewModel.pauseLowExpiryMs.collectAsState()
-            val pauseHighExpiryMs by alertsViewModel.pauseHighExpiryMs.collectAsState()
             AlertsSettings(
                 glucoseUnit = glucoseUnit,
                 alertLowEnabled = alertLowEnabled,
@@ -421,10 +423,6 @@ fun StrimmaNavGraph(
                 alertStaleEnabled = alertStaleEnabled,
                 alertLowSoonEnabled = alertLowSoonEnabled,
                 alertHighSoonEnabled = alertHighSoonEnabled,
-                pauseLowExpiryMs = pauseLowExpiryMs,
-                pauseHighExpiryMs = pauseHighExpiryMs,
-                onPauseAlerts = alertsViewModel::pauseAlerts,
-                onCancelPause = alertsViewModel::cancelAlertPause,
                 onAlertLowEnabledChange = alertsViewModel::setAlertLowEnabled,
                 onAlertHighEnabledChange = alertsViewModel::setAlertHighEnabled,
                 onAlertUrgentLowEnabledChange = alertsViewModel::setAlertUrgentLowEnabled,

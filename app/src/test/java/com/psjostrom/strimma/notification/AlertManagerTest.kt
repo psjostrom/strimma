@@ -309,6 +309,41 @@ class AlertManagerTest {
         assertFalse(isNotificationActive(AlertManager.ALERT_LOW_SOON_ID))
     }
 
+    @Test
+    fun `pauseAllAlerts sets identical expiry timestamps for both categories`() = runTest {
+        // The Pause All shortcut must produce equal expiries so MainScreen can collapse
+        // the two pause pills into a single "All alerts paused" pill via exact equality.
+        alertManager.pauseAllAlerts(3_600_000L)
+
+        val low = alertManager.pauseLowExpiryMs.value
+        val high = alertManager.pauseHighExpiryMs.value
+        assertTrue("LOW expiry should be set", low != null)
+        assertTrue("HIGH expiry should be set", high != null)
+        org.junit.Assert.assertEquals(low, high)
+    }
+
+    @Test
+    fun `pauseAllAlerts called twice still produces equal expiries`() = runTest {
+        // Pin idempotency so a future refactor that splits the timestamp computation
+        // (e.g. "first LOW, then HIGH") would break this test before reaching production.
+        alertManager.pauseAllAlerts(3_600_000L)
+        alertManager.pauseAllAlerts(1_800_000L)
+
+        org.junit.Assert.assertEquals(
+            alertManager.pauseLowExpiryMs.value,
+            alertManager.pauseHighExpiryMs.value
+        )
+    }
+
+    @Test
+    fun `cancelAllAlerts clears both categories`() = runTest {
+        alertManager.pauseAllAlerts(3_600_000L)
+        alertManager.cancelAllAlerts()
+
+        org.junit.Assert.assertNull(alertManager.pauseLowExpiryMs.value)
+        org.junit.Assert.assertNull(alertManager.pauseHighExpiryMs.value)
+    }
+
     // -- Push failure --
 
     @Test

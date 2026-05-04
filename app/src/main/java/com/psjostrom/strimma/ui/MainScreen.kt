@@ -60,6 +60,7 @@ import com.psjostrom.strimma.notification.AlertCategory
 import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.ui.components.PauseAlertsSheet
 import com.psjostrom.strimma.ui.components.rememberCountdownText
+import com.psjostrom.strimma.ui.components.rememberTickingNowMs
 import com.psjostrom.strimma.ui.theme.AboveHigh
 import com.psjostrom.strimma.ui.theme.BelowLow
 import com.psjostrom.strimma.ui.theme.BolusBlue
@@ -69,8 +70,10 @@ import com.psjostrom.strimma.ui.theme.InRange
 import com.psjostrom.strimma.ui.theme.InRangeZone
 import com.psjostrom.strimma.ui.theme.Stale
 import com.psjostrom.strimma.ui.theme.TintDanger
+import com.psjostrom.strimma.ui.theme.TintStale
 import com.psjostrom.strimma.ui.theme.TintWarning
 import com.psjostrom.strimma.ui.theme.LightTintDanger
+import com.psjostrom.strimma.ui.theme.LightTintStale
 import com.psjostrom.strimma.ui.theme.LightTintWarning
 import androidx.compose.ui.graphics.Path
 import kotlinx.coroutines.delay
@@ -94,8 +97,11 @@ fun MainScreen(
     onComputeBGContext: (suspend (StoredExerciseSession) -> ExerciseBGContext?)? = null,
     pauseLowExpiryMs: Long? = null,
     pauseHighExpiryMs: Long? = null,
+    unifiedPauseExpiryMs: Long? = null,
     onPauseAlerts: (AlertCategory, Long) -> Unit = { _, _ -> },
+    onPauseAllAlerts: (Long) -> Unit = {},
     onCancelPause: (AlertCategory) -> Unit = {},
+    onCancelAllAlertPauses: () -> Unit = {},
     storyReady: Boolean = false,
     storyMonthName: String = "",
     onNavigateToStory: (() -> Unit)? = null
@@ -146,8 +152,11 @@ fun MainScreen(
         PauseAlertsSheet(
             pauseLowExpiryMs = pauseLowExpiryMs,
             pauseHighExpiryMs = pauseHighExpiryMs,
+            unifiedExpiryMs = unifiedPauseExpiryMs,
             onPause = onPauseAlerts,
+            onPauseAll = onPauseAllAlerts,
             onCancel = onCancelPause,
+            onCancelAll = onCancelAllAlertPauses,
             onDismiss = { showPauseSheet = false }
         )
     }
@@ -200,6 +209,7 @@ fun MainScreen(
                     iob = iob, treatments = treatments, iobTauMinutes = iobTauMinutes,
                     pauseLowExpiryMs = pauseLowExpiryMs,
                     pauseHighExpiryMs = pauseHighExpiryMs,
+                    unifiedPauseExpiryMs = unifiedPauseExpiryMs,
                     onPausePillClick = { showPauseSheet = true },
                     onPauseAlerts = onPauseAlerts
                 )
@@ -305,6 +315,7 @@ private fun BgHeader(
     iobTauMinutes: Double = 55.0,
     pauseLowExpiryMs: Long? = null,
     pauseHighExpiryMs: Long? = null,
+    unifiedPauseExpiryMs: Long? = null,
     onPausePillClick: () -> Unit = {},
     onPauseAlerts: (AlertCategory, Long) -> Unit = { _, _ -> }
 ) {
@@ -376,18 +387,14 @@ private fun BgHeader(
         var showPredictionDetail by remember { mutableStateOf(false) }
         val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
 
-        // Reactive clock for pause expiry checks — ticks every 10s so pills disappear on time
-        var nowMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
-        LaunchedEffect(Unit) {
-            while (true) {
-                delay(10_000)
-                nowMs = System.currentTimeMillis()
-            }
-        }
+        // Reactive clock so pills disappear on expiry without waiting for an unrelated recomposition
+        val nowMs = rememberTickingNowMs()
 
-        val hasPills = crossing != null || iob > 0.0 ||
-            (pauseHighExpiryMs != null && pauseHighExpiryMs > nowMs) ||
-            (pauseLowExpiryMs != null && pauseLowExpiryMs > nowMs)
+        val activeHigh = pauseHighExpiryMs != null && pauseHighExpiryMs > nowMs
+        val activeLow = pauseLowExpiryMs != null && pauseLowExpiryMs > nowMs
+        val unifiedActive = unifiedPauseExpiryMs != null && unifiedPauseExpiryMs > nowMs
+
+        val hasPills = crossing != null || iob > 0.0 || activeHigh || activeLow
 
         if (hasPills) {
             Spacer(modifier = Modifier.height(8.dp))
@@ -443,39 +450,59 @@ private fun BgHeader(
                     }
                 }
 
-                // Pause high pill
-                if (pauseHighExpiryMs != null && pauseHighExpiryMs > nowMs) {
-                    val countdownText = rememberCountdownText(pauseHighExpiryMs)
+                if (unifiedActive) {
+                    // Single "All alerts paused" pill — shown when Pause All set both expiries
+                    // to the same timestamp. Uses the Stale (muted lavender) palette so the pill
+                    // reads as "intentionally quiet" rather than borrowing severity from low/high.
+                    val countdownText = rememberCountdownText(unifiedPauseExpiryMs)
                     Surface(
                         onClick = onPausePillClick,
                         shape = RoundedCornerShape(100),
-                        color = if (isDark) TintWarning else LightTintWarning
+                        color = if (isDark) TintStale else LightTintStale
                     ) {
                         Text(
-                            text = stringResource(R.string.pause_high_active, countdownText),
-                            color = AboveHigh,
+                            text = stringResource(R.string.pause_all_active, countdownText),
+                            color = Stale,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
                         )
                     }
-                }
+                } else {
+                    // Pause high pill
+                    if (activeHigh) {
+                        val countdownText = rememberCountdownText(pauseHighExpiryMs)
+                        Surface(
+                            onClick = onPausePillClick,
+                            shape = RoundedCornerShape(100),
+                            color = if (isDark) TintWarning else LightTintWarning
+                        ) {
+                            Text(
+                                text = stringResource(R.string.pause_high_active, countdownText),
+                                color = AboveHigh,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
+                            )
+                        }
+                    }
 
-                // Pause low pill
-                if (pauseLowExpiryMs != null && pauseLowExpiryMs > nowMs) {
-                    val countdownText = rememberCountdownText(pauseLowExpiryMs)
-                    Surface(
-                        onClick = onPausePillClick,
-                        shape = RoundedCornerShape(100),
-                        color = if (isDark) TintDanger else LightTintDanger
-                    ) {
-                        Text(
-                            text = stringResource(R.string.pause_low_active, countdownText),
-                            color = BelowLow,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
-                        )
+                    // Pause low pill
+                    if (activeLow) {
+                        val countdownText = rememberCountdownText(pauseLowExpiryMs)
+                        Surface(
+                            onClick = onPausePillClick,
+                            shape = RoundedCornerShape(100),
+                            color = if (isDark) TintDanger else LightTintDanger
+                        ) {
+                            Text(
+                                text = stringResource(R.string.pause_low_active, countdownText),
+                                color = BelowLow,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
+                            )
+                        }
                     }
                 }
             }

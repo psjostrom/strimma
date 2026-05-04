@@ -423,6 +423,7 @@
     <string name="pause_duration_2h">2h</string>
     <string name="pause_duration_3h">3h</string>
     <string name="pause_cancel">Abbrechen</string>
+    <string name="pause_all_active">Alle Alarme pausiert · %1$s</string>
     <string name="pause_low_active">Tief-Alarme pausiert · %1$s</string>
     <string name="pause_high_active">Hoch-Alarme pausiert · %1$s</string>
     <string name="pause_low_paused">Tief-Alarme pausiert</string>
