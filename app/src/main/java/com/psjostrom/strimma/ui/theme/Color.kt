@@ -35,11 +35,13 @@ val TintInRange = InRange.copy(alpha = 0.10f)
 val TintGood = TirGood.copy(alpha = 0.10f)
 val TintWarning = AboveHigh.copy(alpha = 0.12f)
 val TintDanger = BelowLow.copy(alpha = 0.10f)
+val TintStale = Stale.copy(alpha = 0.18f)
 
 // --- Semantic tinted backgrounds (light) — derived from status colors, surface-adaptive ---
 val LightTintInRange = InRange.copy(alpha = 0.12f)
 val LightTintWarning = AboveHigh.copy(alpha = 0.14f)
 val LightTintDanger = BelowLow.copy(alpha = 0.12f)
+val LightTintStale = Stale.copy(alpha = 0.20f)
 
 // --- AGP 5-tier colors ---
 val VeryLow = Color(0xFFE53935)

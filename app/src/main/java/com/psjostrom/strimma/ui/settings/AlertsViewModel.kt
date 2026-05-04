@@ -8,6 +8,7 @@ import com.psjostrom.strimma.notification.AlertManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -45,6 +46,18 @@ class AlertsViewModel @Inject constructor(
     val pauseLowExpiryMs: StateFlow<Long?> = alertManager.pauseLowExpiryMs
     val pauseHighExpiryMs: StateFlow<Long?> = alertManager.pauseHighExpiryMs
 
+    /**
+     * Single source of truth for "is the active pause unified?". Equal to the shared
+     * expiry timestamp when both categories are paused with identical expiries (the
+     * state [pauseAllAlerts] produces); null otherwise. Both the header pill and the
+     * pause sheet read this so the unified rule lives in exactly one place.
+     */
+    val unifiedPauseExpiryMs: StateFlow<Long?> = combine(
+        alertManager.pauseLowExpiryMs,
+        alertManager.pauseHighExpiryMs
+    ) { low, high -> if (low != null && low == high) low else null }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
     fun setAlertLowEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertLowEnabled(enabled) }
     fun setAlertHighEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertHighEnabled(enabled) }
     fun setAlertUrgentLowEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertUrgentLowEnabled(enabled) }
@@ -69,5 +82,9 @@ class AlertsViewModel @Inject constructor(
 
     fun cancelAlertPause(category: AlertCategory) {
         alertManager.cancelAlertPause(category)
+    }
+
+    fun cancelAllAlertPauses() {
+        alertManager.cancelAllAlerts()
     }
 }

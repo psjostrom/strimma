@@ -323,17 +323,25 @@ class AlertManagerTest {
     }
 
     @Test
-    fun `pauseAlertCategory in succession yields different expiry timestamps`() = runTest {
-        // Confirms the bug this change fixes: per-category pauses fired back-to-back
-        // each compute their own System.currentTimeMillis() and so do NOT compare equal.
-        alertManager.pauseAlertCategory(AlertCategory.LOW, 3_600_000L)
-        Thread.sleep(2)
-        alertManager.pauseAlertCategory(AlertCategory.HIGH, 3_600_000L)
+    fun `pauseAllAlerts called twice still produces equal expiries`() = runTest {
+        // Pin idempotency so a future refactor that splits the timestamp computation
+        // (e.g. "first LOW, then HIGH") would break this test before reaching production.
+        alertManager.pauseAllAlerts(3_600_000L)
+        alertManager.pauseAllAlerts(1_800_000L)
 
-        val low = alertManager.pauseLowExpiryMs.value
-        val high = alertManager.pauseHighExpiryMs.value
-        assertTrue(low != null && high != null)
-        org.junit.Assert.assertNotEquals(low, high)
+        org.junit.Assert.assertEquals(
+            alertManager.pauseLowExpiryMs.value,
+            alertManager.pauseHighExpiryMs.value
+        )
+    }
+
+    @Test
+    fun `cancelAllAlerts clears both categories`() = runTest {
+        alertManager.pauseAllAlerts(3_600_000L)
+        alertManager.cancelAllAlerts()
+
+        org.junit.Assert.assertNull(alertManager.pauseLowExpiryMs.value)
+        org.junit.Assert.assertNull(alertManager.pauseHighExpiryMs.value)
     }
 
     // -- Push failure --

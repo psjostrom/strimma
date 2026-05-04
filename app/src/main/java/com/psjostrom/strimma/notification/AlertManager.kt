@@ -27,9 +27,21 @@ import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
 
-enum class AlertCategory(val prefsKey: String, val levelKey: String) {
-    LOW("pause_low", "pause_low_level"),
-    HIGH("pause_high", "pause_high_level")
+/**
+ * Alert categories the user can pause. The notification IDs MUST match the
+ * companion-object ALERT_*_ID constants in [AlertManager]. Encoding them on the enum
+ * lets pause/cancel logic iterate categories without hand-rolled `when` blocks that
+ * silently bypass new categories.
+ */
+enum class AlertCategory(
+    val prefsKey: String,
+    val levelKey: String,
+    val urgentId: Int,
+    val regularId: Int,
+    val soonId: Int
+) {
+    LOW("pause_low", "pause_low_level", urgentId = 101, regularId = 100, soonId = 105),
+    HIGH("pause_high", "pause_high_level", urgentId = 104, regularId = 102, soonId = 106)
 }
 
 @Suppress("TooManyFunctions") // Alert channels + management methods
@@ -94,15 +106,6 @@ class AlertManager @Inject constructor(
         )
 
         // --- Category-level pause (static methods for testability) ---
-
-        fun pauseCategory(
-            prefs: android.content.SharedPreferences,
-            category: AlertCategory,
-            durationMs: Long,
-            level: Int = ALERT_LEVEL_URGENT
-        ) {
-            pauseCategoryAt(prefs, category, System.currentTimeMillis() + durationMs, level)
-        }
 
         fun pauseCategoryAt(
             prefs: android.content.SharedPreferences,
@@ -471,10 +474,12 @@ class AlertManager @Inject constructor(
         else -> null
     }
 
-    private val _pauseLowExpiryMs = MutableStateFlow<Long?>(alertPauseExpiryMs(AlertCategory.LOW))
-    private val _pauseHighExpiryMs = MutableStateFlow<Long?>(alertPauseExpiryMs(AlertCategory.HIGH))
-    val pauseLowExpiryMs: StateFlow<Long?> = _pauseLowExpiryMs
-    val pauseHighExpiryMs: StateFlow<Long?> = _pauseHighExpiryMs
+    // One MutableStateFlow per category, keyed by the enum so iteration over
+    // AlertCategory.entries can never silently bypass a category.
+    private val pauseExpiryFlows: Map<AlertCategory, MutableStateFlow<Long?>> =
+        AlertCategory.entries.associateWith { MutableStateFlow(alertPauseExpiryMs(it)) }
+    val pauseLowExpiryMs: StateFlow<Long?> = pauseExpiryFlows.getValue(AlertCategory.LOW)
+    val pauseHighExpiryMs: StateFlow<Long?> = pauseExpiryFlows.getValue(AlertCategory.HIGH)
 
     fun pauseAlertCategory(category: AlertCategory, durationMs: Long, level: Int = ALERT_LEVEL_URGENT) {
         pauseAlertCategoryAt(category, System.currentTimeMillis() + durationMs, level)
@@ -485,30 +490,21 @@ class AlertManager @Inject constructor(
         AlertCategory.entries.forEach { pauseAlertCategoryAt(it, expiryMs, level) }
     }
 
-    private fun pauseAlertCategoryAt(category: AlertCategory, expiryMs: Long, level: Int) {
-        pauseCategoryAt(snoozePrefs, category, expiryMs, level)
-        when (category) {
-            AlertCategory.LOW -> {
-                _pauseLowExpiryMs.value = expiryMs
-                if (level >= ALERT_LEVEL_URGENT) notificationManager.cancel(ALERT_URGENT_LOW_ID)
-                if (level >= ALERT_LEVEL_REGULAR) notificationManager.cancel(ALERT_LOW_ID)
-                if (level >= ALERT_LEVEL_SOON) notificationManager.cancel(ALERT_LOW_SOON_ID)
-            }
-            AlertCategory.HIGH -> {
-                _pauseHighExpiryMs.value = expiryMs
-                if (level >= ALERT_LEVEL_URGENT) notificationManager.cancel(ALERT_URGENT_HIGH_ID)
-                if (level >= ALERT_LEVEL_REGULAR) notificationManager.cancel(ALERT_HIGH_ID)
-                if (level >= ALERT_LEVEL_SOON) notificationManager.cancel(ALERT_HIGH_SOON_ID)
-            }
-        }
-    }
-
     fun cancelAlertPause(category: AlertCategory) {
         cancelPause(snoozePrefs, category)
-        when (category) {
-            AlertCategory.LOW -> _pauseLowExpiryMs.value = null
-            AlertCategory.HIGH -> _pauseHighExpiryMs.value = null
-        }
+        pauseExpiryFlows.getValue(category).value = null
+    }
+
+    fun cancelAllAlerts() {
+        AlertCategory.entries.forEach(::cancelAlertPause)
+    }
+
+    private fun pauseAlertCategoryAt(category: AlertCategory, expiryMs: Long, level: Int) {
+        pauseCategoryAt(snoozePrefs, category, expiryMs, level)
+        pauseExpiryFlows.getValue(category).value = expiryMs
+        if (level >= ALERT_LEVEL_URGENT) notificationManager.cancel(category.urgentId)
+        if (level >= ALERT_LEVEL_REGULAR) notificationManager.cancel(category.regularId)
+        if (level >= ALERT_LEVEL_SOON) notificationManager.cancel(category.soonId)
     }
 
     fun isAlertCategoryPaused(category: AlertCategory): Boolean =
