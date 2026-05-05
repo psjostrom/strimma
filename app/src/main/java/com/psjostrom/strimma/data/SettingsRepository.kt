@@ -208,7 +208,11 @@ class SettingsRepository @Inject constructor(
         const val DEFAULT_WORKOUT_MODE_MAX_HOURS = 3
 
         // Runtime state (set by WorkoutModeManager). Sentinel 0L = absent.
+        // Snapshotted at toggle time so a clock jump does not extend or invalidate
+        // an in-progress session and so that a mid-session change to maxHours does
+        // not retroactively shorten an existing manual workout.
         private val KEY_MANUAL_WORKOUT_SINCE_MS = longPreferencesKey("manual_workout_since_ms")
+        private val KEY_MANUAL_WORKOUT_EXPIRES_MS = longPreferencesKey("manual_workout_expires_ms")
         private val KEY_MANUAL_OFF_OVERRIDE_UNTIL_MS = longPreferencesKey("manual_off_override_until_ms")
 
         // Meal time slot boundaries (minutes from midnight)
@@ -285,15 +289,58 @@ class SettingsRepository @Inject constructor(
     val manualWorkoutSinceMs: Flow<Long?> = dataStore.data.map {
         it[KEY_MANUAL_WORKOUT_SINCE_MS]?.takeIf { v -> v != 0L }
     }
-    suspend fun setManualWorkoutSinceMs(ms: Long?) {
-        dataStore.edit { it[KEY_MANUAL_WORKOUT_SINCE_MS] = ms ?: 0L }
+    val manualWorkoutExpiresMs: Flow<Long?> = dataStore.data.map {
+        it[KEY_MANUAL_WORKOUT_EXPIRES_MS]?.takeIf { v -> v != 0L }
     }
-
     val manualOffOverrideUntilMs: Flow<Long?> = dataStore.data.map {
         it[KEY_MANUAL_OFF_OVERRIDE_UNTIL_MS]?.takeIf { v -> v != 0L }
     }
+
+    /**
+     * Atomic write of the manual-workout pair. Both fields live or die together.
+     * Pass `null` for both to clear (auto-off / setManualOff). Pass non-null for both
+     * to start a session — the call site (WorkoutModeManager.setManualOn) is the only
+     * place that knows the correct expiresAt for the current settings snapshot.
+     */
+    suspend fun setManualWorkoutSession(sinceMs: Long?, expiresMs: Long?) {
+        require((sinceMs == null) == (expiresMs == null)) {
+            "manual workout sinceMs and expiresMs must be set/cleared together"
+        }
+        dataStore.edit {
+            it[KEY_MANUAL_WORKOUT_SINCE_MS] = sinceMs ?: 0L
+            it[KEY_MANUAL_WORKOUT_EXPIRES_MS] = expiresMs ?: 0L
+        }
+    }
+
     suspend fun setManualOffOverrideUntilMs(ms: Long?) {
         dataStore.edit { it[KEY_MANUAL_OFF_OVERRIDE_UNTIL_MS] = ms ?: 0L }
+    }
+
+    /**
+     * Atomic cleanup: read all three runtime keys + maxHours inside a single edit,
+     * decide expiry, and write null where appropriate — all without yielding to a
+     * concurrent setManualWorkoutSession write that would otherwise be clobbered.
+     *
+     * Backward compat: a session persisted by an older app version will have
+     * sinceMs but no expiresMs. Treat it as expiring at sinceMs + maxHours so the
+     * upgrade path doesn't strand the user in a never-expiring session.
+     */
+    suspend fun cleanupExpiredWorkoutState(nowMs: Long, msPerHour: Long) {
+        dataStore.edit { prefs ->
+            val rawSince = prefs[KEY_MANUAL_WORKOUT_SINCE_MS]?.takeIf { it != 0L }
+            val rawExpires = prefs[KEY_MANUAL_WORKOUT_EXPIRES_MS]?.takeIf { it != 0L }
+            val maxHours = prefs[KEY_WORKOUT_MODE_MAX_HOURS] ?: DEFAULT_WORKOUT_MODE_MAX_HOURS
+            val effectiveExpires = rawExpires ?: rawSince?.plus(maxHours * msPerHour)
+            if (rawSince != null && effectiveExpires != null && nowMs >= effectiveExpires) {
+                prefs[KEY_MANUAL_WORKOUT_SINCE_MS] = 0L
+                prefs[KEY_MANUAL_WORKOUT_EXPIRES_MS] = 0L
+            }
+
+            val rawOverride = prefs[KEY_MANUAL_OFF_OVERRIDE_UNTIL_MS]?.takeIf { it != 0L }
+            if (rawOverride != null && nowMs >= rawOverride) {
+                prefs[KEY_MANUAL_OFF_OVERRIDE_UNTIL_MS] = 0L
+            }
+        }
     }
 
     suspend fun setNightscoutUrl(url: String) {

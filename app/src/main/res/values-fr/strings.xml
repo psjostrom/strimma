@@ -517,5 +517,8 @@
     <string name="workout_mode_threshold_high">Haut</string>
     <string name="workout_mode_threshold_urgent_high">Haut critique</string>
     <string name="workout_mode_reset_defaults">Réinitialiser</string>
-    <string name="workout_mode_settings_info">Actif pendant l\'exercice. Remplace à la fois vos seuils d\'alerte et la zone cible sur les graphiques. Supprime les alertes de capteur obsolète. Activé par le bouton MainScreen ou les événements de calendrier programmés.</string>
+    <string name="workout_mode_settings_info">Actif pendant l\'exercice. Remplace à la fois vos seuils d\'alerte et la zone cible sur les graphiques. Supprime les alertes de capteur obsolète uniquement pendant les 30 premières minutes — ensuite, elles se réactivent même si le mode reste actif. Activé par le bouton MainScreen ou les événements de calendrier programmés.</string>
+    <string name="workout_mode_threshold_order_error">Les seuils doivent satisfaire : bas critique ≤ bas ≤ haut ≤ haut critique.</string>
+    <string name="alert_workout_prefix">Entraînement · %1$s</string>
+    <string name="widget_workout_indicator">ENTRAÎNEMENT</string>
 </resources>

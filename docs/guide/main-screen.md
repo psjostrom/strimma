@@ -15,6 +15,11 @@ From top to bottom:
 - **Exercise** icon — opens exercise history
 - **Settings** icon (gear) — opens the settings menu
 
+### BG Header — top-right icons
+
+- **Workout-mode toggle** (running-person icon) — taps toggle workout mode on/off. Tinted cyan when active, dim when off. See [Workout Mode](workout-mode.md).
+- **Pause-alerts toggle** (bell-with-slash icon) — opens the pause-alerts sheet. Tinted cyan when at least one alert category is paused.
+
 ### BG Header
 
 The large center area shows:
@@ -24,6 +29,8 @@ The large center area shows:
 - **Delta and time** — below the BG, showing how much glucose changed and when the last reading arrived. Format: `+0.3 · 2 min ago`.
 - **Prediction warning** — a colored pill that appears when Strimma predicts you'll cross a threshold. Shows `Low in 8 min` or `High in 12 min`. Only appears when you're currently in range. Tap to see prediction details (rate, projected values, quick pause).
 - **IOB pill** — if treatment sync is enabled and you have active insulin, shows `IOB 2.3U` in a cyan pill. Tap it to see a breakdown of each bolus and its remaining IOB.
+- **Workout pill** — when workout mode is on, shows `Workout 0:42` (elapsed time h:mm) in a cyan pill. Tap to turn workout mode off. See [Workout Mode](workout-mode.md).
+- **Pause pill(s)** — when one or more alert categories are paused, shows the remaining countdown. Tap to open the pause-alerts sheet.
 - **Follower status** — if in follower mode, shows connection status and time since last poll.
 
 ### Glucose Graph

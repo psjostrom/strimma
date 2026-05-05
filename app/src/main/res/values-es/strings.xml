@@ -517,5 +517,8 @@
     <string name="workout_mode_threshold_high">Alto</string>
     <string name="workout_mode_threshold_urgent_high">Alto crítico</string>
     <string name="workout_mode_reset_defaults">Restablecer</string>
-    <string name="workout_mode_settings_info">Activo durante el ejercicio. Reemplaza tanto tus umbrales de alerta como la banda objetivo en los gráficos. Suprime las alertas de sensor obsoleto. Se activa desde el botón de MainScreen o desde eventos de calendario programados.</string>
+    <string name="workout_mode_settings_info">Activo durante el ejercicio. Reemplaza tanto tus umbrales de alerta como la banda objetivo en los gráficos. Suprime las alertas de sensor obsoleto solo durante los primeros 30 minutos — después vuelven a activarse aunque el modo siga activo. Se activa desde el botón de MainScreen o desde eventos de calendario programados.</string>
+    <string name="workout_mode_threshold_order_error">Los umbrales deben cumplir: bajo crítico ≤ bajo ≤ alto ≤ alto crítico.</string>
+    <string name="alert_workout_prefix">Entrenamiento · %1$s</string>
+    <string name="widget_workout_indicator">ENTRENAMIENTO</string>
 </resources>

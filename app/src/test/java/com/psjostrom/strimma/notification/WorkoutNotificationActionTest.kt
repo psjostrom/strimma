@@ -4,13 +4,11 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.psjostrom.strimma.createTestDataStore
 import com.psjostrom.strimma.data.SettingsRepository
-import com.psjostrom.strimma.data.calendar.WorkoutEvent
-import com.psjostrom.strimma.data.workout.CalendarPollerSource
-import com.psjostrom.strimma.data.workout.MutableClock
 import com.psjostrom.strimma.data.workout.WorkoutMode
 import com.psjostrom.strimma.data.workout.WorkoutModeManager
+import com.psjostrom.strimma.testutil.workout.FakeCalendarPoller
+import com.psjostrom.strimma.testutil.workout.MutableClock
 import com.psjostrom.strimma.widget.WidgetSettingsRepository
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertTrue
@@ -36,8 +34,7 @@ class WorkoutNotificationActionTest {
         val ds = createTestDataStore(this)
         val widgetSettings = WidgetSettingsRepository(context)
         val settings = SettingsRepository(context, widgetSettings, ds)
-        val nextEventFlow = MutableStateFlow<WorkoutEvent?>(null)
-        val poller = object : CalendarPollerSource { override val nextEvent = nextEventFlow }
+        val poller = FakeCalendarPoller()
         val clock = MutableClock(1_700_000_000_000L)
         val manager = WorkoutModeManager(settings, poller, clock, backgroundScope)
 

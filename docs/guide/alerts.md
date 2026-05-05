@@ -28,8 +28,18 @@ Strimma has **eight** alert types, each with its own Android notification channe
 
 | Alert | Trigger | Bypasses DND | Vibration |
 |-------|---------|-------------|-----------|
-| **Stale Data** | No reading received for 10+ minutes | No | Gentle |
+| **Stale Data** | No reading received for 10+ minutes. **Suppressed during the first 30 minutes of a workout-mode session** (sensor often loses contact briefly when starting exercise); re-arms after 30 min even while workout mode stays on. See [Workout Mode](workout-mode.md). | No | Gentle |
 | **Push Failed** | Nightscout push failed after retries | No | Gentle |
+
+---
+
+## Workout-Mode Behavior
+
+When workout mode is on (see [Workout Mode](workout-mode.md)):
+
+- **Alert thresholds are replaced** with the workout-mode set (defaults: 5.0 / 6.0 / 14.0 / 16.0 mmol/L), not adjusted on top of your standard thresholds.
+- **Alert titles are prefixed** with `Workout · ` (e.g., `Workout · Urgent Low`) so the severity label is unambiguous — without this, an "Urgent Low" at 5.0 mmol/L could be misread as a normal-life crisis.
+- **Stale-data alerts** are suppressed for the first 30 minutes of the session, then re-arm.
 
 ---
 

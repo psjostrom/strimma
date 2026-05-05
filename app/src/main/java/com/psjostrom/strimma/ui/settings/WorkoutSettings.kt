@@ -1,5 +1,6 @@
 package com.psjostrom.strimma.ui.settings
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,6 +16,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -22,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -49,6 +52,18 @@ fun WorkoutSettings(
     val high by viewModel.workoutHigh.collectAsState()
     val urgentHigh by viewModel.workoutUrgentHigh.collectAsState()
     val maxHours by viewModel.maxHours.collectAsState()
+
+    // Surface threshold-ordering errors (urgent_low > low etc.) as a transient
+    // toast so the user understands why the input was rejected. The DataStore
+    // value remains the previous valid one — the OutlinedTextField repaints from
+    // the StateFlow on next recomposition.
+    val context = LocalContext.current
+    val orderErrorMessage = stringResource(R.string.workout_mode_threshold_order_error)
+    LaunchedEffect(viewModel) {
+        viewModel.validationError.collect {
+            Toast.makeText(context, orderErrorMessage, Toast.LENGTH_LONG).show()
+        }
+    }
 
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp)

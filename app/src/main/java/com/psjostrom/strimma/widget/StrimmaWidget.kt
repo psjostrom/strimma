@@ -30,6 +30,7 @@ import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.StrimmaDatabase
+import com.psjostrom.strimma.data.workout.WorkoutMode
 import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.notification.GraphRenderer
 import com.psjostrom.strimma.ui.MainActivity
@@ -58,9 +59,13 @@ class StrimmaWidget : GlanceAppWidget() {
         val workoutModeManager = dagger.hilt.android.EntryPointAccessors
             .fromApplication(context, WidgetEntryPoint::class.java)
             .workoutModeManager()
-        val effective = workoutModeManager.effectiveThresholds.value
+        // Suspending reads — wait for the manager's first real emission instead of
+        // the placeholder seed, so users with custom thresholds never see the widget
+        // momentarily render against the wrong band on a cold widget refresh.
+        val effective = workoutModeManager.currentEffectiveThresholds()
         val bgLow = effective.displayLowMgdl
         val bgHigh = effective.displayHighMgdl
+        val workoutOn = workoutModeManager.currentState() is WorkoutMode.On
         val glucoseUnit = settings.glucoseUnit.first()
 
         // Fetch Room data here (needs suspend). Max 3h — filter down in provideContent.
@@ -91,7 +96,7 @@ class StrimmaWidget : GlanceAppWidget() {
                 predictionMinutes = predictionMinutes
             )
 
-            WidgetContent(latest, bgLow, bgHigh, graphBitmap, opacity, glucoseUnit, lightMode, colorCoded)
+            WidgetContent(latest, bgLow, bgHigh, graphBitmap, opacity, glucoseUnit, lightMode, colorCoded, workoutOn)
         }
     }
 }
@@ -105,7 +110,8 @@ private fun WidgetContent(
     opacity: Float,
     glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
     lightMode: Boolean = false,
-    colorCoded: Boolean = false
+    colorCoded: Boolean = false,
+    workoutModeOn: Boolean = false
 ) {
     val ctx = LocalContext.current
     val staleColor = ColorProvider(Color(0xFF6A5F80))
@@ -192,6 +198,26 @@ private fun WidgetContent(
                     fontSize = 13.sp
                 )
             )
+        }
+
+        // Workout-mode badge — pinned top-right so a glance at the home screen shows
+        // "in-range cyan" is being computed against workout thresholds, not normal.
+        // Without this the user could mistake a 12 mmol reading colored as in-range
+        // for a normal in-range value.
+        if (workoutModeOn) {
+            Box(
+                modifier = GlanceModifier.fillMaxSize().padding(end = 8.dp, top = 6.dp),
+                contentAlignment = Alignment.TopEnd
+            ) {
+                Text(
+                    text = ctx.getString(R.string.widget_workout_indicator),
+                    style = TextStyle(
+                        color = ColorProvider(Color(0xFF56CCF2)), // InRange cyan
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                )
+            }
         }
     }
 }

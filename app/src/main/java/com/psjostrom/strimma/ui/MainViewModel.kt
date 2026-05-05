@@ -36,6 +36,8 @@ import android.content.Intent
 import com.psjostrom.strimma.data.meal.MealAnalyzer
 import com.psjostrom.strimma.data.meal.MealTimeSlotConfig
 import com.psjostrom.strimma.data.story.toMillisRange
+import com.psjostrom.strimma.data.workout.WorkoutMode
+import com.psjostrom.strimma.data.workout.WorkoutModeManager
 import com.psjostrom.strimma.network.TreatmentSyncer
 import java.time.Instant
 import java.time.YearMonth
@@ -67,7 +69,7 @@ class MainViewModel @Inject constructor(
     private val tidepoolUploader: TidepoolUploader,
     private val updateChecker: UpdateChecker,
     private val updateInstaller: UpdateInstaller,
-    private val workoutModeManager: com.psjostrom.strimma.data.workout.WorkoutModeManager,
+    private val workoutModeManager: WorkoutModeManager,
 ) : ViewModel() {
 
     companion object {
@@ -161,15 +163,21 @@ class MainViewModel @Inject constructor(
     val graphWindowHours: StateFlow<Int> = settings.graphWindowHours
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 4)
 
+    // Filter the placeholder NaN seed so the UI never renders against a junk
+    // threshold for the first frame after VM construction. The seeded fallback
+    // (72f / 180f) matches SettingsRepository defaults — same race window as
+    // any reactive settings consumer, no worse than the pre-feature behavior.
     val bgLow: StateFlow<Float> = workoutModeManager.effectiveThresholds
+        .filter { it !== WorkoutModeManager.PLACEHOLDER_THRESHOLDS }
         .map { it.displayLowMgdl }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 72f)
 
     val bgHigh: StateFlow<Float> = workoutModeManager.effectiveThresholds
+        .filter { it !== WorkoutModeManager.PLACEHOLDER_THRESHOLDS }
         .map { it.displayHighMgdl }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 180f)
 
-    val workoutMode: StateFlow<com.psjostrom.strimma.data.workout.WorkoutMode> =
+    val workoutMode: StateFlow<WorkoutMode> =
         workoutModeManager.state
 
     fun toggleWorkoutMode() {

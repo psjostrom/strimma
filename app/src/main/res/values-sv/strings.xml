@@ -515,5 +515,8 @@
     <string name="workout_mode_threshold_high">H\u00F6g</string>
     <string name="workout_mode_threshold_urgent_high">Akut h\u00F6g</string>
     <string name="workout_mode_reset_defaults">\u00C5terst\u00E4ll standard</string>
-    <string name="workout_mode_settings_info">Aktivt under tr\u00E4ning. Ers\u00E4tter b\u00E5de dina larmgr\u00E4nser och m\u00E5lintervallet i graferna. Tystar sensor-stale-larm. Aktiveras fr\u00E5n MainScreen-knappen eller schemalagda kalenderh\u00E4ndelser.</string>
+    <string name="workout_mode_settings_info">Aktivt under tr\u00E4ning. Ers\u00E4tter b\u00E5de dina larmgr\u00E4nser och m\u00E5lintervallet i graferna. Tystar sensor-stale-larm endast de f\u00F6rsta 30 minuterna \u2014 efter det larmar de igen \u00E4ven om l\u00E4get fortfarande \u00E4r p\u00E5. Aktiveras fr\u00E5n MainScreen-knappen eller schemalagda kalenderh\u00E4ndelser.</string>
+    <string name="workout_mode_threshold_order_error">Gr\u00E4nserna m\u00E5ste uppfylla: akut l\u00E5g \u2264 l\u00E5g \u2264 h\u00F6g \u2264 akut h\u00F6g.</string>
+    <string name="alert_workout_prefix">Tr\u00E4ning \u00B7 %1$s</string>
+    <string name="widget_workout_indicator">TR\u00C4NING</string>
 </resources>

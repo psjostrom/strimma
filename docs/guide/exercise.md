@@ -118,6 +118,14 @@ Intensity keywords ("interval", "tempo", "hiit", "sprint") in the title override
 - **Lookahead** — how far ahead to scan (1–6 hours, default 3h)
 - **Guidance trigger** — when the readiness card appears on the main screen (30–240 min before workout, default 120 min)
 
+### Workout Mode
+
+The **Workout mode** subsection at the top of Exercise Settings configures the runtime mode that raises alert thresholds and the in-range band during exercise. Settings include:
+
+- Four threshold inputs (Urgent low / Low / High / Urgent high) — see [Workout Mode](workout-mode.md) for defaults and what each one drives
+- Auto-off timeout slider (1–12 h, default 3) — manual sessions auto-end after this much elapsed time
+- Reset to defaults — restores the four thresholds (does NOT reset the auto-off timeout)
+
 ### Glucose Write
 
 Optionally, Strimma can write your glucose readings to Health Connect so other health apps can see your CGM data.

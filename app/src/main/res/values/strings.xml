@@ -543,5 +543,12 @@
     <string name="workout_mode_threshold_high">High</string>
     <string name="workout_mode_threshold_urgent_high">Urgent high</string>
     <string name="workout_mode_reset_defaults">Reset to defaults</string>
-    <string name="workout_mode_settings_info">Active during exercise. Replaces both your alert thresholds and the in-range band on graphs. Suppresses stale-sensor alerts. Triggers from the MainScreen toggle or scheduled calendar events.</string>
+    <string name="workout_mode_settings_info">Active during exercise. Replaces both your alert thresholds and the in-range band on graphs. Suppresses stale-sensor alerts for the first 30 minutes only — alerts re-arm after that even if mode stays on. Triggers from the MainScreen toggle or scheduled calendar events.</string>
+    <string name="workout_mode_threshold_order_error">Thresholds must satisfy: urgent low ≤ low ≤ high ≤ urgent high.</string>
+
+    <!-- Alert title prefix when fired during workout mode (so "Urgent Low" at 5.0 mmol/L is unambiguous) -->
+    <string name="alert_workout_prefix">Workout · %1$s</string>
+
+    <!-- Widget overlay -->
+    <string name="widget_workout_indicator">WORKOUT</string>
 </resources>

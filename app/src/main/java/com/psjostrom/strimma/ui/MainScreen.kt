@@ -56,6 +56,7 @@ import com.psjostrom.strimma.graph.ThresholdCrossing
 import com.psjostrom.strimma.graph.CrossingType
 import com.psjostrom.strimma.graph.computeYAxisLabels
 import com.psjostrom.strimma.graph.computeYRange
+import com.psjostrom.strimma.data.workout.WorkoutMode
 import com.psjostrom.strimma.notification.AlertCategory
 import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.ui.components.PauseAlertsSheet
@@ -106,7 +107,7 @@ fun MainScreen(
     storyReady: Boolean = false,
     storyMonthName: String = "",
     onNavigateToStory: (() -> Unit)? = null,
-    workoutMode: com.psjostrom.strimma.data.workout.WorkoutMode = com.psjostrom.strimma.data.workout.WorkoutMode.Off,
+    workoutMode: WorkoutMode = WorkoutMode.Off,
     onToggleWorkoutMode: () -> Unit = {}
 ) {
     val mainWindowMs = graphWindowHours * 3600_000L
@@ -223,7 +224,7 @@ fun MainScreen(
                         Icon(
                             Icons.Outlined.DirectionsRun,
                             contentDescription = stringResource(R.string.workout_mode),
-                            tint = if (workoutMode is com.psjostrom.strimma.data.workout.WorkoutMode.On)
+                            tint = if (workoutMode is WorkoutMode.On)
                                 InRange else MaterialTheme.colorScheme.outline
                         )
                     }
@@ -330,7 +331,7 @@ private fun BgHeader(
     unifiedPauseExpiryMs: Long? = null,
     onPausePillClick: () -> Unit = {},
     onPauseAlerts: (AlertCategory, Long) -> Unit = { _, _ -> },
-    workoutMode: com.psjostrom.strimma.data.workout.WorkoutMode = com.psjostrom.strimma.data.workout.WorkoutMode.Off,
+    workoutMode: WorkoutMode = WorkoutMode.Off,
     onWorkoutPillClick: () -> Unit = {},
 ) {
     val crossing = prediction?.crossing
@@ -412,7 +413,7 @@ private fun BgHeader(
         val activeLow = pauseLowExpiryMs != null && pauseLowExpiryMs > nowMs
         val unifiedActive = unifiedPauseExpiryMs != null && unifiedPauseExpiryMs > nowMs
 
-        val workoutModeOn = workoutMode is com.psjostrom.strimma.data.workout.WorkoutMode.On
+        val workoutModeOn = workoutMode is WorkoutMode.On
         val hasPills = crossing != null || iob > 0.0 || activeHigh || activeLow || workoutModeOn
 
         if (hasPills) {
@@ -471,14 +472,26 @@ private fun BgHeader(
 
                 // Workout-mode pill — only shown when On, mirroring IOB pattern.
                 // Off-state toggle lives as an icon button (mirrors Pause All).
-                if (workoutMode is com.psjostrom.strimma.data.workout.WorkoutMode.On) {
+                if (workoutMode is WorkoutMode.On) {
+                    val pillNowMs = rememberTickingNowMs(intervalMs = WORKOUT_PILL_TICK_MS)
+                    val elapsedMs = (pillNowMs - workoutMode.sinceMs).coerceAtLeast(0L)
+                    val pillText = if (elapsedMs < ONE_MINUTE_MS) {
+                        // First minute: a "0:00" tick would be a worse UX than the bare
+                        // label — the user just toggled on, they know it's running.
+                        stringResource(R.string.workout_mode)
+                    } else {
+                        stringResource(
+                            R.string.workout_mode_active_for,
+                            formatWorkoutElapsed(elapsedMs)
+                        )
+                    }
                     Surface(
                         onClick = onWorkoutPillClick,
                         shape = RoundedCornerShape(100),
                         color = if (isDark) TintInRange else LightTintInRange
                     ) {
                         Text(
-                            text = stringResource(R.string.workout_mode),
+                            text = pillText,
                             color = InRange,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
@@ -1375,6 +1388,22 @@ internal const val GRAPH_MARGIN_BOTTOM = 40f
 internal const val GRAPH_MARGIN_RIGHT = 16f
 
 internal const val DOT_HIT_RADIUS = 40f
+
+private const val ONE_MINUTE_MS = 60_000L
+private const val WORKOUT_PILL_TICK_MS = 30_000L
+private const val MINUTES_PER_HOUR = 60
+
+/**
+ * Format the workout-mode elapsed time as `h:mm` for the pill / notification.
+ * Caller decides whether to suppress for the first minute (where `0:00` would
+ * be visual noise).
+ */
+internal fun formatWorkoutElapsed(elapsedMs: Long): String {
+    val totalMin = (elapsedMs.coerceAtLeast(0L) / ONE_MINUTE_MS).toInt()
+    val h = totalMin / MINUTES_PER_HOUR
+    val m = totalMin % MINUTES_PER_HOUR
+    return "%d:%02d".format(h, m)
+}
 
 internal fun findNearestDot(
     finger: Offset,

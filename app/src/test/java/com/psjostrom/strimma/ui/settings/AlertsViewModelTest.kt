@@ -4,11 +4,17 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.psjostrom.strimma.createTestDataStore
 import com.psjostrom.strimma.data.SettingsRepository
+import com.psjostrom.strimma.data.workout.WorkoutModeManager
 import com.psjostrom.strimma.notification.AlertCategory
 import com.psjostrom.strimma.notification.AlertManager
+import com.psjostrom.strimma.testutil.workout.FakeCalendarPoller
+import com.psjostrom.strimma.testutil.workout.MutableClock
 import com.psjostrom.strimma.widget.WidgetSettingsRepository
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -41,6 +47,7 @@ class AlertsViewModelTest {
     private lateinit var settings: SettingsRepository
     private lateinit var alertManager: AlertManager
     private lateinit var viewModel: AlertsViewModel
+    private lateinit var managerScope: CoroutineScope
 
     @Before
     fun setUp() {
@@ -51,21 +58,18 @@ class AlertsViewModelTest {
             .edit().clear().apply()
 
         settings = SettingsRepository(context, WidgetSettingsRepository(context), createTestDataStore())
-        val nextEventFlow = kotlinx.coroutines.flow.MutableStateFlow<com.psjostrom.strimma.data.calendar.WorkoutEvent?>(null)
-        val poller = object : com.psjostrom.strimma.data.workout.CalendarPollerSource {
-            override val nextEvent = nextEventFlow
-        }
-        val clock = com.psjostrom.strimma.data.workout.MutableClock(System.currentTimeMillis())
-        val managerScope = kotlinx.coroutines.CoroutineScope(
-            kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Unconfined
-        )
-        val workoutModeManager = com.psjostrom.strimma.data.workout.WorkoutModeManager(settings, poller, clock, managerScope)
+        val poller = FakeCalendarPoller()
+        val clock = MutableClock(System.currentTimeMillis())
+        // Cancelled in @After so the eager ticker doesn't leak across tests.
+        managerScope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+        val workoutModeManager = WorkoutModeManager(settings, poller, clock, managerScope)
         alertManager = AlertManager(context, settings, workoutModeManager)
         viewModel = AlertsViewModel(settings, alertManager)
     }
 
     @After
     fun tearDown() {
+        managerScope.cancel()
         Dispatchers.resetMain()
     }
 

@@ -10,7 +10,14 @@ sealed class WorkoutMode {
     data class On(
         val source: Source,
         val sinceMs: Long,
-        /** For MANUAL: sinceMs + maxHours*MS_PER_HOUR. For CALENDAR: event.endTime. */
+        /**
+         * Absolute deadline at which this session ends. Snapshotted at toggle
+         * time so a later change to `workoutModeMaxHours` cannot retroactively
+         * shorten this session, and a clock jump cannot extend or invalidate it.
+         *
+         * For MANUAL: now + maxHours*MS_PER_HOUR (captured at setManualOn).
+         * For CALENDAR: the active event's endTime.
+         */
         val expiresAtMs: Long
     ) : WorkoutMode() {
         enum class Source { MANUAL, CALENDAR }
