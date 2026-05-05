@@ -38,4 +38,11 @@ object AppModule {
 
     @Provides
     fun provideExerciseDao(db: StrimmaDatabase): ExerciseDao = db.exerciseDao()
+
+    @Provides
+    @Singleton
+    fun provideAppCoroutineScope(): kotlinx.coroutines.CoroutineScope =
+        kotlinx.coroutines.CoroutineScope(
+            kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Default
+        )
 }

@@ -19,6 +19,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 class WorkoutModeManagerTest {
 
@@ -27,17 +28,19 @@ class WorkoutModeManagerTest {
 
     /**
      * Builds a manager with isolated DataStore + injectable clock + fake calendar.
-     * Returns (manager, settings, fakeCalendarFlow, clock).
+     * Uses [backgroundScope] for the manager's internal collectors so runTest
+     * auto-cancels them at test end (avoids UncompletedCoroutinesError from the
+     * SharingStarted.Eagerly + infinite ticker pattern).
      */
-    private fun setup(testScope: TestScope): TestRig {
+    private fun TestScope.setup(): TestRig {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
-        val dataStore = createTestDataStore(testScope)
+        val dataStore = createTestDataStore(this)
         val widgetSettings = com.psjostrom.strimma.widget.WidgetSettingsRepository(context)
         val settings = SettingsRepository(context, widgetSettings, dataStore)
         val clock = MutableClock(baseNowMs)
         val nextEventFlow = MutableStateFlow<WorkoutEvent?>(null)
         val fakePoller = FakeCalendarPoller(nextEventFlow)
-        val manager = WorkoutModeManager(settings, fakePoller, clock, testScope)
+        val manager = WorkoutModeManager(settings, fakePoller, clock, backgroundScope)
         return TestRig(manager, settings, nextEventFlow, clock)
     }
 
@@ -59,13 +62,13 @@ class WorkoutModeManagerTest {
 
     @Test
     fun `initial state is Off`() = runTest {
-        val rig = setup(this)
+        val rig = setup()
         assertEquals(WorkoutMode.Off, rig.manager.state.first())
     }
 
     @Test
     fun `setManualOn produces On(MANUAL) with expiresAtMs = now plus maxHours`() = runTest {
-        val rig = setup(this)
+        val rig = setup()
         rig.manager.setManualOn()
         val state = rig.manager.state.first()
         assertTrue(state is WorkoutMode.On)
@@ -77,7 +80,7 @@ class WorkoutModeManagerTest {
 
     @Test
     fun `manual ON expires after maxHours and clears manualSinceMs`() = runTest {
-        val rig = setup(this)
+        val rig = setup()
         rig.manager.setManualOn()
         rig.clock.nowMs = baseNowMs + 3 * MS_PER_HOUR + 1
         // ticker fires every 30s; advance enough to trigger one tick
@@ -88,7 +91,7 @@ class WorkoutModeManagerTest {
 
     @Test
     fun `calendar event currently active triggers On(CALENDAR)`() = runTest {
-        val rig = setup(this)
+        val rig = setup()
         val ev = event(startMs = baseNowMs - 1000, endMs = baseNowMs + 60 * MS_PER_HOUR)
         rig.nextEventFlow.value = ev
         advanceTimeBy(35_000L)
@@ -102,7 +105,7 @@ class WorkoutModeManagerTest {
 
     @Test
     fun `future calendar event does not trigger`() = runTest {
-        val rig = setup(this)
+        val rig = setup()
         rig.nextEventFlow.value = event(startMs = baseNowMs + MS_PER_HOUR, endMs = baseNowMs + 2 * MS_PER_HOUR)
         advanceTimeBy(35_000L)
         assertEquals(WorkoutMode.Off, rig.manager.state.first())
@@ -110,19 +113,20 @@ class WorkoutModeManagerTest {
 
     @Test
     fun `manual OFF during active calendar sets overrideUntilMs to event end`() = runTest {
-        val rig = setup(this)
+        val rig = setup()
         val ev = event(startMs = baseNowMs - 1000, endMs = baseNowMs + MS_PER_HOUR)
         rig.nextEventFlow.value = ev
-        advanceTimeBy(35_000L)
-        // Now state is On(CALENDAR)
+        // Wait for state to transition to On(CALENDAR) before reading it inside setManualOff
+        rig.manager.state.first { it is WorkoutMode.On }
         rig.manager.setManualOff()
-        assertEquals(WorkoutMode.Off, rig.manager.state.first())
+        // Wait for the override to propagate through combine() back to Off
+        rig.manager.state.first { it is WorkoutMode.Off }
         assertEquals(ev.endTime, rig.settings.manualOffOverrideUntilMs.first())
     }
 
     @Test
     fun `manual ON wins over active calendar event`() = runTest {
-        val rig = setup(this)
+        val rig = setup()
         val ev = event(startMs = baseNowMs - 1000, endMs = baseNowMs + MS_PER_HOUR)
         rig.nextEventFlow.value = ev
         rig.manager.setManualOn()
@@ -132,7 +136,7 @@ class WorkoutModeManagerTest {
 
     @Test
     fun `manual ON expiring while calendar still active transitions seamlessly to CALENDAR`() = runTest {
-        val rig = setup(this)
+        val rig = setup()
         val ev = event(startMs = baseNowMs - 1000, endMs = baseNowMs + 4 * MS_PER_HOUR)
         rig.nextEventFlow.value = ev
         rig.manager.setManualOn()  // expires at baseNowMs + 3h
@@ -145,7 +149,7 @@ class WorkoutModeManagerTest {
 
     @Test
     fun `effectiveThresholds in Off mode uses settings bg+alert values`() = runTest {
-        val rig = setup(this)
+        val rig = setup()
         val t = rig.manager.effectiveThresholds.first()
         // Defaults from SettingsRepository.kt:218-223
         assertEquals(72f, t.displayLowMgdl)
@@ -158,10 +162,10 @@ class WorkoutModeManagerTest {
 
     @Test
     fun `effectiveThresholds in On mode uses workout values for both display and alerts`() = runTest {
-        val rig = setup(this)
+        val rig = setup()
         rig.manager.setManualOn()
-        val t = rig.manager.effectiveThresholds.first()
-        // Defaults from SettingsRepository workout block
+        // Wait for the combine() to re-emit with workout values (default low=108)
+        val t = rig.manager.effectiveThresholds.first { it.alertLowMgdl == 108f }
         assertEquals(108f, t.displayLowMgdl)
         assertEquals(252f, t.displayHighMgdl)
         assertEquals(108f, t.alertLowMgdl)
