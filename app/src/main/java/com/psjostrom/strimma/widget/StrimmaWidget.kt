@@ -55,8 +55,12 @@ class StrimmaWidget : GlanceAppWidget() {
         val db = StrimmaDatabase.getInstance(context)
         val dao = db.readingDao()
         val settings = SettingsRepository(context, WidgetSettingsRepository(context), context.settingsDataStore)
-        val bgLow = settings.bgLow.first()
-        val bgHigh = settings.bgHigh.first()
+        val workoutModeManager = dagger.hilt.android.EntryPointAccessors
+            .fromApplication(context, WidgetEntryPoint::class.java)
+            .workoutModeManager()
+        val effective = workoutModeManager.effectiveThresholds.value
+        val bgLow = effective.displayLowMgdl
+        val bgHigh = effective.displayHighMgdl
         val glucoseUnit = settings.glucoseUnit.first()
 
         // Fetch Room data here (needs suspend). Max 3h — filter down in provideContent.
