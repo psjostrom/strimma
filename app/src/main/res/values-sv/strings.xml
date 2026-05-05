@@ -505,7 +505,10 @@
     <string name="workout_mode_end">Avsluta tr\u00E4ning</string>
     <string name="workout_mode_active_for">Tr\u00E4ning %1$s</string>
     <string name="workout_mode_settings_title">Tr\u00E4ningsl\u00E4ge</string>
-    <string name="workout_mode_auto_off_after">Auto-av efter %1$d timmar</string>
+    <plurals name="workout_mode_auto_off_after_plural">
+        <item quantity="one">Auto-av efter %1$d timme</item>
+        <item quantity="other">Auto-av efter %1$d timmar</item>
+    </plurals>
     <string name="workout_mode_thresholds_header">Tr\u00E4ningsgr\u00E4nser</string>
     <string name="workout_mode_threshold_low">L\u00E5g</string>
     <string name="workout_mode_threshold_urgent_low">Akut l\u00E5g</string>

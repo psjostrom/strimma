@@ -533,7 +533,10 @@
     <string name="workout_mode_end">End workout</string>
     <string name="workout_mode_active_for">Workout %1$s</string>
     <string name="workout_mode_settings_title">Workout mode</string>
-    <string name="workout_mode_auto_off_after">Auto-off after %1$d hours</string>
+    <plurals name="workout_mode_auto_off_after_plural">
+        <item quantity="one">Auto-off after %1$d hour</item>
+        <item quantity="other">Auto-off after %1$d hours</item>
+    </plurals>
     <string name="workout_mode_thresholds_header">Workout thresholds</string>
     <string name="workout_mode_threshold_low">Low</string>
     <string name="workout_mode_threshold_urgent_low">Urgent low</string>

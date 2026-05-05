@@ -22,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -52,7 +53,7 @@ fun WorkoutSettings(
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text(stringResource(R.string.workout_mode_auto_off_after, maxHours))
+        Text(pluralStringResource(R.plurals.workout_mode_auto_off_after_plural, maxHours, maxHours))
         Slider(
             value = maxHours.toFloat(),
             onValueChange = { viewModel.setMaxHours(it.toInt().coerceIn(MIN_HOURS, MAX_HOURS)) },
