@@ -94,15 +94,6 @@ class NotificationHelper @Inject constructor(
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val workoutToggleIntent = PendingIntent.getBroadcast(
-            context, WORKOUT_TOGGLE_REQUEST_CODE,
-            Intent(context, WorkoutModeReceiver::class.java),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        val workoutToggleLabel = context.getString(
-            if (workoutModeOn) R.string.workout_mode_end else R.string.workout_mode_start
-        )
-
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setOngoing(true)
             .setContentIntent(contentIntent)
@@ -110,7 +101,7 @@ class NotificationHelper @Inject constructor(
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setSilent(true)
             .setColor(ContextCompat.getColor(context, R.color.brand_accent))
-            .addAction(0, workoutToggleLabel, workoutToggleIntent)
+            .addAction(0, workoutToggleLabel(workoutModeOn), buildWorkoutToggleIntent())
 
         if (reading != null) {
             val direction = Direction.parse(reading.direction)
@@ -230,6 +221,16 @@ class NotificationHelper @Inject constructor(
         )
         notificationManager.notify(NOTIFICATION_ID, notification)
     }
+
+    private fun buildWorkoutToggleIntent(): PendingIntent = PendingIntent.getBroadcast(
+        context, WORKOUT_TOGGLE_REQUEST_CODE,
+        Intent(context, WorkoutModeReceiver::class.java),
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    )
+
+    private fun workoutToggleLabel(modeOn: Boolean): String = context.getString(
+        if (modeOn) R.string.workout_mode_end else R.string.workout_mode_start
+    )
 
     private fun createBgIcon(text: String): IconCompat {
         val size = ICON_SIZE
