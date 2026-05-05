@@ -190,6 +190,27 @@ class SettingsRepository @Inject constructor(
         private fun exerciseTargetHighKey(name: String) = floatPreferencesKey("exercise_target_high_$name")
         private val KEY_MAX_HEART_RATE = intPreferencesKey("max_heart_rate")
 
+        // --- Workout mode (added for workout-mode feature) ---
+        // Workout thresholds (stored as mg/dL; doubles as both display and alert)
+        private val KEY_WORKOUT_ALERT_LOW = floatPreferencesKey("workout_alert_low")
+        private val KEY_WORKOUT_ALERT_HIGH = floatPreferencesKey("workout_alert_high")
+        private val KEY_WORKOUT_ALERT_URGENT_LOW = floatPreferencesKey("workout_alert_urgent_low")
+        private val KEY_WORKOUT_ALERT_URGENT_HIGH = floatPreferencesKey("workout_alert_urgent_high")
+
+        // Defaults: 6.0 / 5.0 / 14.0 / 16.0 mmol → mg/dL via factor 18.0182
+        const val DEFAULT_WORKOUT_ALERT_LOW = 108f
+        const val DEFAULT_WORKOUT_ALERT_URGENT_LOW = 90f
+        const val DEFAULT_WORKOUT_ALERT_HIGH = 252f
+        const val DEFAULT_WORKOUT_ALERT_URGENT_HIGH = 288f
+
+        // Manual safety timeout (1–12 hours)
+        private val KEY_WORKOUT_MODE_MAX_HOURS = intPreferencesKey("workout_mode_max_hours")
+        const val DEFAULT_WORKOUT_MODE_MAX_HOURS = 3
+
+        // Runtime state (set by WorkoutModeManager). Sentinel 0L = absent.
+        private val KEY_MANUAL_WORKOUT_SINCE_MS = longPreferencesKey("manual_workout_since_ms")
+        private val KEY_MANUAL_OFF_OVERRIDE_UNTIL_MS = longPreferencesKey("manual_off_override_until_ms")
+
         // Meal time slot boundaries (minutes from midnight)
         private val KEY_MEAL_BREAKFAST_START = intPreferencesKey("meal_breakfast_start")
         private val KEY_MEAL_BREAKFAST_END = intPreferencesKey("meal_breakfast_end")
@@ -244,6 +265,36 @@ class SettingsRepository @Inject constructor(
     val alertStaleEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_STALE_ENABLED] ?: true }
     val alertLowSoonEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_LOW_SOON_ENABLED] ?: true }
     val alertHighSoonEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_HIGH_SOON_ENABLED] ?: true }
+
+    // --- Workout thresholds ---
+    val workoutAlertLow: Flow<Float> = dataStore.data.map { it[KEY_WORKOUT_ALERT_LOW] ?: DEFAULT_WORKOUT_ALERT_LOW }
+    val workoutAlertHigh: Flow<Float> = dataStore.data.map { it[KEY_WORKOUT_ALERT_HIGH] ?: DEFAULT_WORKOUT_ALERT_HIGH }
+    val workoutAlertUrgentLow: Flow<Float> = dataStore.data.map { it[KEY_WORKOUT_ALERT_URGENT_LOW] ?: DEFAULT_WORKOUT_ALERT_URGENT_LOW }
+    val workoutAlertUrgentHigh: Flow<Float> = dataStore.data.map { it[KEY_WORKOUT_ALERT_URGENT_HIGH] ?: DEFAULT_WORKOUT_ALERT_URGENT_HIGH }
+
+    suspend fun setWorkoutAlertLow(mgdl: Float) { dataStore.edit { it[KEY_WORKOUT_ALERT_LOW] = mgdl } }
+    suspend fun setWorkoutAlertHigh(mgdl: Float) { dataStore.edit { it[KEY_WORKOUT_ALERT_HIGH] = mgdl } }
+    suspend fun setWorkoutAlertUrgentLow(mgdl: Float) { dataStore.edit { it[KEY_WORKOUT_ALERT_URGENT_LOW] = mgdl } }
+    suspend fun setWorkoutAlertUrgentHigh(mgdl: Float) { dataStore.edit { it[KEY_WORKOUT_ALERT_URGENT_HIGH] = mgdl } }
+
+    // --- Workout safety timeout ---
+    val workoutModeMaxHours: Flow<Int> = dataStore.data.map { it[KEY_WORKOUT_MODE_MAX_HOURS] ?: DEFAULT_WORKOUT_MODE_MAX_HOURS }
+    suspend fun setWorkoutModeMaxHours(hours: Int) { dataStore.edit { it[KEY_WORKOUT_MODE_MAX_HOURS] = hours } }
+
+    // --- Workout runtime state. Sentinel 0L = absent (mapped to null). ---
+    val manualWorkoutSinceMs: Flow<Long?> = dataStore.data.map {
+        it[KEY_MANUAL_WORKOUT_SINCE_MS]?.takeIf { v -> v != 0L }
+    }
+    suspend fun setManualWorkoutSinceMs(ms: Long?) {
+        dataStore.edit { it[KEY_MANUAL_WORKOUT_SINCE_MS] = ms ?: 0L }
+    }
+
+    val manualOffOverrideUntilMs: Flow<Long?> = dataStore.data.map {
+        it[KEY_MANUAL_OFF_OVERRIDE_UNTIL_MS]?.takeIf { v -> v != 0L }
+    }
+    suspend fun setManualOffOverrideUntilMs(ms: Long?) {
+        dataStore.edit { it[KEY_MANUAL_OFF_OVERRIDE_UNTIL_MS] = ms ?: 0L }
+    }
 
     suspend fun setNightscoutUrl(url: String) {
         dataStore.edit { it[KEY_NIGHTSCOUT_URL] = url.trim() }
