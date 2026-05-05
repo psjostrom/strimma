@@ -530,6 +530,22 @@ Non-sensitive settings (thresholds, graph window) stored in Jetpack `DataStore` 
 
 ---
 
+## 11.5 Workout Mode
+
+A runtime state that, while On, replaces both the in-range band (`bgLow` / `bgHigh`) and the alert thresholds (`alertLow` / `alertHigh` / `alertUrgentLow` / `alertUrgentHigh`) with a separate set of 4 workout-mode thresholds. While On, also suppresses stale-sensor alerts.
+
+**State machine.** Owned by `WorkoutModeManager` (Hilt singleton, package `data/workout/`). Combines DataStore-backed manual state, the existing `CalendarPoller.nextEvent` flow filtered to "currently active," and a 30-second internal ticker. Manual action always wins over calendar.
+
+**Triggers.** Manual toggle (MainScreen pill + foreground-notification action) or active calendar event. Activity Recognition and notification-listener inference are out of scope for v1.
+
+**Settings.** `Settings → Exercise → Workout mode`. Configurable thresholds (default 6 / 5 / 14 / 16 mmol) and safety timeout (default 3 h, range 1–12 h).
+
+**Effective thresholds.** A single `EffectiveThresholds` value type (display low/high + alert low/high/urgentLow/urgentHigh) is exposed by the manager and consumed by `AlertManager`, `StrimmaService`, `MainViewModel`, `NotificationHelper`, `StrimmaWidget`, `LocalWebServer`, and `StoryViewModel`.
+
+**Spec:** See `docs/specs/2026-05-05-workout-mode-design.md` for full design details and `docs/specs/2026-05-05-workout-mode-plan.md` for the implementation plan.
+
+---
+
 ## 12. Side-by-Side Validation with xDrip
 
 ### How It Works
