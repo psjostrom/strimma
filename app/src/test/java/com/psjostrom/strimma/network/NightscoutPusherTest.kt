@@ -59,7 +59,16 @@ class NightscoutPusherTest {
         dao = db.readingDao()
         fakeClient = FakeNightscoutClient()
         settings = SettingsRepository(context, WidgetSettingsRepository(context), createTestDataStore())
-        alertManager = AlertManager(context, settings)
+        val nextEventFlow = kotlinx.coroutines.flow.MutableStateFlow<com.psjostrom.strimma.data.calendar.WorkoutEvent?>(null)
+        val poller = object : com.psjostrom.strimma.data.workout.CalendarPollerSource {
+            override val nextEvent = nextEventFlow
+        }
+        val clock = com.psjostrom.strimma.data.workout.MutableClock(System.currentTimeMillis())
+        val managerScope = kotlinx.coroutines.CoroutineScope(
+            kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Unconfined
+        )
+        val workoutModeManager = com.psjostrom.strimma.data.workout.WorkoutModeManager(settings, poller, clock, managerScope)
+        alertManager = AlertManager(context, settings, workoutModeManager)
     }
 
     @After

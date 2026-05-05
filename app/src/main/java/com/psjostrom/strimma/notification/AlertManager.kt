@@ -48,7 +48,8 @@ enum class AlertCategory(
 @Singleton
 class AlertManager @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val settings: SettingsRepository
+    private val settings: SettingsRepository,
+    private val workoutModeManager: com.psjostrom.strimma.data.workout.WorkoutModeManager,
 ) {
     companion object {
         // Each alert type has its own channel so the user can set a different sound per alarm
@@ -302,8 +303,9 @@ class AlertManager @Inject constructor(
         val mgdl = reading.sgv.toDouble()
         val unit = settings.glucoseUnit.first()
 
-        val lowThreshold = settings.alertLow.first()
-        val highThreshold = settings.alertHigh.first()
+        val effective = workoutModeManager.effectiveThresholds.value
+        val lowThreshold = effective.alertLowMgdl
+        val highThreshold = effective.alertHighMgdl
 
         val alreadyLow = checkLowAlerts(mgdl, unit)
         val alreadyHigh = checkHighAlerts(mgdl, unit)
@@ -313,10 +315,11 @@ class AlertManager @Inject constructor(
     }
 
     private suspend fun checkLowAlerts(mgdl: Double, unit: GlucoseUnit): Boolean {
+        val effective = workoutModeManager.effectiveThresholds.value
         val urgentLowEnabled = settings.alertUrgentLowEnabled.first()
-        val urgentLowThreshold = settings.alertUrgentLow.first()
+        val urgentLowThreshold = effective.alertUrgentLowMgdl
         val lowEnabled = settings.alertLowEnabled.first()
-        val lowThreshold = settings.alertLow.first()
+        val lowThreshold = effective.alertLowMgdl
 
         if (urgentLowEnabled && mgdl <= urgentLowThreshold) {
             if (!isCategoryPausedAtLevel(snoozePrefs, AlertCategory.LOW, ALERT_LEVEL_URGENT)) {
@@ -345,10 +348,11 @@ class AlertManager @Inject constructor(
     }
 
     private suspend fun checkHighAlerts(mgdl: Double, unit: GlucoseUnit): Boolean {
+        val effective = workoutModeManager.effectiveThresholds.value
         val urgentHighEnabled = settings.alertUrgentHighEnabled.first()
-        val urgentHighThreshold = settings.alertUrgentHigh.first()
+        val urgentHighThreshold = effective.alertUrgentHighMgdl
         val highEnabled = settings.alertHighEnabled.first()
-        val highThreshold = settings.alertHigh.first()
+        val highThreshold = effective.alertHighMgdl
 
         if (urgentHighEnabled && mgdl >= urgentHighThreshold) {
             if (!isCategoryPausedAtLevel(snoozePrefs, AlertCategory.HIGH, ALERT_LEVEL_URGENT)) {
@@ -427,6 +431,7 @@ class AlertManager @Inject constructor(
     suspend fun checkStale(lastReadingTs: Long?) {
         val staleEnabled = settings.alertStaleEnabled.first()
         if (!staleEnabled) return
+        if (workoutModeManager.state.value is com.psjostrom.strimma.data.workout.WorkoutMode.On) return
 
         val now = System.currentTimeMillis()
         if (isStale(lastReadingTs)) {

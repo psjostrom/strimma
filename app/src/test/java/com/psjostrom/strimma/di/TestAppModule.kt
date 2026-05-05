@@ -14,6 +14,9 @@ import dagger.Provides
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import dagger.hilt.testing.TestInstallIn
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import javax.inject.Singleton
 
 @Module
@@ -43,4 +46,9 @@ object TestAppModule {
 
     @Provides
     fun provideExerciseDao(db: StrimmaDatabase): ExerciseDao = db.exerciseDao()
+
+    @Provides
+    @Singleton
+    fun provideAppCoroutineScope(): CoroutineScope =
+        CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
 }
