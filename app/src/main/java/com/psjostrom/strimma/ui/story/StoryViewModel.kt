@@ -28,7 +28,8 @@ class StoryViewModel @Inject constructor(
     private val readingDao: ReadingDao,
     private val treatmentDao: TreatmentDao,
     private val settings: SettingsRepository,
-    private val mealAnalyzer: MealAnalyzer
+    private val mealAnalyzer: MealAnalyzer,
+    private val workoutModeManager: com.psjostrom.strimma.data.workout.WorkoutModeManager,
 ) : ViewModel() {
 
     private val year: Int = savedStateHandle["year"] ?: YearMonth.now().minusMonths(1).year
@@ -64,8 +65,9 @@ class StoryViewModel @Inject constructor(
             val carbTreatments = treatmentDao.carbsInRange(curStart, curEnd)
             val allTreatments = treatmentDao.allSince(curStart)
 
-            val bgLow = settings.bgLow.first()
-            val bgHigh = settings.bgHigh.first()
+            val effective = workoutModeManager.effectiveThresholds.value
+            val bgLow = effective.displayLowMgdl
+            val bgHigh = effective.displayHighMgdl
             val insulinType = settings.insulinType.first()
             val customDIA = settings.customDIA.first()
             val tauMinutes = IOBComputer.tauForInsulinType(insulinType, customDIA)
