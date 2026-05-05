@@ -3,6 +3,7 @@ package com.psjostrom.strimma.data.calendar
 import com.psjostrom.strimma.data.MS_PER_HOUR
 import com.psjostrom.strimma.data.MS_PER_MINUTE
 import com.psjostrom.strimma.data.SettingsRepository
+import com.psjostrom.strimma.data.workout.CalendarPollerSource
 import com.psjostrom.strimma.receiver.DebugLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -21,9 +22,9 @@ import javax.inject.Singleton
 class CalendarPoller @Inject constructor(
     private val calendarReader: CalendarReader,
     private val settings: SettingsRepository
-) {
+) : CalendarPollerSource {
     private val _nextEvent = MutableStateFlow<WorkoutEvent?>(null)
-    val nextEvent: StateFlow<WorkoutEvent?> = _nextEvent
+    override val nextEvent: StateFlow<WorkoutEvent?> = _nextEvent
 
     fun start(scope: CoroutineScope): Job {
         return scope.launch {
