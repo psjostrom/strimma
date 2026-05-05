@@ -498,4 +498,19 @@
     <string name="advice_worst_time_block">Denna tid p\u00E5 dygnet har din l\u00E4gsta tid i intervall. \u00D6verv\u00E4g:\n\n\u2022 Granska din basaldos under dessa timmar\n\u2022 Kontrollera om m\u00E5ltidstiming eller kolhydratval bidrar\n\u2022 Diskutera en profiljustering med ditt v\u00E5rdteam</string>
     <string name="advice_low_events">L\u00E5ga v\u00E4rden kan minskas genom:\n\n\u2022 Granska basaldoser under timmarna d\u00E5 l\u00E5ga v\u00E4rden intr\u00E4ffar\n\u2022 Minska korrektionsbolusar, s\u00E4rskilt innan s\u00E4ngs\n\u2022 St\u00E4lla in en h\u00F6gre l\u00E5g-glukosgr\u00E4ns f\u00F6r att f\u00E5nga fall tidigare\n\u2022 Ha snabbverkande kolhydrater tillg\u00E4ngliga</string>
     <string name="advice_high_events">H\u00F6ga v\u00E4rden kan minskas genom:\n\n\u2022 F\u00F6rbolusa 10\u201315 minuter innan m\u00E5ltid\n\u2022 Granska kolhydratkvoter f\u00F6r m\u00E5ltider som ger toppar\n\u2022 Kontrollera om bolusar missats eller kolhydrater r\u00E4knats f\u00F6r l\u00E5gt\n\u2022 Justera basaldoser under timmar med h\u00F6ga v\u00E4rden</string>
+
+    <!-- Workout mode -->
+    <string name="workout_mode">Tr\u00E4ningsl\u00E4ge</string>
+    <string name="workout_mode_start">Starta tr\u00E4ning</string>
+    <string name="workout_mode_end">Avsluta tr\u00E4ning</string>
+    <string name="workout_mode_active_for">Tr\u00E4ning %1$s</string>
+    <string name="workout_mode_settings_title">Tr\u00E4ningsl\u00E4ge</string>
+    <string name="workout_mode_auto_off_after">Auto-av efter %1$d timmar</string>
+    <string name="workout_mode_thresholds_header">Tr\u00E4ningsgr\u00E4nser</string>
+    <string name="workout_mode_threshold_low">L\u00E5g</string>
+    <string name="workout_mode_threshold_urgent_low">Akut l\u00E5g</string>
+    <string name="workout_mode_threshold_high">H\u00F6g</string>
+    <string name="workout_mode_threshold_urgent_high">Akut h\u00F6g</string>
+    <string name="workout_mode_reset_defaults">\u00C5terst\u00E4ll standard</string>
+    <string name="workout_mode_settings_info">Aktivt under tr\u00E4ning. Ers\u00E4tter b\u00E5de dina larmgr\u00E4nser och m\u00E5lintervallet i graferna. Tystar sensor-stale-larm. Aktiveras fr\u00E5n MainScreen-knappen eller schemalagda kalenderh\u00E4ndelser.</string>
 </resources>
