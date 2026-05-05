@@ -158,6 +158,20 @@ class StrimmaService : Service() {
         syncOrchestrator.start(scope)
         calendarPollJob = calendarPoller.start(scope)
         observeCalendarForAlarms()
+        observeWorkoutModeForNotificationRefresh()
+    }
+
+    /**
+     * Workout-mode toggles must take effect in the foreground notification immediately,
+     * not wait for the next CGM reading. Observe the manager state and trigger a
+     * notification rebuild on every transition.
+     */
+    private fun observeWorkoutModeForNotificationRefresh() {
+        scope.launch {
+            workoutModeManager.state.collect {
+                updateNotification()
+            }
+        }
     }
 
     private fun startStaleCheckLoop() {
@@ -360,13 +374,25 @@ class StrimmaService : Service() {
 
         val workoutText = computeWorkoutText(latest, recent, iob, now)
 
+        val workoutMode = workoutModeManager.state.value
+        val workoutModeOn = workoutMode is com.psjostrom.strimma.data.workout.WorkoutMode.On
+        val workoutModeElapsed = (workoutMode as? com.psjostrom.strimma.data.workout.WorkoutMode.On)
+            ?.let { formatElapsed(now - it.sinceMs) }
+
         notificationHelper.updateNotification(
             latest, recent, bgLow.value.toDouble(), bgHigh.value.toDouble(),
             graphWindowMs, predMinutes.value, glucoseUnit.value, iob, exerciseSessions,
-            workoutText, prediction
+            workoutText, prediction, workoutModeOn, workoutModeElapsed
         )
 
         return prediction
+    }
+
+    private fun formatElapsed(ms: Long): String {
+        val totalMin = (ms.coerceAtLeast(0L) / MS_PER_MINUTE).toInt()
+        val h = totalMin / MINUTES_PER_HOUR
+        val m = totalMin % MINUTES_PER_HOUR
+        return "%d:%02d".format(h, m)
     }
 
     private suspend fun computeWorkoutText(
