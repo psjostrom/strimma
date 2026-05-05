@@ -31,7 +31,8 @@ private const val TREATMENT_LOOKBACK_HOURS = 48
 class LocalWebServer @Inject constructor(
     private val dao: ReadingDao,
     private val treatmentDao: TreatmentDao,
-    private val settings: SettingsRepository
+    private val settings: SettingsRepository,
+    private val workoutModeManager: com.psjostrom.strimma.data.workout.WorkoutModeManager,
 ) {
     companion object {
         const val PORT = 17580
@@ -70,7 +71,7 @@ class LocalWebServer @Inject constructor(
                 }
                 routing {
                     sgvRoutes(dao, treatmentDao, settings)
-                    statusRoutes(settings)
+                    statusRoutes(settings, workoutModeManager)
                     treatmentRoutes(treatmentDao)
                     healthRoutes()
                 }
@@ -130,12 +131,16 @@ private fun Routing.sgvRoutes(dao: ReadingDao, treatmentDao: TreatmentDao, setti
     get("/api/v1/entries/sgv.json") { handleSgv(call) }
 }
 
-private fun Routing.statusRoutes(settings: SettingsRepository) {
+private fun Routing.statusRoutes(
+    settings: SettingsRepository,
+    workoutModeManager: com.psjostrom.strimma.data.workout.WorkoutModeManager
+) {
     suspend fun handleStatus(call: ApplicationCall) {
         val unit = settings.glucoseUnit.first()
         val unitsHint = if (unit == GlucoseUnit.MMOL) "mmol" else "mgdl"
-        val bgLow = settings.bgLow.first()
-        val bgHigh = settings.bgHigh.first()
+        val effective = workoutModeManager.effectiveThresholds.value
+        val bgLow = effective.displayLowMgdl
+        val bgHigh = effective.displayHighMgdl
         val json = buildStatusJson(unitsHint, bgLow, bgHigh)
         call.respondText(json, ContentType.Application.Json)
     }
