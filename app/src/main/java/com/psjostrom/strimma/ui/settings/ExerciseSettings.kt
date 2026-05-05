@@ -355,6 +355,10 @@ fun ExerciseSettings(
                 )
             }
         }
+
+        SettingsSection(stringResource(R.string.workout_mode_settings_title)) {
+            WorkoutSettings(glucoseUnit = glucoseUnit)
+        }
     }
 
     if (showCalendarPicker) {
