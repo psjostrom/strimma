@@ -67,7 +67,7 @@ import com.psjostrom.strimma.ui.theme.Danger
 import com.psjostrom.strimma.ui.theme.ExerciseDefault
 import com.psjostrom.strimma.ui.theme.InRange
 import com.psjostrom.strimma.ui.theme.InRangeZone
-import androidx.compose.material.icons.outlined.FitnessCenter
+import androidx.compose.material.icons.outlined.DirectionsRun
 import com.psjostrom.strimma.ui.theme.LightTintDanger
 import com.psjostrom.strimma.ui.theme.LightTintInRange
 import com.psjostrom.strimma.ui.theme.LightTintWarning
@@ -218,27 +218,23 @@ fun MainScreen(
                     workoutMode = workoutMode,
                     onWorkoutPillClick = onToggleWorkoutMode
                 )
-                IconButton(
-                    onClick = onToggleWorkoutMode,
-                    modifier = Modifier.align(Alignment.TopStart)
-                ) {
-                    Icon(
-                        Icons.Outlined.FitnessCenter,
-                        contentDescription = stringResource(R.string.workout_mode),
-                        tint = if (workoutMode is com.psjostrom.strimma.data.workout.WorkoutMode.On)
-                            InRange else MaterialTheme.colorScheme.outline
-                    )
-                }
-                IconButton(
-                    onClick = { showPauseSheet = true },
-                    modifier = Modifier.align(Alignment.TopEnd)
-                ) {
-                    Icon(
-                        Icons.Outlined.NotificationsOff,
-                        contentDescription = stringResource(R.string.pause_alerts),
-                        tint = if (pauseLowExpiryMs != null || pauseHighExpiryMs != null)
-                            InRange else MaterialTheme.colorScheme.outline
-                    )
+                Row(modifier = Modifier.align(Alignment.TopEnd)) {
+                    IconButton(onClick = onToggleWorkoutMode) {
+                        Icon(
+                            Icons.Outlined.DirectionsRun,
+                            contentDescription = stringResource(R.string.workout_mode),
+                            tint = if (workoutMode is com.psjostrom.strimma.data.workout.WorkoutMode.On)
+                                InRange else MaterialTheme.colorScheme.outline
+                        )
+                    }
+                    IconButton(onClick = { showPauseSheet = true }) {
+                        Icon(
+                            Icons.Outlined.NotificationsOff,
+                            contentDescription = stringResource(R.string.pause_alerts),
+                            tint = if (pauseLowExpiryMs != null || pauseHighExpiryMs != null)
+                                InRange else MaterialTheme.colorScheme.outline
+                        )
+                    }
                 }
             }
 

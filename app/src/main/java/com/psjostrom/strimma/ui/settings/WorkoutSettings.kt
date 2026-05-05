@@ -50,14 +50,8 @@ fun WorkoutSettings(
     val maxHours by viewModel.maxHours.collectAsState()
 
     Column(
-        modifier = Modifier.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text(
-            text = stringResource(R.string.workout_mode_settings_title),
-            style = MaterialTheme.typography.titleMedium
-        )
-
         Text(stringResource(R.string.workout_mode_auto_off_after, maxHours))
         Slider(
             value = maxHours.toFloat(),
