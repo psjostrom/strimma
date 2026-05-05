@@ -259,7 +259,9 @@ fun StrimmaNavGraph(
                     navController.navigate("story/${lm.year}/${lm.monthValue}") {
                         launchSingleTop = true
                     }
-                }
+                },
+                workoutMode = viewModel.workoutMode.collectAsState().value,
+                onToggleWorkoutMode = viewModel::toggleWorkoutMode
             )
         }
         composable("exercise") {

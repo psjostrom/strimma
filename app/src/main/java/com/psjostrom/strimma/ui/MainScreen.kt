@@ -102,7 +102,9 @@ fun MainScreen(
     onCancelAllAlertPauses: () -> Unit = {},
     storyReady: Boolean = false,
     storyMonthName: String = "",
-    onNavigateToStory: (() -> Unit)? = null
+    onNavigateToStory: (() -> Unit)? = null,
+    workoutMode: com.psjostrom.strimma.data.workout.WorkoutMode = com.psjostrom.strimma.data.workout.WorkoutMode.Off,
+    onToggleWorkoutMode: () -> Unit = {}
 ) {
     val mainWindowMs = graphWindowHours * 3600_000L
 
@@ -223,6 +225,13 @@ fun MainScreen(
                     )
                 }
             }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            com.psjostrom.strimma.ui.components.WorkoutModePill(
+                mode = workoutMode,
+                onClick = onToggleWorkoutMode
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
