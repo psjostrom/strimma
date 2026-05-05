@@ -64,7 +64,19 @@ class StoryViewModelTest {
 
     private fun createViewModel(year: Int, month: Int): StoryViewModel {
         val handle = SavedStateHandle(mapOf("year" to year, "month" to month))
-        return StoryViewModel(handle, db.readingDao(), db.treatmentDao(), settings, MealAnalyzer())
+        return StoryViewModel(handle, db.readingDao(), db.treatmentDao(), settings, MealAnalyzer(), createWorkoutManager())
+    }
+
+    private fun createWorkoutManager(): com.psjostrom.strimma.data.workout.WorkoutModeManager {
+        val nextEvent = kotlinx.coroutines.flow.MutableStateFlow<com.psjostrom.strimma.data.calendar.WorkoutEvent?>(null)
+        val poller = object : com.psjostrom.strimma.data.workout.CalendarPollerSource {
+            override val nextEvent = nextEvent
+        }
+        val clock = com.psjostrom.strimma.data.workout.MutableClock(System.currentTimeMillis())
+        val scope = kotlinx.coroutines.CoroutineScope(
+            kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Unconfined
+        )
+        return com.psjostrom.strimma.data.workout.WorkoutModeManager(settings, poller, clock, scope)
     }
 
     private suspend fun awaitLoaded(vm: StoryViewModel) {
@@ -107,7 +119,7 @@ class StoryViewModelTest {
     @Test
     fun `defaults to previous month when no SavedStateHandle args`() = runBlocking {
         val handle = SavedStateHandle()
-        val vm = StoryViewModel(handle, db.readingDao(), db.treatmentDao(), settings, MealAnalyzer())
+        val vm = StoryViewModel(handle, db.readingDao(), db.treatmentDao(), settings, MealAnalyzer(), createWorkoutManager())
         awaitLoaded(vm)
 
         assertNull(vm.error.value)
@@ -123,7 +135,7 @@ class StoryViewModelTest {
         closedDb.close()
 
         val handle = SavedStateHandle(mapOf("year" to 2026, "month" to 3))
-        val vm = StoryViewModel(handle, closedDb.readingDao(), closedDb.treatmentDao(), settings, MealAnalyzer())
+        val vm = StoryViewModel(handle, closedDb.readingDao(), closedDb.treatmentDao(), settings, MealAnalyzer(), createWorkoutManager())
         awaitLoaded(vm)
 
         assertNotNull(vm.error.value)

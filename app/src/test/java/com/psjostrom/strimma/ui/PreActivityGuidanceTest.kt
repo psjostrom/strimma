@@ -82,6 +82,7 @@ class PreActivityGuidanceTest {
     @Inject lateinit var tidepoolUploader: com.psjostrom.strimma.tidepool.TidepoolUploader
     @Inject lateinit var updateChecker: UpdateChecker
     @Inject lateinit var updateInstaller: UpdateInstaller
+    @Inject lateinit var workoutModeManager: com.psjostrom.strimma.data.workout.WorkoutModeManager
 
     @Before
     fun setUp() {
@@ -119,7 +120,7 @@ class PreActivityGuidanceTest {
         dao, treatmentDao, exerciseDao, exerciseBGAnalyzer, settings,
         nightscoutFollower, libreLinkUpFollower, nightscoutPuller, nightscoutPusher,
         treatmentSyncer, calendarPoller, mealAnalyzer, tidepoolAuthManager,
-        tidepoolUploader, updateChecker, updateInstaller
+        tidepoolUploader, updateChecker, updateInstaller, workoutModeManager
     )
 
     // --- CalendarReader delegation ---
