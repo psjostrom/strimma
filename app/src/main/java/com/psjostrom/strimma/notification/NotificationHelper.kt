@@ -33,6 +33,7 @@ class NotificationHelper @Inject constructor(
         const val CHANNEL_ID = "strimma_glucose"
         const val NOTIFICATION_ID = 1
         private const val GRAPH_WINDOW_MS = 60 * 60 * 1000L // 1 hour for notifications
+        private const val WORKOUT_TOGGLE_REQUEST_CODE = 9001
 
         // Graph dimensions
         private const val COLLAPSED_GRAPH_WIDTH = 900
@@ -71,6 +72,7 @@ class NotificationHelper @Inject constructor(
         notificationManager.createNotificationChannel(channel)
     }
 
+    @Suppress("LongParameterList") // Notification builder bundles many independent display knobs
     fun buildNotification(
         reading: GlucoseReading?,
         recentReadings: List<GlucoseReading>,
@@ -82,12 +84,23 @@ class NotificationHelper @Inject constructor(
         iob: Double = 0.0,
         exerciseSessions: List<StoredExerciseSession> = emptyList(),
         workoutText: String? = null,
-        prediction: Prediction? = null
+        prediction: Prediction? = null,
+        workoutModeOn: Boolean = false,
+        workoutModeElapsed: String? = null
     ): android.app.Notification {
         val contentIntent = PendingIntent.getActivity(
             context, 0,
             Intent(context, MainActivity::class.java),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val workoutToggleIntent = PendingIntent.getBroadcast(
+            context, WORKOUT_TOGGLE_REQUEST_CODE,
+            Intent(context, WorkoutModeReceiver::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val workoutToggleLabel = context.getString(
+            if (workoutModeOn) R.string.workout_mode_end else R.string.workout_mode_start
         )
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
@@ -97,6 +110,7 @@ class NotificationHelper @Inject constructor(
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setSilent(true)
             .setColor(ContextCompat.getColor(context, R.color.brand_accent))
+            .addAction(0, workoutToggleLabel, workoutToggleIntent)
 
         if (reading != null) {
             val direction = Direction.parse(reading.direction)
@@ -119,9 +133,18 @@ class NotificationHelper @Inject constructor(
             } else null
             val deltaText = formatDeltaLine(baseDelta, crossingText, iobText, sinceText)
 
-            val finalDeltaText = if (workoutText != null) {
-                listOfNotNull(deltaText.ifEmpty { null }, workoutText).joinToString(" · ")
-            } else deltaText
+            val workoutModeLabel = when {
+                workoutModeOn && workoutModeElapsed != null ->
+                    context.getString(R.string.workout_mode_active_for, workoutModeElapsed)
+                workoutModeOn ->
+                    context.getString(R.string.workout_mode)
+                else -> null
+            }
+            val finalDeltaText = listOfNotNull(
+                deltaText.ifEmpty { null },
+                workoutText,
+                workoutModeLabel
+            ).joinToString(" · ").ifEmpty { deltaText }
 
             builder.setSmallIcon(createBgIcon(bgText))
             val notifText = arrayOf(bgText, direction.arrow, finalDeltaText)
@@ -184,6 +207,7 @@ class NotificationHelper @Inject constructor(
         builder.setCustomBigContentView(expanded)
     }
 
+    @Suppress("LongParameterList") // Mirrors buildNotification's display knobs
     fun updateNotification(
         reading: GlucoseReading?,
         recentReadings: List<GlucoseReading>,
@@ -195,12 +219,14 @@ class NotificationHelper @Inject constructor(
         iob: Double = 0.0,
         exerciseSessions: List<StoredExerciseSession> = emptyList(),
         workoutText: String? = null,
-        prediction: Prediction? = null
+        prediction: Prediction? = null,
+        workoutModeOn: Boolean = false,
+        workoutModeElapsed: String? = null
     ) {
         val notification = buildNotification(
             reading, recentReadings, bgLow, bgHigh,
             graphWindowMs, predictionMinutes, glucoseUnit, iob, exerciseSessions,
-            workoutText, prediction
+            workoutText, prediction, workoutModeOn, workoutModeElapsed
         )
         notificationManager.notify(NOTIFICATION_ID, notification)
     }
