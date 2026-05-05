@@ -66,7 +66,8 @@ class MainViewModel @Inject constructor(
     private val tidepoolAuthManager: TidepoolAuthManager,
     private val tidepoolUploader: TidepoolUploader,
     private val updateChecker: UpdateChecker,
-    private val updateInstaller: UpdateInstaller
+    private val updateInstaller: UpdateInstaller,
+    private val workoutModeManager: com.psjostrom.strimma.data.workout.WorkoutModeManager,
 ) : ViewModel() {
 
     companion object {
@@ -160,11 +161,22 @@ class MainViewModel @Inject constructor(
     val graphWindowHours: StateFlow<Int> = settings.graphWindowHours
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 4)
 
-    val bgLow: StateFlow<Float> = settings.bgLow
+    val bgLow: StateFlow<Float> = workoutModeManager.effectiveThresholds
+        .map { it.displayLowMgdl }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 72f)
 
-    val bgHigh: StateFlow<Float> = settings.bgHigh
+    val bgHigh: StateFlow<Float> = workoutModeManager.effectiveThresholds
+        .map { it.displayHighMgdl }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 180f)
+
+    val workoutMode: StateFlow<com.psjostrom.strimma.data.workout.WorkoutMode> =
+        workoutModeManager.state
+
+    fun toggleWorkoutMode() {
+        viewModelScope.launch {
+            workoutModeManager.toggle()
+        }
+    }
 
     val readings: StateFlow<List<GlucoseReading>> = dao.latest()
         .map { _ ->
