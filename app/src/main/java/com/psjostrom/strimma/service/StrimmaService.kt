@@ -38,6 +38,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
@@ -82,6 +83,7 @@ class StrimmaService : Service() {
     @Inject lateinit var calendarPoller: CalendarPoller
     @Inject lateinit var readingPipeline: ReadingPipeline
     @Inject lateinit var syncOrchestrator: SyncOrchestrator
+    @Inject lateinit var workoutModeManager: com.psjostrom.strimma.data.workout.WorkoutModeManager
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var xdripReceiver: XdripBroadcastReceiver? = null
@@ -112,8 +114,12 @@ class StrimmaService : Service() {
         predMinutes = settings.predictionMinutes.stateIn(scope, SharingStarted.Eagerly, DEFAULT_PREDICTION_MINUTES)
         notifGraphMinutes = settings.notifGraphMinutes.stateIn(scope, SharingStarted.Eagerly, DEFAULT_NOTIF_GRAPH_MINUTES)
         glucoseUnit = settings.glucoseUnit.stateIn(scope, SharingStarted.Eagerly, GlucoseUnit.MMOL)
-        bgLow = settings.bgLow.stateIn(scope, SharingStarted.Eagerly, DEFAULT_BG_LOW.toFloat())
-        bgHigh = settings.bgHigh.stateIn(scope, SharingStarted.Eagerly, DEFAULT_BG_HIGH.toFloat())
+        bgLow = workoutModeManager.effectiveThresholds
+            .map { it.displayLowMgdl }
+            .stateIn(scope, SharingStarted.Eagerly, DEFAULT_BG_LOW.toFloat())
+        bgHigh = workoutModeManager.effectiveThresholds
+            .map { it.displayHighMgdl }
+            .stateIn(scope, SharingStarted.Eagerly, DEFAULT_BG_HIGH.toFloat())
         bgBroadcastEnabled = settings.bgBroadcastEnabled.stateIn(scope, SharingStarted.Eagerly, false)
         treatmentsSyncEnabled = settings.treatmentsSyncEnabled.stateIn(scope, SharingStarted.Eagerly, false)
         insulinType = settings.insulinType.stateIn(scope, SharingStarted.Eagerly, InsulinType.FIASP)
