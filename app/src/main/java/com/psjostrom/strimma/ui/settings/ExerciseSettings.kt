@@ -143,6 +143,10 @@ fun ExerciseSettings(
     }
 
     SettingsScaffold(title = stringResource(R.string.exercise_settings_title), onBack = onBack) {
+        SettingsSection(stringResource(R.string.workout_mode_settings_title)) {
+            WorkoutSettings(glucoseUnit = glucoseUnit)
+        }
+
         SettingsSection(stringResource(R.string.exercise_hc_status_label)) {
             // HC status row
             val (dotColor, statusText) = when {
@@ -354,10 +358,6 @@ fun ExerciseSettings(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
             }
-        }
-
-        SettingsSection(stringResource(R.string.workout_mode_settings_title)) {
-            WorkoutSettings(glucoseUnit = glucoseUnit)
         }
     }
 

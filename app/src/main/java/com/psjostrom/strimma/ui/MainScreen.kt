@@ -67,8 +67,11 @@ import com.psjostrom.strimma.ui.theme.Danger
 import com.psjostrom.strimma.ui.theme.ExerciseDefault
 import com.psjostrom.strimma.ui.theme.InRange
 import com.psjostrom.strimma.ui.theme.InRangeZone
+import androidx.compose.material.icons.outlined.FitnessCenter
 import com.psjostrom.strimma.ui.theme.LightTintDanger
+import com.psjostrom.strimma.ui.theme.LightTintInRange
 import com.psjostrom.strimma.ui.theme.LightTintWarning
+import com.psjostrom.strimma.ui.theme.TintInRange
 import com.psjostrom.strimma.ui.theme.Stale
 import com.psjostrom.strimma.ui.theme.TintDanger
 import com.psjostrom.strimma.ui.theme.TintWarning
@@ -211,8 +214,21 @@ fun MainScreen(
                     pauseHighExpiryMs = pauseHighExpiryMs,
                     unifiedPauseExpiryMs = unifiedPauseExpiryMs,
                     onPausePillClick = { showPauseSheet = true },
-                    onPauseAlerts = onPauseAlerts
+                    onPauseAlerts = onPauseAlerts,
+                    workoutMode = workoutMode,
+                    onWorkoutPillClick = onToggleWorkoutMode
                 )
+                IconButton(
+                    onClick = onToggleWorkoutMode,
+                    modifier = Modifier.align(Alignment.TopStart)
+                ) {
+                    Icon(
+                        Icons.Outlined.FitnessCenter,
+                        contentDescription = stringResource(R.string.workout_mode),
+                        tint = if (workoutMode is com.psjostrom.strimma.data.workout.WorkoutMode.On)
+                            InRange else MaterialTheme.colorScheme.outline
+                    )
+                }
                 IconButton(
                     onClick = { showPauseSheet = true },
                     modifier = Modifier.align(Alignment.TopEnd)
@@ -225,13 +241,6 @@ fun MainScreen(
                     )
                 }
             }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            com.psjostrom.strimma.ui.components.WorkoutModePill(
-                mode = workoutMode,
-                onClick = onToggleWorkoutMode
-            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -324,7 +333,9 @@ private fun BgHeader(
     pauseHighExpiryMs: Long? = null,
     unifiedPauseExpiryMs: Long? = null,
     onPausePillClick: () -> Unit = {},
-    onPauseAlerts: (AlertCategory, Long) -> Unit = { _, _ -> }
+    onPauseAlerts: (AlertCategory, Long) -> Unit = { _, _ -> },
+    workoutMode: com.psjostrom.strimma.data.workout.WorkoutMode = com.psjostrom.strimma.data.workout.WorkoutMode.Off,
+    onWorkoutPillClick: () -> Unit = {},
 ) {
     val crossing = prediction?.crossing
     var minutesAgo by remember { mutableIntStateOf(0) }
@@ -405,7 +416,8 @@ private fun BgHeader(
         val activeLow = pauseLowExpiryMs != null && pauseLowExpiryMs > nowMs
         val unifiedActive = unifiedPauseExpiryMs != null && unifiedPauseExpiryMs > nowMs
 
-        val hasPills = crossing != null || iob > 0.0 || activeHigh || activeLow
+        val workoutModeOn = workoutMode is com.psjostrom.strimma.data.workout.WorkoutMode.On
+        val hasPills = crossing != null || iob > 0.0 || activeHigh || activeLow || workoutModeOn
 
         if (hasPills) {
             Spacer(modifier = Modifier.height(8.dp))
@@ -454,6 +466,24 @@ private fun BgHeader(
                         Text(
                             text = stringResource(R.string.main_iob_value, iob),
                             color = iobColor,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
+                        )
+                    }
+                }
+
+                // Workout-mode pill — only shown when On, mirroring IOB pattern.
+                // Off-state toggle lives as an icon button (mirrors Pause All).
+                if (workoutMode is com.psjostrom.strimma.data.workout.WorkoutMode.On) {
+                    Surface(
+                        onClick = onWorkoutPillClick,
+                        shape = RoundedCornerShape(100),
+                        color = if (isDark) TintInRange else LightTintInRange
+                    ) {
+                        Text(
+                            text = stringResource(R.string.workout_mode),
+                            color = InRange,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
