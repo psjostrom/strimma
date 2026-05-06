@@ -499,4 +499,26 @@
     <string name="advice_worst_time_block">Este momento del d\u00EDa tiene tu menor tiempo en rango. Considera:\n\n\u2022 Revisar tu tasa basal durante estas horas\n\u2022 Verificar si los horarios de comida o la elecci\u00F3n de carbohidratos contribuyen\n\u2022 Discutir un ajuste de perfil con tu equipo m\u00E9dico</string>
     <string name="advice_low_events">Los bajones pueden reducirse:\n\n\u2022 Revisando las tasas basales durante las horas en que ocurren\n\u2022 Reduciendo los bolos de correcci\u00F3n, especialmente antes de dormir\n\u2022 Configurando una alerta de glucosa baja m\u00E1s alta para detectar ca\u00EDdas antes\n\u2022 Teniendo carbohidratos de acci\u00F3n r\u00E1pida accesibles</string>
     <string name="advice_high_events">Los picos pueden reducirse:\n\n\u2022 Pre-bolusando 10\u201315 minutos antes de las comidas\n\u2022 Revisando las relaciones de carbohidratos para comidas que causan picos\n\u2022 Verificando bolos olvidados o carbohidratos subestimados\n\u2022 Ajustando las tasas basales durante las horas de picos</string>
+
+    <!-- Workout mode -->
+    <string name="workout_mode">Modo entrenamiento</string>
+    <string name="workout_mode_start">Iniciar entrenamiento</string>
+    <string name="workout_mode_end">Finalizar entrenamiento</string>
+    <string name="workout_mode_active_for">Entrenamiento %1$s</string>
+    <string name="workout_mode_settings_title">Modo entrenamiento</string>
+    <plurals name="workout_mode_auto_off_after_plural">
+        <item quantity="one">Apagado automático tras %1$d hora</item>
+        <item quantity="many">Apagado automático tras %1$d horas</item>
+        <item quantity="other">Apagado automático tras %1$d horas</item>
+    </plurals>
+    <string name="workout_mode_thresholds_header">Umbrales de entrenamiento</string>
+    <string name="workout_mode_threshold_low">Bajo</string>
+    <string name="workout_mode_threshold_urgent_low">Bajo crítico</string>
+    <string name="workout_mode_threshold_high">Alto</string>
+    <string name="workout_mode_threshold_urgent_high">Alto crítico</string>
+    <string name="workout_mode_reset_defaults">Restablecer</string>
+    <string name="workout_mode_settings_info">Activo durante el ejercicio. Reemplaza tanto tus umbrales de alerta como la banda objetivo en los gráficos. Suprime las alertas de sensor obsoleto solo durante los primeros 30 minutos — después vuelven a activarse aunque el modo siga activo. Se activa desde el botón de MainScreen o desde eventos de calendario programados.</string>
+    <string name="workout_mode_threshold_order_error">Los umbrales deben cumplir: bajo crítico ≤ bajo ≤ alto ≤ alto crítico.</string>
+    <string name="alert_workout_prefix">Entrenamiento · %1$s</string>
+    <string name="widget_workout_indicator">ENTRENAMIENTO</string>
 </resources>

@@ -7,7 +7,15 @@ import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.createTestDataStore
 import com.psjostrom.strimma.widget.WidgetSettingsRepository
+import com.psjostrom.strimma.data.workout.WorkoutModeManager
+import com.psjostrom.strimma.testutil.workout.FakeCalendarPoller
+import com.psjostrom.strimma.testutil.workout.MutableClock
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -24,6 +32,7 @@ class AlertManagerTest {
     private lateinit var settings: SettingsRepository
     private lateinit var alertManager: AlertManager
     private lateinit var notificationManager: NotificationManager
+    private lateinit var managerScope: CoroutineScope
 
     // Default thresholds (mg/dL): urgentLow=54, low=72, high=180, urgentHigh=234
 
@@ -33,7 +42,12 @@ class AlertManagerTest {
 
         val widgetSettings = WidgetSettingsRepository(context)
         settings = SettingsRepository(context, widgetSettings, createTestDataStore())
-        alertManager = AlertManager(context, settings)
+        val poller = FakeCalendarPoller()
+        val clock = MutableClock(System.currentTimeMillis())
+        // Cancelled in @After so the eager ticker doesn't leak across tests.
+        managerScope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+        val workoutModeManager = WorkoutModeManager(settings, poller, clock, managerScope)
+        alertManager = AlertManager(context, settings, workoutModeManager)
         alertManager.createChannels()
         notificationManager = context.getSystemService(NotificationManager::class.java)
 
@@ -55,6 +69,11 @@ class AlertManagerTest {
             settings.setAlertLowSoonEnabled(true)
             settings.setAlertHighSoonEnabled(true)
         }
+    }
+
+    @After
+    fun tearDown() {
+        managerScope.cancel()
     }
 
     private fun reading(sgv: Int, ts: Long = System.currentTimeMillis()): GlucoseReading =

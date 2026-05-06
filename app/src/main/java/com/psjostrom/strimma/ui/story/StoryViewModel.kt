@@ -22,13 +22,20 @@ import java.time.YearMonth
 import java.time.ZoneId
 import javax.inject.Inject
 
+/**
+ * Historical monthly analysis. **Reads thresholds from SettingsRepository directly,
+ * NOT from WorkoutModeManager.effectiveThresholds** — Story computes TIR / AGP /
+ * meal stats over a window that long predates the user's current workout-mode
+ * state, and presenting last-month's TIR against today's transient workout-mode
+ * thresholds would silently corrupt the analysis.
+ */
 @HiltViewModel
 class StoryViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val readingDao: ReadingDao,
     private val treatmentDao: TreatmentDao,
     private val settings: SettingsRepository,
-    private val mealAnalyzer: MealAnalyzer
+    private val mealAnalyzer: MealAnalyzer,
 ) : ViewModel() {
 
     private val year: Int = savedStateHandle["year"] ?: YearMonth.now().minusMonths(1).year
@@ -64,6 +71,10 @@ class StoryViewModel @Inject constructor(
             val carbTreatments = treatmentDao.carbsInRange(curStart, curEnd)
             val allTreatments = treatmentDao.allSince(curStart)
 
+            // Use the user's standard targets, NOT workout-mode-affected runtime
+            // thresholds. Workout mode is a moment-in-time runtime state; historical
+            // analysis must be invariant to whether the user happens to be exercising
+            // when they open the screen.
             val bgLow = settings.bgLow.first()
             val bgHigh = settings.bgHigh.first()
             val insulinType = settings.insulinType.first()

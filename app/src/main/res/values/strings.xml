@@ -526,4 +526,29 @@
     <string name="workout_calendar_label">Calendar</string>
     <string name="workout_calendar_none">(none)</string>
     <string name="workout_calendar_picker_title">Select calendar</string>
+
+    <!-- Workout mode -->
+    <string name="workout_mode">Workout mode</string>
+    <string name="workout_mode_start">Start workout</string>
+    <string name="workout_mode_end">End workout</string>
+    <string name="workout_mode_active_for">Workout %1$s</string>
+    <string name="workout_mode_settings_title">Workout mode</string>
+    <plurals name="workout_mode_auto_off_after_plural">
+        <item quantity="one">Auto-off after %1$d hour</item>
+        <item quantity="other">Auto-off after %1$d hours</item>
+    </plurals>
+    <string name="workout_mode_thresholds_header">Workout thresholds</string>
+    <string name="workout_mode_threshold_low">Low</string>
+    <string name="workout_mode_threshold_urgent_low">Urgent low</string>
+    <string name="workout_mode_threshold_high">High</string>
+    <string name="workout_mode_threshold_urgent_high">Urgent high</string>
+    <string name="workout_mode_reset_defaults">Reset to defaults</string>
+    <string name="workout_mode_settings_info">Active during exercise. Replaces both your alert thresholds and the in-range band on graphs. Suppresses stale-sensor alerts for the first 30 minutes only — alerts re-arm after that even if mode stays on. Triggers from the MainScreen toggle or scheduled calendar events.</string>
+    <string name="workout_mode_threshold_order_error">Thresholds must satisfy: urgent low ≤ low ≤ high ≤ urgent high.</string>
+
+    <!-- Alert title prefix when fired during workout mode (so "Urgent Low" at 5.0 mmol/L is unambiguous) -->
+    <string name="alert_workout_prefix">Workout · %1$s</string>
+
+    <!-- Widget overlay -->
+    <string name="widget_workout_indicator">WORKOUT</string>
 </resources>

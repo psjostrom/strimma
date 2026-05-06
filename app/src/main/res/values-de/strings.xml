@@ -499,4 +499,25 @@
     <string name="advice_worst_time_block">Diese Tageszeit hat deine niedrigste Zeit im Zielbereich. \u00DCberlege:\n\n\u2022 Basalrate w\u00E4hrend dieser Stunden \u00FCberpr\u00FCfen\n\u2022 Pr\u00FCfen, ob Mahlzeitenzeiten oder Kohlenhydratwahl beitragen\n\u2022 Eine Profilanpassung mit deinem Behandlungsteam besprechen</string>
     <string name="advice_low_events">Tiefs k\u00F6nnen reduziert werden durch:\n\n\u2022 \u00DCberpr\u00FCfung der Basalraten w\u00E4hrend der Stunden, in denen Tiefs auftreten\n\u2022 Korrekturbolusse reduzieren, besonders vor dem Schlafengehen\n\u2022 Einen h\u00F6heren Niedrig-Glukose-Alarm einstellen, um Abf\u00E4lle fr\u00FCher zu erkennen\n\u2022 Schnell wirkende Kohlenhydrate griffbereit haben</string>
     <string name="advice_high_events">Hochs k\u00F6nnen reduziert werden durch:\n\n\u2022 10\u201315 Minuten vor der Mahlzeit vorbolen\n\u2022 Kohlenhydratfaktoren f\u00FCr Mahlzeiten mit Spitzen \u00FCberpr\u00FCfen\n\u2022 Auf vergessene Bolusse oder zu niedrig gesch\u00E4tzte Kohlenhydrate achten\n\u2022 Basalraten w\u00E4hrend der Stunden mit Hochs anpassen</string>
+
+    <!-- Workout mode -->
+    <string name="workout_mode">Trainingsmodus</string>
+    <string name="workout_mode_start">Training starten</string>
+    <string name="workout_mode_end">Training beenden</string>
+    <string name="workout_mode_active_for">Training %1$s</string>
+    <string name="workout_mode_settings_title">Trainingsmodus</string>
+    <plurals name="workout_mode_auto_off_after_plural">
+        <item quantity="one">Auto-aus nach %1$d Stunde</item>
+        <item quantity="other">Auto-aus nach %1$d Stunden</item>
+    </plurals>
+    <string name="workout_mode_thresholds_header">Trainingsgrenzen</string>
+    <string name="workout_mode_threshold_low">Niedrig</string>
+    <string name="workout_mode_threshold_urgent_low">Kritisch niedrig</string>
+    <string name="workout_mode_threshold_high">Hoch</string>
+    <string name="workout_mode_threshold_urgent_high">Kritisch hoch</string>
+    <string name="workout_mode_reset_defaults">Auf Standard zur\u00FCcksetzen</string>
+    <string name="workout_mode_settings_info">W\u00E4hrend des Trainings aktiv. Ersetzt sowohl deine Alarmgrenzen als auch den Zielbereich in den Diagrammen. Unterdr\u00FCckt Sensor-Stale-Alarme nur in den ersten 30 Minuten \u2014 danach werden sie wieder ausgel\u00F6st, auch wenn der Modus aktiv bleibt. Wird \u00FCber den MainScreen-Schalter oder geplante Kalenderereignisse aktiviert.</string>
+    <string name="workout_mode_threshold_order_error">Die Grenzen m\u00FCssen erf\u00FCllen: kritisch niedrig \u2264 niedrig \u2264 hoch \u2264 kritisch hoch.</string>
+    <string name="alert_workout_prefix">Training \u00B7 %1$s</string>
+    <string name="widget_workout_indicator">TRAINING</string>
 </resources>

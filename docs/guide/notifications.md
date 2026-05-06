@@ -55,10 +55,19 @@ The notification subtitle packs multiple pieces of information, separated by ` �
 1. **Delta** — how much glucose changed (e.g., "+0.3" or "-1.2"). Uses compact format without units.
 2. **Prediction warning** (optional) — only shown when you're in range and a crossing is predicted: "Low 10m" or "High 5m".
 3. **IOB** (optional) — only shown when treatment sync is enabled and IOB > 0: "IOB 2.3U".
+4. **Workout indicator** (optional) — only shown when workout mode is on: "Workout" for the first minute, then "Workout 0:42" with elapsed time. See [Workout Mode](workout-mode.md).
 
-Example: `+0.3 · Low 10m · IOB 2.3U`
+Example: `+0.3 · Low 10m · IOB 2.3U · Workout 0:42`
 
 If there's no prediction and no IOB, the subtitle just shows the delta: `+0.3`
+
+---
+
+## Action Button — Start / End Workout
+
+The notification includes a single tap-target action button labeled **Start workout** (when off) or **End workout** (when on). Tapping it toggles workout mode without opening the app — works from the lock screen and stays available even if the app is force-stopped.
+
+When workout mode is on, the title gains a `· Workout` suffix and the action button switches to "End workout". See [Workout Mode](workout-mode.md) for full details.
 
 ---
 

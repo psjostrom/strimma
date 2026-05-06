@@ -8,6 +8,8 @@ import com.psjostrom.strimma.data.computeCurrentIOB
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.TreatmentDao
+import com.psjostrom.strimma.data.workout.WorkoutMode
+import com.psjostrom.strimma.data.workout.WorkoutModeManager
 import com.psjostrom.strimma.receiver.DebugLog
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
@@ -31,7 +33,8 @@ private const val TREATMENT_LOOKBACK_HOURS = 48
 class LocalWebServer @Inject constructor(
     private val dao: ReadingDao,
     private val treatmentDao: TreatmentDao,
-    private val settings: SettingsRepository
+    private val settings: SettingsRepository,
+    private val workoutModeManager: WorkoutModeManager,
 ) {
     companion object {
         const val PORT = 17580
@@ -70,7 +73,7 @@ class LocalWebServer @Inject constructor(
                 }
                 routing {
                     sgvRoutes(dao, treatmentDao, settings)
-                    statusRoutes(settings)
+                    statusRoutes(settings, workoutModeManager)
                     treatmentRoutes(treatmentDao)
                     healthRoutes()
                 }
@@ -130,13 +133,21 @@ private fun Routing.sgvRoutes(dao: ReadingDao, treatmentDao: TreatmentDao, setti
     get("/api/v1/entries/sgv.json") { handleSgv(call) }
 }
 
-private fun Routing.statusRoutes(settings: SettingsRepository) {
+private fun Routing.statusRoutes(
+    settings: SettingsRepository,
+    workoutModeManager: WorkoutModeManager
+) {
     suspend fun handleStatus(call: ApplicationCall) {
         val unit = settings.glucoseUnit.first()
         val unitsHint = if (unit == GlucoseUnit.MMOL) "mmol" else "mgdl"
-        val bgLow = settings.bgLow.first()
-        val bgHigh = settings.bgHigh.first()
-        val json = buildStatusJson(unitsHint, bgLow, bgHigh)
+        // Suspending read — waits for the manager's first real emission instead of
+        // returning the placeholder NaNs that the StateFlow seeds with. A Garmin
+        // watchface polling /status.json on app cold start would otherwise see junk.
+        val effective = workoutModeManager.currentEffectiveThresholds()
+        val bgLow = effective.displayLowMgdl
+        val bgHigh = effective.displayHighMgdl
+        val workoutOn = workoutModeManager.currentState() is WorkoutMode.On
+        val json = buildStatusJson(unitsHint, bgLow, bgHigh, workoutOn)
         call.respondText(json, ContentType.Application.Json)
     }
 

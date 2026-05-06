@@ -20,6 +20,7 @@ Strimma includes a home screen widget that shows your glucose at a glance withou
 - **Direction arrow** — trend direction
 - **Delta** — how much glucose changed
 - **Mini graph** — a compact glucose history graph
+- **WORKOUT badge** (top-right, cyan) — shown when [Workout Mode](workout-mode.md) is on. The widget colors then reflect the workout-mode in-range band, not your normal targets — the badge tells you why the colors look different.
 
 Tap the widget to open the Strimma app.
 

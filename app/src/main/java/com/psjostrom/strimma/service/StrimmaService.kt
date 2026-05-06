@@ -28,6 +28,8 @@ import com.psjostrom.strimma.receiver.GlucoseNotificationListener
 import com.psjostrom.strimma.receiver.XdripBroadcastReceiver
 import com.psjostrom.strimma.data.calendar.CalendarPoller
 import com.psjostrom.strimma.data.calendar.WorkoutEvent
+import com.psjostrom.strimma.data.workout.WorkoutMode
+import com.psjostrom.strimma.data.workout.WorkoutModeManager
 import com.psjostrom.strimma.receiver.WorkoutAlarmReceiver
 import android.app.AlarmManager
 import android.app.PendingIntent
@@ -37,7 +39,9 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
@@ -82,6 +86,7 @@ class StrimmaService : Service() {
     @Inject lateinit var calendarPoller: CalendarPoller
     @Inject lateinit var readingPipeline: ReadingPipeline
     @Inject lateinit var syncOrchestrator: SyncOrchestrator
+    @Inject lateinit var workoutModeManager: WorkoutModeManager
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var xdripReceiver: XdripBroadcastReceiver? = null
@@ -112,8 +117,16 @@ class StrimmaService : Service() {
         predMinutes = settings.predictionMinutes.stateIn(scope, SharingStarted.Eagerly, DEFAULT_PREDICTION_MINUTES)
         notifGraphMinutes = settings.notifGraphMinutes.stateIn(scope, SharingStarted.Eagerly, DEFAULT_NOTIF_GRAPH_MINUTES)
         glucoseUnit = settings.glucoseUnit.stateIn(scope, SharingStarted.Eagerly, GlucoseUnit.MMOL)
-        bgLow = settings.bgLow.stateIn(scope, SharingStarted.Eagerly, DEFAULT_BG_LOW.toFloat())
-        bgHigh = settings.bgHigh.stateIn(scope, SharingStarted.Eagerly, DEFAULT_BG_HIGH.toFloat())
+        // Filter the placeholder NaN seed so the foreground notification's graph
+        // band never renders against junk thresholds during the cold-start race.
+        bgLow = workoutModeManager.effectiveThresholds
+            .filter { it !== WorkoutModeManager.PLACEHOLDER_THRESHOLDS }
+            .map { it.displayLowMgdl }
+            .stateIn(scope, SharingStarted.Eagerly, DEFAULT_BG_LOW.toFloat())
+        bgHigh = workoutModeManager.effectiveThresholds
+            .filter { it !== WorkoutModeManager.PLACEHOLDER_THRESHOLDS }
+            .map { it.displayHighMgdl }
+            .stateIn(scope, SharingStarted.Eagerly, DEFAULT_BG_HIGH.toFloat())
         bgBroadcastEnabled = settings.bgBroadcastEnabled.stateIn(scope, SharingStarted.Eagerly, false)
         treatmentsSyncEnabled = settings.treatmentsSyncEnabled.stateIn(scope, SharingStarted.Eagerly, false)
         insulinType = settings.insulinType.stateIn(scope, SharingStarted.Eagerly, InsulinType.FIASP)
@@ -152,6 +165,27 @@ class StrimmaService : Service() {
         syncOrchestrator.start(scope)
         calendarPollJob = calendarPoller.start(scope)
         observeCalendarForAlarms()
+        observeWorkoutModeForNotificationRefresh()
+    }
+
+    /**
+     * Workout-mode toggles must take effect in the foreground notification immediately,
+     * not wait for the next CGM reading. Observe the manager state and trigger a
+     * notification rebuild on every transition.
+     *
+     * Also re-runs the stale check on every transition. AlertManager.checkStale
+     * cancels any visible stale notification when entering workout mode (so a
+     * stale alert that was firing the moment the user starts a workout disappears
+     * immediately, instead of silently sticking around behind the suppression).
+     */
+    private fun observeWorkoutModeForNotificationRefresh() {
+        scope.launch {
+            workoutModeManager.state.collect {
+                updateNotification()
+                val latest = dao.latestOnce()
+                alertManager.checkStale(latest?.ts)
+            }
+        }
     }
 
     private fun startStaleCheckLoop() {
@@ -164,7 +198,12 @@ class StrimmaService : Service() {
                 val isStale = AlertManager.isStale(latest?.ts)
                 val workoutCountdownActive =
                     WorkoutAlarmReceiver.notificationTriggerFired.get() && calendarPoller.nextEvent.value != null
-                if (isStale != wasStale || workoutCountdownActive) {
+                // Refresh notification once per minute during workout mode so the
+                // "Workout 0:42" elapsed counter actually advances. Without this the
+                // counter is computed once on state-transition and lies for the rest
+                // of the session unless a new CGM reading arrives.
+                val workoutModeOn = workoutModeManager.state.value is WorkoutMode.On
+                if (isStale != wasStale || workoutCountdownActive || workoutModeOn) {
                     updateNotification()
                 }
 
@@ -354,13 +393,29 @@ class StrimmaService : Service() {
 
         val workoutText = computeWorkoutText(latest, recent, iob, now)
 
+        val workoutMode = workoutModeManager.state.value
+        val workoutModeOn = workoutMode is WorkoutMode.On
+        val workoutModeElapsed = (workoutMode as? WorkoutMode.On)?.let {
+            val elapsed = now - it.sinceMs
+            // Suppress the "0:00" first minute so the notification just shows the
+            // bare workout-mode label until at least a minute has actually passed.
+            if (elapsed < MS_PER_MINUTE) null else formatElapsed(elapsed)
+        }
+
         notificationHelper.updateNotification(
             latest, recent, bgLow.value.toDouble(), bgHigh.value.toDouble(),
             graphWindowMs, predMinutes.value, glucoseUnit.value, iob, exerciseSessions,
-            workoutText, prediction
+            workoutText, prediction, workoutModeOn, workoutModeElapsed
         )
 
         return prediction
+    }
+
+    private fun formatElapsed(ms: Long): String {
+        val totalMin = (ms.coerceAtLeast(0L) / MS_PER_MINUTE).toInt()
+        val h = totalMin / MINUTES_PER_HOUR
+        val m = totalMin % MINUTES_PER_HOUR
+        return "%d:%02d".format(h, m)
     }
 
     private suspend fun computeWorkoutText(

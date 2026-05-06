@@ -7,10 +7,17 @@ import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.StrimmaDatabase
+import com.psjostrom.strimma.data.workout.WorkoutModeManager
 import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.createTestDataStore
+import com.psjostrom.strimma.testutil.workout.FakeCalendarPoller
+import com.psjostrom.strimma.testutil.workout.MutableClock
 import com.psjostrom.strimma.widget.WidgetSettingsRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -34,6 +41,7 @@ class NightscoutPusherTest {
     private lateinit var settings: SettingsRepository
     private lateinit var alertManager: AlertManager
     private lateinit var fakeClient: FakeNightscoutClient
+    private lateinit var managerScope: CoroutineScope
     private val roomExecutor = Executors.newSingleThreadExecutor()
 
     private val baseTs = 1_700_000_000_000L
@@ -59,11 +67,17 @@ class NightscoutPusherTest {
         dao = db.readingDao()
         fakeClient = FakeNightscoutClient()
         settings = SettingsRepository(context, WidgetSettingsRepository(context), createTestDataStore())
-        alertManager = AlertManager(context, settings)
+        val poller = FakeCalendarPoller()
+        val clock = MutableClock(System.currentTimeMillis())
+        // Cancelled in @After so the eager ticker doesn't leak across tests.
+        managerScope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+        val workoutModeManager = WorkoutModeManager(settings, poller, clock, managerScope)
+        alertManager = AlertManager(context, settings, workoutModeManager)
     }
 
     @After
     fun tearDown() {
+        managerScope.cancel()
         db.close()
     }
 

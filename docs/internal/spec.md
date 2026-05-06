@@ -530,6 +530,30 @@ Non-sensitive settings (thresholds, graph window) stored in Jetpack `DataStore` 
 
 ---
 
+## 11.5 Workout Mode
+
+A runtime state that, while On, replaces both the in-range band (`bgLow` / `bgHigh`) and the alert thresholds (`alertLow` / `alertHigh` / `alertUrgentLow` / `alertUrgentHigh`) with a separate set of 4 workout-mode thresholds. Also suppresses stale-sensor alerts for the **first 30 minutes** of each session — sensor contact loss at workout start is expected; after 30 min, alerts re-arm even while workout mode stays on.
+
+**State machine.** Owned by `WorkoutModeManager` (Hilt singleton, package `data/workout/`). Combines DataStore-backed manual state, the existing `CalendarPoller.nextEvent` flow filtered to "currently active," and a single shared 30-second ticker. Manual action always wins over calendar.
+
+**Persistence.** Manual sessions persist `manualSinceMs` AND `manualExpiresMs` together at toggle time, so a clock jump or a mid-session change to the auto-off slider can never extend or invalidate an active session. Cleanup of expired keys runs as a single atomic `dataStore.edit { }` to prevent read-decide-write races against a concurrent toggle.
+
+**Toggle correctness.** `setManualOff` and `toggle` read state directly from DataStore via `currentState()` rather than trusting the eagerly-cached `state.value` — protects the foreground-notification action receiver against the cold-start race where `state.value` is still the seeded `Off` while persistence already says `On`.
+
+**Triggers.** Manual toggle (MainScreen runner icon, MainScreen workout pill, or foreground-notification action button) or active calendar event. Activity Recognition and notification-listener inference are out of scope for v1.
+
+**Settings.** `Settings → Exercise → Workout mode`. Configurable thresholds (default 6 / 5 / 14 / 16 mmol) with ordering validation (`urgent_low ≤ low ≤ high ≤ urgent_high`) and safety timeout (default 3 h, range 1–12 h). `Reset to defaults` restores the four thresholds but **deliberately leaves auto-off untouched**.
+
+**Effective thresholds.** A single `EffectiveThresholds` value type (display low/high + alert low/high/urgentLow/urgentHigh) is exposed by the manager. Consumers that need synchronous access call the suspending `currentEffectiveThresholds()` getter, which waits past the placeholder seed for real data — `AlertManager`, `LocalWebServer`, `StrimmaWidget`. `StrimmaService` and `MainViewModel` consume the StateFlow with a placeholder filter and seed-from-defaults fallback. `StoryViewModel` does **NOT** consume `EffectiveThresholds` — historical analysis must use standard `settings.bgLow`/`bgHigh` directly so monthly TIR is invariant to the user's current workout-mode state.
+
+**Alerts.** `AlertManager.checkReading` prefixes alert titles with `Workout · ` when workout mode is on, so an "Urgent Low" at e.g. 5.0 mmol/L (workout urgent_low) is distinguishable from the standard severity. `checkStale` uses `currentSessionElapsedMs()` to enforce the 30-minute suppression bound.
+
+**Notification refresh.** `StrimmaService.observeWorkoutModeForNotificationRefresh` rebuilds the notification on every `state` transition AND re-runs `checkStale` so a stuck stale alert clears immediately on Off→On. The 60-second stale-check loop also rebuilds the notification while workout mode is on so the elapsed time advances visibly.
+
+**Spec:** See `docs/specs/2026-05-05-workout-mode-design.md` for full design details and `docs/specs/2026-05-05-workout-mode-plan.md` for the implementation plan.
+
+---
+
 ## 12. Side-by-Side Validation with xDrip
 
 ### How It Works
