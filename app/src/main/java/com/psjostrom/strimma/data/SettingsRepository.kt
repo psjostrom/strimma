@@ -144,6 +144,9 @@ class SettingsRepository @Inject constructor(
         private val KEY_THEME_MODE = stringPreferencesKey("theme_mode")
         private val KEY_NOTIF_GRAPH_MINUTES = intPreferencesKey("notif_graph_minutes")
         private val KEY_NOTIF_PREDICTION_MINUTES = intPreferencesKey("notif_prediction_minutes")
+        private val KEY_NOTIF_ACTION_TYPE = stringPreferencesKey("notif_action_type")
+        private val KEY_NOTIF_SNOOZE_CATEGORY = stringPreferencesKey("notif_snooze_category")
+        private val KEY_NOTIF_SNOOZE_DURATION = stringPreferencesKey("notif_snooze_duration")
         private val KEY_GLUCOSE_UNIT = stringPreferencesKey("glucose_unit")
         private val KEY_BG_BROADCAST_ENABLED = booleanPreferencesKey("bg_broadcast_enabled")
         private val KEY_GLUCOSE_SOURCE = stringPreferencesKey("glucose_source")
@@ -378,6 +381,45 @@ class SettingsRepository @Inject constructor(
 
     val predictionMinutes: Flow<Int> = dataStore.data.map { it[KEY_NOTIF_PREDICTION_MINUTES] ?: DEFAULT_PREDICTION_MINUTES }
     suspend fun setPredictionMinutes(minutes: Int) { dataStore.edit { it[KEY_NOTIF_PREDICTION_MINUTES] = minutes } }
+
+    val notifActionType: Flow<com.psjostrom.strimma.notification.NotificationActionType> = dataStore.data.map {
+        try {
+            com.psjostrom.strimma.notification.NotificationActionType.valueOf(
+                it[KEY_NOTIF_ACTION_TYPE] ?: com.psjostrom.strimma.notification.NotificationActionType.WORKOUT_TOGGLE.name
+            )
+        } catch (_: Exception) {
+            com.psjostrom.strimma.notification.NotificationActionType.WORKOUT_TOGGLE
+        }
+    }
+    suspend fun setNotifActionType(type: com.psjostrom.strimma.notification.NotificationActionType) {
+        dataStore.edit { it[KEY_NOTIF_ACTION_TYPE] = type.name }
+    }
+
+    val notifSnoozeCategory: Flow<com.psjostrom.strimma.notification.SnoozeCategory> = dataStore.data.map {
+        try {
+            com.psjostrom.strimma.notification.SnoozeCategory.valueOf(
+                it[KEY_NOTIF_SNOOZE_CATEGORY] ?: com.psjostrom.strimma.notification.SnoozeCategory.ALL.name
+            )
+        } catch (_: Exception) {
+            com.psjostrom.strimma.notification.SnoozeCategory.ALL
+        }
+    }
+    suspend fun setNotifSnoozeCategory(category: com.psjostrom.strimma.notification.SnoozeCategory) {
+        dataStore.edit { it[KEY_NOTIF_SNOOZE_CATEGORY] = category.name }
+    }
+
+    val notifSnoozeDuration: Flow<com.psjostrom.strimma.notification.SnoozeDuration> = dataStore.data.map {
+        try {
+            com.psjostrom.strimma.notification.SnoozeDuration.valueOf(
+                it[KEY_NOTIF_SNOOZE_DURATION] ?: com.psjostrom.strimma.notification.SnoozeDuration.H1.name
+            )
+        } catch (_: Exception) {
+            com.psjostrom.strimma.notification.SnoozeDuration.H1
+        }
+    }
+    suspend fun setNotifSnoozeDuration(duration: com.psjostrom.strimma.notification.SnoozeDuration) {
+        dataStore.edit { it[KEY_NOTIF_SNOOZE_DURATION] = duration.name }
+    }
 
     val glucoseUnit: Flow<GlucoseUnit> = dataStore.data.map {
         try { GlucoseUnit.valueOf(it[KEY_GLUCOSE_UNIT] ?: "MMOL") } catch (_: Exception) { GlucoseUnit.MMOL }

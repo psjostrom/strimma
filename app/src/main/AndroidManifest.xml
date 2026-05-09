@@ -102,6 +102,10 @@
             android:exported="false" />
 
         <receiver
+            android:name=".notification.NotificationSnoozeActionReceiver"
+            android:exported="false" />
+
+        <receiver
             android:name=".notification.WorkoutModeReceiver"
             android:exported="false" />
 

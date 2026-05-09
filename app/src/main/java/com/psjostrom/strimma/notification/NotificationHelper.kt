@@ -34,6 +34,13 @@ class NotificationHelper @Inject constructor(
         const val NOTIFICATION_ID = 1
         private const val GRAPH_WINDOW_MS = 60 * 60 * 1000L // 1 hour for notifications
         private const val WORKOUT_TOGGLE_REQUEST_CODE = 9001
+        private const val SNOOZE_ACTION_REQUEST_CODE = 9002
+
+        val DEFAULT_ACTION_CONFIG = NotificationActionConfig(
+            type = NotificationActionType.WORKOUT_TOGGLE,
+            snoozeCategory = SnoozeCategory.ALL,
+            snoozeDuration = SnoozeDuration.H1,
+        )
 
         // Graph dimensions
         private const val COLLAPSED_GRAPH_WIDTH = 900
@@ -86,7 +93,8 @@ class NotificationHelper @Inject constructor(
         workoutText: String? = null,
         prediction: Prediction? = null,
         workoutModeOn: Boolean = false,
-        workoutModeElapsed: String? = null
+        workoutModeElapsed: String? = null,
+        actionConfig: NotificationActionConfig = DEFAULT_ACTION_CONFIG,
     ): android.app.Notification {
         val contentIntent = PendingIntent.getActivity(
             context, 0,
@@ -101,7 +109,18 @@ class NotificationHelper @Inject constructor(
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setSilent(true)
             .setColor(ContextCompat.getColor(context, R.color.brand_accent))
-            .addAction(0, workoutToggleLabel(workoutModeOn), buildWorkoutToggleIntent())
+
+        when (actionConfig.type) {
+            NotificationActionType.NONE -> { /* no action */ }
+            NotificationActionType.WORKOUT_TOGGLE ->
+                builder.addAction(0, workoutToggleLabel(workoutModeOn), buildWorkoutToggleIntent())
+            NotificationActionType.SNOOZE ->
+                builder.addAction(
+                    0,
+                    snoozeLabel(actionConfig.snoozeCategory, actionConfig.snoozeDuration),
+                    buildSnoozeIntent(actionConfig.snoozeCategory, actionConfig.snoozeDuration),
+                )
+        }
 
         if (reading != null) {
             val direction = Direction.parse(reading.direction)
@@ -212,12 +231,13 @@ class NotificationHelper @Inject constructor(
         workoutText: String? = null,
         prediction: Prediction? = null,
         workoutModeOn: Boolean = false,
-        workoutModeElapsed: String? = null
+        workoutModeElapsed: String? = null,
+        actionConfig: NotificationActionConfig = DEFAULT_ACTION_CONFIG,
     ) {
         val notification = buildNotification(
             reading, recentReadings, bgLow, bgHigh,
             graphWindowMs, predictionMinutes, glucoseUnit, iob, exerciseSessions,
-            workoutText, prediction, workoutModeOn, workoutModeElapsed
+            workoutText, prediction, workoutModeOn, workoutModeElapsed, actionConfig
         )
         notificationManager.notify(NOTIFICATION_ID, notification)
     }
@@ -231,6 +251,35 @@ class NotificationHelper @Inject constructor(
     private fun workoutToggleLabel(modeOn: Boolean): String = context.getString(
         if (modeOn) R.string.workout_mode_end else R.string.workout_mode_start
     )
+
+    private fun buildSnoozeIntent(category: SnoozeCategory, duration: SnoozeDuration): PendingIntent {
+        val intent = Intent(context, NotificationSnoozeActionReceiver::class.java).apply {
+            putExtra(NotificationSnoozeActionReceiver.EXTRA_CATEGORY, category.name)
+            putExtra(NotificationSnoozeActionReceiver.EXTRA_DURATION, duration.name)
+        }
+        // Per-config request code so changing settings invalidates the cached PendingIntent
+        // and the new category/duration takes effect immediately.
+        val requestCode = SNOOZE_ACTION_REQUEST_CODE * 100 + category.ordinal * 10 + duration.ordinal
+        return PendingIntent.getBroadcast(
+            context, requestCode, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
+    private fun snoozeLabel(category: SnoozeCategory, duration: SnoozeDuration): String {
+        val durationText = when (duration) {
+            SnoozeDuration.M15 -> context.getString(R.string.snooze_duration_15m)
+            SnoozeDuration.M30 -> context.getString(R.string.snooze_duration_30m)
+            SnoozeDuration.H1 -> context.getString(R.string.snooze_duration_1h)
+            SnoozeDuration.H2 -> context.getString(R.string.snooze_duration_2h)
+            SnoozeDuration.H3 -> context.getString(R.string.snooze_duration_3h)
+        }
+        return when (category) {
+            SnoozeCategory.ALL -> context.getString(R.string.notif_action_snooze_all, durationText)
+            SnoozeCategory.HIGH -> context.getString(R.string.notif_action_snooze_high, durationText)
+            SnoozeCategory.LOW -> context.getString(R.string.notif_action_snooze_low, durationText)
+        }
+    }
 
     private fun createBgIcon(text: String): IconCompat {
         val size = ICON_SIZE

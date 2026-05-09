@@ -107,6 +107,9 @@ class StrimmaService : Service() {
     private lateinit var insulinType: StateFlow<InsulinType>
     private lateinit var customDIA: StateFlow<Float>
     private lateinit var hcWriteEnabled: StateFlow<Boolean>
+    private lateinit var notifActionType: StateFlow<com.psjostrom.strimma.notification.NotificationActionType>
+    private lateinit var notifSnoozeCategory: StateFlow<com.psjostrom.strimma.notification.SnoozeCategory>
+    private lateinit var notifSnoozeDuration: StateFlow<com.psjostrom.strimma.notification.SnoozeDuration>
 
     @Suppress("LongMethod") // Service lifecycle setup — all initialization must happen here
     override fun onCreate() {
@@ -132,6 +135,15 @@ class StrimmaService : Service() {
         insulinType = settings.insulinType.stateIn(scope, SharingStarted.Eagerly, InsulinType.FIASP)
         customDIA = settings.customDIA.stateIn(scope, SharingStarted.Eagerly, DEFAULT_CUSTOM_DIA)
         hcWriteEnabled = settings.hcWriteEnabled.stateIn(scope, SharingStarted.Eagerly, false)
+        notifActionType = settings.notifActionType.stateIn(
+            scope, SharingStarted.Eagerly, com.psjostrom.strimma.notification.NotificationActionType.WORKOUT_TOGGLE
+        )
+        notifSnoozeCategory = settings.notifSnoozeCategory.stateIn(
+            scope, SharingStarted.Eagerly, com.psjostrom.strimma.notification.SnoozeCategory.ALL
+        )
+        notifSnoozeDuration = settings.notifSnoozeDuration.stateIn(
+            scope, SharingStarted.Eagerly, com.psjostrom.strimma.notification.SnoozeDuration.H1
+        )
         workoutTriggerMinutes = settings.workoutTriggerMinutes.stateIn(
             scope, SharingStarted.Eagerly, DEFAULT_WORKOUT_TRIGGER_MINUTES
         )
@@ -405,7 +417,12 @@ class StrimmaService : Service() {
         notificationHelper.updateNotification(
             latest, recent, bgLow.value.toDouble(), bgHigh.value.toDouble(),
             graphWindowMs, predMinutes.value, glucoseUnit.value, iob, exerciseSessions,
-            workoutText, prediction, workoutModeOn, workoutModeElapsed
+            workoutText, prediction, workoutModeOn, workoutModeElapsed,
+            actionConfig = com.psjostrom.strimma.notification.NotificationActionConfig(
+                type = notifActionType.value,
+                snoozeCategory = notifSnoozeCategory.value,
+                snoozeDuration = notifSnoozeDuration.value,
+            ),
         )
 
         return prediction

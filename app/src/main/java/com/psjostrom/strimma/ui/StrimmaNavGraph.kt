@@ -391,11 +391,26 @@ fun StrimmaNavGraph(
         }
         composable("settings/notifications") {
             val notifGraphMinutes by viewModel.settings.notifGraphMinutes.collectAsState(initial = 60)
+            val notifActionType by viewModel.settings.notifActionType.collectAsState(
+                initial = com.psjostrom.strimma.notification.NotificationActionType.WORKOUT_TOGGLE
+            )
+            val notifSnoozeCategory by viewModel.settings.notifSnoozeCategory.collectAsState(
+                initial = com.psjostrom.strimma.notification.SnoozeCategory.ALL
+            )
+            val notifSnoozeDuration by viewModel.settings.notifSnoozeDuration.collectAsState(
+                initial = com.psjostrom.strimma.notification.SnoozeDuration.H1
+            )
             NotificationSettings(
                 notifGraphMinutes = notifGraphMinutes,
                 predictionMinutes = predictionMinutes,
+                actionType = notifActionType,
+                snoozeCategory = notifSnoozeCategory,
+                snoozeDuration = notifSnoozeDuration,
                 onNotifGraphMinutesChange = { scope.launch { viewModel.settings.setNotifGraphMinutes(it) } },
                 onPredictionMinutesChange = { scope.launch { viewModel.settings.setPredictionMinutes(it) } },
+                onActionTypeChange = { scope.launch { viewModel.settings.setNotifActionType(it) } },
+                onSnoozeCategoryChange = { scope.launch { viewModel.settings.setNotifSnoozeCategory(it) } },
+                onSnoozeDurationChange = { scope.launch { viewModel.settings.setNotifSnoozeDuration(it) } },
                 onBack = { navController.popBackStack() }
             )
         }
