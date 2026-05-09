@@ -228,11 +228,18 @@ fun MainScreen(
                                 InRange else MaterialTheme.colorScheme.outline
                         )
                     }
+                    val anyPauseScheduled =
+                        pauseLowExpiryMs != null || pauseHighExpiryMs != null || unifiedPauseExpiryMs != null
+                    val nowMs = if (anyPauseScheduled) rememberTickingNowMs() else System.currentTimeMillis()
+                    val anyPauseActive =
+                        (pauseLowExpiryMs != null && pauseLowExpiryMs > nowMs) ||
+                            (pauseHighExpiryMs != null && pauseHighExpiryMs > nowMs) ||
+                            (unifiedPauseExpiryMs != null && unifiedPauseExpiryMs > nowMs)
                     IconButton(onClick = { showPauseSheet = true }) {
                         Icon(
                             Icons.Outlined.NotificationsOff,
                             contentDescription = stringResource(R.string.pause_alerts),
-                            tint = if (pauseLowExpiryMs != null || pauseHighExpiryMs != null)
+                            tint = if (anyPauseActive)
                                 InRange else MaterialTheme.colorScheme.outline
                         )
                     }
