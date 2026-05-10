@@ -39,6 +39,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -178,6 +179,25 @@ class StrimmaService : Service() {
         calendarPollJob = calendarPoller.start(scope)
         observeCalendarForAlarms()
         observeWorkoutModeForNotificationRefresh()
+        observeNotifActionForNotificationRefresh()
+    }
+
+    /**
+     * The foreground notification's action button reflects three settings (type,
+     * snooze category, snooze duration). Without this observer the notification
+     * keeps showing the old action label until the next CGM reading triggers
+     * a rebuild — confusing right after the user changes the setting.
+     */
+    private fun observeNotifActionForNotificationRefresh() {
+        scope.launch {
+            kotlinx.coroutines.flow.combine(
+                notifActionType,
+                notifSnoozeCategory,
+                notifSnoozeDuration,
+            ) { type, cat, dur -> Triple(type, cat, dur) }
+                .drop(1)  // skip seed value — initial onCreate already builds the notification
+                .collect { updateNotification() }
+        }
     }
 
     /**
