@@ -153,8 +153,11 @@
     <string name="settings_notif_action_section">Action Button</string>
     <string name="settings_notif_action_label">Action</string>
     <string name="settings_notif_action_none">None</string>
-    <string name="settings_notif_action_workout">Workout toggle</string>
-    <string name="settings_notif_action_snooze">Snooze alerts</string>
+    <string name="settings_notif_action_workout">Workout</string>
+    <string name="settings_notif_action_snooze">Snooze</string>
+    <string name="settings_notif_action_none_desc">No button shown</string>
+    <string name="settings_notif_action_workout_desc">Toggles workout mode on/off</string>
+    <string name="settings_notif_action_snooze_desc">Pauses alerts for the chosen window</string>
     <string name="settings_notif_snooze_category_label">Category</string>
     <string name="settings_notif_snooze_category_all">All</string>
     <string name="settings_notif_snooze_category_high">High</string>

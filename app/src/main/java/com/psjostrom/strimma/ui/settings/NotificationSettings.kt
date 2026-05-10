@@ -3,8 +3,10 @@ package com.psjostrom.strimma.ui.settings
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.psjostrom.strimma.R
 import com.psjostrom.strimma.notification.NotificationActionType
@@ -76,20 +78,38 @@ fun NotificationSettings(
         }
 
         SettingsSection(stringResource(R.string.settings_notif_action_section)) {
-            Text(stringResource(R.string.settings_notif_action_label), color = onBg, fontSize = 14.sp)
-            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                val options = listOf(
-                    NotificationActionType.NONE to stringResource(R.string.settings_notif_action_none),
-                    NotificationActionType.WORKOUT_TOGGLE to stringResource(R.string.settings_notif_action_workout),
-                    NotificationActionType.SNOOZE to stringResource(R.string.settings_notif_action_snooze),
-                )
-                options.forEachIndexed { index, (type, label) ->
-                    SegmentedButton(
+            val outline = MaterialTheme.colorScheme.outline
+            val options = listOf(
+                Triple(
+                    NotificationActionType.NONE,
+                    stringResource(R.string.settings_notif_action_none),
+                    stringResource(R.string.settings_notif_action_none_desc),
+                ),
+                Triple(
+                    NotificationActionType.WORKOUT_TOGGLE,
+                    stringResource(R.string.settings_notif_action_workout),
+                    stringResource(R.string.settings_notif_action_workout_desc),
+                ),
+                Triple(
+                    NotificationActionType.SNOOZE,
+                    stringResource(R.string.settings_notif_action_snooze),
+                    stringResource(R.string.settings_notif_action_snooze_desc),
+                ),
+            )
+            options.forEach { (type, label, desc) ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    RadioButton(
                         selected = actionType == type,
                         onClick = { onActionTypeChange(type) },
-                        shape = SegmentedButtonDefaults.itemShape(index, options.size),
-                    ) {
-                        Text(label)
+                    )
+                    Column(modifier = Modifier.padding(start = 8.dp)) {
+                        Text(label, color = onBg, fontSize = 14.sp)
+                        Text(desc, color = outline, fontSize = 12.sp)
                     }
                 }
             }
