@@ -521,4 +521,24 @@
     <string name="workout_mode_threshold_order_error">Los umbrales deben cumplir: bajo crítico ≤ bajo ≤ alto ≤ alto crítico.</string>
     <string name="alert_workout_prefix">Entrenamiento · %1$s</string>
     <string name="widget_workout_indicator">ENTRENAMIENTO</string>
+
+    <!-- Notification Action Button -->
+    <string name="settings_notif_action_section">Botón de acción</string>
+    <string name="settings_notif_action_none">Ninguna</string>
+    <string name="settings_notif_action_workout">Entrenamiento</string>
+    <string name="settings_notif_action_snooze">Snooze</string>
+    <string name="settings_notif_action_none_desc">No se muestra ningún botón</string>
+    <string name="settings_notif_action_workout_desc">Activa/desactiva el modo entrenamiento</string>
+    <string name="settings_notif_action_snooze_desc">Pausa las alertas durante el tiempo elegido</string>
+    <string name="settings_notif_snooze_category_label">Categoría</string>
+    <string name="settings_notif_snooze_category_all">Todas</string>
+    <string name="settings_notif_snooze_category_high">Altas</string>
+    <string name="settings_notif_snooze_category_low">Bajas</string>
+    <string name="settings_notif_snooze_duration_label">Duración</string>
+    <string name="notif_action_snooze_all">Snooze todas %1$s</string>
+    <string name="notif_action_snooze_high">Snooze altas %1$s</string>
+    <string name="notif_action_snooze_low">Snooze bajas %1$s</string>
+    <string name="notif_alerts_paused_all">Todas las alertas pausadas %1$s</string>
+    <string name="notif_alerts_paused_high">Alertas altas pausadas %1$s</string>
+    <string name="notif_alerts_paused_low">Alertas bajas pausadas %1$s</string>
 </resources>
