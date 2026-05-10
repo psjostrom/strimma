@@ -7,6 +7,10 @@ import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import com.psjostrom.strimma.data.notification.NotificationActionConfig
+import com.psjostrom.strimma.data.notification.NotificationActionType
+import com.psjostrom.strimma.data.notification.SnoozeCategory
+import com.psjostrom.strimma.data.notification.SnoozeDuration
 import com.psjostrom.strimma.ui.theme.ThemeMode
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -144,6 +148,9 @@ class SettingsRepository @Inject constructor(
         private val KEY_THEME_MODE = stringPreferencesKey("theme_mode")
         private val KEY_NOTIF_GRAPH_MINUTES = intPreferencesKey("notif_graph_minutes")
         private val KEY_NOTIF_PREDICTION_MINUTES = intPreferencesKey("notif_prediction_minutes")
+        private val KEY_NOTIF_ACTION_TYPE = stringPreferencesKey("notif_action_type")
+        private val KEY_NOTIF_SNOOZE_CATEGORY = stringPreferencesKey("notif_snooze_category")
+        private val KEY_NOTIF_SNOOZE_DURATION = stringPreferencesKey("notif_snooze_duration")
         private val KEY_GLUCOSE_UNIT = stringPreferencesKey("glucose_unit")
         private val KEY_BG_BROADCAST_ENABLED = booleanPreferencesKey("bg_broadcast_enabled")
         private val KEY_GLUCOSE_SOURCE = stringPreferencesKey("glucose_source")
@@ -378,6 +385,30 @@ class SettingsRepository @Inject constructor(
 
     val predictionMinutes: Flow<Int> = dataStore.data.map { it[KEY_NOTIF_PREDICTION_MINUTES] ?: DEFAULT_PREDICTION_MINUTES }
     suspend fun setPredictionMinutes(minutes: Int) { dataStore.edit { it[KEY_NOTIF_PREDICTION_MINUTES] = minutes } }
+
+    val notifActionType: Flow<NotificationActionType> = dataStore.data.map {
+        try { NotificationActionType.valueOf(it[KEY_NOTIF_ACTION_TYPE] ?: NotificationActionConfig.DEFAULT.type.name) }
+        catch (_: Exception) { NotificationActionConfig.DEFAULT.type }
+    }
+    suspend fun setNotifActionType(type: NotificationActionType) {
+        dataStore.edit { it[KEY_NOTIF_ACTION_TYPE] = type.name }
+    }
+
+    val notifSnoozeCategory: Flow<SnoozeCategory> = dataStore.data.map {
+        try { SnoozeCategory.valueOf(it[KEY_NOTIF_SNOOZE_CATEGORY] ?: NotificationActionConfig.DEFAULT.snoozeCategory.name) }
+        catch (_: Exception) { NotificationActionConfig.DEFAULT.snoozeCategory }
+    }
+    suspend fun setNotifSnoozeCategory(category: SnoozeCategory) {
+        dataStore.edit { it[KEY_NOTIF_SNOOZE_CATEGORY] = category.name }
+    }
+
+    val notifSnoozeDuration: Flow<SnoozeDuration> = dataStore.data.map {
+        try { SnoozeDuration.valueOf(it[KEY_NOTIF_SNOOZE_DURATION] ?: NotificationActionConfig.DEFAULT.snoozeDuration.name) }
+        catch (_: Exception) { NotificationActionConfig.DEFAULT.snoozeDuration }
+    }
+    suspend fun setNotifSnoozeDuration(duration: SnoozeDuration) {
+        dataStore.edit { it[KEY_NOTIF_SNOOZE_DURATION] = duration.name }
+    }
 
     val glucoseUnit: Flow<GlucoseUnit> = dataStore.data.map {
         try { GlucoseUnit.valueOf(it[KEY_GLUCOSE_UNIT] ?: "MMOL") } catch (_: Exception) { GlucoseUnit.MMOL }
@@ -628,6 +659,9 @@ class SettingsRepository @Inject constructor(
             put("theme_mode", prefs[KEY_THEME_MODE] ?: "System")
             put("notif_graph_minutes", prefs[KEY_NOTIF_GRAPH_MINUTES] ?: DEFAULT_NOTIF_GRAPH_MINUTES)
             put("notif_prediction_minutes", prefs[KEY_NOTIF_PREDICTION_MINUTES] ?: DEFAULT_PREDICTION_MINUTES)
+            put("notif_action_type", prefs[KEY_NOTIF_ACTION_TYPE] ?: NotificationActionConfig.DEFAULT.type.name)
+            put("notif_snooze_category", prefs[KEY_NOTIF_SNOOZE_CATEGORY] ?: NotificationActionConfig.DEFAULT.snoozeCategory.name)
+            put("notif_snooze_duration", prefs[KEY_NOTIF_SNOOZE_DURATION] ?: NotificationActionConfig.DEFAULT.snoozeDuration.name)
             put("glucose_unit", prefs[KEY_GLUCOSE_UNIT] ?: "MMOL")
             put("hba1c_unit", prefs[KEY_HBA1C_UNIT] ?: "MMOL_MOL")
             put("bg_broadcast_enabled", prefs[KEY_BG_BROADCAST_ENABLED] ?: false)
@@ -689,6 +723,9 @@ class SettingsRepository @Inject constructor(
             if (settings.has("theme_mode")) prefs[KEY_THEME_MODE] = settings.getString("theme_mode")
             if (settings.has("notif_graph_minutes")) prefs[KEY_NOTIF_GRAPH_MINUTES] = settings.getInt("notif_graph_minutes")
             if (settings.has("notif_prediction_minutes")) prefs[KEY_NOTIF_PREDICTION_MINUTES] = settings.getInt("notif_prediction_minutes")
+            if (settings.has("notif_action_type")) prefs[KEY_NOTIF_ACTION_TYPE] = settings.getString("notif_action_type")
+            if (settings.has("notif_snooze_category")) prefs[KEY_NOTIF_SNOOZE_CATEGORY] = settings.getString("notif_snooze_category")
+            if (settings.has("notif_snooze_duration")) prefs[KEY_NOTIF_SNOOZE_DURATION] = settings.getString("notif_snooze_duration")
             if (settings.has("glucose_unit")) prefs[KEY_GLUCOSE_UNIT] = settings.getString("glucose_unit")
             if (settings.has("hba1c_unit")) prefs[KEY_HBA1C_UNIT] = settings.getString("hba1c_unit")
             if (settings.has("bg_broadcast_enabled")) prefs[KEY_BG_BROADCAST_ENABLED] = settings.getBoolean("bg_broadcast_enabled")

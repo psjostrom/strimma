@@ -228,11 +228,16 @@ fun MainScreen(
                                 InRange else MaterialTheme.colorScheme.outline
                         )
                     }
+                    // AlertManager nulls each expiry StateFlow the moment the pause expires,
+                    // so a non-null value is exactly equivalent to "currently paused" — no
+                    // wall-clock ticker needed to keep the icon in sync.
+                    val anyPauseActive =
+                        pauseLowExpiryMs != null || pauseHighExpiryMs != null || unifiedPauseExpiryMs != null
                     IconButton(onClick = { showPauseSheet = true }) {
                         Icon(
                             Icons.Outlined.NotificationsOff,
                             contentDescription = stringResource(R.string.pause_alerts),
-                            tint = if (pauseLowExpiryMs != null || pauseHighExpiryMs != null)
+                            tint = if (anyPauseActive)
                                 InRange else MaterialTheme.colorScheme.outline
                         )
                     }
@@ -402,16 +407,12 @@ private fun BgHeader(
         var showPredictionDetail by remember { mutableStateOf(false) }
         val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
 
-        // Only tick the wall-clock when an expiry actually exists to compare against.
-        // Without this gate the ticker recomposes BgHeader every 10s for nothing whenever
-        // no pause is set — which is nearly always.
-        val anyPauseScheduled =
-            pauseLowExpiryMs != null || pauseHighExpiryMs != null || unifiedPauseExpiryMs != null
-        val nowMs = if (anyPauseScheduled) rememberTickingNowMs() else System.currentTimeMillis()
-
-        val activeHigh = pauseHighExpiryMs != null && pauseHighExpiryMs > nowMs
-        val activeLow = pauseLowExpiryMs != null && pauseLowExpiryMs > nowMs
-        val unifiedActive = unifiedPauseExpiryMs != null && unifiedPauseExpiryMs > nowMs
+        // AlertManager nulls each expiry StateFlow on natural expiry, so a non-null value
+        // is exactly equivalent to "currently paused" — no ticker needed for the gates.
+        // Each pill's countdown text still has its own internal ticker (rememberCountdownText).
+        val activeHigh = pauseHighExpiryMs != null
+        val activeLow = pauseLowExpiryMs != null
+        val unifiedActive = unifiedPauseExpiryMs != null
 
         val workoutModeOn = workoutMode is WorkoutMode.On
         val hasPills = crossing != null || iob > 0.0 || activeHigh || activeLow || workoutModeOn
@@ -579,8 +580,8 @@ private fun BgHeader(
                 onPauseAlerts = onPauseAlerts,
                 onDismiss = { showPredictionDetail = false },
                 isPaused = when (crossing.type) {
-                    CrossingType.LOW -> pauseLowExpiryMs != null && pauseLowExpiryMs > nowMs
-                    CrossingType.HIGH -> pauseHighExpiryMs != null && pauseHighExpiryMs > nowMs
+                    CrossingType.LOW -> activeLow
+                    CrossingType.HIGH -> activeHigh
                 }
             )
         }

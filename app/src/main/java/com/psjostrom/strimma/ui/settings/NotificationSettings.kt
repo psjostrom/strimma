@@ -3,17 +3,28 @@ package com.psjostrom.strimma.ui.settings
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.psjostrom.strimma.R
+import com.psjostrom.strimma.data.notification.NotificationActionType
+import com.psjostrom.strimma.data.notification.SnoozeCategory
+import com.psjostrom.strimma.data.notification.SnoozeDuration
 
 @Composable
 fun NotificationSettings(
     notifGraphMinutes: Int,
     predictionMinutes: Int,
+    actionType: NotificationActionType,
+    snoozeCategory: SnoozeCategory,
+    snoozeDuration: SnoozeDuration,
     onNotifGraphMinutesChange: (Int) -> Unit,
     onPredictionMinutesChange: (Int) -> Unit,
+    onActionTypeChange: (NotificationActionType) -> Unit,
+    onSnoozeCategoryChange: (SnoozeCategory) -> Unit,
+    onSnoozeDurationChange: (SnoozeDuration) -> Unit,
     onBack: () -> Unit
 ) {
     val onBg = MaterialTheme.colorScheme.onBackground
@@ -61,6 +72,84 @@ fun NotificationSettings(
                         shape = SegmentedButtonDefaults.itemShape(index, 3),
                     ) {
                         Text(label)
+                    }
+                }
+            }
+        }
+
+        SettingsSection(stringResource(R.string.settings_notif_action_section)) {
+            val outline = MaterialTheme.colorScheme.outline
+            val options = listOf(
+                Triple(
+                    NotificationActionType.NONE,
+                    stringResource(R.string.settings_notif_action_none),
+                    stringResource(R.string.settings_notif_action_none_desc),
+                ),
+                Triple(
+                    NotificationActionType.WORKOUT_TOGGLE,
+                    stringResource(R.string.settings_notif_action_workout),
+                    stringResource(R.string.settings_notif_action_workout_desc),
+                ),
+                Triple(
+                    NotificationActionType.SNOOZE,
+                    stringResource(R.string.settings_notif_action_snooze),
+                    stringResource(R.string.settings_notif_action_snooze_desc),
+                ),
+            )
+            options.forEach { (type, label, desc) ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    RadioButton(
+                        selected = actionType == type,
+                        onClick = { onActionTypeChange(type) },
+                    )
+                    Column(modifier = Modifier.padding(start = 8.dp)) {
+                        Text(label, color = onBg, fontSize = 14.sp)
+                        Text(desc, color = outline, fontSize = 12.sp)
+                    }
+                }
+            }
+
+            if (actionType == NotificationActionType.SNOOZE) {
+                Text(stringResource(R.string.settings_notif_snooze_category_label), color = onBg, fontSize = 14.sp)
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    val cats = listOf(
+                        SnoozeCategory.ALL to stringResource(R.string.settings_notif_snooze_category_all),
+                        SnoozeCategory.HIGH to stringResource(R.string.settings_notif_snooze_category_high),
+                        SnoozeCategory.LOW to stringResource(R.string.settings_notif_snooze_category_low),
+                    )
+                    cats.forEachIndexed { index, (cat, label) ->
+                        SegmentedButton(
+                            selected = snoozeCategory == cat,
+                            onClick = { onSnoozeCategoryChange(cat) },
+                            shape = SegmentedButtonDefaults.itemShape(index, cats.size),
+                        ) {
+                            Text(label)
+                        }
+                    }
+                }
+
+                Text(stringResource(R.string.settings_notif_snooze_duration_label), color = onBg, fontSize = 14.sp)
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    val durs = listOf(
+                        SnoozeDuration.M15 to stringResource(R.string.snooze_duration_15m),
+                        SnoozeDuration.M30 to stringResource(R.string.snooze_duration_30m),
+                        SnoozeDuration.H1 to stringResource(R.string.snooze_duration_1h),
+                        SnoozeDuration.H2 to stringResource(R.string.snooze_duration_2h),
+                        SnoozeDuration.H3 to stringResource(R.string.snooze_duration_3h),
+                    )
+                    durs.forEachIndexed { index, (dur, label) ->
+                        SegmentedButton(
+                            selected = snoozeDuration == dur,
+                            onClick = { onSnoozeDurationChange(dur) },
+                            shape = SegmentedButtonDefaults.itemShape(index, durs.size),
+                        ) {
+                            Text(label)
+                        }
                     }
                 }
             }

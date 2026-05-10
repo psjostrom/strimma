@@ -519,4 +519,24 @@
     <string name="workout_mode_threshold_order_error">Gr\u00E4nserna m\u00E5ste uppfylla: akut l\u00E5g \u2264 l\u00E5g \u2264 h\u00F6g \u2264 akut h\u00F6g.</string>
     <string name="alert_workout_prefix">Tr\u00E4ning \u00B7 %1$s</string>
     <string name="widget_workout_indicator">TR\u00C4NING</string>
+
+    <!-- Notification Action Button -->
+    <string name="settings_notif_action_section">\u00C5tg\u00E4rdsknapp</string>
+    <string name="settings_notif_action_none">Ingen</string>
+    <string name="settings_notif_action_workout">Tr\u00E4ning</string>
+    <string name="settings_notif_action_snooze">Snooze</string>
+    <string name="settings_notif_action_none_desc">Ingen knapp visas</string>
+    <string name="settings_notif_action_workout_desc">Sl\u00E5r p\u00E5/av tr\u00E4ningsl\u00E4get</string>
+    <string name="settings_notif_action_snooze_desc">Pausar larm i vald tid</string>
+    <string name="settings_notif_snooze_category_label">Kategori</string>
+    <string name="settings_notif_snooze_category_all">Alla</string>
+    <string name="settings_notif_snooze_category_high">H\u00F6ga</string>
+    <string name="settings_notif_snooze_category_low">L\u00E5ga</string>
+    <string name="settings_notif_snooze_duration_label">Tid</string>
+    <string name="notif_action_snooze_all">Snooze alla %1$s</string>
+    <string name="notif_action_snooze_high">Snooze h\u00F6ga %1$s</string>
+    <string name="notif_action_snooze_low">Snooze l\u00E5ga %1$s</string>
+    <string name="notif_alerts_paused_all">Alla larm pausade %1$s</string>
+    <string name="notif_alerts_paused_high">H\u00F6ga larm pausade %1$s</string>
+    <string name="notif_alerts_paused_low">L\u00E5ga larm pausade %1$s</string>
 </resources>

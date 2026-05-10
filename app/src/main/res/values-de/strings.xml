@@ -520,4 +520,24 @@
     <string name="workout_mode_threshold_order_error">Die Grenzen m\u00FCssen erf\u00FCllen: kritisch niedrig \u2264 niedrig \u2264 hoch \u2264 kritisch hoch.</string>
     <string name="alert_workout_prefix">Training \u00B7 %1$s</string>
     <string name="widget_workout_indicator">TRAINING</string>
+
+    <!-- Notification Action Button -->
+    <string name="settings_notif_action_section">Aktionsschaltfl\u00E4che</string>
+    <string name="settings_notif_action_none">Keine</string>
+    <string name="settings_notif_action_workout">Training</string>
+    <string name="settings_notif_action_snooze">Snooze</string>
+    <string name="settings_notif_action_none_desc">Keine Schaltfl\u00E4che angezeigt</string>
+    <string name="settings_notif_action_workout_desc">Schaltet den Trainingsmodus an/aus</string>
+    <string name="settings_notif_action_snooze_desc">Pausiert Alarme f\u00FCr die gew\u00E4hlte Dauer</string>
+    <string name="settings_notif_snooze_category_label">Kategorie</string>
+    <string name="settings_notif_snooze_category_all">Alle</string>
+    <string name="settings_notif_snooze_category_high">Hoch</string>
+    <string name="settings_notif_snooze_category_low">Tief</string>
+    <string name="settings_notif_snooze_duration_label">Dauer</string>
+    <string name="notif_action_snooze_all">Snooze alle %1$s</string>
+    <string name="notif_action_snooze_high">Snooze hoch %1$s</string>
+    <string name="notif_action_snooze_low">Snooze tief %1$s</string>
+    <string name="notif_alerts_paused_all">Alle Alarme pausiert %1$s</string>
+    <string name="notif_alerts_paused_high">Hoch-Alarme pausiert %1$s</string>
+    <string name="notif_alerts_paused_low">Tief-Alarme pausiert %1$s</string>
 </resources>

@@ -150,6 +150,29 @@
     <!-- Notification Settings -->
     <string name="settings_notif_title">Notifications</string>
     <string name="settings_notif_section">Notification Graph</string>
+    <string name="settings_notif_action_section">Action Button</string>
+    <string name="settings_notif_action_none">None</string>
+    <string name="settings_notif_action_workout">Workout</string>
+    <string name="settings_notif_action_snooze">Snooze</string>
+    <string name="settings_notif_action_none_desc">No button shown</string>
+    <string name="settings_notif_action_workout_desc">Toggles workout mode on/off</string>
+    <string name="settings_notif_action_snooze_desc">Pauses alerts for the chosen window</string>
+    <string name="settings_notif_snooze_category_label">Category</string>
+    <string name="settings_notif_snooze_category_all">All</string>
+    <string name="settings_notif_snooze_category_high">High</string>
+    <string name="settings_notif_snooze_category_low">Low</string>
+    <string name="settings_notif_snooze_duration_label">Duration</string>
+    <string name="snooze_duration_15m" translatable="false">15m</string>
+    <string name="snooze_duration_30m" translatable="false">30m</string>
+    <string name="snooze_duration_1h" translatable="false">1h</string>
+    <string name="snooze_duration_2h" translatable="false">2h</string>
+    <string name="snooze_duration_3h" translatable="false">3h</string>
+    <string name="notif_action_snooze_all">Snooze all %1$s</string>
+    <string name="notif_action_snooze_high">Snooze high %1$s</string>
+    <string name="notif_action_snooze_low">Snooze low %1$s</string>
+    <string name="notif_alerts_paused_all">All alerts paused %1$s</string>
+    <string name="notif_alerts_paused_high">High alerts paused %1$s</string>
+    <string name="notif_alerts_paused_low">Low alerts paused %1$s</string>
     <string name="settings_notif_time_range_minutes">Time Range: %1$dm</string>
     <string name="settings_notif_time_range_hours">Time Range: %1$dh</string>
     <string name="settings_notif_prediction_off">Prediction: Off</string>

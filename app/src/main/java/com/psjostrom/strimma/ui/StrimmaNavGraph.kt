@@ -35,6 +35,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.psjostrom.strimma.R
+import com.psjostrom.strimma.data.notification.NotificationActionConfig
 import com.psjostrom.strimma.receiver.GlucoseNotificationListener
 import com.psjostrom.strimma.ui.settings.AlertsSettings
 import com.psjostrom.strimma.ui.settings.AlertsViewModel
@@ -391,11 +392,26 @@ fun StrimmaNavGraph(
         }
         composable("settings/notifications") {
             val notifGraphMinutes by viewModel.settings.notifGraphMinutes.collectAsState(initial = 60)
+            val notifActionType by viewModel.settings.notifActionType.collectAsState(
+                initial = NotificationActionConfig.DEFAULT.type
+            )
+            val notifSnoozeCategory by viewModel.settings.notifSnoozeCategory.collectAsState(
+                initial = NotificationActionConfig.DEFAULT.snoozeCategory
+            )
+            val notifSnoozeDuration by viewModel.settings.notifSnoozeDuration.collectAsState(
+                initial = NotificationActionConfig.DEFAULT.snoozeDuration
+            )
             NotificationSettings(
                 notifGraphMinutes = notifGraphMinutes,
                 predictionMinutes = predictionMinutes,
+                actionType = notifActionType,
+                snoozeCategory = notifSnoozeCategory,
+                snoozeDuration = notifSnoozeDuration,
                 onNotifGraphMinutesChange = { scope.launch { viewModel.settings.setNotifGraphMinutes(it) } },
                 onPredictionMinutesChange = { scope.launch { viewModel.settings.setPredictionMinutes(it) } },
+                onActionTypeChange = { scope.launch { viewModel.settings.setNotifActionType(it) } },
+                onSnoozeCategoryChange = { scope.launch { viewModel.settings.setNotifSnoozeCategory(it) } },
+                onSnoozeDurationChange = { scope.launch { viewModel.settings.setNotifSnoozeDuration(it) } },
                 onBack = { navController.popBackStack() }
             )
         }

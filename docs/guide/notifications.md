@@ -63,11 +63,15 @@ If there's no prediction and no IOB, the subtitle just shows the delta: `+0.3`
 
 ---
 
-## Action Button — Start / End Workout
+## Action Button
 
-The notification includes a single tap-target action button labeled **Start workout** (when off) or **End workout** (when on). Tapping it toggles workout mode without opening the app — works from the lock screen and stays available even if the app is force-stopped.
+The notification includes an optional single tap-target action button. Choose what it does in **Settings → Notifications → Action Button**:
 
-When workout mode is on, the title gains a `· Workout` suffix and the action button switches to "End workout". See [Workout Mode](workout-mode.md) for full details.
+- **None** — no action button is shown.
+- **Workout toggle** (default) — labeled **Start workout** when off and **End workout** when on. Tapping toggles workout mode without opening the app. Works from the lock screen and stays available even if the app is force-stopped. See [Workout Mode](workout-mode.md).
+- **Snooze alerts** — pick a category (**All**, **High**, or **Low**) and a duration (**15m / 30m / 1h / 2h / 3h**). The button label reflects the choice (e.g., "Snooze all 1h"). Tapping the button applies the pause via the same mechanism as the in-app pause sheet.
+
+When workout mode is on, the title gains a `· Workout` suffix.
 
 ---
 

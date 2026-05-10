@@ -100,12 +100,21 @@ Configure units, graph window, thresholds, and theme.
 
 ## Notifications
 
-Configure the notification graph and prediction window.
+Configure the foreground notification graph, prediction window, and action button.
 
 | Setting | Description | Default |
 |---------|-------------|---------|
 | **Graph time range** | Time shown in notification graph (30m, 1h, 2h, 3h) | 1 hour |
 | **Prediction window** | How far ahead to predict (Off, 15 min, 30 min) | 15 min |
+| **Action Button** | What the notification's tap-target button does — None, Workout, or Snooze | Workout |
+| **Snooze Category** | Only when Action Button = Snooze. Which alerts the button pauses — All, High, or Low | All |
+| **Snooze Duration** | Only when Action Button = Snooze. How long the pause lasts — 15m, 30m, 1h, 2h, or 3h | 1h |
+
+When alerts are paused (via the action button or the in-app pause sheet), the
+foreground notification's subtitle includes a "paused" indicator showing how
+long remains.
+
+See [Notifications](notifications.md) for full details on the action button.
 
 ---
 

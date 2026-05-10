@@ -25,7 +25,7 @@ You can change all four workout thresholds in **Settings → Exercise → Workou
 
 There are two ways:
 
-**Manual toggle.** Tap the runner-person icon at the top-right of the main screen, the "Workout" pill below the BG value, or use the "Start workout" action button on the foreground notification. The pill appears in the BG header and the icon tints cyan. After the first minute the pill shows the elapsed time (e.g., "Workout 0:42"). Tap any of these to turn off.
+**Manual toggle.** Tap the runner-person icon at the top-right of the main screen, the "Workout" pill below the BG value, or use the "Start workout" action button on the foreground notification (when the action is set to **Workout toggle** in Notifications settings — see [Notifications](notifications.md)). The pill appears in the BG header and the icon tints cyan. After the first minute the pill shows the elapsed time (e.g., "Workout 0:42"). Tap any of these to turn off.
 
 **Calendar event.** If you've configured a workout calendar in Strimma (Settings → Exercise → Calendar), workout mode auto-activates when an event in that calendar is currently happening. The pill shows the elapsed time since the event started.
 
