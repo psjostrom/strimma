@@ -35,6 +35,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.psjostrom.strimma.R
+import com.psjostrom.strimma.data.notification.NotificationActionConfig
 import com.psjostrom.strimma.receiver.GlucoseNotificationListener
 import com.psjostrom.strimma.ui.settings.AlertsSettings
 import com.psjostrom.strimma.ui.settings.AlertsViewModel
@@ -392,13 +393,13 @@ fun StrimmaNavGraph(
         composable("settings/notifications") {
             val notifGraphMinutes by viewModel.settings.notifGraphMinutes.collectAsState(initial = 60)
             val notifActionType by viewModel.settings.notifActionType.collectAsState(
-                initial = com.psjostrom.strimma.notification.NotificationActionType.WORKOUT_TOGGLE
+                initial = NotificationActionConfig.DEFAULT.type
             )
             val notifSnoozeCategory by viewModel.settings.notifSnoozeCategory.collectAsState(
-                initial = com.psjostrom.strimma.notification.SnoozeCategory.ALL
+                initial = NotificationActionConfig.DEFAULT.snoozeCategory
             )
             val notifSnoozeDuration by viewModel.settings.notifSnoozeDuration.collectAsState(
-                initial = com.psjostrom.strimma.notification.SnoozeDuration.H1
+                initial = NotificationActionConfig.DEFAULT.snoozeDuration
             )
             NotificationSettings(
                 notifGraphMinutes = notifGraphMinutes,

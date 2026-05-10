@@ -7,6 +7,10 @@ import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import com.psjostrom.strimma.data.notification.NotificationActionConfig
+import com.psjostrom.strimma.data.notification.NotificationActionType
+import com.psjostrom.strimma.data.notification.SnoozeCategory
+import com.psjostrom.strimma.data.notification.SnoozeDuration
 import com.psjostrom.strimma.ui.theme.ThemeMode
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -382,42 +386,27 @@ class SettingsRepository @Inject constructor(
     val predictionMinutes: Flow<Int> = dataStore.data.map { it[KEY_NOTIF_PREDICTION_MINUTES] ?: DEFAULT_PREDICTION_MINUTES }
     suspend fun setPredictionMinutes(minutes: Int) { dataStore.edit { it[KEY_NOTIF_PREDICTION_MINUTES] = minutes } }
 
-    val notifActionType: Flow<com.psjostrom.strimma.notification.NotificationActionType> = dataStore.data.map {
-        try {
-            com.psjostrom.strimma.notification.NotificationActionType.valueOf(
-                it[KEY_NOTIF_ACTION_TYPE] ?: com.psjostrom.strimma.notification.NotificationActionType.WORKOUT_TOGGLE.name
-            )
-        } catch (_: Exception) {
-            com.psjostrom.strimma.notification.NotificationActionType.WORKOUT_TOGGLE
-        }
+    val notifActionType: Flow<NotificationActionType> = dataStore.data.map {
+        try { NotificationActionType.valueOf(it[KEY_NOTIF_ACTION_TYPE] ?: NotificationActionConfig.DEFAULT.type.name) }
+        catch (_: Exception) { NotificationActionConfig.DEFAULT.type }
     }
-    suspend fun setNotifActionType(type: com.psjostrom.strimma.notification.NotificationActionType) {
+    suspend fun setNotifActionType(type: NotificationActionType) {
         dataStore.edit { it[KEY_NOTIF_ACTION_TYPE] = type.name }
     }
 
-    val notifSnoozeCategory: Flow<com.psjostrom.strimma.notification.SnoozeCategory> = dataStore.data.map {
-        try {
-            com.psjostrom.strimma.notification.SnoozeCategory.valueOf(
-                it[KEY_NOTIF_SNOOZE_CATEGORY] ?: com.psjostrom.strimma.notification.SnoozeCategory.ALL.name
-            )
-        } catch (_: Exception) {
-            com.psjostrom.strimma.notification.SnoozeCategory.ALL
-        }
+    val notifSnoozeCategory: Flow<SnoozeCategory> = dataStore.data.map {
+        try { SnoozeCategory.valueOf(it[KEY_NOTIF_SNOOZE_CATEGORY] ?: NotificationActionConfig.DEFAULT.snoozeCategory.name) }
+        catch (_: Exception) { NotificationActionConfig.DEFAULT.snoozeCategory }
     }
-    suspend fun setNotifSnoozeCategory(category: com.psjostrom.strimma.notification.SnoozeCategory) {
+    suspend fun setNotifSnoozeCategory(category: SnoozeCategory) {
         dataStore.edit { it[KEY_NOTIF_SNOOZE_CATEGORY] = category.name }
     }
 
-    val notifSnoozeDuration: Flow<com.psjostrom.strimma.notification.SnoozeDuration> = dataStore.data.map {
-        try {
-            com.psjostrom.strimma.notification.SnoozeDuration.valueOf(
-                it[KEY_NOTIF_SNOOZE_DURATION] ?: com.psjostrom.strimma.notification.SnoozeDuration.H1.name
-            )
-        } catch (_: Exception) {
-            com.psjostrom.strimma.notification.SnoozeDuration.H1
-        }
+    val notifSnoozeDuration: Flow<SnoozeDuration> = dataStore.data.map {
+        try { SnoozeDuration.valueOf(it[KEY_NOTIF_SNOOZE_DURATION] ?: NotificationActionConfig.DEFAULT.snoozeDuration.name) }
+        catch (_: Exception) { NotificationActionConfig.DEFAULT.snoozeDuration }
     }
-    suspend fun setNotifSnoozeDuration(duration: com.psjostrom.strimma.notification.SnoozeDuration) {
+    suspend fun setNotifSnoozeDuration(duration: SnoozeDuration) {
         dataStore.edit { it[KEY_NOTIF_SNOOZE_DURATION] = duration.name }
     }
 
@@ -670,6 +659,9 @@ class SettingsRepository @Inject constructor(
             put("theme_mode", prefs[KEY_THEME_MODE] ?: "System")
             put("notif_graph_minutes", prefs[KEY_NOTIF_GRAPH_MINUTES] ?: DEFAULT_NOTIF_GRAPH_MINUTES)
             put("notif_prediction_minutes", prefs[KEY_NOTIF_PREDICTION_MINUTES] ?: DEFAULT_PREDICTION_MINUTES)
+            put("notif_action_type", prefs[KEY_NOTIF_ACTION_TYPE] ?: NotificationActionConfig.DEFAULT.type.name)
+            put("notif_snooze_category", prefs[KEY_NOTIF_SNOOZE_CATEGORY] ?: NotificationActionConfig.DEFAULT.snoozeCategory.name)
+            put("notif_snooze_duration", prefs[KEY_NOTIF_SNOOZE_DURATION] ?: NotificationActionConfig.DEFAULT.snoozeDuration.name)
             put("glucose_unit", prefs[KEY_GLUCOSE_UNIT] ?: "MMOL")
             put("hba1c_unit", prefs[KEY_HBA1C_UNIT] ?: "MMOL_MOL")
             put("bg_broadcast_enabled", prefs[KEY_BG_BROADCAST_ENABLED] ?: false)
@@ -731,6 +723,9 @@ class SettingsRepository @Inject constructor(
             if (settings.has("theme_mode")) prefs[KEY_THEME_MODE] = settings.getString("theme_mode")
             if (settings.has("notif_graph_minutes")) prefs[KEY_NOTIF_GRAPH_MINUTES] = settings.getInt("notif_graph_minutes")
             if (settings.has("notif_prediction_minutes")) prefs[KEY_NOTIF_PREDICTION_MINUTES] = settings.getInt("notif_prediction_minutes")
+            if (settings.has("notif_action_type")) prefs[KEY_NOTIF_ACTION_TYPE] = settings.getString("notif_action_type")
+            if (settings.has("notif_snooze_category")) prefs[KEY_NOTIF_SNOOZE_CATEGORY] = settings.getString("notif_snooze_category")
+            if (settings.has("notif_snooze_duration")) prefs[KEY_NOTIF_SNOOZE_DURATION] = settings.getString("notif_snooze_duration")
             if (settings.has("glucose_unit")) prefs[KEY_GLUCOSE_UNIT] = settings.getString("glucose_unit")
             if (settings.has("hba1c_unit")) prefs[KEY_HBA1C_UNIT] = settings.getString("hba1c_unit")
             if (settings.has("bg_broadcast_enabled")) prefs[KEY_BG_BROADCAST_ENABLED] = settings.getBoolean("bg_broadcast_enabled")

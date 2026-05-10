@@ -9,9 +9,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.psjostrom.strimma.R
-import com.psjostrom.strimma.notification.NotificationActionType
-import com.psjostrom.strimma.notification.SnoozeCategory
-import com.psjostrom.strimma.notification.SnoozeDuration
+import com.psjostrom.strimma.data.notification.NotificationActionType
+import com.psjostrom.strimma.data.notification.SnoozeCategory
+import com.psjostrom.strimma.data.notification.SnoozeDuration
 
 @Composable
 fun NotificationSettings(

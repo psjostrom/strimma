@@ -4,6 +4,7 @@ import android.app.Service
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.IBinder
+import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.MS_PER_MINUTE
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseSource
@@ -15,6 +16,10 @@ import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.TreatmentDao
 import com.psjostrom.strimma.data.health.ExerciseDao
 import com.psjostrom.strimma.data.health.HealthConnectManager
+import com.psjostrom.strimma.data.notification.NotificationActionConfig
+import com.psjostrom.strimma.data.notification.NotificationActionType
+import com.psjostrom.strimma.data.notification.SnoozeCategory
+import com.psjostrom.strimma.data.notification.SnoozeDuration
 import com.psjostrom.strimma.network.LibreLinkUpFollower
 import com.psjostrom.strimma.network.NightscoutFollower
 import com.psjostrom.strimma.network.NightscoutPusher
@@ -39,7 +44,9 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -108,9 +115,9 @@ class StrimmaService : Service() {
     private lateinit var insulinType: StateFlow<InsulinType>
     private lateinit var customDIA: StateFlow<Float>
     private lateinit var hcWriteEnabled: StateFlow<Boolean>
-    private lateinit var notifActionType: StateFlow<com.psjostrom.strimma.notification.NotificationActionType>
-    private lateinit var notifSnoozeCategory: StateFlow<com.psjostrom.strimma.notification.SnoozeCategory>
-    private lateinit var notifSnoozeDuration: StateFlow<com.psjostrom.strimma.notification.SnoozeDuration>
+    private lateinit var notifActionType: StateFlow<NotificationActionType>
+    private lateinit var notifSnoozeCategory: StateFlow<SnoozeCategory>
+    private lateinit var notifSnoozeDuration: StateFlow<SnoozeDuration>
 
     @Suppress("LongMethod") // Service lifecycle setup — all initialization must happen here
     override fun onCreate() {
@@ -137,13 +144,13 @@ class StrimmaService : Service() {
         customDIA = settings.customDIA.stateIn(scope, SharingStarted.Eagerly, DEFAULT_CUSTOM_DIA)
         hcWriteEnabled = settings.hcWriteEnabled.stateIn(scope, SharingStarted.Eagerly, false)
         notifActionType = settings.notifActionType.stateIn(
-            scope, SharingStarted.Eagerly, com.psjostrom.strimma.notification.NotificationActionType.WORKOUT_TOGGLE
+            scope, SharingStarted.Eagerly, NotificationActionConfig.DEFAULT.type
         )
         notifSnoozeCategory = settings.notifSnoozeCategory.stateIn(
-            scope, SharingStarted.Eagerly, com.psjostrom.strimma.notification.SnoozeCategory.ALL
+            scope, SharingStarted.Eagerly, NotificationActionConfig.DEFAULT.snoozeCategory
         )
         notifSnoozeDuration = settings.notifSnoozeDuration.stateIn(
-            scope, SharingStarted.Eagerly, com.psjostrom.strimma.notification.SnoozeDuration.H1
+            scope, SharingStarted.Eagerly, NotificationActionConfig.DEFAULT.snoozeDuration
         )
         workoutTriggerMinutes = settings.workoutTriggerMinutes.stateIn(
             scope, SharingStarted.Eagerly, DEFAULT_WORKOUT_TRIGGER_MINUTES
@@ -180,6 +187,7 @@ class StrimmaService : Service() {
         observeCalendarForAlarms()
         observeWorkoutModeForNotificationRefresh()
         observeNotifActionForNotificationRefresh()
+        observeAlertPausesForNotificationRefresh()
     }
 
     /**
@@ -187,15 +195,44 @@ class StrimmaService : Service() {
      * snooze category, snooze duration). Without this observer the notification
      * keeps showing the old action label until the next CGM reading triggers
      * a rebuild — confusing right after the user changes the setting.
+     *
+     * `distinctUntilChanged` deduplicates DataStore re-emits of unchanged values;
+     * `conflate` collapses rapid-fire setting changes (radio → segmented → segmented)
+     * into a single notification rebuild instead of three. We deliberately do NOT
+     * drop the seed emission: if DataStore loads the user's persisted choice into
+     * the StateFlow before this collector subscribes, the seed combined value already
+     * holds the loaded values and dropping it would leave the notification showing
+     * the WORKOUT_TOGGLE default until the next CGM reading.
      */
     private fun observeNotifActionForNotificationRefresh() {
         scope.launch {
-            kotlinx.coroutines.flow.combine(
+            combine(
                 notifActionType,
                 notifSnoozeCategory,
                 notifSnoozeDuration,
             ) { type, cat, dur -> Triple(type, cat, dur) }
-                .drop(1)  // skip seed value — initial onCreate already builds the notification
+                .distinctUntilChanged()
+                .conflate()
+                .collect { updateNotification() }
+        }
+    }
+
+    /**
+     * When alerts are paused or unpaused (via the in-app sheet, the snooze action
+     * button, natural expiry of an existing pause, or restart), refresh the
+     * foreground notification so its subtitle reflects the current paused state.
+     * Without this observer the notification only shows the paused indicator after
+     * the next CGM reading — long enough that a user who tapped Snooze from the
+     * lock screen has no in-context confirmation that anything happened.
+     */
+    private fun observeAlertPausesForNotificationRefresh() {
+        scope.launch {
+            combine(
+                alertManager.pauseLowExpiryMs,
+                alertManager.pauseHighExpiryMs,
+            ) { low, high -> low to high }
+                .distinctUntilChanged()
+                .conflate()
                 .collect { updateNotification() }
         }
     }
@@ -438,14 +475,45 @@ class StrimmaService : Service() {
             latest, recent, bgLow.value.toDouble(), bgHigh.value.toDouble(),
             graphWindowMs, predMinutes.value, glucoseUnit.value, iob, exerciseSessions,
             workoutText, prediction, workoutModeOn, workoutModeElapsed,
-            actionConfig = com.psjostrom.strimma.notification.NotificationActionConfig(
+            actionConfig = NotificationActionConfig(
                 type = notifActionType.value,
                 snoozeCategory = notifSnoozeCategory.value,
                 snoozeDuration = notifSnoozeDuration.value,
             ),
+            alertsPausedText = computeAlertsPausedText(now),
         )
 
         return prediction
+    }
+
+    /**
+     * Build a one-line "alerts paused" indicator for the foreground notification.
+     * Mirrors the pill in [BgHeader]: prefer the unified "All alerts paused" line
+     * when both categories share the same expiry, otherwise enumerate the active
+     * categories. Returns null when no pause is active so the formatter omits the
+     * segment instead of rendering an empty " · ".
+     */
+    private fun computeAlertsPausedText(nowMs: Long): String? {
+        val low = alertManager.pauseLowExpiryMs.value?.takeIf { it > nowMs }
+        val high = alertManager.pauseHighExpiryMs.value?.takeIf { it > nowMs }
+        if (low == null && high == null) return null
+
+        fun countdown(expiry: Long): String {
+            val totalMin = ((expiry - nowMs) / MS_PER_MINUTE).toInt().coerceAtLeast(0)
+            val h = totalMin / MINUTES_PER_HOUR
+            val m = totalMin % MINUTES_PER_HOUR
+            return if (h > 0) "${h}h ${m}m" else "${m}m"
+        }
+
+        return when {
+            low != null && low == high -> getString(R.string.notif_alerts_paused_all, countdown(low))
+            low != null && high != null -> {
+                val later = maxOf(low, high)
+                getString(R.string.notif_alerts_paused_all, countdown(later))
+            }
+            low != null -> getString(R.string.notif_alerts_paused_low, countdown(low))
+            else -> getString(R.string.notif_alerts_paused_high, countdown(high!!))
+        }
     }
 
     private fun formatElapsed(ms: Long): String {

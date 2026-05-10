@@ -3,9 +3,9 @@ package com.psjostrom.strimma.data
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.psjostrom.strimma.createTestDataStore
-import com.psjostrom.strimma.notification.NotificationActionType
-import com.psjostrom.strimma.notification.SnoozeCategory
-import com.psjostrom.strimma.notification.SnoozeDuration
+import com.psjostrom.strimma.data.notification.NotificationActionType
+import com.psjostrom.strimma.data.notification.SnoozeCategory
+import com.psjostrom.strimma.data.notification.SnoozeDuration
 import com.psjostrom.strimma.widget.WidgetSettingsRepository
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -75,5 +75,22 @@ class SettingsRepositoryNotifActionTest {
         assertEquals(NotificationActionType.SNOOZE, r.notifActionType.first())
         assertEquals(SnoozeCategory.HIGH, r.notifSnoozeCategory.first())
         assertEquals(SnoozeDuration.M30, r.notifSnoozeDuration.first())
+    }
+
+    @Test
+    fun `export then import round-trips notif action settings`() = runTest {
+        val source = repo()
+        source.setNotifActionType(NotificationActionType.SNOOZE)
+        source.setNotifSnoozeCategory(SnoozeCategory.HIGH)
+        source.setNotifSnoozeDuration(SnoozeDuration.M30)
+        val json = source.exportToJson()
+
+        // Fresh repo (separate DataStore) restores from the export
+        val target = repo()
+        target.importFromJson(json)
+
+        assertEquals(NotificationActionType.SNOOZE, target.notifActionType.first())
+        assertEquals(SnoozeCategory.HIGH, target.notifSnoozeCategory.first())
+        assertEquals(SnoozeDuration.M30, target.notifSnoozeDuration.first())
     }
 }

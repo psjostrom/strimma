@@ -17,6 +17,10 @@ import com.psjostrom.strimma.data.Direction
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.health.StoredExerciseSession
+import com.psjostrom.strimma.data.notification.NotificationActionConfig
+import com.psjostrom.strimma.data.notification.NotificationActionType
+import com.psjostrom.strimma.data.notification.SnoozeCategory
+import com.psjostrom.strimma.data.notification.SnoozeDuration
 import com.psjostrom.strimma.graph.CrossingType
 import com.psjostrom.strimma.graph.Prediction
 import com.psjostrom.strimma.graph.PredictionComputer
@@ -25,6 +29,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
+@Suppress("TooManyFunctions") // Notification builder + per-action helpers — splitting would scatter related code
 @Singleton
 class NotificationHelper @Inject constructor(
     @ApplicationContext private val context: Context
@@ -35,12 +40,6 @@ class NotificationHelper @Inject constructor(
         private const val GRAPH_WINDOW_MS = 60 * 60 * 1000L // 1 hour for notifications
         private const val WORKOUT_TOGGLE_REQUEST_CODE = 9001
         private const val SNOOZE_ACTION_REQUEST_CODE = 9002
-
-        val DEFAULT_ACTION_CONFIG = NotificationActionConfig(
-            type = NotificationActionType.WORKOUT_TOGGLE,
-            snoozeCategory = SnoozeCategory.ALL,
-            snoozeDuration = SnoozeDuration.H1,
-        )
 
         // Graph dimensions
         private const val COLLAPSED_GRAPH_WIDTH = 900
@@ -94,7 +93,8 @@ class NotificationHelper @Inject constructor(
         prediction: Prediction? = null,
         workoutModeOn: Boolean = false,
         workoutModeElapsed: String? = null,
-        actionConfig: NotificationActionConfig = DEFAULT_ACTION_CONFIG,
+        actionConfig: NotificationActionConfig = NotificationActionConfig.DEFAULT,
+        alertsPausedText: String? = null,
     ): android.app.Notification {
         val contentIntent = PendingIntent.getActivity(
             context, 0,
@@ -110,54 +110,15 @@ class NotificationHelper @Inject constructor(
             .setSilent(true)
             .setColor(ContextCompat.getColor(context, R.color.brand_accent))
 
-        when (actionConfig.type) {
-            NotificationActionType.NONE -> { /* no action */ }
-            NotificationActionType.WORKOUT_TOGGLE ->
-                builder.addAction(0, workoutToggleLabel(workoutModeOn), buildWorkoutToggleIntent())
-            NotificationActionType.SNOOZE ->
-                builder.addAction(
-                    0,
-                    snoozeLabel(actionConfig.snoozeCategory, actionConfig.snoozeDuration),
-                    buildSnoozeIntent(actionConfig.snoozeCategory, actionConfig.snoozeDuration),
-                )
-        }
+        attachActionButton(builder, actionConfig, workoutModeOn)
 
         if (reading != null) {
-            val direction = Direction.parse(reading.direction)
-            val bgText = glucoseUnit.format(reading.sgv)
-            val baseDelta = reading.delta?.let {
-                glucoseUnit.formatDeltaCompact(it)
-            } ?: ""
-
             val pred = prediction ?: PredictionComputer.compute(recentReadings, predictionMinutes, bgLow, bgHigh)
-            val crossingText = pred?.crossing?.let { crossing ->
-                when (crossing.type) {
-                    CrossingType.LOW -> context.getString(R.string.notif_low_crossing, crossing.minutesUntil)
-                    CrossingType.HIGH -> context.getString(R.string.notif_high_crossing, crossing.minutesUntil)
-                }
-            }
-            val iobText = if (iob > 0.0) context.getString(R.string.notif_iob, "%.1f".format(iob)) else null
-            val minutesAgo = ((System.currentTimeMillis() - reading.ts) / MS_PER_MINUTE).toInt()
-            val sinceText = if (minutesAgo >= 0) {
-                context.getString(R.string.notif_since, minutesAgo)
-            } else null
-            val deltaText = formatDeltaLine(baseDelta, crossingText, iobText, sinceText)
-
-            val workoutModeLabel = when {
-                workoutModeOn && workoutModeElapsed != null ->
-                    context.getString(R.string.workout_mode_active_for, workoutModeElapsed)
-                workoutModeOn ->
-                    context.getString(R.string.workout_mode)
-                else -> null
-            }
-            val finalDeltaText = listOfNotNull(
-                deltaText.ifEmpty { null },
-                workoutText,
-                workoutModeLabel
-            ).joinToString(" · ").ifEmpty { deltaText }
-
-            builder.setSmallIcon(createBgIcon(bgText))
-            val notifText = arrayOf(bgText, direction.arrow, finalDeltaText)
+            val notifText = composeReadingText(
+                reading, glucoseUnit, pred, iob,
+                workoutText, workoutModeOn, workoutModeElapsed, alertsPausedText
+            )
+            builder.setSmallIcon(createBgIcon(notifText[0]))
             attachGraphViews(
                 builder, recentReadings, bgLow, bgHigh,
                 graphWindowMs, predictionMinutes, notifText, glucoseUnit, exerciseSessions,
@@ -166,7 +127,10 @@ class NotificationHelper @Inject constructor(
         } else {
             builder.setSmallIcon(createBgIcon("--"))
             builder.setContentTitle(context.getString(R.string.app_name))
-            builder.setContentText(context.getString(R.string.notif_waiting))
+            val waiting = context.getString(R.string.notif_waiting)
+            builder.setContentText(
+                if (alertsPausedText != null) "$waiting · $alertsPausedText" else waiting
+            )
         }
 
         return builder.build()
@@ -232,14 +196,76 @@ class NotificationHelper @Inject constructor(
         prediction: Prediction? = null,
         workoutModeOn: Boolean = false,
         workoutModeElapsed: String? = null,
-        actionConfig: NotificationActionConfig = DEFAULT_ACTION_CONFIG,
+        actionConfig: NotificationActionConfig = NotificationActionConfig.DEFAULT,
+        alertsPausedText: String? = null,
     ) {
         val notification = buildNotification(
             reading, recentReadings, bgLow, bgHigh,
             graphWindowMs, predictionMinutes, glucoseUnit, iob, exerciseSessions,
-            workoutText, prediction, workoutModeOn, workoutModeElapsed, actionConfig
+            workoutText, prediction, workoutModeOn, workoutModeElapsed, actionConfig, alertsPausedText
         )
         notificationManager.notify(NOTIFICATION_ID, notification)
+    }
+
+    @Suppress("LongParameterList") // Independent display knobs that compose into the BG/delta line
+    private fun composeReadingText(
+        reading: GlucoseReading,
+        glucoseUnit: GlucoseUnit,
+        pred: Prediction?,
+        iob: Double,
+        workoutText: String?,
+        workoutModeOn: Boolean,
+        workoutModeElapsed: String?,
+        alertsPausedText: String?,
+    ): Array<String> {
+        val direction = Direction.parse(reading.direction)
+        val bgText = glucoseUnit.format(reading.sgv)
+        val baseDelta = reading.delta?.let { glucoseUnit.formatDeltaCompact(it) } ?: ""
+
+        val crossingText = pred?.crossing?.let { crossing ->
+            when (crossing.type) {
+                CrossingType.LOW -> context.getString(R.string.notif_low_crossing, crossing.minutesUntil)
+                CrossingType.HIGH -> context.getString(R.string.notif_high_crossing, crossing.minutesUntil)
+            }
+        }
+        val iobText = if (iob > 0.0) context.getString(R.string.notif_iob, "%.1f".format(iob)) else null
+        val minutesAgo = ((System.currentTimeMillis() - reading.ts) / MS_PER_MINUTE).toInt()
+        val sinceText = if (minutesAgo >= 0) context.getString(R.string.notif_since, minutesAgo) else null
+        val deltaText = formatDeltaLine(baseDelta, crossingText, iobText, sinceText)
+
+        val workoutModeLabel = when {
+            workoutModeOn && workoutModeElapsed != null ->
+                context.getString(R.string.workout_mode_active_for, workoutModeElapsed)
+            workoutModeOn ->
+                context.getString(R.string.workout_mode)
+            else -> null
+        }
+        val finalDeltaText = listOfNotNull(
+            deltaText.ifEmpty { null },
+            workoutText,
+            workoutModeLabel,
+            alertsPausedText
+        ).joinToString(" · ").ifEmpty { deltaText }
+
+        return arrayOf(bgText, direction.arrow, finalDeltaText)
+    }
+
+    private fun attachActionButton(
+        builder: NotificationCompat.Builder,
+        actionConfig: NotificationActionConfig,
+        workoutModeOn: Boolean,
+    ) {
+        when (actionConfig.type) {
+            NotificationActionType.NONE -> { /* no action */ }
+            NotificationActionType.WORKOUT_TOGGLE ->
+                builder.addAction(0, workoutToggleLabel(workoutModeOn), buildWorkoutToggleIntent())
+            NotificationActionType.SNOOZE ->
+                builder.addAction(
+                    0,
+                    snoozeLabel(actionConfig.snoozeCategory, actionConfig.snoozeDuration),
+                    buildSnoozeIntent(actionConfig.snoozeCategory, actionConfig.snoozeDuration),
+                )
+        }
     }
 
     private fun buildWorkoutToggleIntent(): PendingIntent = PendingIntent.getBroadcast(
@@ -257,11 +283,13 @@ class NotificationHelper @Inject constructor(
             putExtra(NotificationSnoozeActionReceiver.EXTRA_CATEGORY, category.name)
             putExtra(NotificationSnoozeActionReceiver.EXTRA_DURATION, duration.name)
         }
-        // Per-config request code so changing settings invalidates the cached PendingIntent
-        // and the new category/duration takes effect immediately.
-        val requestCode = SNOOZE_ACTION_REQUEST_CODE * 100 + category.ordinal * 10 + duration.ordinal
+        // Single fixed request code with FLAG_UPDATE_CURRENT: each rebuild mutates the
+        // cached PendingIntent's extras in place, so only ONE PendingIntent ever exists
+        // for this action. A stale notification mirror (watch, lock screen) tapping the
+        // button always dispatches the user's CURRENT category/duration — never a
+        // previous setting that an ordinal-encoded request code would have left cached.
         return PendingIntent.getBroadcast(
-            context, requestCode, intent,
+            context, SNOOZE_ACTION_REQUEST_CODE, intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
     }

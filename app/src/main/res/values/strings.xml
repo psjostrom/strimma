@@ -151,7 +151,6 @@
     <string name="settings_notif_title">Notifications</string>
     <string name="settings_notif_section">Notification Graph</string>
     <string name="settings_notif_action_section">Action Button</string>
-    <string name="settings_notif_action_label">Action</string>
     <string name="settings_notif_action_none">None</string>
     <string name="settings_notif_action_workout">Workout</string>
     <string name="settings_notif_action_snooze">Snooze</string>
@@ -171,6 +170,9 @@
     <string name="notif_action_snooze_all">Snooze all %1$s</string>
     <string name="notif_action_snooze_high">Snooze high %1$s</string>
     <string name="notif_action_snooze_low">Snooze low %1$s</string>
+    <string name="notif_alerts_paused_all">All alerts paused %1$s</string>
+    <string name="notif_alerts_paused_high">High alerts paused %1$s</string>
+    <string name="notif_alerts_paused_low">Low alerts paused %1$s</string>
     <string name="settings_notif_time_range_minutes">Time Range: %1$dm</string>
     <string name="settings_notif_time_range_hours">Time Range: %1$dh</string>
     <string name="settings_notif_prediction_off">Prediction: Off</string>

@@ -72,7 +72,7 @@ class NightscoutPusherTest {
         // Cancelled in @After so the eager ticker doesn't leak across tests.
         managerScope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
         val workoutModeManager = WorkoutModeManager(settings, poller, clock, managerScope)
-        alertManager = AlertManager(context, settings, workoutModeManager)
+        alertManager = AlertManager(context, settings, workoutModeManager, managerScope)
     }
 
     @After
