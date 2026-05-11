@@ -14,8 +14,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.SerializationException
-import java.io.IOException
-import kotlin.coroutines.cancellation.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -95,24 +93,13 @@ class TreatmentSyncer @Inject constructor(
 
         val since = System.currentTimeMillis() - days.toLong() * MS_PER_DAY
         val count = days * TREATMENTS_PER_DAY
-        return try {
+        return withNetworkBoundary<Result<Int>>(label = "Treatment pull", onError = { Result.failure(it) }) {
             val treatments = client.fetchTreatments(url, secret, since, count)
             if (treatments.isNotEmpty()) {
                 dao.upsert(treatments)
             }
             DebugLog.log(message = "Treatment pull: ${treatments.size} treatments for $days days")
             Result.success(treatments.size)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: IOException) {
-            DebugLog.log(message = "Treatment pull error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
-            Result.failure(e)
-        } catch (e: SerializationException) {
-            DebugLog.log(message = "Treatment pull parse error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
-            Result.failure(e)
-        } catch (e: SQLiteException) {
-            DebugLog.log(message = "Treatment pull DB error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
-            Result.failure(e)
         }
     }
 
@@ -129,12 +116,24 @@ class TreatmentSyncer @Inject constructor(
         val secret = settings.getNightscoutSecret()
         if (url.isBlank() || secret.isBlank()) return
 
-        try {
+        // Per-type IntegrationStatus differentiation: parse / DB / network errors
+        // surface different user-facing messages, so onError switches on type.
+        withNetworkBoundary<Unit>(
+            label = "Treatment sync",
+            onError = { e ->
+                val msg = when (e) {
+                    is SerializationException -> "Sync failed"
+                    is SQLiteException -> "Database error"
+                    else -> sanitizeErrorMessage(e)
+                }
+                _status.value = IntegrationStatus.Error(msg)
+            }
+        ) {
             val treatments = client.fetchTreatments(url, secret, since, count)
 
             if (treatments.isEmpty()) {
                 _status.value = IntegrationStatus.Connected(lastActivityTs = System.currentTimeMillis())
-                return
+                return@withNetworkBoundary
             }
 
             dao.upsert(treatments)
@@ -144,17 +143,6 @@ class TreatmentSyncer @Inject constructor(
             dao.deleteOlderThan(pruneThreshold)
 
             _status.value = IntegrationStatus.Connected(lastActivityTs = System.currentTimeMillis())
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: IOException) {
-            DebugLog.log(message = "Treatment sync error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
-            _status.value = IntegrationStatus.Error(sanitizeErrorMessage(e))
-        } catch (e: SerializationException) {
-            DebugLog.log(message = "Treatment sync parse error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
-            _status.value = IntegrationStatus.Error("Sync failed")
-        } catch (e: SQLiteException) {
-            DebugLog.log(message = "Treatment sync DB error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
-            _status.value = IntegrationStatus.Error("Database error")
         }
     }
 }

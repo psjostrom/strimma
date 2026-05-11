@@ -11,11 +11,8 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
-import java.io.IOException
 import java.security.MessageDigest
-import kotlin.coroutines.cancellation.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -117,7 +114,7 @@ class LibreLinkUpClient @Inject constructor() {
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    private val client = HttpClient(CIO) {
+    private var client = HttpClient(CIO) {
         install(HttpTimeout) {
             requestTimeoutMillis = REQUEST_TIMEOUT_MS
             socketTimeoutMillis = SOCKET_TIMEOUT_MS
@@ -125,6 +122,16 @@ class LibreLinkUpClient @Inject constructor() {
         install(ContentNegotiation) {
             json(json)
         }
+    }
+
+    /**
+     * Test seam: replaces the production CIO client with a [MockEngine]-backed one.
+     * The default client is constructed by the primary constructor and immediately
+     * closed here so its engine threads/selectors don't leak per test run.
+     */
+    internal constructor(testClient: HttpClient) : this() {
+        client.close()
+        client = testClient
     }
 
     private fun lluHeaders(session: LluSession? = null): HeadersBuilder.() -> Unit = {
@@ -146,7 +153,7 @@ class LibreLinkUpClient @Inject constructor() {
         baseUrl: String = DEFAULT_BASE_URL,
         allowRedirect: Boolean = true
     ): LluSession? {
-        return try {
+        return withNetworkBoundary<LluSession?>(label = "LLU login", onError = { null }) {
             val response = client.post("$baseUrl/llu/auth/login") {
                 headers(lluHeaders())
                 setBody(LluLoginRequest(email, password))
@@ -154,14 +161,6 @@ class LibreLinkUpClient @Inject constructor() {
 
             val loginResponse = response.body<LluLoginResponse>()
             parseLoginResponse(loginResponse, email, password, baseUrl, allowRedirect)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: IOException) {
-            DebugLog.log(message = "LLU login error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
-            null
-        } catch (e: SerializationException) {
-            DebugLog.log(message = "LLU login parse error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
-            null
         }
     }
 
@@ -203,50 +202,35 @@ class LibreLinkUpClient @Inject constructor() {
     }
 
     suspend fun getConnections(session: LluSession): List<LluConnection>? {
-        return try {
+        return withNetworkBoundary<List<LluConnection>?>(label = "LLU connections", onError = { null }) {
             val response = client.get("${session.baseUrl}/llu/connections") {
                 headers(lluHeaders(session))
             }
             if (!response.status.isSuccess()) {
                 DebugLog.log(message = "LLU connections HTTP ${response.status.value}")
-                return null
+                return@withNetworkBoundary null
             }
             response.body<LluConnectionsResponse>().data
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: IOException) {
-            DebugLog.log(message = "LLU connections error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
-            null
-        } catch (e: SerializationException) {
-            DebugLog.log(message = "LLU connections parse error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
-            null
         }
     }
 
     suspend fun getGraph(session: LluSession, patientId: String): LluGraphData? {
-        return try {
+        return withNetworkBoundary<LluGraphData?>(label = "LLU graph", onError = { null }) {
             val response = client.get("${session.baseUrl}/llu/connections/$patientId/graph") {
                 headers(lluHeaders(session))
             }
             if (!response.status.isSuccess()) {
                 DebugLog.log(message = "LLU graph HTTP ${response.status.value}")
-                return null
+                return@withNetworkBoundary null
             }
             response.body<LluGraphResponse>().data
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: IOException) {
-            DebugLog.log(message = "LLU graph error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
-            null
-        } catch (e: SerializationException) {
-            DebugLog.log(message = "LLU graph parse error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
-            null
         }
     }
 
     @Suppress("CyclomaticComplexMethod") // 10-region lookup is inherently branchy
-    private suspend fun resolveRegionUrl(baseUrl: String, region: String): String? {
-        return try {
+    @androidx.annotation.VisibleForTesting
+    internal suspend fun resolveRegionUrl(baseUrl: String, region: String): String? {
+        return withNetworkBoundary<String?>(label = "LLU region resolve", onError = { null }) {
             val response = client.get("$baseUrl/llu/config/country?country=DE") {
                 headers(lluHeaders())
             }
@@ -266,14 +250,6 @@ class LibreLinkUpClient @Inject constructor() {
                 else -> null
             }
             regionDef?.lslApi?.takeIf { it.isNotBlank() }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: IOException) {
-            DebugLog.log(message = "LLU region resolve error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
-            null
-        } catch (e: SerializationException) {
-            DebugLog.log(message = "LLU region resolve parse error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
-            null
         }
     }
 

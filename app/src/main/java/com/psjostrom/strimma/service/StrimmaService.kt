@@ -96,7 +96,14 @@ class StrimmaService : Service() {
     @Inject lateinit var syncOrchestrator: SyncOrchestrator
     @Inject lateinit var workoutModeManager: WorkoutModeManager
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    // Last-resort safety net: if anything escapes the leaf catches in network clients
+    // (or future code added without one), log it instead of letting it propagate to the
+    // Android default handler — which on Main = process death and a foreground-service
+    // restart loop. The leaf catches are still the primary mechanism; this is the belt.
+    private val crashHandler = CoroutineExceptionHandler { _, t ->
+        DebugLog.log("Service scope uncaught: ${t.javaClass.simpleName}: ${t.message?.take(80)}")
+    }
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main + crashHandler)
     private var xdripReceiver: XdripBroadcastReceiver? = null
     private var followerJob: Job? = null
     private var lluFollowerJob: Job? = null
