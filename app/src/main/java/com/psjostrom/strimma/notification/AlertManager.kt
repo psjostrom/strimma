@@ -553,6 +553,14 @@ class AlertManager @Inject constructor(
     private fun alertCategoryAndLevel(alertId: Int): Pair<AlertCategory, Int>? =
         alertIdToCategoryLevel[alertId]
 
+    // Declared before pauseExpiryFlows because the flow initializer below calls
+    // scheduleExpiryClear for any active pause, and scheduleExpiryClear touches
+    // expiryClearJobs. Kotlin property init runs top-down — flipping the order
+    // crashes AlertManager construction (NPE on a null ConcurrentHashMap) on any
+    // cold start where a pause is already in prefs, taking the foreground service
+    // and CGM coverage down with it.
+    private val expiryClearJobs = ConcurrentHashMap<AlertCategory, Job>()
+
     // One MutableStateFlow per category, keyed by the enum so iteration over
     // AlertCategory.entries can never silently bypass a category. The flow's value
     // is the source of truth for "is this category currently paused" — a delayed
@@ -568,8 +576,6 @@ class AlertManager @Inject constructor(
         }
     val pauseLowExpiryMs: StateFlow<Long?> = pauseExpiryFlows.getValue(AlertCategory.LOW)
     val pauseHighExpiryMs: StateFlow<Long?> = pauseExpiryFlows.getValue(AlertCategory.HIGH)
-
-    private val expiryClearJobs = ConcurrentHashMap<AlertCategory, Job>()
 
     fun pauseAlertCategory(category: AlertCategory, durationMs: Long, level: Int = ALERT_LEVEL_URGENT) {
         pauseAlertCategoryAt(category, System.currentTimeMillis() + durationMs, level)
