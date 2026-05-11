@@ -189,7 +189,7 @@ class StrimmaService : Service() {
 
         scope.launch { updateNotification() }
         startStaleCheckLoop()
-        syncOrchestrator.start(scope)
+        syncOrchestrator.start()
         calendarPollJob = calendarPoller.start(scope)
         observeCalendarForAlarms()
         observeWorkoutModeForNotificationRefresh()
