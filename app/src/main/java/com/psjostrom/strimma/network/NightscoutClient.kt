@@ -24,7 +24,6 @@ import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
-import kotlin.coroutines.cancellation.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -131,7 +130,10 @@ open class NightscoutClient @Inject constructor() {
         val hashedSecret = hashSecret(apiSecret)
         val statusUrl = "${normalizeUrl(baseUrl)}/api/v1/status.json"
 
-        return try {
+        return withNetworkBoundary(
+            label = "Connection test",
+            onError = { ConnectionTestResult(false, error = it.message?.take(MAX_ERROR_LENGTH) ?: "Connection failed") }
+        ) {
             val response = client.get(statusUrl) { header("api-secret", hashedSecret) }
             if (response.status.isSuccess()) {
                 val body = response.bodyAsText()
@@ -140,24 +142,12 @@ open class NightscoutClient @Inject constructor() {
                         .jsonObject["settings"]
                         ?.jsonObject?.get("customTitle")
                         ?.jsonPrimitive?.contentOrNull
-                } catch (_: kotlinx.serialization.SerializationException) { null }
+                } catch (_: SerializationException) { null }
                   catch (_: IllegalArgumentException) { null }
                 ConnectionTestResult(true, serverName = name)
             } else {
                 ConnectionTestResult(false, error = "HTTP ${response.status.value}")
             }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: IOException) {
-            com.psjostrom.strimma.receiver.DebugLog.log(
-                message = "Connection test error: ${e.message?.take(MAX_ERROR_LENGTH)}"
-            )
-            ConnectionTestResult(false, error = e.message?.take(MAX_ERROR_LENGTH) ?: "Connection failed")
-        } catch (e: SerializationException) {
-            com.psjostrom.strimma.receiver.DebugLog.log(
-                message = "Connection test parse error: ${e.message?.take(MAX_ERROR_LENGTH)}"
-            )
-            ConnectionTestResult(false, error = e.message?.take(MAX_ERROR_LENGTH) ?: "Connection failed")
         }
     }
 
@@ -179,7 +169,7 @@ open class NightscoutClient @Inject constructor() {
             )
         }
 
-        return try {
+        return withNetworkBoundary(label = "Push", onError = { false }) {
             val fullUrl = "${normalizeUrl(baseUrl)}/api/v1/entries"
             val response = client.post(fullUrl) {
                 contentType(ContentType.Application.Json)
@@ -192,18 +182,6 @@ open class NightscoutClient @Inject constructor() {
                 )
             }
             response.status.isSuccess()
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: IOException) {
-            com.psjostrom.strimma.receiver.DebugLog.log(
-                message = "Push error: ${e.message?.take(MAX_ERROR_LENGTH)}"
-            )
-            false
-        } catch (e: SerializationException) {
-            com.psjostrom.strimma.receiver.DebugLog.log(
-                message = "Push serialize error: ${e.message?.take(MAX_ERROR_LENGTH)}"
-            )
-            false
         }
     }
 
@@ -219,7 +197,7 @@ open class NightscoutClient @Inject constructor() {
         val hashedSecret = hashSecret(apiSecret)
         val fullUrl = buildFetchUrl(baseUrl, since, count, before)
 
-        return try {
+        return withNetworkBoundary<List<NightscoutEntryResponse>?>(label = "Fetch", onError = { null }) {
             val response = client.get(fullUrl) {
                 header("api-secret", hashedSecret)
             }
@@ -231,18 +209,6 @@ open class NightscoutClient @Inject constructor() {
             } else {
                 response.body<List<NightscoutEntryResponse>>()
             }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: IOException) {
-            com.psjostrom.strimma.receiver.DebugLog.log(
-                message = "Fetch error: ${e.message?.take(MAX_ERROR_LENGTH)}"
-            )
-            null
-        } catch (e: SerializationException) {
-            com.psjostrom.strimma.receiver.DebugLog.log(
-                message = "Fetch parse error: ${e.message?.take(MAX_ERROR_LENGTH)}"
-            )
-            null
         }
     }
 
@@ -258,56 +224,44 @@ open class NightscoutClient @Inject constructor() {
         val sinceIso = isoFormatter.format(Instant.ofEpochMilli(since))
         val fullUrl = "${normalizeUrl(baseUrl)}/api/v1/treatments.json?find[created_at][\$gte]=$sinceIso&count=$count"
 
-        val response = try {
-            client.get(fullUrl) { header("api-secret", hashedSecret) }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: IOException) {
-            debugLogAndRethrow(e, "Treatments fetch error: ${e.message?.take(MAX_ERROR_LENGTH)}")
-        }
+        return withNetworkBoundary<List<Treatment>>(label = "Treatments fetch", onError = { throw it }) {
+            val response = client.get(fullUrl) { header("api-secret", hashedSecret) }
 
-        if (response.status.value == HTTP_NOT_FOUND) {
-            com.psjostrom.strimma.receiver.DebugLog.log(
-                message = "Treatments: 404 — server doesn't support treatments"
-            )
-            return emptyList()
-        }
-        if (!response.status.isSuccess()) {
-            debugLogAndRethrow(
-                IOException("HTTP ${response.status.value}"),
-                "Treatments HTTP ${response.status.value}: $fullUrl"
-            )
-        }
+            if (response.status.value == HTTP_NOT_FOUND) {
+                com.psjostrom.strimma.receiver.DebugLog.log(
+                    message = "Treatments: 404 — server doesn't support treatments"
+                )
+                return@withNetworkBoundary emptyList()
+            }
+            if (!response.status.isSuccess()) {
+                // IOException message is short ("HTTP 500") so callers can pattern-match on it;
+                // the helper logs class name + message, so URL detail goes in a separate log line.
+                com.psjostrom.strimma.receiver.DebugLog.log(
+                    message = "Treatments HTTP ${response.status.value}: $fullUrl"
+                )
+                throw IOException("HTTP ${response.status.value}")
+            }
 
-        val nsTreatments = try {
-            response.body<List<NightscoutTreatment>>()
-        } catch (e: SerializationException) {
-            debugLogAndRethrow(e, "Treatments parse error: ${e.message?.take(MAX_ERROR_LENGTH)}")
+            val nsTreatments = response.body<List<NightscoutTreatment>>()
+            val now = System.currentTimeMillis()
+            nsTreatments.mapNotNull { ns ->
+                val createdAtStr = ns.createdAt ?: return@mapNotNull null
+                val eventType = ns.eventType ?: return@mapNotNull null
+                val createdAtMs = parseIsoTimestamp(createdAtStr) ?: return@mapNotNull null
+                val id = ns.id ?: generateTreatmentId(createdAtStr, eventType, ns.insulin, ns.carbs)
+                Treatment(
+                    id = id,
+                    createdAt = createdAtMs,
+                    eventType = eventType,
+                    insulin = ns.insulin,
+                    carbs = ns.carbs,
+                    basalRate = ns.absolute,
+                    duration = ns.duration,
+                    enteredBy = ns.enteredBy,
+                    fetchedAt = now
+                )
+            }
         }
-
-        val now = System.currentTimeMillis()
-        return nsTreatments.mapNotNull { ns ->
-            val createdAtStr = ns.createdAt ?: return@mapNotNull null
-            val eventType = ns.eventType ?: return@mapNotNull null
-            val createdAtMs = parseIsoTimestamp(createdAtStr) ?: return@mapNotNull null
-            val id = ns.id ?: generateTreatmentId(createdAtStr, eventType, ns.insulin, ns.carbs)
-            Treatment(
-                id = id,
-                createdAt = createdAtMs,
-                eventType = eventType,
-                insulin = ns.insulin,
-                carbs = ns.carbs,
-                basalRate = ns.absolute,
-                duration = ns.duration,
-                enteredBy = ns.enteredBy,
-                fetchedAt = now
-            )
-        }
-    }
-
-    private fun debugLogAndRethrow(error: Throwable, message: String): Nothing {
-        com.psjostrom.strimma.receiver.DebugLog.log(message = message)
-        throw error
     }
 
     private fun parseIsoTimestamp(iso: String): Long? {

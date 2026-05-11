@@ -29,8 +29,14 @@ class NightscoutPusher @Inject constructor(
         private const val PUSH_FAIL_ALERT_MS = 15 * 60 * 1000L // 15 minutes
     }
 
+    // Last-resort safety net for anything that escapes the leaf catches in NightscoutClient.
+    // Without this, an uncaught throwable on the IO scope still kills the process via the
+    // JVM default handler. The leaf catches are still the primary mechanism; this is the belt.
+    private val crashHandler = CoroutineExceptionHandler { _, t ->
+        DebugLog.log("Pusher scope uncaught: ${t.javaClass.simpleName}: ${t.message?.take(80)}")
+    }
     private var job = SupervisorJob()
-    private var scope = CoroutineScope(job + dispatcher)
+    private var scope = CoroutineScope(job + dispatcher + crashHandler)
 
     private val _status = MutableStateFlow<IntegrationStatus>(IntegrationStatus.Idle)
     val status: StateFlow<IntegrationStatus> = _status
@@ -80,7 +86,7 @@ class NightscoutPusher @Inject constructor(
     fun stop() {
         scope.cancel()
         job = SupervisorJob()
-        scope = CoroutineScope(job + dispatcher)
+        scope = CoroutineScope(job + dispatcher + crashHandler)
     }
 
     fun pushPending() {
