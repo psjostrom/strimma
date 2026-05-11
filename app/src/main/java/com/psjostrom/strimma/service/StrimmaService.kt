@@ -104,8 +104,6 @@ class StrimmaService : Service() {
     private var followerJob: Job? = null
     private var lluFollowerJob: Job? = null
     private var calendarPollJob: Job? = null
-    @Volatile
-    private var wasStale = true // Start as stale (no data yet)
     private lateinit var workoutTriggerMinutes: StateFlow<Int>
 
     private lateinit var predMinutes: StateFlow<Int>
@@ -269,17 +267,15 @@ class StrimmaService : Service() {
                 val latest = dao.latestOnce()
                 alertManager.checkStale(latest?.ts)
 
-                val isStale = AlertManager.isStale(latest?.ts)
-                val workoutCountdownActive =
-                    WorkoutAlarmReceiver.notificationTriggerFired.get() && calendarPoller.nextEvent.value != null
-                // Refresh notification once per minute during workout mode so the
-                // "Workout 0:42" elapsed counter actually advances. Without this the
-                // counter is computed once on state-transition and lies for the rest
-                // of the session unless a new CGM reading arrives.
-                val workoutModeOn = workoutModeManager.state.value is WorkoutMode.On
-                if (isStale != wasStale || workoutCountdownActive || workoutModeOn) {
-                    updateNotification()
-                }
+                // Always rebuild the foreground notification each tick. The notification's
+                // "Xm" since-text, the IOB countdown, the alert-pause countdown, and the
+                // workout-mode "0:42" elapsed all need refreshing every minute regardless
+                // of whether a new CGM reading arrived. The previous gate (only refresh on
+                // stale-state transitions or workout mode) left those counters frozen at
+                // whatever value they had at the moment of the last reading — most visibly,
+                // the notification would show "0m" continuously between readings until
+                // either the 10-min stale threshold tripped or the next reading arrived.
+                updateNotification()
 
                 calendarPoller.nextEvent.value?.let { event ->
                     if (System.currentTimeMillis() > event.startTime + WORKOUT_GRACE_MINUTES * MS_PER_MINUTE) {
@@ -448,7 +444,6 @@ class StrimmaService : Service() {
         val latest = dao.latestOnce()?.takeUnless { reading ->
             AlertManager.isStale(reading.ts)
         }
-        wasStale = (latest == null)
         val graphWindowMs = notifGraphMinutes.value.toLong() * MS_PER_MINUTE
         val now = System.currentTimeMillis()
         val recent = dao.since(now - graphWindowMs)
