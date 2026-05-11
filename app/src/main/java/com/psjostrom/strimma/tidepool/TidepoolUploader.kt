@@ -9,8 +9,8 @@ import androidx.annotation.VisibleForTesting
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.receiver.DebugLog
+import com.psjostrom.strimma.receiver.scopeCrashHandler
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
@@ -67,12 +67,9 @@ class TidepoolUploader @Inject constructor(
         }
     }
 
-    // Last-resort safety net for anything that escapes the leaf catches in TidepoolClient
-    // and the executeUpload outer catch. The leaf catches are still the primary mechanism;
-    // this is the belt against future code added without one.
-    private val crashHandler = CoroutineExceptionHandler { _, t ->
-        DebugLog.log("Uploader scope uncaught: ${t.javaClass.simpleName}: ${t.message?.take(MAX_LOG_ERROR_LENGTH)}")
-    }
+    // Belt for anything that escapes the leaf catches in TidepoolClient and the
+    // executeUpload outer catch.
+    private val crashHandler = scopeCrashHandler("Uploader")
     private var job = SupervisorJob()
     private var scope = CoroutineScope(job + Dispatchers.IO + crashHandler)
     private val uploadMutex = Mutex()
