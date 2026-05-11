@@ -18,8 +18,9 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows
 
 /**
- * Tests that the reading timestamp comes from the source CGM notification's `when`
- * field rather than the moment Strimma processes it.
+ * Tests that the reading timestamp comes from the source CGM notification's
+ * `when` field rather than the moment Strimma processes it, with safe fallbacks
+ * when `when` is unusable.
  *
  * Why this matters: Android re-fires `onNotificationPosted` for every active
  * notification when a `NotificationListenerService` (re)binds — on boot, after
@@ -31,10 +32,13 @@ import org.robolectric.Shadows
  * the stale alert would never fire because `lastReadingTs` keeps getting
  * refreshed on every rebind.
  *
- * Using `notification.when` (the time the source app stamped on the
- * notification) keeps the original sensor-reading time intact across rebinds,
- * so `minutesAgo` grows correctly and the bucket dedup in `ReadingPipeline`
- * collapses the rebind-redelivered duplicate.
+ * Resolution chain (preferred → fallback):
+ *  1. `notification.when` — set by the source app, preserved across rebinds.
+ *  2. `sbn.postTime` — set by the system when first posted, also preserved.
+ *  3. `System.currentTimeMillis()` — only if both are zero/in the future.
+ *
+ * Falling back to `postTime` (not `now`) keeps rebind-resilience intact even
+ * for source apps that don't set `when` at all.
  */
 @RunWith(RobolectricTestRunner::class)
 class NotificationTimestampTest {
@@ -48,13 +52,17 @@ class NotificationTimestampTest {
             .edit().putString("glucose_source", GlucoseSource.COMPANION.name).apply()
     }
 
-    private fun buildSbn(packageName: String, notification: Notification): StatusBarNotification {
+    private fun buildSbn(
+        packageName: String,
+        notification: Notification,
+        postTime: Long = System.currentTimeMillis(),
+    ): StatusBarNotification {
         notification.flags = notification.flags or Notification.FLAG_ONGOING_EVENT
         @Suppress("DEPRECATION")
         return StatusBarNotification(
             packageName, packageName, 1, null, 0, 0, 0,
             notification, android.os.Process.myUserHandle(),
-            System.currentTimeMillis(),
+            postTime,
         )
     }
 
@@ -64,70 +72,111 @@ class NotificationTimestampTest {
             `when` = whenMs
         }
 
-    private fun nextStartedService(): Intent? =
-        Shadows.shadowOf(RuntimeEnvironment.getApplication()).nextStartedService
+    private fun nextStoredTimestamp(): Long {
+        val intent: Intent? = Shadows.shadowOf(RuntimeEnvironment.getApplication()).nextStartedService
+        assertNotNull("Listener should have started the service", intent)
+        return intent!!.getLongExtra(GlucoseNotificationListener.EXTRA_TIMESTAMP, -1L)
+    }
 
     @Test
     fun `timestamp comes from notification when, not from currentTimeMillis`() {
         val fiveMinutesAgo = System.currentTimeMillis() - 5 * 60_000L
         val sbn = buildSbn(
-            "com.senseonics.eversense365.us",
+            CAMAPS_PKG,
             titleNotification("120", whenMs = fiveMinutesAgo),
         )
 
         listener.onNotificationPosted(sbn)
 
-        val intent = nextStartedService()
-        assertNotNull(intent)
-        val storedTs = intent!!.getLongExtra(GlucoseNotificationListener.EXTRA_TIMESTAMP, 0L)
         assertEquals(
             "Reading timestamp should be the notification's `when`, not now",
-            fiveMinutesAgo, storedTs,
+            fiveMinutesAgo, nextStoredTimestamp(),
         )
     }
 
     @Test
-    fun `falls back to currentTimeMillis when notification when is zero`() {
-        val before = System.currentTimeMillis()
+    fun `falls back to postTime when notification when is zero`() {
+        // when=0 is the documented "no timestamp" sentinel some apps use. Falling
+        // back to sbn.postTime (also preserved across rebinds) keeps the fix's
+        // rebind-resilience instead of regressing to "stamp on receive."
+        val tenMinutesAgo = System.currentTimeMillis() - 10 * 60_000L
         val sbn = buildSbn(
-            "com.senseonics.eversense365.us",
+            CAMAPS_PKG,
             titleNotification("120", whenMs = 0L),
+            postTime = tenMinutesAgo,
         )
 
         listener.onNotificationPosted(sbn)
-        val after = System.currentTimeMillis()
 
-        val intent = nextStartedService()
-        assertNotNull(intent)
-        val storedTs = intent!!.getLongExtra(GlucoseNotificationListener.EXTRA_TIMESTAMP, 0L)
-        // when=0 is the documented "no timestamp" sentinel; falling back to now keeps
-        // the old behaviour for sources that don't bother to set it.
-        assertTrue(
-            "Expected fallback timestamp in [$before, $after], got $storedTs",
-            storedTs in before..after,
+        assertEquals(
+            "when=0 must fall back to postTime, not currentTimeMillis",
+            tenMinutesAgo, nextStoredTimestamp(),
         )
     }
 
     @Test
-    fun `falls back to currentTimeMillis when notification when is in the future`() {
-        val before = System.currentTimeMillis()
-        val oneHourFromNow = before + 60 * 60_000L
-        val sbn = buildSbn(
-            "com.senseonics.eversense365.us",
-            titleNotification("120", whenMs = oneHourFromNow),
-        )
-
-        listener.onNotificationPosted(sbn)
-        val after = System.currentTimeMillis()
-
-        val intent = nextStartedService()
-        assertNotNull(intent)
-        val storedTs = intent!!.getLongExtra(GlucoseNotificationListener.EXTRA_TIMESTAMP, 0L)
+    fun `falls back to postTime when notification when is in the future`() {
         // A future `when` (clock skew, buggy app) must not be stored verbatim — it
         // would corrupt the bucket dedup and put the row "after now" in queries.
+        val twoMinutesAgo = System.currentTimeMillis() - 2 * 60_000L
+        val oneHourFromNow = System.currentTimeMillis() + 60 * 60_000L
+        val sbn = buildSbn(
+            CAMAPS_PKG,
+            titleNotification("120", whenMs = oneHourFromNow),
+            postTime = twoMinutesAgo,
+        )
+
+        listener.onNotificationPosted(sbn)
+
+        assertEquals(
+            "future when must fall back to postTime, not currentTimeMillis",
+            twoMinutesAgo, nextStoredTimestamp(),
+        )
+    }
+
+    @Test
+    fun `falls back to currentTimeMillis when both when and postTime are invalid`() {
+        // Last-resort safety net: if the source app sets when=0 AND the SBN
+        // somehow has postTime=0, we have no preserved timestamp to use, so we
+        // accept the receive-time as the least-bad option.
+        val before = System.currentTimeMillis()
+        val sbn = buildSbn(
+            CAMAPS_PKG,
+            titleNotification("120", whenMs = 0L),
+            postTime = 0L,
+        )
+
+        listener.onNotificationPosted(sbn)
+        val after = System.currentTimeMillis()
+
+        val storedTs = nextStoredTimestamp()
         assertTrue(
-            "Expected fallback timestamp in [$before, $after], got $storedTs",
+            "Expected fallback to now in [$before, $after], got $storedTs",
             storedTs in before..after,
+        )
+    }
+
+    @Test
+    fun `rebind redelivery preserves the original notification when`() {
+        // The headline regression this fix protects: Android re-fires
+        // onNotificationPosted for every active notification when the listener
+        // (re)binds. A second delivery of the SAME SBN must reuse the original
+        // `when`, not refresh to now — otherwise the stale-data alert is
+        // silently suppressed and the foreground notification shows "0m"
+        // against a value many minutes old.
+        val originalWhen = System.currentTimeMillis() - 10 * 60_000L
+        val sbn = buildSbn(CAMAPS_PKG, titleNotification("120", whenMs = originalWhen))
+
+        listener.onNotificationPosted(sbn)
+        val firstTs = nextStoredTimestamp()
+        // Simulate Android re-firing for the same SBN on listener rebind.
+        listener.onNotificationPosted(sbn)
+        val secondTs = nextStoredTimestamp()
+
+        assertEquals("First delivery uses notification.when", originalWhen, firstTs)
+        assertEquals(
+            "Rebind redelivery must reuse the original `when`, not refresh to now",
+            originalWhen, secondTs,
         )
     }
 
@@ -137,16 +186,14 @@ class NotificationTimestampTest {
         // so the resulting reading is still effectively timestamped "now". This
         // guards against accidental regressions that would shift fresh readings.
         val nowish = System.currentTimeMillis() - 500L
-        val sbn = buildSbn(
-            "com.senseonics.eversense365.us",
-            titleNotification("120", whenMs = nowish),
-        )
+        val sbn = buildSbn(CAMAPS_PKG, titleNotification("120", whenMs = nowish))
 
         listener.onNotificationPosted(sbn)
 
-        val intent = nextStartedService()
-        assertNotNull(intent)
-        val storedTs = intent!!.getLongExtra(GlucoseNotificationListener.EXTRA_TIMESTAMP, 0L)
-        assertEquals(nowish, storedTs)
+        assertEquals(nowish, nextStoredTimestamp())
+    }
+
+    private companion object {
+        const val CAMAPS_PKG = "com.camdiab.fx_alert.mmoll"
     }
 }

@@ -196,7 +196,14 @@ class GlucoseNotificationListener : NotificationListenerService() {
             val intent = Intent(this, com.psjostrom.strimma.service.StrimmaService::class.java).apply {
                 action = ACTION_GLUCOSE_RECEIVED
                 putExtra(EXTRA_MGDL, mgdl)
-                putExtra(EXTRA_TIMESTAMP, resolveReadingTimestamp(notification))
+                putExtra(
+                    EXTRA_TIMESTAMP,
+                    resolveReadingTimestamp(
+                        notifWhen = notification.`when`,
+                        postTime = sbn.postTime,
+                        now = System.currentTimeMillis(),
+                    ),
+                )
                 putExtra(EXTRA_SOURCE, sbn.packageName)
             }
             startForegroundService(intent)
@@ -206,27 +213,33 @@ class GlucoseNotificationListener : NotificationListenerService() {
     }
 
     /**
-     * Use the source notification's `when` as the reading's timestamp instead of
-     * `System.currentTimeMillis()`. This keeps the original sensor-reading time
-     * intact when Android re-fires `onNotificationPosted` on listener (re)bind
-     * — which happens on boot, after an app install, and any time the system
-     * unbinds the listener under memory pressure. Without this, every rebind
-     * stamps the still-active CamAPS notification as if it were a fresh reading,
-     * resetting `minutesAgo` to 0m on a value that may be many minutes old and
-     * silently suppressing the stale-data alert.
+     * Resolve the timestamp for a glucose reading from a source CGM notification.
      *
-     * `when` is the time the source app stamped on the notification; it is
-     * preserved across rebinds because the system re-delivers the original
-     * `Notification` object unchanged. Falls back to `now` for the two cases
-     * where `when` is unsafe to use as a reading time:
+     * Preferred source is `notification.when` — the time the source app stamped on
+     * the notification. For rebind redeliveries of an unchanged notification (Android
+     * re-fires `onNotificationPosted` for active notifications on listener bind —
+     * boot, install, listener unbind under memory pressure), `when` is preserved
+     * because the system re-delivers the same Notification object. Without this,
+     * every rebind stamps the still-active CGM notification as if it were a fresh
+     * reading, resetting `minutesAgo` to 0m on a value that may be many minutes
+     * old and silently suppressing the stale-data alert.
+     *
+     * Falls back to `postTime` (the system-recorded original post time, also
+     * preserved across rebinds in the StatusBarNotification) for the two cases
+     * where `when` is unsafe to use:
      *  - `when == 0` — the documented "no timestamp" sentinel (some apps set it).
      *  - `when > now` — clock skew or buggy app; storing a future ts would
      *    corrupt bucket dedup and put the row "after now" in queries.
+     *
+     * Using `postTime` (not `now`) as the fallback preserves rebind-resilience
+     * even for source apps that don't set `when`. Final fallback is `now` only
+     * if `postTime` itself is invalid.
      */
-    private fun resolveReadingTimestamp(notification: Notification): Long {
-        val now = System.currentTimeMillis()
-        val notifWhen = notification.`when`
-        return if (notifWhen in 1..now) notifWhen else now
+    @Suppress("ReturnCount")
+    private fun resolveReadingTimestamp(notifWhen: Long, postTime: Long, now: Long): Long {
+        if (notifWhen in 1..now) return notifWhen
+        if (postTime in 1..now) return postTime
+        return now
     }
 
     private fun extractGlucose(notification: Notification): Double? {
