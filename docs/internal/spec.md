@@ -250,9 +250,9 @@ Nightscout-compatible JSON array:
 Fields:
 
 - `sgv` — Integer, mg/dL (even though display is mmol/L — Nightscout protocol uses mg/dL)
-- `date` — Epoch milliseconds (from the Aidex broadcast timestamp)
-- `dateString` — ISO 8601 formatted timestamp
-- `direction` — Recomputed by Strimma (§5), NOT from Aidex broadcast
+- `date` — Epoch milliseconds. Source-app authoritative: in COMPANION mode it's the CGM notification's `when` (with fallback to `sbn.postTime`, then `currentTimeMillis()` only if both are zero/in the future); in xDrip-broadcast mode it's the broadcast's `Extras.Time`; in NS-follower / LibreLinkUp modes it's the upstream API's `date`. Strimma never stamps a "receive time" on a reading.
+- `dateString` — ISO 8601 formatted timestamp (derived from `date`)
+- `direction` — Recomputed by Strimma (§5), NOT from any source app's broadcast/notification
 - `device` — `"Strimma"` (identifies this app as the source)
 
 ### Push Strategy

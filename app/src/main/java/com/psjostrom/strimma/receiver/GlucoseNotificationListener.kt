@@ -196,13 +196,50 @@ class GlucoseNotificationListener : NotificationListenerService() {
             val intent = Intent(this, com.psjostrom.strimma.service.StrimmaService::class.java).apply {
                 action = ACTION_GLUCOSE_RECEIVED
                 putExtra(EXTRA_MGDL, mgdl)
-                putExtra(EXTRA_TIMESTAMP, System.currentTimeMillis())
+                putExtra(
+                    EXTRA_TIMESTAMP,
+                    resolveReadingTimestamp(
+                        notifWhen = notification.`when`,
+                        postTime = sbn.postTime,
+                        now = System.currentTimeMillis(),
+                    ),
+                )
                 putExtra(EXTRA_SOURCE, sbn.packageName)
             }
             startForegroundService(intent)
         } else {
             DebugLog.log(message = "Could not parse glucose from notification")
         }
+    }
+
+    /**
+     * Resolve the timestamp for a glucose reading from a source CGM notification.
+     *
+     * Preferred source is `notification.when` — the time the source app stamped on
+     * the notification. For rebind redeliveries of an unchanged notification (Android
+     * re-fires `onNotificationPosted` for active notifications on listener bind —
+     * boot, install, listener unbind under memory pressure), `when` is preserved
+     * because the system re-delivers the same Notification object. Without this,
+     * every rebind stamps the still-active CGM notification as if it were a fresh
+     * reading, resetting `minutesAgo` to 0m on a value that may be many minutes
+     * old and silently suppressing the stale-data alert.
+     *
+     * Falls back to `postTime` (the system-recorded original post time, also
+     * preserved across rebinds in the StatusBarNotification) for the two cases
+     * where `when` is unsafe to use:
+     *  - `when == 0` — the documented "no timestamp" sentinel (some apps set it).
+     *  - `when > now` — clock skew or buggy app; storing a future ts would
+     *    corrupt bucket dedup and put the row "after now" in queries.
+     *
+     * Using `postTime` (not `now`) as the fallback preserves rebind-resilience
+     * even for source apps that don't set `when`. Final fallback is `now` only
+     * if `postTime` itself is invalid.
+     */
+    @Suppress("ReturnCount")
+    private fun resolveReadingTimestamp(notifWhen: Long, postTime: Long, now: Long): Long {
+        if (notifWhen in 1..now) return notifWhen
+        if (postTime in 1..now) return postTime
+        return now
     }
 
     private fun extractGlucose(notification: Notification): Double? {

@@ -78,13 +78,16 @@ class ReadingPipeline @Inject constructor(
             return null
         }
 
-        // Reject backwards-in-time readings ONLY for xdrip-broadcast — it's the only path
-        // that carries its own ts as an extra, so a misbehaving (or replayed) broadcast
-        // could swap a newer row for an older-tagged one. All other paths are trusted:
-        // notification mode uses System.currentTimeMillis() at receive time, follower modes
-        // use the upstream API's authoritative timestamp. Applying this guard universally
-        // dropped legitimate live readings when the puller had backfilled rows from a
-        // partner device whose clock was a few seconds ahead.
+        // Reject backwards-in-time readings ONLY for xdrip-broadcast. All four paths
+        // (COMPANION, XDRIP_BROADCAST, NIGHTSCOUT_FOLLOWER, LIBRELINKUP) now carry an
+        // upstream ts — none stamp at receive time. The guard stays xdrip-only because
+        // that path has the weakest trust model: the broadcast Intent can be replayed
+        // by any app holding the action. COMPANION is bounded to the CGM_PACKAGES
+        // allowlist with `when` sanitized to 1..now in the listener; follower modes are
+        // server-authenticated. Within-bucket backwards-in-time is intentional for
+        // those paths — it's how the puller-vs-live race resolves when a partner
+        // device's clock runs a few seconds ahead of ours (covered by the
+        // "companion - backwards-in-time reading replaces, not rejects" pipeline test).
         if (latestExisting != null &&
             source == XdripBroadcastReceiver.SOURCE_TAG &&
             timestamp < latestExisting.ts
