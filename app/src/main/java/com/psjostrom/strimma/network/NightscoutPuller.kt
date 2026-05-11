@@ -7,9 +7,6 @@ import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.receiver.DebugLog
 import kotlinx.coroutines.flow.first
-import kotlinx.serialization.SerializationException
-import java.io.IOException
-import kotlin.coroutines.cancellation.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -59,11 +56,11 @@ class NightscoutPuller @Inject constructor(
         var beforeCursor: Long? = null
         var totalInserted = 0
 
-        return try {
+        return withNetworkBoundary<Result<Int>>(label = "Pull", onError = { Result.failure(it) }) {
             while (true) {
                 val entries = client.fetchEntries(
                     url, secret, since = since, count = PAGE_SIZE, before = beforeCursor
-                ) ?: return Result.failure(IllegalStateException("Failed to fetch from Nightscout"))
+                ) ?: return@withNetworkBoundary Result.failure(IllegalStateException("Failed to fetch from Nightscout"))
 
                 if (entries.isEmpty()) break
                 totalInserted += insertPulledEntries(entries)
@@ -72,19 +69,6 @@ class NightscoutPuller @Inject constructor(
 
             DebugLog.log(message = "Pull: $totalInserted readings from Nightscout")
             Result.success(totalInserted)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: SerializationException) {
-            DebugLog.log(message = "Pull parse error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
-            Result.failure(e)
-        } catch (
-            @Suppress("TooGenericExceptionCaught") // Ktor surfaces airplane-mode DNS failures
-            // as UnresolvedAddressException (extends IllegalArgumentException, NOT IOException).
-            // Catch-all here keeps the foreground service alive across any network failure.
-            e: Exception
-        ) {
-            DebugLog.log(message = "Pull error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
-            Result.failure(e)
         }
     }
 

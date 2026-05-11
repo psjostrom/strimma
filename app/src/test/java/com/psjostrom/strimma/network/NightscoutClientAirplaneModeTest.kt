@@ -9,7 +9,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertThrows
+import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -72,18 +72,17 @@ class NightscoutClientAirplaneModeTest {
     }
 
     // fetchTreatments is the only HTTP method that intentionally rethrows after logging
-    // (vs. swallowing and returning a failure value). The fix here is the same — the
-    // catch was widened from `IOException` to `Exception` so UnresolvedAddressException
-    // is logged and rethrown rather than escaping uncaught. The caller (TreatmentSyncer)
-    // owns the outer catch that prevents the crash.
+    // (vs. swallowing and returning a failure value). The caller (TreatmentSyncer) owns
+    // the outer catch that prevents the crash.
     @Test
     fun `fetchTreatments rethrows network failure after logging`() = runTest {
         val client = airplaneModeClient()
 
-        assertThrows(UnresolvedAddressException::class.java) {
-            kotlinx.coroutines.runBlocking {
-                client.fetchTreatments("https://example.com", "secret", since = 0L)
-            }
+        try {
+            client.fetchTreatments("https://example.com", "secret", since = 0L)
+            fail("Expected UnresolvedAddressException")
+        } catch (_: UnresolvedAddressException) {
+            // pass
         }
     }
 }

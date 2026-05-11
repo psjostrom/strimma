@@ -1,5 +1,6 @@
 package com.psjostrom.strimma.tidepool
 
+import com.psjostrom.strimma.network.withNetworkBoundary
 import com.psjostrom.strimma.receiver.DebugLog
 import io.ktor.client.*
 import io.ktor.client.call.*
@@ -13,8 +14,6 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
-import java.io.IOException
-import kotlin.coroutines.cancellation.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -40,8 +39,13 @@ class TidepoolClient @Inject constructor() {
         }
     }
 
-    // Test-only constructor
+    /**
+     * Test seam: replaces the production CIO client with a [MockEngine]-backed one.
+     * The default client is constructed by the primary constructor and immediately
+     * closed here so its engine threads/selectors don't leak per test run.
+     */
     internal constructor(testClient: HttpClient) : this() {
+        httpClient.close()
         httpClient = testClient
     }
 
@@ -56,7 +60,7 @@ class TidepoolClient @Inject constructor() {
     ): String? {
         if (baseUrl.isBlank() || userId.isBlank() || token.isBlank()) return null
 
-        return try {
+        return withNetworkBoundary<String?>(label = "Tidepool getExistingDataset", onError = { null }) {
             val fullUrl = "${baseUrl.trimEnd('/')}/v1/users/$userId/data_sets?client.name=com.psjostrom.strimma&size=1"
             val response = httpClient.get(fullUrl) {
                 header("x-tidepool-session-token", token)
@@ -65,23 +69,11 @@ class TidepoolClient @Inject constructor() {
             if (!response.status.isSuccess()) {
                 val body = response.bodyAsText().take(MAX_ERROR_LENGTH * 2)
                 DebugLog.log(message = "Tidepool getExistingDataset HTTP ${response.status.value}: $body")
-                return null
+                return@withNetworkBoundary null
             }
 
             val datasets = response.body<List<DatasetResponse>>()
             datasets.firstOrNull()?.uploadId
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: SerializationException) {
-            DebugLog.log(message = "Tidepool getExistingDataset parse error: ${e.message?.take(MAX_ERROR_LENGTH)}")
-            null
-        } catch (
-            @Suppress("TooGenericExceptionCaught") // Ktor surfaces airplane-mode DNS failures
-            // as UnresolvedAddressException (NOT IOException). Catch-all keeps the service alive.
-            e: Exception
-        ) {
-            DebugLog.log(message = "Tidepool getExistingDataset error: ${e.message?.take(MAX_ERROR_LENGTH)}")
-            null
         }
     }
 
@@ -97,7 +89,7 @@ class TidepoolClient @Inject constructor() {
     ): String? {
         if (baseUrl.isBlank() || userId.isBlank() || token.isBlank()) return null
 
-        return try {
+        return withNetworkBoundary<String?>(label = "Tidepool createDataset", onError = { null }) {
             val fullUrl = "${baseUrl.trimEnd('/')}/v1/users/$userId/data_sets"
             val requestBody = json.encodeToString(datasetRequest)
             DebugLog.log(message = "Tidepool createDataset body: $requestBody")
@@ -111,24 +103,13 @@ class TidepoolClient @Inject constructor() {
             if (!response.status.isSuccess()) {
                 val body = response.bodyAsText().take(MAX_ERROR_LENGTH * 2)
                 DebugLog.log(message = "Tidepool createDataset HTTP ${response.status.value}: $body")
-                return null
+                return@withNetworkBoundary null
             }
 
             val responseText = response.bodyAsText()
             val uploadId = parseUploadId(responseText)
             DebugLog.log(message = "Tidepool createDataset success: uploadId=$uploadId")
             uploadId
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: SerializationException) {
-            DebugLog.log(message = "Tidepool createDataset parse error: ${e.message?.take(MAX_ERROR_LENGTH)}")
-            null
-        } catch (
-            @Suppress("TooGenericExceptionCaught") // See getExistingDataset catch for rationale.
-            e: Exception
-        ) {
-            DebugLog.log(message = "Tidepool createDataset error: ${e.message?.take(MAX_ERROR_LENGTH)}")
-            null
         }
     }
 
@@ -162,7 +143,7 @@ class TidepoolClient @Inject constructor() {
     ): Boolean {
         if (baseUrl.isBlank() || datasetId.isBlank() || token.isBlank() || records.isEmpty()) return false
 
-        return try {
+        return withNetworkBoundary(label = "Tidepool uploadData", onError = { false }) {
             val fullUrl = "${baseUrl.trimEnd('/')}/v1/datasets/$datasetId/data"
             val response = httpClient.post(fullUrl) {
                 contentType(ContentType.Application.Json)
@@ -172,21 +153,10 @@ class TidepoolClient @Inject constructor() {
 
             if (!response.status.isSuccess()) {
                 DebugLog.log(message = "Tidepool uploadData HTTP ${response.status.value}: $fullUrl")
-                return false
+                return@withNetworkBoundary false
             }
 
             true
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: SerializationException) {
-            DebugLog.log(message = "Tidepool uploadData parse error: ${e.message?.take(MAX_ERROR_LENGTH)}")
-            false
-        } catch (
-            @Suppress("TooGenericExceptionCaught") // See getExistingDataset catch for rationale.
-            e: Exception
-        ) {
-            DebugLog.log(message = "Tidepool uploadData error: ${e.message?.take(MAX_ERROR_LENGTH)}")
-            false
         }
     }
 }

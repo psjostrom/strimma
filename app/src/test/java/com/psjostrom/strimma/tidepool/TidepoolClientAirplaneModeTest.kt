@@ -49,6 +49,28 @@ class TidepoolClientAirplaneModeTest {
     }
 
     @Test
+    fun `createDataset returns null instead of crashing when DNS fails`() = runTest {
+        val client = airplaneModeClient()
+
+        val datasetRequest = DatasetRequest(
+            client = DatasetRequest.ClientInfo(name = "com.psjostrom.strimma", version = "test"),
+            time = "2026-05-11T08:00:00Z",
+            computerTime = "2026-05-11T10:00:00",
+            timezoneOffset = 120,
+            timezone = "Europe/Stockholm",
+            version = "test"
+        )
+        val result = client.createDataset(
+            baseUrl = "https://api.tidepool.org",
+            userId = "user123",
+            token = "token-abc",
+            datasetRequest = datasetRequest
+        )
+
+        assertNull(result)
+    }
+
+    @Test
     fun `uploadData returns false instead of crashing when DNS fails`() = runTest {
         val client = airplaneModeClient()
 
