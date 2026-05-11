@@ -267,15 +267,17 @@ class StrimmaService : Service() {
                 val latest = dao.latestOnce()
                 alertManager.checkStale(latest?.ts)
 
-                // Always rebuild the foreground notification each tick. The notification's
-                // "Xm" since-text, the IOB countdown, the alert-pause countdown, and the
-                // workout-mode "0:42" elapsed all need refreshing every minute regardless
-                // of whether a new CGM reading arrived. The previous gate (only refresh on
-                // stale-state transitions or workout mode) left those counters frozen at
+                // Always rebuild the foreground notification AND the home-screen widget
+                // each tick. Both surfaces show time-driven counters that need wall-clock
+                // recomputation every minute: the notification's "Xm" since-text + IOB
+                // countdown + alert-pause countdown + workout-mode "0:42" elapsed, and the
+                // widget's "Xm" / "now" freshness label. The previous gate (refresh only on
+                // stale-state transitions or workout mode) left these counters frozen at
                 // whatever value they had at the moment of the last reading — most visibly,
-                // the notification would show "0m" continuously between readings until
-                // either the 10-min stale threshold tripped or the next reading arrived.
+                // both surfaces would show "0m" continuously until either the 10-min stale
+                // threshold tripped or the next reading arrived.
                 updateNotification()
+                updateWidgets()
 
                 calendarPoller.nextEvent.value?.let { event ->
                     if (System.currentTimeMillis() > event.startTime + WORKOUT_GRACE_MINUTES * MS_PER_MINUTE) {
