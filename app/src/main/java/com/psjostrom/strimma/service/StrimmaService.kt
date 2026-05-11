@@ -31,6 +31,7 @@ import com.psjostrom.strimma.notification.NotificationHelper
 import com.psjostrom.strimma.receiver.DebugLog
 import com.psjostrom.strimma.receiver.GlucoseNotificationListener
 import com.psjostrom.strimma.receiver.XdripBroadcastReceiver
+import com.psjostrom.strimma.receiver.scopeCrashHandler
 import com.psjostrom.strimma.data.calendar.CalendarPoller
 import com.psjostrom.strimma.data.calendar.WorkoutEvent
 import com.psjostrom.strimma.data.workout.WorkoutMode
@@ -96,14 +97,9 @@ class StrimmaService : Service() {
     @Inject lateinit var syncOrchestrator: SyncOrchestrator
     @Inject lateinit var workoutModeManager: WorkoutModeManager
 
-    // Last-resort safety net: if anything escapes the leaf catches in network clients
-    // (or future code added without one), log it instead of letting it propagate to the
-    // Android default handler — which on Main = process death and a foreground-service
-    // restart loop. The leaf catches are still the primary mechanism; this is the belt.
-    private val crashHandler = CoroutineExceptionHandler { _, t ->
-        DebugLog.log("Service scope uncaught: ${t.javaClass.simpleName}: ${t.message?.take(80)}")
-    }
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main + crashHandler)
+    // Belt for anything that escapes the leaf catches in network clients (or future
+    // code added without one). On Main an uncaught throwable is process death.
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main + scopeCrashHandler("Service"))
     private var xdripReceiver: XdripBroadcastReceiver? = null
     private var followerJob: Job? = null
     private var lluFollowerJob: Job? = null
@@ -190,6 +186,8 @@ class StrimmaService : Service() {
         scope.launch { updateNotification() }
         startStaleCheckLoop()
         syncOrchestrator.start()
+        // CalendarPoller stays on Main scope — its blocking ContentResolver work
+        // uses `withContext(IO)` internally, so the poll loop itself can stay on Main.
         calendarPollJob = calendarPoller.start(scope)
         observeCalendarForAlarms()
         observeWorkoutModeForNotificationRefresh()

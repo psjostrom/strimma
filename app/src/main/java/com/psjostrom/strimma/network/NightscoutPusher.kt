@@ -6,6 +6,7 @@ import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.di.IoDispatcher
 import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.receiver.DebugLog
+import com.psjostrom.strimma.receiver.scopeCrashHandler
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -29,12 +30,8 @@ class NightscoutPusher @Inject constructor(
         private const val PUSH_FAIL_ALERT_MS = 15 * 60 * 1000L // 15 minutes
     }
 
-    // Last-resort safety net for anything that escapes the leaf catches in NightscoutClient.
-    // Without this, an uncaught throwable on the IO scope still kills the process via the
-    // JVM default handler. The leaf catches are still the primary mechanism; this is the belt.
-    private val crashHandler = CoroutineExceptionHandler { _, t ->
-        DebugLog.log("Pusher scope uncaught: ${t.javaClass.simpleName}: ${t.message?.take(80)}")
-    }
+    // Belt for anything that escapes the leaf catches in NightscoutClient.
+    private val crashHandler = scopeCrashHandler("Pusher")
     private var job = SupervisorJob()
     private var scope = CoroutineScope(job + dispatcher + crashHandler)
 
