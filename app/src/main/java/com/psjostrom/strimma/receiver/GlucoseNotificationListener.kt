@@ -243,49 +243,53 @@ class GlucoseNotificationListener : NotificationListenerService() {
     }
 
     private fun extractGlucose(notification: Notification, packageName: String): Double? {
-        notification.contentView?.let { rv ->
-            try {
-                val applied = rv.apply(this, null)
-                val root = applied.rootView as? ViewGroup ?: return@let
-                val texts = mutableListOf<String>()
-                collectTextViews(texts, root)
-                DebugLog.log(message = "TextViews: $texts")
-                if (isStaleStatusNotification(texts, packageName)) {
-                    DebugLog.log(message = "Stale-status notification rejected: pkg=$packageName")
-                    return null
-                }
-                for (text in texts) {
-                    val parsed = tryParseGlucose(text)
-                    if (parsed != null) return parsed
-                }
-            } catch (
-                @Suppress("TooGenericExceptionCaught") // RemoteViews from external apps can throw any exception
-                e: Exception
-            ) {
-                DebugLog.log(message = "RemoteViews error: ${e.message}")
-            }
-        }
-
+        // Collect candidates from all four sources BEFORE filtering or parsing.
+        // The stale-status filter must see every text the parser would consider —
+        // running it only on contentView would let a stale value slip through if
+        // contentView is null, rv.apply() throws (the catch below documents that
+        // RemoteViews from external apps can throw any exception), or contentView
+        // has no parseable number but extras/ticker do. Order is preserved:
+        // contentView texts (in TextView order) → title → text → ticker, so the
+        // first parseable wins exactly as before for non-stale notifications.
+        val texts = mutableListOf<String>()
+        collectContentViewTexts(notification, texts)
         notification.extras?.getString(Notification.EXTRA_TITLE)?.let { title ->
             DebugLog.log(message = "Title: $title")
-            val parsed = tryParseGlucose(title)
-            if (parsed != null) return parsed
+            texts.add(title)
         }
-
         notification.extras?.getString(Notification.EXTRA_TEXT)?.let { text ->
             DebugLog.log(message = "Text: $text")
-            val parsed = tryParseGlucose(text)
-            if (parsed != null) return parsed
+            texts.add(text)
         }
-
-        // tickerText fallback — Eversense puts the raw BG value here
+        // tickerText fallback — Eversense puts the raw BG value here.
         notification.tickerText?.toString()?.let { ticker ->
             DebugLog.log(message = "Ticker: $ticker")
-            val parsed = tryParseGlucose(ticker)
-            if (parsed != null) return parsed
+            texts.add(ticker)
         }
 
-        return null
+        if (isStaleStatusNotification(texts, packageName)) {
+            if (loggedRejections.add("stale_$packageName")) {
+                DebugLog.log(message = "Stale-status notification rejected: pkg=$packageName")
+            }
+            return null
+        }
+
+        return texts.firstNotNullOfOrNull { tryParseGlucose(it) }
+    }
+
+    private fun collectContentViewTexts(notification: Notification, out: MutableList<String>) {
+        val rv = notification.contentView ?: return
+        try {
+            val applied = rv.apply(this, null)
+            val root = applied.rootView as? ViewGroup ?: return
+            collectTextViews(out, root)
+            DebugLog.log(message = "TextViews: $out")
+        } catch (
+            @Suppress("TooGenericExceptionCaught") // RemoteViews from external apps can throw any exception
+            e: Exception
+        ) {
+            DebugLog.log(message = "RemoteViews error: ${e.message}")
+        }
     }
 
     private fun collectTextViews(output: MutableList<String>, parent: ViewGroup) {

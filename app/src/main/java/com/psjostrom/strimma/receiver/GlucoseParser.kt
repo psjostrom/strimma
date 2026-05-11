@@ -85,7 +85,12 @@ fun tryParseGlucose(raw: String): Double? {
  *
  * Currently configured packages:
  *   - All five CamDiab variants (mmol/L, mg/dL, HX-pump mmol/L & mg/dL, Canada).
- *     Same app, same UI, same status words across locales/bundles.
+ *     Verified empirically against `com.camdiab.fx_alert.mmoll` only — the other
+ *     four entries assume CamDiab ships the same English status word across
+ *     bundles. The Canadian (`mmoll.ca`) and HX variants in particular have
+ *     not been verified against fr-CA or other locales; if a real log surfaces
+ *     a localized status string (e.g. "Tentative" for fr-CA), add it as an
+ *     additional keyword for that package rather than replacing the English one.
  *
  * To extend:
  *   1. Capture a debug log showing the failure mode (e.g. `[App, ..., Status,
