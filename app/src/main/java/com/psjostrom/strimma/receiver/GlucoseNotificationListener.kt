@@ -189,7 +189,7 @@ class GlucoseNotificationListener : NotificationListenerService() {
                 "flags=${notification.flags} " +
                 "ongoing=${sbn.isOngoing}"
         )
-        val mgdl = extractGlucose(notification)
+        val mgdl = extractGlucose(notification, sbn.packageName)
 
         if (mgdl != null && GlucoseReading.isValidSgv(mgdl)) {
             DebugLog.log(message = "Parsed: ${mgdl.toInt()} mg/dL")
@@ -242,7 +242,7 @@ class GlucoseNotificationListener : NotificationListenerService() {
         return now
     }
 
-    private fun extractGlucose(notification: Notification): Double? {
+    private fun extractGlucose(notification: Notification, packageName: String): Double? {
         notification.contentView?.let { rv ->
             try {
                 val applied = rv.apply(this, null)
@@ -250,6 +250,10 @@ class GlucoseNotificationListener : NotificationListenerService() {
                 val texts = mutableListOf<String>()
                 collectTextViews(texts, root)
                 DebugLog.log(message = "TextViews: $texts")
+                if (isStaleStatusNotification(texts, packageName)) {
+                    DebugLog.log(message = "Stale-status notification rejected: pkg=$packageName")
+                    return null
+                }
                 for (text in texts) {
                     val parsed = tryParseGlucose(text)
                     if (parsed != null) return parsed
