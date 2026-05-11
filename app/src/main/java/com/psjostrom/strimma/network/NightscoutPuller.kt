@@ -74,11 +74,16 @@ class NightscoutPuller @Inject constructor(
             Result.success(totalInserted)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: IOException) {
-            DebugLog.log(message = "Pull error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
-            Result.failure(e)
         } catch (e: SerializationException) {
             DebugLog.log(message = "Pull parse error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
+            Result.failure(e)
+        } catch (
+            @Suppress("TooGenericExceptionCaught") // Ktor surfaces airplane-mode DNS failures
+            // as UnresolvedAddressException (extends IllegalArgumentException, NOT IOException).
+            // Catch-all here keeps the foreground service alive across any network failure.
+            e: Exception
+        ) {
+            DebugLog.log(message = "Pull error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
             Result.failure(e)
         }
     }

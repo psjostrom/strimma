@@ -156,11 +156,15 @@ class LibreLinkUpClient @Inject constructor() {
             parseLoginResponse(loginResponse, email, password, baseUrl, allowRedirect)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: IOException) {
-            DebugLog.log(message = "LLU login error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
-            null
         } catch (e: SerializationException) {
             DebugLog.log(message = "LLU login parse error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
+            null
+        } catch (
+            @Suppress("TooGenericExceptionCaught") // Ktor surfaces airplane-mode DNS failures
+            // as UnresolvedAddressException (NOT IOException). Catch-all keeps the service alive.
+            e: Exception
+        ) {
+            DebugLog.log(message = "LLU login error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
             null
         }
     }
@@ -214,11 +218,14 @@ class LibreLinkUpClient @Inject constructor() {
             response.body<LluConnectionsResponse>().data
         } catch (e: CancellationException) {
             throw e
-        } catch (e: IOException) {
-            DebugLog.log(message = "LLU connections error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
-            null
         } catch (e: SerializationException) {
             DebugLog.log(message = "LLU connections parse error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
+            null
+        } catch (
+            @Suppress("TooGenericExceptionCaught") // See login catch for rationale.
+            e: Exception
+        ) {
+            DebugLog.log(message = "LLU connections error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
             null
         }
     }
@@ -235,11 +242,14 @@ class LibreLinkUpClient @Inject constructor() {
             response.body<LluGraphResponse>().data
         } catch (e: CancellationException) {
             throw e
-        } catch (e: IOException) {
-            DebugLog.log(message = "LLU graph error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
-            null
         } catch (e: SerializationException) {
             DebugLog.log(message = "LLU graph parse error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
+            null
+        } catch (
+            @Suppress("TooGenericExceptionCaught") // See login catch for rationale.
+            e: Exception
+        ) {
+            DebugLog.log(message = "LLU graph error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
             null
         }
     }
@@ -268,11 +278,14 @@ class LibreLinkUpClient @Inject constructor() {
             regionDef?.lslApi?.takeIf { it.isNotBlank() }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: IOException) {
-            DebugLog.log(message = "LLU region resolve error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
-            null
         } catch (e: SerializationException) {
             DebugLog.log(message = "LLU region resolve parse error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
+            null
+        } catch (
+            @Suppress("TooGenericExceptionCaught") // See login catch for rationale.
+            e: Exception
+        ) {
+            DebugLog.log(message = "LLU region resolve error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
             null
         }
     }

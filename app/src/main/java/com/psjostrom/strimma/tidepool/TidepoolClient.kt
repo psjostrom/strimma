@@ -72,11 +72,15 @@ class TidepoolClient @Inject constructor() {
             datasets.firstOrNull()?.uploadId
         } catch (e: CancellationException) {
             throw e
-        } catch (e: IOException) {
-            DebugLog.log(message = "Tidepool getExistingDataset error: ${e.message?.take(MAX_ERROR_LENGTH)}")
-            null
         } catch (e: SerializationException) {
             DebugLog.log(message = "Tidepool getExistingDataset parse error: ${e.message?.take(MAX_ERROR_LENGTH)}")
+            null
+        } catch (
+            @Suppress("TooGenericExceptionCaught") // Ktor surfaces airplane-mode DNS failures
+            // as UnresolvedAddressException (NOT IOException). Catch-all keeps the service alive.
+            e: Exception
+        ) {
+            DebugLog.log(message = "Tidepool getExistingDataset error: ${e.message?.take(MAX_ERROR_LENGTH)}")
             null
         }
     }
@@ -116,11 +120,14 @@ class TidepoolClient @Inject constructor() {
             uploadId
         } catch (e: CancellationException) {
             throw e
-        } catch (e: IOException) {
-            DebugLog.log(message = "Tidepool createDataset error: ${e.message?.take(MAX_ERROR_LENGTH)}")
-            null
         } catch (e: SerializationException) {
             DebugLog.log(message = "Tidepool createDataset parse error: ${e.message?.take(MAX_ERROR_LENGTH)}")
+            null
+        } catch (
+            @Suppress("TooGenericExceptionCaught") // See getExistingDataset catch for rationale.
+            e: Exception
+        ) {
+            DebugLog.log(message = "Tidepool createDataset error: ${e.message?.take(MAX_ERROR_LENGTH)}")
             null
         }
     }
@@ -171,11 +178,14 @@ class TidepoolClient @Inject constructor() {
             true
         } catch (e: CancellationException) {
             throw e
-        } catch (e: IOException) {
-            DebugLog.log(message = "Tidepool uploadData error: ${e.message?.take(MAX_ERROR_LENGTH)}")
-            false
         } catch (e: SerializationException) {
             DebugLog.log(message = "Tidepool uploadData parse error: ${e.message?.take(MAX_ERROR_LENGTH)}")
+            false
+        } catch (
+            @Suppress("TooGenericExceptionCaught") // See getExistingDataset catch for rationale.
+            e: Exception
+        ) {
+            DebugLog.log(message = "Tidepool uploadData error: ${e.message?.take(MAX_ERROR_LENGTH)}")
             false
         }
     }

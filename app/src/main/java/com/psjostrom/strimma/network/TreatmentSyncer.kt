@@ -104,14 +104,18 @@ class TreatmentSyncer @Inject constructor(
             Result.success(treatments.size)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: IOException) {
-            DebugLog.log(message = "Treatment pull error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
-            Result.failure(e)
         } catch (e: SerializationException) {
             DebugLog.log(message = "Treatment pull parse error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
             Result.failure(e)
         } catch (e: SQLiteException) {
             DebugLog.log(message = "Treatment pull DB error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
+            Result.failure(e)
+        } catch (
+            @Suppress("TooGenericExceptionCaught") // Ktor surfaces airplane-mode DNS failures
+            // as UnresolvedAddressException (NOT IOException). Catch-all keeps the service alive.
+            e: Exception
+        ) {
+            DebugLog.log(message = "Treatment pull error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
             Result.failure(e)
         }
     }
@@ -146,15 +150,19 @@ class TreatmentSyncer @Inject constructor(
             _status.value = IntegrationStatus.Connected(lastActivityTs = System.currentTimeMillis())
         } catch (e: CancellationException) {
             throw e
-        } catch (e: IOException) {
-            DebugLog.log(message = "Treatment sync error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
-            _status.value = IntegrationStatus.Error(sanitizeErrorMessage(e))
         } catch (e: SerializationException) {
             DebugLog.log(message = "Treatment sync parse error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
             _status.value = IntegrationStatus.Error("Sync failed")
         } catch (e: SQLiteException) {
             DebugLog.log(message = "Treatment sync DB error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
             _status.value = IntegrationStatus.Error("Database error")
+        } catch (
+            @Suppress("TooGenericExceptionCaught") // Ktor surfaces airplane-mode DNS failures
+            // as UnresolvedAddressException (NOT IOException). Catch-all keeps the service alive.
+            e: Exception
+        ) {
+            DebugLog.log(message = "Treatment sync error: ${e.message?.take(NightscoutClient.MAX_ERROR_LENGTH)}")
+            _status.value = IntegrationStatus.Error(sanitizeErrorMessage(e))
         }
     }
 }

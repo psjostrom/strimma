@@ -148,14 +148,20 @@ open class NightscoutClient @Inject constructor() {
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: IOException) {
-            com.psjostrom.strimma.receiver.DebugLog.log(
-                message = "Connection test error: ${e.message?.take(MAX_ERROR_LENGTH)}"
-            )
-            ConnectionTestResult(false, error = e.message?.take(MAX_ERROR_LENGTH) ?: "Connection failed")
         } catch (e: SerializationException) {
             com.psjostrom.strimma.receiver.DebugLog.log(
                 message = "Connection test parse error: ${e.message?.take(MAX_ERROR_LENGTH)}"
+            )
+            ConnectionTestResult(false, error = e.message?.take(MAX_ERROR_LENGTH) ?: "Connection failed")
+        } catch (
+            @Suppress("TooGenericExceptionCaught") // Ktor surfaces airplane-mode DNS failures
+            // as UnresolvedAddressException (extends IllegalArgumentException, NOT IOException),
+            // and other non-IOException network errors exist too — catch all to keep the
+            // foreground service alive across any transient network failure.
+            e: Exception
+        ) {
+            com.psjostrom.strimma.receiver.DebugLog.log(
+                message = "Connection test error: ${e.message?.take(MAX_ERROR_LENGTH)}"
             )
             ConnectionTestResult(false, error = e.message?.take(MAX_ERROR_LENGTH) ?: "Connection failed")
         }
@@ -194,14 +200,17 @@ open class NightscoutClient @Inject constructor() {
             response.status.isSuccess()
         } catch (e: CancellationException) {
             throw e
-        } catch (e: IOException) {
-            com.psjostrom.strimma.receiver.DebugLog.log(
-                message = "Push error: ${e.message?.take(MAX_ERROR_LENGTH)}"
-            )
-            false
         } catch (e: SerializationException) {
             com.psjostrom.strimma.receiver.DebugLog.log(
                 message = "Push serialize error: ${e.message?.take(MAX_ERROR_LENGTH)}"
+            )
+            false
+        } catch (
+            @Suppress("TooGenericExceptionCaught") // See connection-test catch for rationale.
+            e: Exception
+        ) {
+            com.psjostrom.strimma.receiver.DebugLog.log(
+                message = "Push error: ${e.message?.take(MAX_ERROR_LENGTH)}"
             )
             false
         }
@@ -233,14 +242,17 @@ open class NightscoutClient @Inject constructor() {
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: IOException) {
-            com.psjostrom.strimma.receiver.DebugLog.log(
-                message = "Fetch error: ${e.message?.take(MAX_ERROR_LENGTH)}"
-            )
-            null
         } catch (e: SerializationException) {
             com.psjostrom.strimma.receiver.DebugLog.log(
                 message = "Fetch parse error: ${e.message?.take(MAX_ERROR_LENGTH)}"
+            )
+            null
+        } catch (
+            @Suppress("TooGenericExceptionCaught") // See connection-test catch for rationale.
+            e: Exception
+        ) {
+            com.psjostrom.strimma.receiver.DebugLog.log(
+                message = "Fetch error: ${e.message?.take(MAX_ERROR_LENGTH)}"
             )
             null
         }
@@ -262,7 +274,10 @@ open class NightscoutClient @Inject constructor() {
             client.get(fullUrl) { header("api-secret", hashedSecret) }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: IOException) {
+        } catch (
+            @Suppress("TooGenericExceptionCaught") // See connection-test catch for rationale.
+            e: Exception
+        ) {
             debugLogAndRethrow(e, "Treatments fetch error: ${e.message?.take(MAX_ERROR_LENGTH)}")
         }
 
