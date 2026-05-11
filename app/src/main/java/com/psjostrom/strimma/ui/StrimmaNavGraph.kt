@@ -458,6 +458,8 @@ fun StrimmaNavGraph(
         }
         composable("settings/general") {
             val startOnBoot by viewModel.settings.startOnBoot.collectAsState(initial = true)
+            val retentionPolicy by viewModel.settings.retentionPolicy
+                .collectAsState(initial = com.psjostrom.strimma.data.RetentionPolicy.INDEFINITE)
             val updateCheckState by viewModel.updateCheckState.collectAsState()
             val betaCheckState by viewModel.betaCheckState.collectAsState()
             val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
@@ -469,6 +471,10 @@ fun StrimmaNavGraph(
             GeneralSettings(
                 startOnBoot = startOnBoot,
                 onStartOnBootChange = { scope.launch { viewModel.settings.setStartOnBoot(it) } },
+                retentionPolicy = retentionPolicy,
+                onRetentionPolicyChange = {
+                    scope.launch { viewModel.settings.setRetentionPolicy(it) }
+                },
                 appVersion = activity.packageManager.getPackageInfo(
                     activity.packageName, 0
                 ).versionName ?: "",

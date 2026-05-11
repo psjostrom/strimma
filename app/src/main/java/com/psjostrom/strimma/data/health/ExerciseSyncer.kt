@@ -20,7 +20,12 @@ class ExerciseSyncer @Inject constructor(
 ) {
     companion object {
         private const val POLL_INTERVAL_MS = 15 * 60 * 1000L
-        private const val LOOKBACK_DAYS = 30L
+
+        // Bounds the *initial* fetch from Health Connect on a fresh install (and
+        // the catch-up window after a long offline period) — not local retention.
+        // Local retention is governed by the user's RetentionPolicy setting and
+        // applied by SyncOrchestrator's retention loop.
+        private const val INITIAL_FETCH_DAYS = 30L
     }
 
     fun start(scope: CoroutineScope): Job {
@@ -64,16 +69,12 @@ class ExerciseSyncer @Inject constructor(
     }
 
     private suspend fun fullSync() {
-        val since = Instant.now().minus(LOOKBACK_DAYS, ChronoUnit.DAYS)
+        val since = Instant.now().minus(INITIAL_FETCH_DAYS, ChronoUnit.DAYS)
         val sessions = manager.getExerciseSessions(since)
 
         for ((session, heartRate) in sessions) {
             dao.upsertSessionWithHeartRate(session, heartRate)
         }
-
-        // Prune old sessions
-        val cutoff = Instant.now().minus(LOOKBACK_DAYS, ChronoUnit.DAYS).toEpochMilli()
-        dao.deleteSessionsOlderThan(cutoff)
 
         // Store new changes token for delta sync
         val newToken = manager.getChangesToken()

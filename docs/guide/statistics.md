@@ -141,7 +141,7 @@ Each meal shows:
 ### Data Requirements
 
 - Treatment sync must be enabled
-- Treatments are retained for 100 days
+- Treatment retention follows **Settings > General > Storage > Data retention** (default: Forever; minimum 3 months)
 - Each meal needs ≥3 pre-meal readings (15-min window) and ≥5 postprandial readings to be analyzed
 - The postprandial window is 3 hours by default, extending to 4 hours if glucose hasn't recovered
 

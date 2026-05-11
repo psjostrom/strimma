@@ -4,8 +4,11 @@ import com.psjostrom.strimma.data.MS_PER_HOUR
 import com.psjostrom.strimma.data.MS_PER_MINUTE
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
+import com.psjostrom.strimma.data.TreatmentDao
 import androidx.annotation.VisibleForTesting
+import com.psjostrom.strimma.data.health.ExerciseDao
 import com.psjostrom.strimma.data.health.ExerciseSyncer
+import kotlinx.coroutines.flow.first
 import com.psjostrom.strimma.di.IoDispatcher
 import com.psjostrom.strimma.network.NightscoutPuller
 import com.psjostrom.strimma.network.NightscoutPusher
@@ -28,19 +31,22 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Manages periodic background jobs: push/upload retry, data pruning, treatment sync,
- * web server lifecycle, exercise sync, update checker, and initial push/pull.
+ * Manages periodic background jobs: push/upload retry, treatment sync,
+ * web server lifecycle, exercise sync, update checker, retention prune,
+ * and initial push/pull.
  *
  * Owns its own IO-backed scope so the orchestrated jobs run off the main thread.
  * `CalendarPoller` is owned by `StrimmaService` and stays on Main — its blocking
  * work uses `withContext(IO)` internally — and so is not covered by this scope.
  */
-@Suppress("LongParameterList") // 9 distinct background collaborators + 1 dispatcher for scope ownership
+@Suppress("LongParameterList") // 11 distinct collaborators + 1 dispatcher for scope ownership
 @Singleton
 class SyncOrchestrator @Inject constructor(
     private val pusher: NightscoutPusher,
     private val tidepoolUploader: TidepoolUploader,
-    private val dao: ReadingDao,
+    private val readingDao: ReadingDao,
+    private val treatmentDao: TreatmentDao,
+    private val exerciseDao: ExerciseDao,
     private val settings: SettingsRepository,
     private val treatmentSyncer: TreatmentSyncer,
     private val localWebServer: LocalWebServer,
@@ -51,9 +57,8 @@ class SyncOrchestrator @Inject constructor(
 ) {
     companion object {
         private const val RETRY_INTERVAL_MINUTES = 5
-        private const val PRUNE_INTERVAL_DAYS = 1
-        private const val PRUNE_RETENTION_DAYS = 30L
-        private const val HOURS_PER_DAY = 24
+        private const val RETENTION_INTERVAL_HOURS = 24L
+        private const val HOURS_PER_DAY = 24L
     }
 
     // Belt for anything that escapes the network/DB catches in this scope's launches.
@@ -81,7 +86,7 @@ class SyncOrchestrator @Inject constructor(
         started = true
 
         startRetryLoop()
-        startPruneLoop()
+        startRetentionLoop()
         startTreatmentSyncLifecycle()
         startWebServerLifecycle()
         exerciseSyncJob = exerciseSyncer.start(scope)
@@ -125,12 +130,28 @@ class SyncOrchestrator @Inject constructor(
         }
     }
 
-    private fun startPruneLoop() {
+    /**
+     * Applies the user's [com.psjostrom.strimma.data.RetentionPolicy] uniformly to
+     * readings, treatments, and exercise sessions. The default policy is INDEFINITE
+     * — when chosen, the loop reads the setting, finds nothing to do, and sleeps.
+     * When the user opts in to a finite window, the loop deletes anything older
+     * than (now - policy.days) on each daily tick.
+     *
+     * One loop, one cutoff, three tables — so the user's mental model is "Strimma
+     * keeps my data for X" with no per-table asymmetry.
+     */
+    private fun startRetentionLoop() {
         scope.launch {
             while (isActive) {
-                val thirtyDaysAgo = System.currentTimeMillis() - PRUNE_RETENTION_DAYS * HOURS_PER_DAY * MS_PER_HOUR
-                dao.pruneBefore(thirtyDaysAgo)
-                delay(PRUNE_INTERVAL_DAYS * HOURS_PER_DAY * MS_PER_HOUR)
+                val policy = settings.retentionPolicy.first()
+                val days = policy.days
+                if (days != null) {
+                    val cutoff = System.currentTimeMillis() - days * HOURS_PER_DAY * MS_PER_HOUR
+                    readingDao.pruneBefore(cutoff)
+                    treatmentDao.deleteOlderThan(cutoff)
+                    exerciseDao.deleteSessionsOlderThan(cutoff)
+                }
+                delay(RETENTION_INTERVAL_HOURS * MS_PER_HOUR)
             }
         }
     }

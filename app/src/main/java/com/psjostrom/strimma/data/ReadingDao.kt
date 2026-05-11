@@ -31,6 +31,9 @@ interface ReadingDao {
     @Query("SELECT * FROM readings ORDER BY ts DESC LIMIT 1")
     fun latest(): Flow<GlucoseReading?>
 
+    @Query("SELECT MIN(ts) FROM readings")
+    suspend fun earliestTs(): Long?
+
     @Query("SELECT * FROM readings WHERE ts >= :since ORDER BY ts ASC")
     suspend fun since(since: Long): List<GlucoseReading>
 
@@ -43,7 +46,9 @@ interface ReadingDao {
     @Query("SELECT * FROM readings ORDER BY ts DESC LIMIT 1")
     suspend fun latestOnce(): GlucoseReading?
 
-    @Query("SELECT * FROM readings WHERE pushed = 0 ORDER BY ts ASC LIMIT :limit")
+    // DESC so a stale backlog (long NS outage) never blocks fresh readings from
+    // pushing — newest BG always reaches Nightscout first; old rows drain after.
+    @Query("SELECT * FROM readings WHERE pushed = 0 ORDER BY ts DESC LIMIT :limit")
     suspend fun unpushed(limit: Int = 100): List<GlucoseReading>
 
     @Query("UPDATE readings SET pushed = 1 WHERE ts IN (:timestamps)")

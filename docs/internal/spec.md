@@ -290,7 +290,7 @@ No sensor table. Sensor lifecycle is managed entirely by CamAPS FX.
 
 ### Retention
 
-Keep 30 days of readings locally. Older readings are pruned daily. Nightscout is the long-term store.
+Governed by the user's `RetentionPolicy` setting (default `INDEFINITE`; minimum `THREE_MONTHS`). One unified retention loop in `SyncOrchestrator` applies the chosen cutoff to readings, treatments, and exercise sessions on a daily tick — `INDEFINITE` skips the prune entirely. The Story view's month-by-month scroll only sees months that fit inside the configured window. Nightscout remains the long-term store; manual "Pull readings" / "Pull treatments" controls can backfill from there.
 
 ### Queries
 

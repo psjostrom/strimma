@@ -81,6 +81,15 @@
     <string name="settings_general_beta_desc">Beta releases contain early features that have not been thoroughly tested</string>
     <string name="settings_general_no_beta">None found</string>
 
+    <string name="settings_general_storage">Storage</string>
+    <string name="settings_general_retention">Data retention</string>
+    <string name="settings_general_retention_desc">Removes older readings, treatments, and exercise sessions from this device only. Your Nightscout server, source CGM app, and Health Connect are not affected. Limits how far back the Story view can scroll.</string>
+    <string name="settings_retention_3_months">3 months</string>
+    <string name="settings_retention_6_months">6 months</string>
+    <string name="settings_retention_1_year">1 year</string>
+    <string name="settings_retention_5_years">5 years</string>
+    <string name="settings_retention_indefinite">Forever</string>
+
     <!-- Data Source Settings -->
     <string name="settings_source_title">Data Source</string>
     <string name="settings_source_section">Source</string>
@@ -375,6 +384,8 @@
     <string name="story_not_enough_data_detail">Need at least 7 days of readings</string>
     <string name="story_share">Share your Story</string>
     <string name="story_go_back">Go back</string>
+    <string name="story_previous_month">Previous month</string>
+    <string name="story_next_month">Next month</string>
     <string name="story_snackbar_ready">Your %s Story is ready</string>
     <string name="story_explainer_ok">Got it</string>
     <string name="explain_tir">Time in Range (TIR) is the percentage of time your glucose was between your low and high thresholds. Clinical target is \u226570%.</string>

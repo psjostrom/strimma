@@ -56,7 +56,7 @@ Glucose readings are stored in a local database on your phone (Room database). I
 
 ### How long does Strimma keep my data?
 
-Locally: 30 days of glucose readings, 100 days of treatments, 7 days of debug logs. Older data is automatically pruned. Nightscout retains data according to your server's configuration.
+Locally: you choose. **Settings > General > Storage > Data retention** lets you pick 3 months, 6 months, 1 year, 5 years, or Forever (the default). Older data is permanently deleted once it falls outside the window — the **Story** view can only show months that fit inside it. Debug logs are kept for 7 days. Nightscout retains data according to your server's configuration.
 
 ### Can I export my data?
 

@@ -97,7 +97,7 @@ Common treatment sources:
 
 ## Data Retention
 
-- Strimma fetches up to **100 days** of treatments on each sync
-- Treatments older than **100 days** are pruned from the local database
-- Nightscout remains the long-term store for treatment history
-- You can manually backfill treatments in **Settings > Treatments > Pull treatments**
+- On the first sync (or after a long offline period), Strimma backfills up to **100 days** of treatments from Nightscout
+- Once synced, treatments are kept according to **Settings > General > Storage > Data retention** (default: **Forever**; minimum: 3 months). The same setting governs glucose readings and exercise sessions.
+- You can manually pull older history in **Settings > Treatments > Pull treatments** (7 / 14 / 30 days)
+- Nightscout remains the long-term store, so a fresh install can always re-fetch history from there

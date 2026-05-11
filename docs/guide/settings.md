@@ -168,11 +168,12 @@ See [Exercise](exercise.md) for details.
 
 ## General
 
-Startup behavior, battery, updates, and version info.
+Startup behavior, storage, battery, updates, and version info.
 
 | Setting | Description | Default |
 |---------|-------------|---------|
 | **Start on boot** | Automatically start Strimma when the phone restarts | On |
+| **Data retention** | How long readings, treatments, and exercise sessions are kept on this device. Older data is permanently deleted. The Story view can only show months that fit inside this window. Options: 3 months / 6 months / 1 year / 5 years / Forever | Forever |
 | **Battery optimization** | Shows whether Strimma is exempt from battery optimization | — |
 | **Version** | Current app version | — |
 | **Check for updates** | Manually check GitHub for a new stable release | — |

@@ -5,11 +5,12 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.psjostrom.strimma.createTestDataStore
 import com.psjostrom.strimma.data.GlucoseReading
-import com.psjostrom.strimma.data.ReadingDao
+import com.psjostrom.strimma.data.RetentionPolicy
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.StrimmaDatabase
 import com.psjostrom.strimma.data.Treatment
 import com.psjostrom.strimma.data.health.ExerciseSyncer
+import com.psjostrom.strimma.data.health.StoredExerciseSession
 import com.psjostrom.strimma.data.health.HealthConnectManager
 import com.psjostrom.strimma.data.workout.WorkoutModeManager
 import com.psjostrom.strimma.network.NightscoutClient
@@ -30,7 +31,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.test.runTest
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -84,7 +87,9 @@ class SyncOrchestratorTest {
         val updateChecker = UpdateChecker()
 
         orchestrator = SyncOrchestrator(
-            pusher, tidepoolUploader, db.readingDao(), settings,
+            pusher, tidepoolUploader,
+            db.readingDao(), db.treatmentDao(), db.exerciseDao(),
+            settings,
             treatmentSyncer, localWebServer, exerciseSyncer,
             nightscoutPuller, updateChecker, Dispatchers.Unconfined
         )
@@ -138,6 +143,73 @@ class SyncOrchestratorTest {
         assertFalse(orchestrator.started)
         orchestrator.stop()
         assertFalse(orchestrator.started)
+    }
+
+    /**
+     * Pins the default-retention contract. INDEFINITE is the default policy; the
+     * Story view depends on it to scroll arbitrarily far back. If a future
+     * maintainer changes the default to a finite window OR makes the loop ignore
+     * the policy, this test fails and forces the conversation back open.
+     *
+     * Background loops launched from start() run on Dispatchers.Unconfined and
+     * execute their first body synchronously, so any prune that would run "on
+     * tick 0" has already run by the time start() returns.
+     */
+    @Test
+    fun `start with default retention keeps ancient readings, treatments, and sessions`() = runTest {
+        val ancient = System.currentTimeMillis() - 1000L * 24 * 60 * 60 * 1000 // ~3 years ago
+        seedAncient(ancient)
+
+        orchestrator.start()
+
+        assertEquals(1, db.readingDao().since(0).size)
+        assertEquals(1, db.treatmentDao().allSince(0).size)
+        assertEquals(1, db.exerciseDao().getSessionsInRange(0, Long.MAX_VALUE).size)
+    }
+
+    /**
+     * Pins the bounded-retention contract. When the user opts in to a finite
+     * window, the orchestrator's retention loop must apply it uniformly to all
+     * three tables — readings, treatments, exercise sessions — so the user has
+     * one mental model ("Strimma keeps my data for X") instead of per-table
+     * surprises.
+     */
+    @Test
+    fun `start with bounded retention prunes ancient data across all three tables`() = runTest {
+        settings.setRetentionPolicy(RetentionPolicy.THREE_MONTHS)
+
+        val ancient = System.currentTimeMillis() - 1000L * 24 * 60 * 60 * 1000 // ~3 years ago
+        seedAncient(ancient)
+
+        orchestrator.start()
+
+        assertEquals(0, db.readingDao().since(0).size)
+        assertEquals(0, db.treatmentDao().allSince(0).size)
+        assertEquals(0, db.exerciseDao().getSessionsInRange(0, Long.MAX_VALUE).size)
+    }
+
+    private suspend fun seedAncient(ts: Long) {
+        db.readingDao().insert(
+            GlucoseReading(ts = ts, sgv = 120, direction = "Flat", delta = 0.0, pushed = 1)
+        )
+        db.treatmentDao().upsert(listOf(
+            Treatment(
+                id = "ancient", createdAt = ts, eventType = "Bolus",
+                insulin = 1.0, carbs = null, basalRate = null, duration = null,
+                enteredBy = "test", fetchedAt = ts
+            )
+        ))
+        db.exerciseDao().upsertSession(
+            StoredExerciseSession(
+                id = "ancient-session",
+                type = 8, // RUNNING
+                startTime = ts,
+                endTime = ts + 3_600_000L,
+                title = "Ancient run",
+                totalSteps = 6000,
+                activeCalories = 350.0
+            )
+        )
     }
 
     /**

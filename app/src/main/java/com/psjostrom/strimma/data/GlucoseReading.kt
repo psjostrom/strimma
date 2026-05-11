@@ -1,9 +1,15 @@
 package com.psjostrom.strimma.data
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "readings")
+@Entity(
+    tableName = "readings",
+    // Local retention is unbounded — unpushed() scans by `pushed=0` every retry
+    // tick, so this index is what keeps the scan cheap as the table grows.
+    indices = [Index("pushed")]
+)
 data class GlucoseReading(
     @PrimaryKey val ts: Long,
     val sgv: Int,

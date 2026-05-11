@@ -164,6 +164,7 @@ class SettingsRepository @Inject constructor(
 
         private val KEY_TREATMENTS_SYNC_ENABLED = booleanPreferencesKey("treatments_sync_enabled")
         private val KEY_INSULIN_TYPE = stringPreferencesKey("insulin_type")
+        private val KEY_RETENTION_POLICY = stringPreferencesKey("retention_policy")
         private val KEY_CUSTOM_DIA = floatPreferencesKey("custom_dia")
         private const val DEFAULT_CUSTOM_DIA_HOURS = 5.0
 
@@ -456,6 +457,14 @@ class SettingsRepository @Inject constructor(
         try { InsulinType.valueOf(it[KEY_INSULIN_TYPE] ?: "FIASP") } catch (_: Exception) { InsulinType.FIASP }
     }
     suspend fun setInsulinType(type: InsulinType) { dataStore.edit { it[KEY_INSULIN_TYPE] = type.name } }
+
+    val retentionPolicy: Flow<RetentionPolicy> = dataStore.data.map {
+        try { RetentionPolicy.valueOf(it[KEY_RETENTION_POLICY] ?: "INDEFINITE") }
+        catch (_: Exception) { RetentionPolicy.INDEFINITE }
+    }
+    suspend fun setRetentionPolicy(policy: RetentionPolicy) {
+        dataStore.edit { it[KEY_RETENTION_POLICY] = policy.name }
+    }
 
     val customDIA: Flow<Float> = dataStore.data.map { it[KEY_CUSTOM_DIA] ?: DEFAULT_CUSTOM_DIA_FLOAT }
     suspend fun setCustomDIA(hours: Float) { dataStore.edit { it[KEY_CUSTOM_DIA] = hours } }

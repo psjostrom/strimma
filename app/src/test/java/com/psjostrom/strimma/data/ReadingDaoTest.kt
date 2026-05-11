@@ -109,7 +109,7 @@ class ReadingDaoTest {
 
         val unpushed = dao.unpushed()
         assertEquals(2, unpushed.size)
-        assertEquals(108, unpushed[0].sgv) // oldest first (ASC)
+        assertEquals(126, unpushed[0].sgv) // newest first (DESC) — fresh BG pushes ahead of any stale backlog
     }
 
     @Test
