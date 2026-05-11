@@ -196,13 +196,37 @@ class GlucoseNotificationListener : NotificationListenerService() {
             val intent = Intent(this, com.psjostrom.strimma.service.StrimmaService::class.java).apply {
                 action = ACTION_GLUCOSE_RECEIVED
                 putExtra(EXTRA_MGDL, mgdl)
-                putExtra(EXTRA_TIMESTAMP, System.currentTimeMillis())
+                putExtra(EXTRA_TIMESTAMP, resolveReadingTimestamp(notification))
                 putExtra(EXTRA_SOURCE, sbn.packageName)
             }
             startForegroundService(intent)
         } else {
             DebugLog.log(message = "Could not parse glucose from notification")
         }
+    }
+
+    /**
+     * Use the source notification's `when` as the reading's timestamp instead of
+     * `System.currentTimeMillis()`. This keeps the original sensor-reading time
+     * intact when Android re-fires `onNotificationPosted` on listener (re)bind
+     * — which happens on boot, after an app install, and any time the system
+     * unbinds the listener under memory pressure. Without this, every rebind
+     * stamps the still-active CamAPS notification as if it were a fresh reading,
+     * resetting `minutesAgo` to 0m on a value that may be many minutes old and
+     * silently suppressing the stale-data alert.
+     *
+     * `when` is the time the source app stamped on the notification; it is
+     * preserved across rebinds because the system re-delivers the original
+     * `Notification` object unchanged. Falls back to `now` for the two cases
+     * where `when` is unsafe to use as a reading time:
+     *  - `when == 0` — the documented "no timestamp" sentinel (some apps set it).
+     *  - `when > now` — clock skew or buggy app; storing a future ts would
+     *    corrupt bucket dedup and put the row "after now" in queries.
+     */
+    private fun resolveReadingTimestamp(notification: Notification): Long {
+        val now = System.currentTimeMillis()
+        val notifWhen = notification.`when`
+        return if (notifWhen in 1..now) notifWhen else now
     }
 
     private fun extractGlucose(notification: Notification): Double? {
