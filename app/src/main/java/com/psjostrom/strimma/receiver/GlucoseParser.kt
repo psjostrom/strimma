@@ -53,3 +53,66 @@ fun tryParseGlucose(raw: String): Double? {
 
     return null
 }
+
+/**
+ * Per-package set of TextView strings whose presence in a CGM notification
+ * means the displayed glucose value is stale and must not be ingested.
+ *
+ * Why this exists separately from `notification.when`:
+ *   `notification.when` (set on the original Notification, preserved across
+ *   listener rebinds) tells us when the notification was last *posted*. CamAPS
+ *   in "Attempting" mode keeps reposting the persistent notification every
+ *   minute with a fresh `when` but with the LAST KNOWN BG value, not a new
+ *   sensor reading. So `when` is recent — only the number is stale. The status
+ *   word in the notification body is the only signal that distinguishes this
+ *   case from a real reading.
+ *
+ * Why not the xDrip "jam counter" (reject after N consecutive identical reads):
+ *   stable BG is normal — overnight, between meals, post-correction plateau —
+ *   and produces 5+ identical readings in a row legitimately. xDrip's own
+ *   community has documented the false-positive problem this causes for CamAPS
+ *   users (https://github.com/NightscoutFoundation/xDrip/discussions/3108).
+ *
+ * Match strategy:
+ *   - Per-package set, indexed by `sbn.packageName`. Only packages where we have
+ *     direct evidence of the failure mode get an entry.
+ *   - Exact, case-sensitive equality against an entire TextView. Status words
+ *     live in their own TextView slot in CamAPS's RemoteViews, so substring
+ *     matching would over-trigger without buying anything. Case is stable
+ *     across all observed logs.
+ *   - Unknown package returns false (no filter) — we never speculatively reject
+ *     readings from apps whose notification shape we haven't observed.
+ *
+ * Currently configured packages:
+ *   - All five CamDiab variants (mmol/L, mg/dL, HX-pump mmol/L & mg/dL, Canada).
+ *     Verified empirically against `com.camdiab.fx_alert.mmoll` only — the other
+ *     four entries assume CamDiab ships the same English status word across
+ *     bundles. The Canadian (`mmoll.ca`) and HX variants in particular have
+ *     not been verified against fr-CA or other locales; if a real log surfaces
+ *     a localized status string (e.g. "Tentative" for fr-CA), add it as an
+ *     additional keyword for that package rather than replacing the English one.
+ *
+ * To extend:
+ *   1. Capture a debug log showing the failure mode (e.g. `[App, ..., Status,
+ *      <stale value>, ...]`).
+ *   2. Add `<package>` -> `setOf("<status word>")` to the map below.
+ *   3. Add a regression test in StaleStatusFilterTest using the captured
+ *      TextView list as a fixture.
+ */
+private val STALE_STATUS_KEYWORDS_BY_PACKAGE: Map<String, Set<String>> = mapOf(
+    "com.camdiab.fx_alert.mmoll" to setOf("Attempting"),
+    "com.camdiab.fx_alert.mgdl" to setOf("Attempting"),
+    "com.camdiab.fx_alert.hx.mmoll" to setOf("Attempting"),
+    "com.camdiab.fx_alert.hx.mgdl" to setOf("Attempting"),
+    "com.camdiab.fx_alert.mmoll.ca" to setOf("Attempting"),
+)
+
+/**
+ * Returns true when [textViews] contains a status word that, for [packageName],
+ * means the displayed glucose value is stale. See `STALE_STATUS_KEYWORDS_BY_PACKAGE`
+ * for the full rationale and the per-package keyword sets.
+ */
+fun isStaleStatusNotification(textViews: List<String>, packageName: String?): Boolean {
+    val keywords = STALE_STATUS_KEYWORDS_BY_PACKAGE[packageName] ?: return false
+    return textViews.any { it in keywords }
+}
