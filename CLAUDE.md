@@ -109,7 +109,10 @@ When a merge or push fails, ALWAYS check CI status (`gh pr checks`) and read the
 2. Create branch `release/vX.Y.Z` from main.
 3. Bump `versionName` in `app/build.gradle.kts`. Never bump `versionCode` (not on Google Play).
 4. Check docs for staleness against the changes (see Documentation Updates above).
-5. Create PR. Write release notes in the PR body inside a ` ```markdown ` fenced block — CI extracts this block and uses it as the GitHub Release body. If no fenced block is found, CI falls back to auto-generated notes from PR titles.
+5. Create PR with two distinct sections in the body:
+   - **Inside a ` ```markdown ` fenced block: release notes only** (end-user audience). CI extracts this block as the GitHub Release body. If no fenced block is found, CI falls back to auto-generated notes from PR titles.
+   - **Outside the fence: testing plan as plain markdown** (developer audience, lives in the PR forever). Checkboxes inside the fence render as code (uninteractive); putting the plan outside makes them clickable for tracking.
+   - For prereleases (`-rc.*` / `-beta.*`) CI auto-prepends `**Test plan & verification:** [#PR](url)` to the extracted release notes — don't add this manually.
 6. Merge PR, then tag: `git tag -a vX.Y.Z -m "vX.Y.Z" && git push origin vX.Y.Z`. CI builds the APK and creates the GitHub Release.
 7. Always create releases by pushing a version tag. Never use `gh release create` manually.
 
