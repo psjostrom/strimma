@@ -241,6 +241,45 @@ class StoryViewModelTest {
     }
 
     @Test
+    fun `viewing earlier month does not downgrade storyViewedMonth marker`() = runBlocking {
+        // Pins the "Story marker monotonically advances" contract. Without it,
+        // navigating from April back to March silently un-marks April as viewed,
+        // and the Stats card snackbar re-fires "Your April Story is ready" on
+        // every restart — exactly the regression the multi-month nav introduced.
+        val mar = (1..10).flatMap { fullDay(120, 2020, 3, it) }
+        val apr = (1..10).flatMap { fullDay(120, 2020, 4, it) }
+        db.readingDao().insertBatch(mar + apr)
+
+        // Open at April, story loads, marker = "2020-04"
+        val vm = createViewModel(2020, 4)
+        awaitLoaded(vm)
+        assertEquals("2020-04", settings.storyViewedMonth.first())
+
+        // Navigate back to March — marker MUST stay at April.
+        vm.goToPreviousMonth()
+        awaitLoaded(vm)
+        assertEquals(
+            "Marker must not downgrade when navigating to an earlier month",
+            "2020-04", settings.storyViewedMonth.first()
+        )
+    }
+
+    @Test
+    fun `viewing later month advances storyViewedMonth marker`() = runBlocking {
+        val mar = (1..10).flatMap { fullDay(120, 2020, 3, it) }
+        val apr = (1..10).flatMap { fullDay(120, 2020, 4, it) }
+        db.readingDao().insertBatch(mar + apr)
+
+        val vm = createViewModel(2020, 3)
+        awaitLoaded(vm)
+        assertEquals("2020-03", settings.storyViewedMonth.first())
+
+        vm.goToNextMonth()
+        awaitLoaded(vm)
+        assertEquals("2020-04", settings.storyViewedMonth.first())
+    }
+
+    @Test
     fun `currentMonth is persisted to SavedStateHandle on navigation`() = runBlocking {
         val feb = (1..10).flatMap { fullDay(120, 2020, 2, it) }
         val mar = (1..10).flatMap { fullDay(150, 2020, 3, it) }

@@ -30,6 +30,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -168,24 +169,32 @@ fun StoryScreen(
                     .padding(8.dp)
                     .align(Alignment.TopEnd)
             ) {
+                // Use IconButtonDefaults.iconButtonColors so the disabled state
+                // gets the Material 3 alpha drop. A hardcoded `tint` on the Icon
+                // would override `LocalContentColor` and make the disabled state
+                // visually identical to enabled — that's the bug a previous
+                // version had.
+                val navColors = IconButtonDefaults.iconButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onBackground
+                )
                 IconButton(
                     onClick = viewModel::goToPreviousMonth,
-                    enabled = canGoBack
+                    enabled = canGoBack,
+                    colors = navColors
                 ) {
                     Icon(
                         Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                        contentDescription = stringResource(R.string.story_previous_month),
-                        tint = MaterialTheme.colorScheme.onBackground
+                        contentDescription = stringResource(R.string.story_previous_month)
                     )
                 }
                 IconButton(
                     onClick = viewModel::goToNextMonth,
-                    enabled = canGoForward
+                    enabled = canGoForward,
+                    colors = navColors
                 ) {
                     Icon(
                         Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = stringResource(R.string.story_next_month),
-                        tint = MaterialTheme.colorScheme.onBackground
+                        contentDescription = stringResource(R.string.story_next_month)
                     )
                 }
             }
