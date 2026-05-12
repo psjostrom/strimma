@@ -10,12 +10,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.psjostrom.strimma.R
+import com.psjostrom.strimma.data.RetentionPolicy
 import com.psjostrom.strimma.ui.MainViewModel.UpdateCheckState
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GeneralSettings(
     startOnBoot: Boolean,
     onStartOnBootChange: (Boolean) -> Unit,
+    retentionPolicy: RetentionPolicy,
+    onRetentionPolicyChange: (RetentionPolicy) -> Unit,
     appVersion: String,
     isDebug: Boolean,
     updateCheckState: UpdateCheckState,
@@ -66,6 +70,76 @@ fun GeneralSettings(
                     OutlinedButton(onClick = onOpenBatteryOptimization) {
                         Text(stringResource(R.string.settings_general_battery_button))
                     }
+                }
+            }
+        }
+
+        SettingsSection(stringResource(R.string.settings_general_storage)) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.settings_general_retention), color = onBg, fontSize = 14.sp)
+                Text(
+                    stringResource(R.string.settings_general_retention_desc),
+                    color = outline,
+                    fontSize = 12.sp
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                var expanded by remember { mutableStateOf(false) }
+                // Picking a tighter window silently triggers an irreversible delete
+                // on the next retention tick (≤24h). Stash the pending choice and
+                // confirm before applying — applies-without-confirmation is fine
+                // when widening or staying the same, but the destructive direction
+                // needs an explicit user signal.
+                var pendingTighter by remember { mutableStateOf<RetentionPolicy?>(null) }
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = it }
+                ) {
+                    OutlinedTextField(
+                        value = stringResource(retentionPolicy.labelRes),
+                        onValueChange = {},
+                        readOnly = true,
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+                        modifier = Modifier.fillMaxWidth().menuAnchor()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        RetentionPolicy.entries.forEach { policy ->
+                            DropdownMenuItem(
+                                text = { Text(stringResource(policy.labelRes)) },
+                                onClick = {
+                                    expanded = false
+                                    if (policy.isTighterThan(retentionPolicy)) {
+                                        pendingTighter = policy
+                                    } else {
+                                        onRetentionPolicyChange(policy)
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+
+                pendingTighter?.let { newPolicy ->
+                    AlertDialog(
+                        onDismissRequest = { pendingTighter = null },
+                        title = { Text(stringResource(R.string.settings_retention_confirm_title)) },
+                        text = { Text(stringResource(R.string.settings_retention_confirm_body)) },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                onRetentionPolicyChange(newPolicy)
+                                pendingTighter = null
+                            }) {
+                                Text(stringResource(R.string.settings_retention_confirm_cta))
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { pendingTighter = null }) {
+                                Text(stringResource(R.string.settings_retention_confirm_cancel))
+                            }
+                        }
+                    )
                 }
             }
         }

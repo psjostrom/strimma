@@ -16,8 +16,11 @@ import com.psjostrom.strimma.data.health.StoredExerciseSession
         StoredExerciseSession::class,
         HeartRateSample::class
     ],
-    version = 4,
-    autoMigrations = [AutoMigration(from = 3, to = 4)]
+    version = 5,
+    autoMigrations = [
+        AutoMigration(from = 3, to = 4),
+        AutoMigration(from = 4, to = 5)
+    ]
 )
 abstract class StrimmaDatabase : RoomDatabase() {
     abstract fun readingDao(): ReadingDao

@@ -25,6 +25,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.time.LocalDateTime
+import java.time.YearMonth
 import java.time.ZoneId
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -32,7 +33,12 @@ import java.time.ZoneId
 class StoryViewModelTest {
 
     private val testDispatcher = UnconfinedTestDispatcher()
-    private val zone = ZoneId.of("Europe/Stockholm")
+    // Seed data in the same zone the production VM uses so month-edge
+    // assertions (canGoBack at the earliest reading's month) don't drift
+    // when CI runs in UTC and dev runs in CET. Reading at Feb 1 00:00
+    // Stockholm = Jan 31 23:00 UTC, which would map to January for the VM
+    // running on a UTC runner — making "current is earliest" silently false.
+    private val zone: ZoneId = ZoneId.systemDefault()
 
     private lateinit var db: StrimmaDatabase
     private lateinit var settings: SettingsRepository
@@ -111,6 +117,146 @@ class StoryViewModelTest {
         awaitLoaded(vm)
 
         assertNull(vm.error.value)
+    }
+
+    // --- Month navigation ---
+
+    @Test
+    fun `canGoBack is false when current is earliest reading's month`() = runBlocking {
+        // Earliest reading lives in February 2020 (always in the past, regardless of
+        // when this test runs). Open Story at the same month — there's nothing older
+        // to navigate to.
+        db.readingDao().insertBatch(fullDay(120, 2020, 2, 1))
+
+        val vm = createViewModel(2020, 2)
+        awaitLoaded(vm)
+
+        assertFalse(vm.canGoBack.value)
+    }
+
+    @Test
+    fun `canGoBack is true when an earlier reading exists`() = runBlocking {
+        db.readingDao().insertBatch(fullDay(120, 2020, 2, 1)) // earliest
+        val vm = createViewModel(2020, 3) // open March; Feb is older
+
+        awaitLoaded(vm)
+
+        assertTrue(vm.canGoBack.value)
+    }
+
+    @Test
+    fun `canGoForward is false at the last completed month`() = runBlocking {
+        // Cap is YearMonth.now().minusMonths(1) — opening Story at that exact month
+        // means there's no further-forward "completed" month to navigate to.
+        val lastCompleted = YearMonth.now().minusMonths(1)
+        val vm = createViewModel(lastCompleted.year, lastCompleted.monthValue)
+
+        awaitLoaded(vm)
+
+        assertFalse(vm.canGoForward.value)
+    }
+
+    @Test
+    fun `goToPreviousMonth advances currentMonth and reloads story`() = runBlocking {
+        // Two months with sufficient data: Feb 2020 and Mar 2020. Open March, then
+        // navigate back. currentMonth should flip and the story payload should
+        // reflect February.
+        val feb = (1..10).flatMap { fullDay(120, 2020, 2, it) }
+        val mar = (1..10).flatMap { fullDay(150, 2020, 3, it) }
+        db.readingDao().insertBatch(feb + mar)
+
+        val vm = createViewModel(2020, 3)
+        awaitLoaded(vm)
+        assertEquals(YearMonth.of(2020, 3), vm.currentMonth.value)
+
+        vm.goToPreviousMonth()
+        awaitLoaded(vm)
+
+        assertEquals(YearMonth.of(2020, 2), vm.currentMonth.value)
+        assertEquals(2, vm.story.value!!.month)
+    }
+
+    @Test
+    fun `goToPreviousMonth is a no-op at the earliest boundary`() = runBlocking {
+        db.readingDao().insertBatch(fullDay(120, 2020, 2, 1))
+        val vm = createViewModel(2020, 2)
+        awaitLoaded(vm)
+
+        // Capture the story reference. If the call accidentally triggered a
+        // reload, navigateTo() would set _story = null synchronously — the
+        // ref check below would fail.
+        val storyBefore = vm.story.value
+
+        vm.goToPreviousMonth()
+
+        assertEquals(YearMonth.of(2020, 2), vm.currentMonth.value)
+        assertSame(
+            "Boundary tap must not reload — _story should retain the same reference",
+            storyBefore, vm.story.value
+        )
+    }
+
+    @Test
+    fun `goToNextMonth is a no-op at the last completed month`() = runBlocking {
+        val lastCompleted = YearMonth.now().minusMonths(1)
+        val vm = createViewModel(lastCompleted.year, lastCompleted.monthValue)
+        awaitLoaded(vm)
+
+        val storyBefore = vm.story.value
+
+        vm.goToNextMonth()
+
+        assertEquals(lastCompleted, vm.currentMonth.value)
+        assertSame(
+            "Boundary tap must not reload — _story should retain the same reference",
+            storyBefore, vm.story.value
+        )
+    }
+
+    @Test
+    fun `canGoBack flips false after navigating from non-boundary to earliest`() = runBlocking {
+        // Two months: Feb (earliest) and Mar. Open March (canGoBack=true), navigate
+        // back to Feb (canGoBack should flip false).
+        val feb = (1..10).flatMap { fullDay(120, 2020, 2, it) }
+        val mar = (1..10).flatMap { fullDay(150, 2020, 3, it) }
+        db.readingDao().insertBatch(feb + mar)
+
+        val vm = createViewModel(2020, 3)
+        awaitLoaded(vm)
+        assertTrue("Pre-navigation: still above earliest", vm.canGoBack.value)
+
+        vm.goToPreviousMonth()
+        awaitLoaded(vm)
+
+        assertFalse("After navigating to earliest, back-arrow disables", vm.canGoBack.value)
+    }
+
+    @Test
+    fun `canGoForward is true when below the last completed month`() = runBlocking {
+        // Open at a month known to be in the past, regardless of current real time.
+        val vm = createViewModel(2020, 3)
+        awaitLoaded(vm)
+
+        assertTrue(vm.canGoForward.value)
+    }
+
+    @Test
+    fun `currentMonth is persisted to SavedStateHandle on navigation`() = runBlocking {
+        val feb = (1..10).flatMap { fullDay(120, 2020, 2, it) }
+        val mar = (1..10).flatMap { fullDay(150, 2020, 3, it) }
+        db.readingDao().insertBatch(feb + mar)
+
+        val handle = SavedStateHandle(mapOf("year" to 2020, "month" to 3))
+        val vm = StoryViewModel(handle, db.readingDao(), db.treatmentDao(), settings, MealAnalyzer())
+        awaitLoaded(vm)
+
+        vm.goToPreviousMonth()
+        awaitLoaded(vm)
+
+        // Process death simulation: only the SavedStateHandle survives. After
+        // restore, the new VM should land on the same month the user navigated to.
+        assertEquals(2020, handle.get<Int>("year"))
+        assertEquals(2, handle.get<Int>("month"))
     }
 
     @Test

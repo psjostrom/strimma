@@ -25,6 +25,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -59,6 +61,8 @@ fun StoryScreen(
     val story by viewModel.story.collectAsState()
     val loading by viewModel.loading.collectAsState()
     val error by viewModel.error.collectAsState()
+    val canGoBack by viewModel.canGoBack.collectAsState()
+    val canGoForward by viewModel.canGoForward.collectAsState()
 
     Box(
         modifier = Modifier
@@ -153,6 +157,37 @@ fun StoryScreen(
                     contentDescription = stringResource(R.string.story_go_back),
                     tint = MaterialTheme.colorScheme.onBackground
                 )
+            }
+
+            // Month navigation — prev/next buttons aligned to TopEnd. Disabled
+            // at the data boundaries (no readings before earliest month, can't
+            // navigate past the last completed month).
+            Row(
+                modifier = Modifier
+                    .windowInsetsPadding(WindowInsets.statusBars)
+                    .padding(8.dp)
+                    .align(Alignment.TopEnd)
+            ) {
+                IconButton(
+                    onClick = viewModel::goToPreviousMonth,
+                    enabled = canGoBack
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                        contentDescription = stringResource(R.string.story_previous_month),
+                        tint = MaterialTheme.colorScheme.onBackground
+                    )
+                }
+                IconButton(
+                    onClick = viewModel::goToNextMonth,
+                    enabled = canGoForward
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = stringResource(R.string.story_next_month),
+                        tint = MaterialTheme.colorScheme.onBackground
+                    )
+                }
             }
         }
     }

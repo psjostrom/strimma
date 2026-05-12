@@ -158,7 +158,7 @@ private fun Routing.treatmentRoutes(treatmentDao: TreatmentDao) {
     suspend fun handleTreatments(call: ApplicationCall) {
         val count = (call.request.queryParameters["count"]?.toIntOrNull() ?: DEFAULT_COUNT).coerceIn(1, MAX_TREATMENT_COUNT)
         val since = System.currentTimeMillis() - TREATMENT_LOOKBACK_HOURS * MS_PER_HOUR
-        val treatments = treatmentDao.allSince(since).take(count)
+        val treatments = treatmentDao.allSinceLimited(since, count)
         val json = buildTreatmentsJson(treatments)
         call.respondText(json, ContentType.Application.Json)
     }

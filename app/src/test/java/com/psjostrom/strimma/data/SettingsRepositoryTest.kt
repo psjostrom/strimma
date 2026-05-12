@@ -55,4 +55,20 @@ class SettingsRepositoryTest {
     fun `getStartOnBootSync defaults to true when unset`() {
         assertEquals(true, repo.getStartOnBootSync())
     }
+
+    // --- RetentionPolicy ---
+
+    @Test
+    fun `retentionPolicy defaults to INDEFINITE when unset`() = runTest {
+        assertEquals(RetentionPolicy.INDEFINITE, repo.retentionPolicy.first())
+    }
+
+    @Test
+    fun `setRetentionPolicy round-trips a written value`() = runTest {
+        repo.setRetentionPolicy(RetentionPolicy.SIX_MONTHS)
+        assertEquals(RetentionPolicy.SIX_MONTHS, repo.retentionPolicy.first())
+
+        repo.setRetentionPolicy(RetentionPolicy.INDEFINITE)
+        assertEquals(RetentionPolicy.INDEFINITE, repo.retentionPolicy.first())
+    }
 }

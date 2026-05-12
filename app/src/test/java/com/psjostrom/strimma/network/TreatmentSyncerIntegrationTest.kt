@@ -114,28 +114,6 @@ class TreatmentSyncerIntegrationTest {
     }
 
     @Test
-    fun `start inserts treatments and prunes old ones`() = runTest {
-        withEnv { env ->
-            env.settings.setNightscoutUrl("https://ns.example.com")
-            env.settings.setNightscoutSecret("secret")
-
-            val oldTs = now - 101L * 24 * 60 * 60 * 1000
-            env.treatmentDao.upsert(listOf(treatment("old", oldTs, insulin = 1.0)))
-            env.fakeClient.treatments = listOf(treatment("new", now - 60_000, insulin = 2.0))
-
-            val syncer = TreatmentSyncer(env.fakeClient, env.treatmentDao, env.settings)
-            val job = syncer.start(this)
-            advanceAndSettle(env)
-
-            val stored = env.treatmentDao.allSince(0)
-            assertEquals("Old treatment should be pruned", 1, stored.size)
-            assertEquals("new", stored[0].id)
-
-            job.cancel()
-        }
-    }
-
-    @Test
     fun `start skips sync when NS not configured`() = runTest {
         withEnv { env ->
             // URL blank by default — not configured

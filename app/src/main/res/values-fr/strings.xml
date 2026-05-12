@@ -76,6 +76,19 @@
     <string name="settings_general_beta_desc">Les versions bêta contiennent des fonctionnalités qui n\u0027ont pas été testées en profondeur</string>
     <string name="settings_general_no_beta">Aucune trouvée</string>
 
+    <string name="settings_general_storage">Stockage</string>
+    <string name="settings_general_retention">Conservation des données</string>
+    <string name="settings_general_retention_desc">Supprime les anciennes glycémies, traitements et séances d\'exercice uniquement de cet appareil. Votre serveur Nightscout, l\'application CGM source et Health Connect ne sont pas affectés. Limite jusqu\'où la vue Story peut remonter.</string>
+    <string name="settings_retention_3_months">3 mois</string>
+    <string name="settings_retention_6_months">6 mois</string>
+    <string name="settings_retention_1_year">1 an</string>
+    <string name="settings_retention_5_years">5 ans</string>
+    <string name="settings_retention_indefinite">Toujours</string>
+    <string name="settings_retention_confirm_title">Réduire la conservation des données ?</string>
+    <string name="settings_retention_confirm_body">Strimma supprimera définitivement les glycémies, traitements et séances d\'exercice plus anciens que la nouvelle fenêtre de cet appareil. Votre serveur Nightscout n\'est pas affecté — l\'historique plus ancien peut être récupéré à partir de là si nécessaire.</string>
+    <string name="settings_retention_confirm_cta">Supprimer les données</string>
+    <string name="settings_retention_confirm_cancel">Annuler</string>
+
     <!-- Data Source Settings -->
     <string name="settings_source_title">Source de donn\u00E9es</string>
     <string name="settings_source_section">Source</string>
@@ -160,8 +173,8 @@
     <string name="settings_data_pull">T\u00E9l\u00E9charger depuis Nightscout</string>
     <string name="settings_data_pull_desc">T\u00E9l\u00E9charger l\u2019historique de glyc\u00E9mie depuis votre serveur Nightscout</string>
     <string name="settings_data_pull_30d">30 jours</string>
-    <string name="settings_data_pull_60d">60 jours</string>
     <string name="settings_data_pull_90d">90 jours</string>
+    <string name="settings_data_pull_365d">1 an</string>
     <string name="settings_data_integration">Int\u00E9gration</string>
     <string name="integration_connecting">Connexion…</string>
     <string name="integration_connected">Connecté · %1$s: %2$s</string>
@@ -484,6 +497,8 @@
     <string name="story_not_enough_data_detail">Au moins 7 jours de lectures n\u00E9cessaires</string>
     <string name="story_share">Partagez votre r\u00E9cap</string>
     <string name="story_go_back">Retour</string>
+    <string name="story_previous_month">Mois précédent</string>
+    <string name="story_next_month">Mois suivant</string>
     <string name="story_snackbar_ready">Votre r\u00E9cap %s est pr\u00EAt</string>
     <string name="story_explainer_ok">Compris</string>
     <string name="explain_tir">Le Temps dans la Cible (TIR) est le pourcentage de temps o\u00F9 votre glyc\u00E9mie \u00E9tait entre vos seuils bas et haut. L\u0027objectif clinique est \u226570%.</string>

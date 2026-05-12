@@ -22,8 +22,7 @@ Strimma takes your medical data seriously. Here's exactly what it does with your
 | Nightscout API secret | EncryptedSharedPreferences | AES-256 (Android Keystore) |
 | Debug logs | Plain text files (7-day retention) | Android filesystem encryption |
 
-- Glucose readings are retained locally for **30 days**, then automatically pruned
-- Treatment data is retained for **100 days**, then pruned
+- Glucose readings, treatments, and exercise sessions are kept according to **Settings > General > Storage > Data retention**. Options: 3 months, 6 months, 1 year, 5 years, or Forever (default). Older data is permanently deleted from the local database once it falls outside the chosen window — choose a shorter window to bound what stays on the device.
 - Debug logs are retained for **7 days**, then deleted
 
 ### On Your Nightscout Server

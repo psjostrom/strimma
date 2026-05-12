@@ -34,11 +34,14 @@ class TreatmentSyncer @Inject constructor(
 
     companion object {
         private const val POLL_INTERVAL_MS = 5 * 60 * 1000L
+
+        // Bounds the *initial* fetch from Nightscout and the gap-fill window after a
+        // long offline period — not local retention. Local treatments are kept
+        // indefinitely so the Story view can scroll arbitrarily far back. Older
+        // history can be backfilled on demand via TreatmentSyncer.pullHistory(days).
         internal const val FULL_LOOKBACK_DAYS = 100
-        private const val PRUNE_DAYS = 100
         internal const val FULL_LOOKBACK_MS = FULL_LOOKBACK_DAYS * 24 * 60 * 60 * 1000L
         internal const val POLL_LOOKBACK_MS = 24 * 60 * 60 * 1000L // 24h for regular polls
-        private const val PRUNE_MS = PRUNE_DAYS * 24 * 60 * 60 * 1000L
         // Looping systems (CamAPS, AndroidAPS, Loop) generate temp basals every 5 min
         // (~288/day) plus boluses/carbs (~10-20/day). 500/day covers aggressive configurations.
         internal const val TREATMENTS_PER_DAY = 500
@@ -138,9 +141,6 @@ class TreatmentSyncer @Inject constructor(
 
             dao.upsert(treatments)
             DebugLog.log(message = "Treatments synced: ${treatments.size}")
-
-            val pruneThreshold = System.currentTimeMillis() - PRUNE_MS
-            dao.deleteOlderThan(pruneThreshold)
 
             _status.value = IntegrationStatus.Connected(lastActivityTs = System.currentTimeMillis())
         }
