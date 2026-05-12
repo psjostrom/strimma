@@ -5,6 +5,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -145,61 +146,86 @@ fun StoryScreen(
                 }
             }
 
-            // Back button — always visible, respects status bar
+            StoryHeaderControls(
+                canGoBack = canGoBack,
+                canGoForward = canGoForward,
+                onBack = onBack,
+                onPreviousMonth = viewModel::goToPreviousMonth,
+                onNextMonth = viewModel::goToNextMonth,
+                boxScope = this
+            )
+        }
+    }
+
+/**
+ * Stateless header controls — back button on the left, prev/next month arrows
+ * on the right. Hoisted out so the screen's UI contract (disabled buttons must
+ * not fire callbacks; enabled ones must) is testable without spinning up a real
+ * StoryViewModel + DataStore + Room. See StoryScreenTest.
+ *
+ * `boxScope` is the parent `BoxScope` so this composable can use `Modifier.align`
+ * — letting the caller decide layout. Passed explicitly because `BoxScope` is
+ * not implicitly available from a top-level @Composable.
+ */
+@Composable
+internal fun StoryHeaderControls(
+    canGoBack: Boolean,
+    canGoForward: Boolean,
+    onBack: () -> Unit,
+    onPreviousMonth: () -> Unit,
+    onNextMonth: () -> Unit,
+    boxScope: BoxScope,
+) {
+    // IconButtonDefaults.iconButtonColors — the disabled state inherits the M3
+    // alpha drop on `disabledContentColor`. A hardcoded `tint` on the inner
+    // Icon would override LocalContentColor and make the disabled state visually
+    // identical to enabled (the regression PR #228 fixes).
+    val controlColors = IconButtonDefaults.iconButtonColors(
+        contentColor = MaterialTheme.colorScheme.onBackground
+    )
+    with(boxScope) {
+        IconButton(
+            onClick = onBack,
+            colors = controlColors,
+            modifier = Modifier
+                .windowInsetsPadding(WindowInsets.statusBars)
+                .padding(8.dp)
+                .align(Alignment.TopStart)
+        ) {
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = stringResource(R.string.story_go_back)
+            )
+        }
+        Row(
+            modifier = Modifier
+                .windowInsetsPadding(WindowInsets.statusBars)
+                .padding(8.dp)
+                .align(Alignment.TopEnd)
+        ) {
             IconButton(
-                onClick = onBack,
-                modifier = Modifier
-                    .windowInsetsPadding(WindowInsets.statusBars)
-                    .padding(8.dp)
-                    .align(Alignment.TopStart)
+                onClick = onPreviousMonth,
+                enabled = canGoBack,
+                colors = controlColors
             ) {
                 Icon(
-                    Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = stringResource(R.string.story_go_back),
-                    tint = MaterialTheme.colorScheme.onBackground
+                    Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                    contentDescription = stringResource(R.string.story_previous_month)
                 )
             }
-
-            // Month navigation — prev/next buttons aligned to TopEnd. Disabled
-            // at the data boundaries (no readings before earliest month, can't
-            // navigate past the last completed month).
-            Row(
-                modifier = Modifier
-                    .windowInsetsPadding(WindowInsets.statusBars)
-                    .padding(8.dp)
-                    .align(Alignment.TopEnd)
+            IconButton(
+                onClick = onNextMonth,
+                enabled = canGoForward,
+                colors = controlColors
             ) {
-                // Use IconButtonDefaults.iconButtonColors so the disabled state
-                // gets the Material 3 alpha drop. A hardcoded `tint` on the Icon
-                // would override `LocalContentColor` and make the disabled state
-                // visually identical to enabled — that's the bug a previous
-                // version had.
-                val navColors = IconButtonDefaults.iconButtonColors(
-                    contentColor = MaterialTheme.colorScheme.onBackground
+                Icon(
+                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = stringResource(R.string.story_next_month)
                 )
-                IconButton(
-                    onClick = viewModel::goToPreviousMonth,
-                    enabled = canGoBack,
-                    colors = navColors
-                ) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                        contentDescription = stringResource(R.string.story_previous_month)
-                    )
-                }
-                IconButton(
-                    onClick = viewModel::goToNextMonth,
-                    enabled = canGoForward,
-                    colors = navColors
-                ) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = stringResource(R.string.story_next_month)
-                    )
-                }
             }
         }
     }
+}
 
 /** Gradient background that extends edge-to-edge behind system bars. */
 @Composable

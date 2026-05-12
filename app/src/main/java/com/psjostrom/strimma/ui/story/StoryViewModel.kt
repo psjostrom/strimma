@@ -186,16 +186,12 @@ class StoryViewModel @Inject constructor(
             )
             _story.value = result
             if (result != null) {
-                // Marker semantics: "the latest month the user has seen the story
-                // for" — never downgrade. Navigating back to March from April must
-                // not un-mark April as viewed (otherwise the Stats card snackbar
-                // re-fires "Your April Story is ready" on every restart). Format
-                // is YYYY-MM so lexicographic compare matches chronological order.
-                val newKey = "%d-%02d".format(month.year, month.monthValue)
-                val currentKey = settings.storyViewedMonth.first()
-                if (currentKey.isEmpty() || newKey > currentKey) {
-                    settings.setStoryViewedMonth(newKey)
-                }
+                // Atomic read-modify-write on the marker — monotonicity contract
+                // and race protection both live in the repository (see
+                // SettingsRepository.setStoryViewedMonthIfLater).
+                settings.setStoryViewedMonthIfLater(
+                    "%d-%02d".format(month.year, month.monthValue)
+                )
             }
         } catch (e: Exception) {
             _error.value = e.message
