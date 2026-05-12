@@ -11,6 +11,7 @@ import com.psjostrom.strimma.data.notification.NotificationActionConfig
 import com.psjostrom.strimma.data.notification.NotificationActionType
 import com.psjostrom.strimma.data.notification.SnoozeCategory
 import com.psjostrom.strimma.data.notification.SnoozeDuration
+import com.psjostrom.strimma.receiver.DebugLog
 import com.psjostrom.strimma.ui.theme.ThemeMode
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -458,9 +459,19 @@ class SettingsRepository @Inject constructor(
     }
     suspend fun setInsulinType(type: InsulinType) { dataStore.edit { it[KEY_INSULIN_TYPE] = type.name } }
 
-    val retentionPolicy: Flow<RetentionPolicy> = dataStore.data.map {
-        try { RetentionPolicy.valueOf(it[KEY_RETENTION_POLICY] ?: "INDEFINITE") }
-        catch (_: Exception) { RetentionPolicy.INDEFINITE }
+    val retentionPolicy: Flow<RetentionPolicy> = dataStore.data.map { prefs ->
+        val raw = prefs[KEY_RETENTION_POLICY]
+        try {
+            RetentionPolicy.valueOf(raw ?: "INDEFINITE")
+        } catch (@Suppress("TooGenericExceptionCaught") _: Exception) {
+            // Most likely cause: app downgraded after the user picked a future-version
+            // policy. Falling back to INDEFINITE silently *widens* retention (the safe
+            // direction for medical data — never auto-delete more than the user asked
+            // for) but it overrides the user's stated preference, so we leave a log
+            // breadcrumb so a future investigation can see when this happened.
+            DebugLog.log("Unknown retention policy '$raw', defaulting to INDEFINITE")
+            RetentionPolicy.INDEFINITE
+        }
     }
     suspend fun setRetentionPolicy(policy: RetentionPolicy) {
         dataStore.edit { it[KEY_RETENTION_POLICY] = policy.name }

@@ -125,6 +125,25 @@ class ReadingDaoTest {
         assertEquals(126, unpushed[0].sgv) // only the un-marked one remains
     }
 
+    @Test
+    fun `unpushed returns the freshest LIMIT rows from a deep backlog`() = runTest {
+        // 150 unpushed readings stretched over a week. The DESC contract says the
+        // batch returns the *newest* 100; the oldest 50 must NOT be in the result.
+        // Pins the load-bearing claim that fresh BG isn't blocked by a stale
+        // backlog during recovery from a long NS outage.
+        for (minutesAgo in 1..150) {
+            dao.insert(reading(minutesAgo, 100 + minutesAgo, pushed = 0))
+        }
+
+        val batch = dao.unpushed(limit = 100)
+
+        assertEquals(100, batch.size)
+        // Newest in the result is at minutesAgo=1 (sgv=101); oldest in the result
+        // is minutesAgo=100 (sgv=200). Anything older (101..150) was excluded.
+        assertEquals(101, batch.first().sgv) // newest first
+        assertEquals(200, batch.last().sgv)  // oldest in batch
+    }
+
     // --- Prune ---
 
     @Test
@@ -136,6 +155,36 @@ class ReadingDaoTest {
         dao.pruneBefore(baseTs - 60 * 60_000L) // prune > 60 min ago
         val all = dao.since(0)
         assertEquals(2, all.size)
+    }
+
+    @Test
+    fun `pruneUnpushedBefore deletes only stale unpushed rows`() = runTest {
+        // Stale pushed row should survive; stale unpushed should die; fresh of
+        // both kinds should survive. Pins the always-on cleanup that bounds
+        // poison-row paralysis (see SyncOrchestrator.STALE_UNPUSHED_DAYS).
+        dao.insert(reading(120, 90).copy(pushed = 1))  // 2h ago, pushed
+        dao.insert(reading(100, 95).copy(pushed = 0))  // 100 min ago, unpushed
+        dao.insert(reading(30, 108).copy(pushed = 0))  // 30 min ago, unpushed
+        dao.insert(reading(0, 126).copy(pushed = 1))   // now, pushed
+
+        dao.pruneUnpushedBefore(baseTs - 60 * 60_000L) // cut off > 60 min ago
+        val survivors = dao.since(0).sortedBy { it.ts }
+
+        assertEquals(3, survivors.size)
+        assertEquals("stale pushed survives", 90, survivors[0].sgv)
+        assertEquals("fresh unpushed survives", 108, survivors[1].sgv)
+        assertEquals("fresh pushed survives", 126, survivors[2].sgv)
+    }
+
+    // --- earliestTsFlow ---
+
+    @Test
+    fun `earliestTsFlow re-emits when an older reading is inserted`() = runTest {
+        dao.insert(reading(50, 100))  // 50 min ago
+        assertEquals(baseTs - 50 * 60_000L, dao.earliestTsFlow().first())
+
+        dao.insert(reading(100, 90))  // 100 min ago — now the new earliest
+        assertEquals(baseTs - 100 * 60_000L, dao.earliestTsFlow().first())
     }
 
     // --- Flow reactivity ---

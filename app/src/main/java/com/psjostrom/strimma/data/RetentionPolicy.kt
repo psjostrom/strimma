@@ -19,4 +19,20 @@ enum class RetentionPolicy(@StringRes val labelRes: Int, val days: Long?) {
     ONE_YEAR(R.string.settings_retention_1_year, 365L),
     FIVE_YEARS(R.string.settings_retention_5_years, 1825L),
     INDEFINITE(R.string.settings_retention_indefinite, null);
+
+    /**
+     * True if `this` keeps strictly less data than [other] — i.e. switching from
+     * [other] to `this` would delete some history. Used by the Settings UI to
+     * gate the change behind a confirmation dialog: a tighter selection silently
+     * triggers an irreversible delete on the next retention tick (≤24h), so the
+     * UI surfaces it as the destructive action it is.
+     *
+     * INDEFINITE is treated as the largest possible window — anything finite
+     * is tighter than INDEFINITE.
+     */
+    fun isTighterThan(other: RetentionPolicy): Boolean {
+        val ours = days ?: Long.MAX_VALUE
+        val theirs = other.days ?: Long.MAX_VALUE
+        return ours < theirs
+    }
 }

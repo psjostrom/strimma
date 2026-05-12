@@ -34,6 +34,12 @@ interface ReadingDao {
     @Query("SELECT MIN(ts) FROM readings")
     suspend fun earliestTs(): Long?
 
+    // Reactive variant — re-emits when the readings table changes (e.g. after a
+    // pull from Nightscout backfills older history). The Story screen subscribes
+    // so the back-arrow boundary stays in sync without re-opening the screen.
+    @Query("SELECT MIN(ts) FROM readings")
+    fun earliestTsFlow(): Flow<Long?>
+
     @Query("SELECT * FROM readings WHERE ts >= :since ORDER BY ts ASC")
     suspend fun since(since: Long): List<GlucoseReading>
 
@@ -46,10 +52,19 @@ interface ReadingDao {
     @Query("SELECT * FROM readings ORDER BY ts DESC LIMIT 1")
     suspend fun latestOnce(): GlucoseReading?
 
-    // DESC so a stale backlog (long NS outage) never blocks fresh readings from
-    // pushing — newest BG always reaches Nightscout first; old rows drain after.
+    // DESC so backlog drains newest-first during recovery from a long NS outage.
+    // Fresh readings push via NightscoutPusher.pushReading inline (separate path
+    // from this batch query); the ordering here only governs catch-up order.
     @Query("SELECT * FROM readings WHERE pushed = 0 ORDER BY ts DESC LIMIT :limit")
     suspend fun unpushed(limit: Int = 100): List<GlucoseReading>
+
+    // Bounds the worst case where a poison row at the head of the unpushed queue
+    // keeps failing every batch and starves all newer readings. The retention
+    // loop runs this unconditionally on a 30-day cutoff regardless of the user's
+    // RetentionPolicy — `pushed = 0` rows older than that are degenerate state,
+    // not "history the user might want".
+    @Query("DELETE FROM readings WHERE pushed = 0 AND ts < :before")
+    suspend fun pruneUnpushedBefore(before: Long)
 
     @Query("UPDATE readings SET pushed = 1 WHERE ts IN (:timestamps)")
     suspend fun markPushed(timestamps: List<Long>)

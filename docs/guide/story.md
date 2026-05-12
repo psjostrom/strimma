@@ -15,6 +15,17 @@ Tap the card to open a full-screen pager with 6 pages:
 5. **Your Meals** — Best/worst meal type, excursion by meal (requires treatments)
 6. **Your Story** — Written narrative summary with share button
 
+## Browsing other months
+
+Use the **←** and **→** arrows in the top-right of the Story screen to scroll through every past month with data. Bounds:
+
+- **Earliest reachable month:** the month containing your oldest local reading. Backfilling history via *Settings > Sharing > Pull readings* unlocks earlier months automatically.
+- **Latest reachable month:** the most recently completed month. The current in-progress month is hidden because partial-month stats are misleading.
+
+A month with fewer than 7 days of data still shows the empty state — the arrows let you keep scrolling past it.
+
+Local retention (*Settings > General > Storage > Data retention*) caps how far back you can scroll. With the default *Forever*, every month with data on this device is reachable.
+
 ## Requirements
 
 - At least 7 days of glucose readings in the month

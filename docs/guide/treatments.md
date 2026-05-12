@@ -22,7 +22,7 @@ Strimma fetches this data from your Nightscout server. The data typically comes 
 2. Toggle **Fetch bolus, carb, and basal data** on
 3. Make sure you have a working Nightscout connection (either push or follower)
 
-Strimma polls for treatments every 5 minutes, fetching the last 100 days of data.
+Strimma polls for treatments every 5 minutes (24-hour window per poll). The first sync — and any sync after a long offline period — backfills up to 100 days from Nightscout.
 
 ---
 
@@ -97,7 +97,7 @@ Common treatment sources:
 
 ## Data Retention
 
-- On the first sync (or after a long offline period), Strimma backfills up to **100 days** of treatments from Nightscout
+- On the first sync (or after a long offline period), Strimma backfills up to **100 days** of treatments from Nightscout. Beyond that initial window, treatments accumulate as Strimma keeps polling.
 - Once synced, treatments are kept according to **Settings > General > Storage > Data retention** (default: **Forever**; minimum: 3 months). The same setting governs glucose readings and exercise sessions.
-- You can manually pull older history in **Settings > Treatments > Pull treatments** (7 / 14 / 30 days)
-- Nightscout remains the long-term store, so a fresh install can always re-fetch history from there
+- You can manually pull older history in **Settings > Treatments > Pull treatments** (30 / 90 / 365 days). Picking a long retention window doesn't *backfill* older data — it just means anything Strimma already has stays.
+- Nightscout remains the long-term store, so a fresh install can always re-fetch history from there.

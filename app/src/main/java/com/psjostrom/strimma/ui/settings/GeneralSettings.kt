@@ -84,6 +84,12 @@ fun GeneralSettings(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 var expanded by remember { mutableStateOf(false) }
+                // Picking a tighter window silently triggers an irreversible delete
+                // on the next retention tick (≤24h). Stash the pending choice and
+                // confirm before applying — applies-without-confirmation is fine
+                // when widening or staying the same, but the destructive direction
+                // needs an explicit user signal.
+                var pendingTighter by remember { mutableStateOf<RetentionPolicy?>(null) }
                 ExposedDropdownMenuBox(
                     expanded = expanded,
                     onExpandedChange = { expanded = it }
@@ -103,12 +109,37 @@ fun GeneralSettings(
                             DropdownMenuItem(
                                 text = { Text(stringResource(policy.labelRes)) },
                                 onClick = {
-                                    onRetentionPolicyChange(policy)
                                     expanded = false
+                                    if (policy.isTighterThan(retentionPolicy)) {
+                                        pendingTighter = policy
+                                    } else {
+                                        onRetentionPolicyChange(policy)
+                                    }
                                 }
                             )
                         }
                     }
+                }
+
+                pendingTighter?.let { newPolicy ->
+                    AlertDialog(
+                        onDismissRequest = { pendingTighter = null },
+                        title = { Text(stringResource(R.string.settings_retention_confirm_title)) },
+                        text = { Text(stringResource(R.string.settings_retention_confirm_body)) },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                onRetentionPolicyChange(newPolicy)
+                                pendingTighter = null
+                            }) {
+                                Text(stringResource(R.string.settings_retention_confirm_cta))
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { pendingTighter = null }) {
+                                Text(stringResource(R.string.settings_retention_confirm_cancel))
+                            }
+                        }
+                    )
                 }
             }
         }

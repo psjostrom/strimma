@@ -8,7 +8,9 @@ import com.psjostrom.strimma.data.TreatmentDao
 import androidx.annotation.VisibleForTesting
 import com.psjostrom.strimma.data.health.ExerciseDao
 import com.psjostrom.strimma.data.health.ExerciseSyncer
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flow
 import com.psjostrom.strimma.di.IoDispatcher
 import com.psjostrom.strimma.network.NightscoutPuller
 import com.psjostrom.strimma.network.NightscoutPusher
@@ -59,6 +61,13 @@ class SyncOrchestrator @Inject constructor(
         private const val RETRY_INTERVAL_MINUTES = 5
         private const val RETENTION_INTERVAL_HOURS = 24L
         private const val HOURS_PER_DAY = 24L
+
+        // Stale unpushed rows older than this are dropped on every retention tick,
+        // regardless of the user's RetentionPolicy. Bounds the worst case where a
+        // poison row at the head of unpushed() blocks fresh BG indefinitely (the
+        // pre-PR 30-day prune used to self-heal this; the always-on cleanup
+        // restores that floor without resurrecting per-table prune asymmetry).
+        private const val STALE_UNPUSHED_DAYS = 30L
     }
 
     // Belt for anything that escapes the network/DB catches in this scope's launches.
@@ -131,28 +140,52 @@ class SyncOrchestrator @Inject constructor(
     }
 
     /**
-     * Applies the user's [com.psjostrom.strimma.data.RetentionPolicy] uniformly to
-     * readings, treatments, and exercise sessions. The default policy is INDEFINITE
-     * — when chosen, the loop reads the setting, finds nothing to do, and sleeps.
-     * When the user opts in to a finite window, the loop deletes anything older
-     * than (now - policy.days) on each daily tick.
+     * Applies the user's [com.psjostrom.strimma.data.RetentionPolicy] to readings,
+     * treatments, and exercise sessions. Reacts immediately when the policy
+     * changes (so the user sees their disk free up shortly after picking a
+     * tighter window) and re-runs every 24h to catch up. INDEFINITE skips the
+     * per-table prune but still runs the unpushed-cleanup pass below.
      *
-     * One loop, one cutoff, three tables — so the user's mental model is "Strimma
-     * keeps my data for X" with no per-table asymmetry.
+     * The prune contract is uniform across all three tables. Initial backfill
+     * limits still vary per table (TreatmentSyncer.FULL_LOOKBACK_DAYS,
+     * ExerciseSyncer.INITIAL_FETCH_DAYS) — that's a fill-side concern, not
+     * retention.
+     *
+     * `pruneUnpushedBefore` runs unconditionally so a poison row at the head
+     * of `unpushed()` cannot starve fresh BG forever; see STALE_UNPUSHED_DAYS.
+     *
+     * Wrapped in try/catch so a transient DataStore IO error or DAO exception
+     * doesn't kill the loop for the rest of the service lifetime — the next
+     * tick or policy change resumes pruning normally.
      */
     private fun startRetentionLoop() {
         scope.launch {
-            while (isActive) {
-                val policy = settings.retentionPolicy.first()
-                val days = policy.days
-                if (days != null) {
-                    val cutoff = System.currentTimeMillis() - days * HOURS_PER_DAY * MS_PER_HOUR
-                    readingDao.pruneBefore(cutoff)
-                    treatmentDao.deleteOlderThan(cutoff)
-                    exerciseDao.deleteSessionsOlderThan(cutoff)
+            // Periodic ticker that re-runs the prune even when the policy is unchanged.
+            // Combined with the policy flow so a setting change triggers an immediate
+            // pass (no 24h wait for the user to see their disk free up).
+            val ticker = flow {
+                while (currentCoroutineContext().isActive) {
+                    emit(Unit)
+                    delay(RETENTION_INTERVAL_HOURS * MS_PER_HOUR)
                 }
-                delay(RETENTION_INTERVAL_HOURS * MS_PER_HOUR)
             }
+            combine(settings.retentionPolicy, ticker) { policy, _ -> policy }
+                .collect { policy ->
+                    @Suppress("TooGenericExceptionCaught") // DAO/DataStore can throw various types
+                    try {
+                        val now = System.currentTimeMillis()
+                        readingDao.pruneUnpushedBefore(now - STALE_UNPUSHED_DAYS * HOURS_PER_DAY * MS_PER_HOUR)
+                        val days = policy.days
+                        if (days != null) {
+                            val cutoff = now - days * HOURS_PER_DAY * MS_PER_HOUR
+                            readingDao.pruneBefore(cutoff)
+                            treatmentDao.deleteOlderThan(cutoff)
+                            exerciseDao.deleteSessionsOlderThan(cutoff)
+                        }
+                    } catch (e: Exception) {
+                        DebugLog.log("Retention prune iteration failed: ${e.message}")
+                    }
+                }
         }
     }
 

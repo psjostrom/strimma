@@ -31,6 +31,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -147,20 +148,24 @@ class SyncOrchestratorTest {
 
     /**
      * Pins the default-retention contract. INDEFINITE is the default policy; the
-     * Story view depends on it to scroll arbitrarily far back. If a future
-     * maintainer changes the default to a finite window OR makes the loop ignore
-     * the policy, this test fails and forces the conversation back open.
+     * Story view depends on it to scroll arbitrarily far back. The seeded data
+     * is **older than the longest finite policy** ([RetentionPolicy.FIVE_YEARS]
+     * = 1825 days), so a regression that flipped the default to any finite
+     * value would still prune it — only `INDEFINITE` survives.
      *
      * Background loops launched from start() run on Dispatchers.Unconfined and
-     * execute their first body synchronously, so any prune that would run "on
-     * tick 0" has already run by the time start() returns.
+     * execute their first body synchronously up to the first suspend; the
+     * `runCurrent()` below drains any continuation that picks up after the
+     * DataStore read so the assertion isn't racing the prune.
      */
     @Test
-    fun `start with default retention keeps ancient readings, treatments, and sessions`() = runTest {
-        val ancient = System.currentTimeMillis() - 1000L * 24 * 60 * 60 * 1000 // ~3 years ago
+    fun `start with default retention keeps data older than the longest finite policy`() = runTest {
+        // 6 years — older than FIVE_YEARS (1825 days) so any finite policy would prune it.
+        val ancient = System.currentTimeMillis() - 6L * 365 * 24 * 60 * 60 * 1000
         seedAncient(ancient)
 
         orchestrator.start()
+        runCurrent()
 
         assertEquals(1, db.readingDao().since(0).size)
         assertEquals(1, db.treatmentDao().allSince(0).size)
@@ -182,10 +187,39 @@ class SyncOrchestratorTest {
         seedAncient(ancient)
 
         orchestrator.start()
+        runCurrent()
 
         assertEquals(0, db.readingDao().since(0).size)
         assertEquals(0, db.treatmentDao().allSince(0).size)
         assertEquals(0, db.exerciseDao().getSessionsInRange(0, Long.MAX_VALUE).size)
+    }
+
+    /**
+     * Pins the unconditional unpushed-cleanup contract. Even with INDEFINITE
+     * retention, `pushed = 0` rows older than 30 days are dropped on every
+     * retention tick — bounds the worst case where a poison row at the head
+     * of `unpushed()` keeps batch-failing and starves all newer pushes.
+     */
+    @Test
+    fun `start always prunes stale unpushed rows even with INDEFINITE retention`() = runTest {
+        val now = System.currentTimeMillis()
+        val staleUnpushed = now - 35L * 24 * 60 * 60 * 1000 // 35 days old, never pushed
+        val freshUnpushed = now - 60_000L // 1 minute old, never pushed
+        db.readingDao().insert(
+            GlucoseReading(ts = staleUnpushed, sgv = 100, direction = "Flat", delta = 0.0, pushed = 0)
+        )
+        db.readingDao().insert(
+            GlucoseReading(ts = freshUnpushed, sgv = 110, direction = "Flat", delta = 0.0, pushed = 0)
+        )
+
+        orchestrator.start()
+        runCurrent()
+
+        // Stale unpushed gone, fresh unpushed kept — even though the user
+        // never opted into a finite retention policy.
+        val survivors = db.readingDao().since(0)
+        assertEquals(1, survivors.size)
+        assertEquals(110, survivors[0].sgv)
     }
 
     private suspend fun seedAncient(ts: Long) {

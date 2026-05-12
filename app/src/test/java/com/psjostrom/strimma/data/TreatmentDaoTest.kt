@@ -123,6 +123,24 @@ class TreatmentDaoTest {
     }
 
     @Test
+    fun `allSinceLimited returns the newest LIMIT rows in descending order`() = runTest {
+        // 50 treatments stretched over 50 days. Calling with limit=10 should
+        // return the 10 most recent (descending). Pins the SQL `LIMIT` —
+        // a future regression that drops it would surface readings beyond the
+        // requested count and reintroduce the take(count) antipattern.
+        dao.upsert((1..50).map { i ->
+            treatment("t$i", minutesAgo = i * 24 * 60, insulin = 1.0)
+        })
+
+        val result = dao.allSinceLimited(timestamp = 0, limit = 10)
+
+        assertEquals(10, result.size)
+        // Newest first: i=1 (1 day ago) is freshest.
+        assertEquals("t1", result.first().id)
+        assertEquals("t10", result.last().id)
+    }
+
+    @Test
     fun `deleteOlderThan prunes old treatments`() = runTest {
         dao.upsert(listOf(
             treatment("a", 100, insulin = 2.0),

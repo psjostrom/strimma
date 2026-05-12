@@ -4,6 +4,8 @@ Complete reference for every Strimma setting.
 
 ![Settings screen](../screenshots/settings.png){ width="300" }
 
+> **Note:** No screenshot exists yet for the General detail screen, which now includes a new *Storage* section with the *Data retention* dropdown.
+
 ---
 
 ## Settings Menu
