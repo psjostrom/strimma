@@ -241,6 +241,63 @@ class StoryViewModelTest {
     }
 
     @Test
+    fun `marker is the maximum month seen across an arbitrary navigation trajectory`() = runBlocking {
+        // Stronger than "back-nav doesn't downgrade once": pins monotonicity for
+        // any sequence of forward and back navigations. A future regression that
+        // weakens the compare to `>=` (or back to unconditional) would let the
+        // final back-step to Feb silently overwrite May as the latest viewed.
+        val readings = (2..5).flatMap { month ->
+            (1..10).flatMap { day -> fullDay(120, 2020, month, day) }
+        }
+        db.readingDao().insertBatch(readings)
+
+        val vm = createViewModel(2020, 3)
+        awaitLoaded(vm)
+        vm.goToNextMonth(); awaitLoaded(vm) // Mar -> Apr
+        vm.goToNextMonth(); awaitLoaded(vm) // Apr -> May
+        vm.goToPreviousMonth(); awaitLoaded(vm) // May -> Apr
+        vm.goToPreviousMonth(); awaitLoaded(vm) // Apr -> Mar
+        vm.goToPreviousMonth(); awaitLoaded(vm) // Mar -> Feb
+
+        assertEquals(
+            "Marker must equal the latest month opened (May), not the last (Feb)",
+            "2020-05", settings.storyViewedMonth.first()
+        )
+    }
+
+    @Test
+    fun `marker advances when initial state is a non-empty earlier month`() = runBlocking {
+        // Realistic startup case after first install + a previous session: the
+        // marker is already set to last month, and the user opens a newer one.
+        // Exercises the `newKey > currentKey` branch (vs. the empty-default
+        // branch the other tests cover incidentally).
+        val mar = (1..10).flatMap { fullDay(120, 2020, 3, it) }
+        db.readingDao().insertBatch(mar)
+        settings.setStoryViewedMonthIfLater("2020-02")
+        assertEquals("2020-02", settings.storyViewedMonth.first()) // pre-condition
+
+        val vm = createViewModel(2020, 3)
+        awaitLoaded(vm)
+
+        assertEquals("2020-03", settings.storyViewedMonth.first())
+    }
+
+    @Test
+    fun `marker preserves a future value that was set out-of-band`() = runBlocking {
+        // Pins the "never downgrade" half of the monotonic contract against an
+        // already-future marker (e.g. a debug override or a forward sync). Opening
+        // an older month must not move the marker backwards.
+        val mar = (1..10).flatMap { fullDay(120, 2020, 3, it) }
+        db.readingDao().insertBatch(mar)
+        settings.setStoryViewedMonthIfLater("2099-12")
+
+        val vm = createViewModel(2020, 3)
+        awaitLoaded(vm)
+
+        assertEquals("2099-12", settings.storyViewedMonth.first())
+    }
+
+    @Test
     fun `currentMonth is persisted to SavedStateHandle on navigation`() = runBlocking {
         val feb = (1..10).flatMap { fullDay(120, 2020, 2, it) }
         val mar = (1..10).flatMap { fullDay(150, 2020, 3, it) }

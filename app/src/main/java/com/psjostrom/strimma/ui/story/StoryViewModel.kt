@@ -186,7 +186,12 @@ class StoryViewModel @Inject constructor(
             )
             _story.value = result
             if (result != null) {
-                settings.setStoryViewedMonth("%d-%02d".format(month.year, month.monthValue))
+                // Atomic read-modify-write on the marker — monotonicity contract
+                // and race protection both live in the repository (see
+                // SettingsRepository.setStoryViewedMonthIfLater).
+                settings.setStoryViewedMonthIfLater(
+                    "%d-%02d".format(month.year, month.monthValue)
+                )
             }
         } catch (e: Exception) {
             _error.value = e.message

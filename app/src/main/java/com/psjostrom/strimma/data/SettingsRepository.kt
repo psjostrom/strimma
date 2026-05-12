@@ -547,7 +547,31 @@ class SettingsRepository @Inject constructor(
     suspend fun setSetupStep(step: Int) { dataStore.edit { it[KEY_SETUP_STEP] = step } }
 
     val storyViewedMonth: Flow<String> = dataStore.data.map { it[KEY_STORY_VIEWED_MONTH] ?: "" }
-    suspend fun setStoryViewedMonth(yearMonth: String) { dataStore.edit { it[KEY_STORY_VIEWED_MONTH] = yearMonth } }
+
+    /**
+     * Marks [yearMonth] (in `YYYY-MM` format) as viewed, but only if it is later
+     * than the currently-stored value. The compare runs inside a single atomic
+     * `dataStore.edit` block so two concurrent writers can't interleave a
+     * read-modify-write that would silently downgrade the marker.
+     *
+     * Monotonic semantics matter because `MainViewModel.storyReady` and
+     * `MonthlyStoryEntry` both compare the marker against `lastMonthKey` —
+     * downgrading would make the "Your X Story is ready" snackbar re-fire on
+     * every restart even when the user has already viewed it. The unconditional
+     * setter is intentionally absent: there must be no way to construct a
+     * downgrade short of editing DataStore from outside the app.
+     *
+     * Lexicographic compare on `YYYY-MM` matches chronological order because
+     * the format is fixed-width.
+     */
+    suspend fun setStoryViewedMonthIfLater(yearMonth: String) {
+        dataStore.edit { prefs ->
+            val current = prefs[KEY_STORY_VIEWED_MONTH] ?: ""
+            if (current.isEmpty() || yearMonth > current) {
+                prefs[KEY_STORY_VIEWED_MONTH] = yearMonth
+            }
+        }
+    }
 
     val hbA1cUnit: Flow<HbA1cUnit> = dataStore.data.map {
         try { HbA1cUnit.valueOf(it[KEY_HBA1C_UNIT] ?: "MMOL_MOL") } catch (_: Exception) { HbA1cUnit.MMOL_MOL }
