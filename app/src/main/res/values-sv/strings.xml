@@ -76,6 +76,19 @@
     <string name="settings_general_beta_desc">Betaversioner innehåller nya funktioner som inte har testats grundligt</string>
     <string name="settings_general_no_beta">Ingen hittad</string>
 
+    <string name="settings_general_storage">Lagring</string>
+    <string name="settings_general_retention">Datalagring</string>
+    <string name="settings_general_retention_desc">Tar bort äldre glukos, behandlingar och träningspass enbart från denna enhet. Din Nightscout-server, ursprungs-CGM-app och Health Connect påverkas inte. Begränsar hur långt tillbaka Story-vyn kan bläddra.</string>
+    <string name="settings_retention_3_months">3 månader</string>
+    <string name="settings_retention_6_months">6 månader</string>
+    <string name="settings_retention_1_year">1 år</string>
+    <string name="settings_retention_5_years">5 år</string>
+    <string name="settings_retention_indefinite">Alltid</string>
+    <string name="settings_retention_confirm_title">Korta ner datalagring?</string>
+    <string name="settings_retention_confirm_body">Strimma raderar permanent glukos, behandlingar och träningspass äldre än det nya intervallet från denna enhet. Din Nightscout-server påverkas inte — äldre historik kan hämtas därifrån igen vid behov.</string>
+    <string name="settings_retention_confirm_cta">Radera data</string>
+    <string name="settings_retention_confirm_cancel">Avbryt</string>
+
     <!-- Data Source Settings -->
     <string name="settings_source_title">Datak\u00E4lla</string>
     <string name="settings_source_section">K\u00E4lla</string>
@@ -483,6 +496,8 @@
     <string name="story_not_enough_data_detail">Minst 7 dagars avl\u00E4sningar kr\u00E4vs</string>
     <string name="story_share">Dela din ber\u00E4ttelse</string>
     <string name="story_go_back">G\u00E5 tillbaka</string>
+    <string name="story_previous_month">F\u00F6reg\u00E5ende m\u00E5nad</string>
+    <string name="story_next_month">N\u00E4sta m\u00E5nad</string>
     <string name="story_snackbar_ready">Din %s-ber\u00E4ttelse \u00E4r klar</string>
     <string name="story_explainer_ok">Uppfattat</string>
     <string name="explain_tir">Tid i intervall (TIR) \u00E4r andelen tid ditt glukos var mellan dina l\u00E5ga och h\u00F6ga tr\u00F6sklar. Kliniskt m\u00E5l \u00E4r \u226570%.</string>
