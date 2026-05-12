@@ -33,7 +33,12 @@ import java.time.ZoneId
 class StoryViewModelTest {
 
     private val testDispatcher = UnconfinedTestDispatcher()
-    private val zone = ZoneId.of("Europe/Stockholm")
+    // Seed data in the same zone the production VM uses so month-edge
+    // assertions (canGoBack at the earliest reading's month) don't drift
+    // when CI runs in UTC and dev runs in CET. Reading at Feb 1 00:00
+    // Stockholm = Jan 31 23:00 UTC, which would map to January for the VM
+    // running on a UTC runner — making "current is earliest" silently false.
+    private val zone: ZoneId = ZoneId.systemDefault()
 
     private lateinit var db: StrimmaDatabase
     private lateinit var settings: SettingsRepository
