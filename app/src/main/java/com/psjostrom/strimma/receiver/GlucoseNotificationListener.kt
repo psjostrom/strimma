@@ -117,6 +117,18 @@ class GlucoseNotificationListener : NotificationListenerService() {
         const val EXTRA_TIMESTAMP = "timestamp"
         const val EXTRA_SOURCE = "source"
 
+        // CamAPS (and similar middleware) puts "---" in the BG value slot when the sensor
+        // isn't delivering. The parser already returns null for it; we also use it as a
+        // signal to suspect that the next same-value notification is the last-known reading
+        // re-posted, not a fresh read. See `isSuspectedStuckValue`.
+        private const val NO_VALUE_MARKER = "---"
+
+        // How long after a "---" notification we keep suspecting same-value reposts as stale.
+        // Sized to cover the typical CamAPS sensor-reconnect window without indefinitely
+        // blocking a real plateau: a stable BG only loses readings while the suspicion is
+        // active AND the value never changes. The next different SGV clears the suspicion.
+        private const val STUCK_VALUE_SUSPICION_MS = 10L * 60 * 1000
+
 
         fun isEnabled(context: Context): Boolean {
             val flat = Settings.Secure.getString(
@@ -151,6 +163,12 @@ class GlucoseNotificationListener : NotificationListenerService() {
     /** Tracks packages for which a rejection has already been logged, to avoid spam. */
     private val loggedRejections = mutableSetOf<String>()
 
+    /** Last forwarded SGV per source package, for the stuck-value-after-glitch heuristic. */
+    private val lastForwardedSgv = mutableMapOf<String, Int>()
+
+    /** Wall-clock ms when we last saw a "---" notification per source package. */
+    private val lastNoValueAt = mutableMapOf<String, Long>()
+
     private fun getSelectedSource(): GlucoseSource {
         val name = getSharedPreferences("strimma_sync", Context.MODE_PRIVATE)
             .getString("glucose_source", null) ?: return GlucoseSource.COMPANION
@@ -158,24 +176,7 @@ class GlucoseNotificationListener : NotificationListenerService() {
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
-        val source = getSelectedSource()
-        val isCgmPackage = sbn.packageName in CGM_PACKAGES
-
-        if (source != GlucoseSource.COMPANION) {
-            if (isCgmPackage && loggedRejections.add(sbn.packageName)) {
-                DebugLog.log(message = "${sbn.packageName}: ignored (source is ${source.name})")
-            }
-            return
-        }
-
-        if (!isCgmPackage) return
-
-        if (!sbn.isOngoing && sbn.packageName !in ONGOING_NOT_REQUIRED) {
-            if (loggedRejections.add(sbn.packageName)) {
-                DebugLog.log(message = "${sbn.packageName}: not ongoing, skipped")
-            }
-            return
-        }
+        if (!shouldProcess(sbn)) return
 
         DebugLog.log(message = "Notification from: ${sbn.packageName}")
 
@@ -189,27 +190,92 @@ class GlucoseNotificationListener : NotificationListenerService() {
                 "flags=${notification.flags} " +
                 "ongoing=${sbn.isOngoing}"
         )
-        val mgdl = extractGlucose(notification, sbn.packageName)
 
-        if (mgdl != null && GlucoseReading.isValidSgv(mgdl)) {
-            DebugLog.log(message = "Parsed: ${mgdl.toInt()} mg/dL")
-            val intent = Intent(this, com.psjostrom.strimma.service.StrimmaService::class.java).apply {
-                action = ACTION_GLUCOSE_RECEIVED
-                putExtra(EXTRA_MGDL, mgdl)
-                putExtra(
-                    EXTRA_TIMESTAMP,
-                    resolveReadingTimestamp(
-                        notifWhen = notification.`when`,
-                        postTime = sbn.postTime,
-                        now = System.currentTimeMillis(),
-                    ),
-                )
-                putExtra(EXTRA_SOURCE, sbn.packageName)
+        val mgdl = parseAndFilter(sbn, notification) ?: return
+        forwardReading(sbn, notification, mgdl)
+    }
+
+    private fun shouldProcess(sbn: StatusBarNotification): Boolean {
+        val source = getSelectedSource()
+        val isCgmPackage = sbn.packageName in CGM_PACKAGES
+
+        if (source != GlucoseSource.COMPANION) {
+            if (isCgmPackage && loggedRejections.add(sbn.packageName)) {
+                DebugLog.log(message = "${sbn.packageName}: ignored (source is ${source.name})")
             }
-            startForegroundService(intent)
-        } else {
-            DebugLog.log(message = "Could not parse glucose from notification")
+            return false
         }
+
+        if (!isCgmPackage) return false
+
+        if (!sbn.isOngoing && sbn.packageName !in ONGOING_NOT_REQUIRED) {
+            if (loggedRejections.add(sbn.packageName)) {
+                DebugLog.log(message = "${sbn.packageName}: not ongoing, skipped")
+            }
+            return false
+        }
+
+        return true
+    }
+
+    /**
+     * Parses [notification] and applies the stuck-value-after-glitch heuristic. Returns the
+     * parsed mg/dL value when the reading should be forwarded, or null when it should be
+     * dropped (unparseable, invalid, or suspected stuck repost). Side-effects:
+     * `lastNoValueAt` is updated on "---" notifications; `lastForwardedSgv` is updated on
+     * accepted readings.
+     */
+    private fun parseAndFilter(sbn: StatusBarNotification, notification: Notification): Double? {
+        val attempt = extractGlucose(notification)
+        val mgdl = attempt.mgdl
+
+        if (mgdl == null || !GlucoseReading.isValidSgv(mgdl)) {
+            if (attempt.sawNoValueMarker) {
+                lastNoValueAt[sbn.packageName] = System.currentTimeMillis()
+            }
+            DebugLog.log(message = "Could not parse glucose from notification")
+            return null
+        }
+
+        val sgv = mgdl.toInt()
+        // Stuck-value-after-glitch heuristic: drop a parsed value when we very recently saw a
+        // "---" notification from this package AND the new value matches the previous forwarded
+        // SGV. Suspicion auto-expires after [STUCK_VALUE_SUSPICION_MS], so a long stable plateau
+        // eventually re-admits the value, and a different SGV always passes through.
+        val previousSgv = lastForwardedSgv[sbn.packageName]
+        val noValueAt = lastNoValueAt[sbn.packageName]
+        val withinSuspicion = noValueAt != null &&
+            System.currentTimeMillis() - noValueAt < STUCK_VALUE_SUSPICION_MS
+        if (previousSgv == sgv && withinSuspicion) {
+            if (loggedRejections.add("stuck_${sbn.packageName}_$sgv")) {
+                DebugLog.log(
+                    message = "Stuck-value rejected: pkg=${sbn.packageName} sgv=$sgv " +
+                        "(matches last forwarded; --- seen within $STUCK_VALUE_SUSPICION_MS ms)"
+                )
+            }
+            return null
+        }
+
+        lastForwardedSgv[sbn.packageName] = sgv
+        DebugLog.log(message = "Parsed: $sgv mg/dL")
+        return mgdl
+    }
+
+    private fun forwardReading(sbn: StatusBarNotification, notification: Notification, mgdl: Double) {
+        val intent = Intent(this, com.psjostrom.strimma.service.StrimmaService::class.java).apply {
+            action = ACTION_GLUCOSE_RECEIVED
+            putExtra(EXTRA_MGDL, mgdl)
+            putExtra(
+                EXTRA_TIMESTAMP,
+                resolveReadingTimestamp(
+                    notifWhen = notification.`when`,
+                    postTime = sbn.postTime,
+                    now = System.currentTimeMillis(),
+                ),
+            )
+            putExtra(EXTRA_SOURCE, sbn.packageName)
+        }
+        startForegroundService(intent)
     }
 
     /**
@@ -242,15 +308,13 @@ class GlucoseNotificationListener : NotificationListenerService() {
         return now
     }
 
-    private fun extractGlucose(notification: Notification, packageName: String): Double? {
-        // Collect candidates from all four sources BEFORE filtering or parsing.
-        // The stale-status filter must see every text the parser would consider —
-        // running it only on contentView would let a stale value slip through if
-        // contentView is null, rv.apply() throws (the catch below documents that
-        // RemoteViews from external apps can throw any exception), or contentView
-        // has no parseable number but extras/ticker do. Order is preserved:
-        // contentView texts (in TextView order) → title → text → ticker, so the
-        // first parseable wins exactly as before for non-stale notifications.
+    private data class ParseAttempt(val mgdl: Double?, val sawNoValueMarker: Boolean)
+
+    private fun extractGlucose(notification: Notification): ParseAttempt {
+        // Collect parse candidates from all four sources, in priority order:
+        // contentView texts (in TextView order) → title → text → ticker. First
+        // parseable wins. tickerText fallback is required for Eversense, which
+        // puts the raw BG value there.
         val texts = mutableListOf<String>()
         collectContentViewTexts(notification, texts)
         notification.extras?.getString(Notification.EXTRA_TITLE)?.let { title ->
@@ -261,20 +325,14 @@ class GlucoseNotificationListener : NotificationListenerService() {
             DebugLog.log(message = "Text: $text")
             texts.add(text)
         }
-        // tickerText fallback — Eversense puts the raw BG value here.
         notification.tickerText?.toString()?.let { ticker ->
             DebugLog.log(message = "Ticker: $ticker")
             texts.add(ticker)
         }
 
-        if (isStaleStatusNotification(texts, packageName)) {
-            if (loggedRejections.add("stale_$packageName")) {
-                DebugLog.log(message = "Stale-status notification rejected: pkg=$packageName")
-            }
-            return null
-        }
-
-        return texts.firstNotNullOfOrNull { tryParseGlucose(it) }
+        val mgdl = texts.firstNotNullOfOrNull { tryParseGlucose(it) }
+        val sawNoValueMarker = texts.any { it.trim() == NO_VALUE_MARKER }
+        return ParseAttempt(mgdl = mgdl, sawNoValueMarker = sawNoValueMarker)
     }
 
     private fun collectContentViewTexts(notification: Notification, out: MutableList<String>) {
