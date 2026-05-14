@@ -2,6 +2,7 @@ package com.psjostrom.strimma.receiver
 
 import android.content.SharedPreferences
 import android.os.SystemClock
+import androidx.core.content.edit
 
 /**
  * Per-package detector for stuck-value reposts during sensor glitches.
@@ -42,7 +43,7 @@ internal class StuckValueDetector(
     fun recordNoValue(packageName: String) {
         val state = stateFor(packageName).copy(noValueAtElapsed = elapsed())
         states[packageName] = state
-        prefs.edit().putLong(noValueKey(packageName), now()).apply()
+        prefs.edit { putLong(noValueKey(packageName), now()) }
     }
 
     /**
@@ -51,10 +52,10 @@ internal class StuckValueDetector(
      */
     fun recordAccept(packageName: String, sgv: Int) {
         states[packageName] = State(lastSgv = sgv, noValueAtElapsed = null)
-        prefs.edit()
-            .putInt(sgvKey(packageName), sgv)
-            .remove(noValueKey(packageName))
-            .apply()
+        prefs.edit {
+            putInt(sgvKey(packageName), sgv)
+            remove(noValueKey(packageName))
+        }
     }
 
     /**
