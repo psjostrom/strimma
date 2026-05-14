@@ -118,15 +118,20 @@ class GlucoseNotificationListener : NotificationListenerService() {
         const val EXTRA_SOURCE = "source"
 
         // CamAPS (and similar middleware) puts "---" in the BG value slot when the sensor
-        // isn't delivering. The parser already returns null for it; we also use it as a
-        // signal to suspect that the next same-value notification is the last-known reading
-        // re-posted, not a fresh read. See `isSuspectedStuckValue`.
+        // isn't delivering. The parser already returns null for it; we also use it as the
+        // signal that arms [StuckValueDetector] — the next same-value notification within
+        // the suspicion window is suspected to be the last-known reading re-posted, not a
+        // fresh read. The "---" marker is a near-universal CGM convention (verified for
+        // CamAPS; observed in xDrip, Juggluco, and Diabox), so the detector is intentionally
+        // applied across all CGM_PACKAGES rather than per-package — a foreign app would have
+        // to actively use "---" as something other than "no value" to trigger a false drop.
         private const val NO_VALUE_MARKER = "---"
 
-        // How long after a "---" notification we keep suspecting same-value reposts as stale.
-        // Sized to cover the typical CamAPS sensor-reconnect window without indefinitely
-        // blocking a real plateau: a stable BG only loses readings while the suspicion is
-        // active AND the value never changes. The next different SGV clears the suspicion.
+        // Sensor-recovery window, not sample-cadence: the time we expect a true sensor
+        // disconnect to last before the source app either reconnects (admitting a fresh
+        // changing value, which clears suspicion) or gives up (the next "---" extends it).
+        // Tied to observed CamAPS behavior, deliberately NOT scaled with sample period —
+        // a 5-min sensor's reconnect time is the same wall-clock duration as a 1-min one.
         private const val STUCK_VALUE_SUSPICION_MS = 10L * 60 * 1000
 
 
@@ -163,11 +168,16 @@ class GlucoseNotificationListener : NotificationListenerService() {
     /** Tracks packages for which a rejection has already been logged, to avoid spam. */
     private val loggedRejections = mutableSetOf<String>()
 
-    /** Last forwarded SGV per source package, for the stuck-value-after-glitch heuristic. */
-    private val lastForwardedSgv = mutableMapOf<String, Int>()
-
-    /** Wall-clock ms when we last saw a "---" notification per source package. */
-    private val lastNoValueAt = mutableMapOf<String, Long>()
+    /**
+     * Per-package stuck-value detector. Backed by SharedPreferences so suspicion state
+     * survives Service rebinds (boot, app update, memory pressure) — without persistence
+     * the detector would be wiped exactly when it matters most, since rebinds correlate
+     * with degraded states. Lazy-initialized because `getSharedPreferences` requires a
+     * Context that's only valid after the Service is created.
+     */
+    private val stuckDetector by lazy {
+        StuckValueDetector(getSharedPreferences("strimma_stuck", Context.MODE_PRIVATE))
+    }
 
     private fun getSelectedSource(): GlucoseSource {
         val name = getSharedPreferences("strimma_sync", Context.MODE_PRIVATE)
@@ -219,44 +229,34 @@ class GlucoseNotificationListener : NotificationListenerService() {
     }
 
     /**
-     * Parses [notification] and applies the stuck-value-after-glitch heuristic. Returns the
-     * parsed mg/dL value when the reading should be forwarded, or null when it should be
-     * dropped (unparseable, invalid, or suspected stuck repost). Side-effects:
-     * `lastNoValueAt` is updated on "---" notifications; `lastForwardedSgv` is updated on
-     * accepted readings.
+     * Parses [notification] and consults [stuckDetector]. Returns the parsed mg/dL value
+     * when the reading should be forwarded, or null when it should be dropped (unparseable,
+     * invalid, or detected as a stuck repost). Marker observations and accepted SGVs are
+     * recorded on the detector regardless of the early-return path so a "---" arriving in
+     * the same notification as a parseable value still arms suspicion.
      */
     private fun parseAndFilter(sbn: StatusBarNotification, notification: Notification): Double? {
         val attempt = extractGlucose(notification)
+        if (attempt.sawNoValueMarker) {
+            stuckDetector.recordNoValue(sbn.packageName)
+        }
         val mgdl = attempt.mgdl
 
         if (mgdl == null || !GlucoseReading.isValidSgv(mgdl)) {
-            if (attempt.sawNoValueMarker) {
-                lastNoValueAt[sbn.packageName] = System.currentTimeMillis()
-            }
             DebugLog.log(message = "Could not parse glucose from notification")
             return null
         }
 
-        val sgv = mgdl.toInt()
-        // Stuck-value-after-glitch heuristic: drop a parsed value when we very recently saw a
-        // "---" notification from this package AND the new value matches the previous forwarded
-        // SGV. Suspicion auto-expires after [STUCK_VALUE_SUSPICION_MS], so a long stable plateau
-        // eventually re-admits the value, and a different SGV always passes through.
-        val previousSgv = lastForwardedSgv[sbn.packageName]
-        val noValueAt = lastNoValueAt[sbn.packageName]
-        val withinSuspicion = noValueAt != null &&
-            System.currentTimeMillis() - noValueAt < STUCK_VALUE_SUSPICION_MS
-        if (previousSgv == sgv && withinSuspicion) {
-            if (loggedRejections.add("stuck_${sbn.packageName}_$sgv")) {
-                DebugLog.log(
-                    message = "Stuck-value rejected: pkg=${sbn.packageName} sgv=$sgv " +
-                        "(matches last forwarded; --- seen within $STUCK_VALUE_SUSPICION_MS ms)"
-                )
-            }
+        // Match ReadingPipeline's mg/dL → SGV conversion (Math.round, not Double.toInt) so
+        // the comparison against the prior forwarded SGV stays consistent with what the
+        // pipeline actually stores in the DB.
+        val sgv = Math.round(mgdl).toInt()
+        if (stuckDetector.isStuck(sbn.packageName, sgv, STUCK_VALUE_SUSPICION_MS)) {
+            DebugLog.log(message = "Stuck-value rejected: pkg=${sbn.packageName} sgv=$sgv")
             return null
         }
 
-        lastForwardedSgv[sbn.packageName] = sgv
+        stuckDetector.recordAccept(sbn.packageName, sgv)
         DebugLog.log(message = "Parsed: $sgv mg/dL")
         return mgdl
     }

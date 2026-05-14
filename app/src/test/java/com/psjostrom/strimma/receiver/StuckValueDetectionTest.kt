@@ -18,19 +18,22 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows
 
 /**
- * Stuck-value-after-glitch detection.
+ * Wiring tests for the stuck-value heuristic at the listener level. Direct logic coverage
+ * for the detector itself lives in `StuckValueDetectorTest`; this file verifies that the
+ * listener arms and consults the detector correctly across all parse paths (contentView,
+ * extras, ticker) and that legitimate scenarios are not over-blocked.
  *
- * Regression target: when CamAPS loses its sensor it alternates "---" with the last-known
- * BG value, each repost stamped with a fresh `notification.when`. Bucket dedup in the
- * pipeline doesn't catch consecutive same-SGV stores in different 1-min buckets, so the
- * graph fills with a flat plateau and the no-data alert is suppressed (we keep "receiving"
- * readings).
+ * Regression target: when a source app (notably CamAPS) loses its sensor it alternates
+ * "---" with the last-known BG value, each repost stamped with a fresh `notification.when`.
+ * Bucket dedup in the pipeline doesn't catch consecutive same-SGV stores in different 1-min
+ * buckets, so the graph would fill with a flat plateau and the no-data alert would be
+ * suppressed (the listener keeps "receiving" readings).
  *
- * The detection signal is the actual differentiator between (a) pump-only "Attempting"
- * with a fresh, changing CGM stream — Per's bug from PR #229 follow-up, where the prior
- * mode-word filter rejected legitimate readings — and (b) full sensor disconnect with a
- * stuck value re-posted: in (b) the parse-null "---" notifications interleave the
- * value reposts; in (a) they don't.
+ * The detection signal differentiates two cases the prior mode-word filter (PR #222)
+ * conflated: (a) pump-only "Attempting" with a fresh, changing CGM stream — readings
+ * that the mode-word filter wrongly rejected — and (b) full sensor disconnect with a
+ * stuck value re-posted: in (b) the parse-null "---" notifications interleave the value
+ * reposts; in (a) they don't.
  */
 @RunWith(RobolectricTestRunner::class)
 class StuckValueDetectionTest {
@@ -39,6 +42,10 @@ class StuckValueDetectionTest {
         val listener = Robolectric.setupService(GlucoseNotificationListener::class.java)
         listener.getSharedPreferences("strimma_sync", Context.MODE_PRIVATE)
             .edit().putString("glucose_source", GlucoseSource.COMPANION.name).apply()
+        // Detector persists per-package state to its own prefs file. Clear between tests
+        // so each test starts from a known empty state.
+        listener.getSharedPreferences("strimma_stuck", Context.MODE_PRIVATE)
+            .edit().clear().commit()
         return listener
     }
 
@@ -84,10 +91,10 @@ class StuckValueDetectionTest {
 
     @Test
     fun `pump-only Attempting with continuously changing values all pass through`() {
-        // Per's bug: pump-loop is "Attempting" but the CGM is fine. Values change every
-        // notification. None of these should be dropped — there is no "---" to mark the
-        // stream as suspect, and even if there were, the value differs from the last
-        // forwarded one.
+        // Regression for the false-rejection case: pump-loop is "Attempting" but the CGM
+        // is fine. Values change every notification. None of these should be dropped —
+        // there is no "---" to mark the stream as suspect, and even if there were, the
+        // value differs from the last forwarded one.
         val listener = setupListener()
         val values = listOf("10,6", "10,7", "10,8", "10,9", "11,0", "11,3", "11,6", "11,8", "11,9")
 
@@ -130,10 +137,13 @@ class StuckValueDetectionTest {
     }
 
     @Test
-    fun `different value after --- clears suspicion and forwards`() {
+    fun `recovery to a different value clears suspicion - subsequent same-value plateau is admitted`() {
         // Sensor recovers and starts producing fresh readings again. The first DIFFERENT
-        // value arriving after the glitch must pass through and reset the heuristic so
-        // the next same-value reading doesn't get falsely rejected.
+        // value arriving after the glitch must pass through, AND the heuristic must reset
+        // so a subsequent legitimate plateau on the recovered value isn't falsely rejected.
+        // This is the medical-safety case: a real BG plateau within 10 min of any prior
+        // sensor blip must NOT be dropped — that would suppress data and trigger a false
+        // stale-data alert while the sensor is healthy.
         val listener = setupListener()
 
         listener.onNotificationPosted(sbnFor(camapsNotification(status = "On", value = "5,9")))
@@ -142,7 +152,7 @@ class StuckValueDetectionTest {
         listener.onNotificationPosted(sbnFor(camapsNotification(status = "Attempting", value = "---")))
         assertNull(nextStartedService())
 
-        // Same value repost → dropped.
+        // Same value repost → dropped (sensor still glitching).
         listener.onNotificationPosted(sbnFor(camapsNotification(status = "Attempting", value = "5,9")))
         assertNull(nextStartedService())
 
@@ -151,6 +161,47 @@ class StuckValueDetectionTest {
         val recovered = nextStartedService()
         assertNotNull("recovered fresh value must pass through", recovered)
         assertEquals(GlucoseNotificationListener.ACTION_GLUCOSE_RECEIVED, recovered!!.action)
+
+        // Now the real test of "clears suspicion": a legitimate plateau on the recovered
+        // value within the suspicion window must be admitted, not dropped as stuck.
+        listener.onNotificationPosted(sbnFor(camapsNotification(status = "On", value = "6,2")))
+        assertNotNull(
+            "plateau on recovered value must NOT be dropped - the prior --- is no longer relevant",
+            nextStartedService()
+        )
+
+        listener.onNotificationPosted(sbnFor(camapsNotification(status = "On", value = "6,2")))
+        assertNotNull("further plateau readings must continue to pass", nextStartedService())
+    }
+
+    @Test
+    fun `--- arriving via extras-only notification still arms the detector`() {
+        // The contentView path is the common case but not the only one — for some apps and
+        // some notification states, RemoteViews.apply() throws (the listener catches that
+        // and falls through to extras/ticker). The detector must arm whichever source
+        // delivers the "---" so a subsequent stuck-value repost via contentView is caught.
+        val listener = setupListener()
+
+        // Establish baseline forwarded SGV via the normal contentView path.
+        listener.onNotificationPosted(sbnFor(camapsNotification(status = "On", value = "5,9")))
+        assertNotNull(nextStartedService())
+
+        // Sensor drop posted with no contentView — only EXTRA_TITLE carries "---".
+        @Suppress("DEPRECATION")
+        val noValueExtrasOnly = Notification().apply {
+            extras = Bundle().apply { putString(Notification.EXTRA_TITLE, "---") }
+            flags = Notification.FLAG_ONGOING_EVENT
+        }
+        listener.onNotificationPosted(sbnFor(noValueExtrasOnly))
+        assertNull("--- via extras must not start the service", nextStartedService())
+
+        // Now a same-value repost via contentView — the extras-only --- must have armed
+        // the detector so this is dropped.
+        listener.onNotificationPosted(sbnFor(camapsNotification(status = "Attempting", value = "5,9")))
+        assertNull(
+            "repost after extras-only --- must be dropped (detector arms on any source)",
+            nextStartedService()
+        )
     }
 
     @Test
