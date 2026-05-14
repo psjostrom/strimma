@@ -117,7 +117,6 @@ class GlucoseNotificationListener : NotificationListenerService() {
         const val EXTRA_TIMESTAMP = "timestamp"
         const val EXTRA_SOURCE = "source"
 
-
         fun isEnabled(context: Context): Boolean {
             val flat = Settings.Secure.getString(
                 context.contentResolver, "enabled_notification_listeners"
@@ -158,27 +157,9 @@ class GlucoseNotificationListener : NotificationListenerService() {
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
-        val source = getSelectedSource()
-        val isCgmPackage = sbn.packageName in CGM_PACKAGES
-
-        if (source != GlucoseSource.COMPANION) {
-            if (isCgmPackage && loggedRejections.add(sbn.packageName)) {
-                DebugLog.log(message = "${sbn.packageName}: ignored (source is ${source.name})")
-            }
-            return
-        }
-
-        if (!isCgmPackage) return
-
-        if (!sbn.isOngoing && sbn.packageName !in ONGOING_NOT_REQUIRED) {
-            if (loggedRejections.add(sbn.packageName)) {
-                DebugLog.log(message = "${sbn.packageName}: not ongoing, skipped")
-            }
-            return
-        }
+        if (!shouldProcess(sbn)) return
 
         DebugLog.log(message = "Notification from: ${sbn.packageName}")
-
         val notification = sbn.notification ?: return
         DebugLog.log(
             message = "NotifMeta: pkg=${sbn.packageName} " +
@@ -189,27 +170,55 @@ class GlucoseNotificationListener : NotificationListenerService() {
                 "flags=${notification.flags} " +
                 "ongoing=${sbn.isOngoing}"
         )
-        val mgdl = extractGlucose(notification, sbn.packageName)
 
-        if (mgdl != null && GlucoseReading.isValidSgv(mgdl)) {
-            DebugLog.log(message = "Parsed: ${mgdl.toInt()} mg/dL")
-            val intent = Intent(this, com.psjostrom.strimma.service.StrimmaService::class.java).apply {
-                action = ACTION_GLUCOSE_RECEIVED
-                putExtra(EXTRA_MGDL, mgdl)
-                putExtra(
-                    EXTRA_TIMESTAMP,
-                    resolveReadingTimestamp(
-                        notifWhen = notification.`when`,
-                        postTime = sbn.postTime,
-                        now = System.currentTimeMillis(),
-                    ),
-                )
-                putExtra(EXTRA_SOURCE, sbn.packageName)
-            }
-            startForegroundService(intent)
-        } else {
+        val mgdl = extractGlucose(notification)
+        if (mgdl == null || !GlucoseReading.isValidSgv(mgdl)) {
             DebugLog.log(message = "Could not parse glucose from notification")
+            return
         }
+
+        // Math.round (not Double.toInt) matches ReadingPipeline.processReading's conversion,
+        // so the value reported in this debug log line equals the one that gets stored.
+        val sgv = Math.round(mgdl).toInt()
+        DebugLog.log(message = "Parsed: $sgv mg/dL")
+
+        val intent = Intent(this, com.psjostrom.strimma.service.StrimmaService::class.java).apply {
+            action = ACTION_GLUCOSE_RECEIVED
+            putExtra(EXTRA_MGDL, mgdl)
+            putExtra(
+                EXTRA_TIMESTAMP,
+                resolveReadingTimestamp(
+                    notifWhen = notification.`when`,
+                    postTime = sbn.postTime,
+                    now = System.currentTimeMillis(),
+                ),
+            )
+            putExtra(EXTRA_SOURCE, sbn.packageName)
+        }
+        startForegroundService(intent)
+    }
+
+    private fun shouldProcess(sbn: StatusBarNotification): Boolean {
+        val source = getSelectedSource()
+        val isCgmPackage = sbn.packageName in CGM_PACKAGES
+
+        if (source != GlucoseSource.COMPANION) {
+            if (isCgmPackage && loggedRejections.add(sbn.packageName)) {
+                DebugLog.log(message = "${sbn.packageName}: ignored (source is ${source.name})")
+            }
+            return false
+        }
+
+        if (!isCgmPackage) return false
+
+        if (!sbn.isOngoing && sbn.packageName !in ONGOING_NOT_REQUIRED) {
+            if (loggedRejections.add(sbn.packageName)) {
+                DebugLog.log(message = "${sbn.packageName}: not ongoing, skipped")
+            }
+            return false
+        }
+
+        return true
     }
 
     /**
@@ -242,15 +251,11 @@ class GlucoseNotificationListener : NotificationListenerService() {
         return now
     }
 
-    private fun extractGlucose(notification: Notification, packageName: String): Double? {
-        // Collect candidates from all four sources BEFORE filtering or parsing.
-        // The stale-status filter must see every text the parser would consider —
-        // running it only on contentView would let a stale value slip through if
-        // contentView is null, rv.apply() throws (the catch below documents that
-        // RemoteViews from external apps can throw any exception), or contentView
-        // has no parseable number but extras/ticker do. Order is preserved:
-        // contentView texts (in TextView order) → title → text → ticker, so the
-        // first parseable wins exactly as before for non-stale notifications.
+    private fun extractGlucose(notification: Notification): Double? {
+        // Collect parse candidates from all four sources, in priority order:
+        // contentView texts (in TextView order) → title → text → ticker. First
+        // parseable wins. tickerText fallback is required for Eversense, which
+        // puts the raw BG value there.
         val texts = mutableListOf<String>()
         collectContentViewTexts(notification, texts)
         notification.extras?.getString(Notification.EXTRA_TITLE)?.let { title ->
@@ -261,17 +266,9 @@ class GlucoseNotificationListener : NotificationListenerService() {
             DebugLog.log(message = "Text: $text")
             texts.add(text)
         }
-        // tickerText fallback — Eversense puts the raw BG value here.
         notification.tickerText?.toString()?.let { ticker ->
             DebugLog.log(message = "Ticker: $ticker")
             texts.add(ticker)
-        }
-
-        if (isStaleStatusNotification(texts, packageName)) {
-            if (loggedRejections.add("stale_$packageName")) {
-                DebugLog.log(message = "Stale-status notification rejected: pkg=$packageName")
-            }
-            return null
         }
 
         return texts.firstNotNullOfOrNull { tryParseGlucose(it) }
