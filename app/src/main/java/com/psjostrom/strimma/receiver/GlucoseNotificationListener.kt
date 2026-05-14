@@ -117,24 +117,6 @@ class GlucoseNotificationListener : NotificationListenerService() {
         const val EXTRA_TIMESTAMP = "timestamp"
         const val EXTRA_SOURCE = "source"
 
-        // CamAPS (and similar middleware) puts "---" in the BG value slot when the sensor
-        // isn't delivering. The parser already returns null for it; we also use it as the
-        // signal that arms [StuckValueDetector] — the next same-value notification within
-        // the suspicion window is suspected to be the last-known reading re-posted, not a
-        // fresh read. The "---" marker is a near-universal CGM convention (verified for
-        // CamAPS; observed in xDrip, Juggluco, and Diabox), so the detector is intentionally
-        // applied across all CGM_PACKAGES rather than per-package — a foreign app would have
-        // to actively use "---" as something other than "no value" to trigger a false drop.
-        private const val NO_VALUE_MARKER = "---"
-
-        // Sensor-recovery window, not sample-cadence: the time we expect a true sensor
-        // disconnect to last before the source app either reconnects (admitting a fresh
-        // changing value, which clears suspicion) or gives up (the next "---" extends it).
-        // Tied to observed CamAPS behavior, deliberately NOT scaled with sample period —
-        // a 5-min sensor's reconnect time is the same wall-clock duration as a 1-min one.
-        private const val STUCK_VALUE_SUSPICION_MS = 10L * 60 * 1000
-
-
         fun isEnabled(context: Context): Boolean {
             val flat = Settings.Secure.getString(
                 context.contentResolver, "enabled_notification_listeners"
@@ -168,17 +150,6 @@ class GlucoseNotificationListener : NotificationListenerService() {
     /** Tracks packages for which a rejection has already been logged, to avoid spam. */
     private val loggedRejections = mutableSetOf<String>()
 
-    /**
-     * Per-package stuck-value detector. Backed by SharedPreferences so suspicion state
-     * survives Service rebinds (boot, app update, memory pressure) — without persistence
-     * the detector would be wiped exactly when it matters most, since rebinds correlate
-     * with degraded states. Lazy-initialized because `getSharedPreferences` requires a
-     * Context that's only valid after the Service is created.
-     */
-    private val stuckDetector by lazy {
-        StuckValueDetector(getSharedPreferences("strimma_stuck", Context.MODE_PRIVATE))
-    }
-
     private fun getSelectedSource(): GlucoseSource {
         val name = getSharedPreferences("strimma_sync", Context.MODE_PRIVATE)
             .getString("glucose_source", null) ?: return GlucoseSource.COMPANION
@@ -189,7 +160,6 @@ class GlucoseNotificationListener : NotificationListenerService() {
         if (!shouldProcess(sbn)) return
 
         DebugLog.log(message = "Notification from: ${sbn.packageName}")
-
         val notification = sbn.notification ?: return
         DebugLog.log(
             message = "NotifMeta: pkg=${sbn.packageName} " +
@@ -201,8 +171,31 @@ class GlucoseNotificationListener : NotificationListenerService() {
                 "ongoing=${sbn.isOngoing}"
         )
 
-        val mgdl = parseAndFilter(sbn, notification) ?: return
-        forwardReading(sbn, notification, mgdl)
+        val mgdl = extractGlucose(notification)
+        if (mgdl == null || !GlucoseReading.isValidSgv(mgdl)) {
+            DebugLog.log(message = "Could not parse glucose from notification")
+            return
+        }
+
+        // Math.round (not Double.toInt) matches ReadingPipeline.processReading's conversion,
+        // so the value reported in this debug log line equals the one that gets stored.
+        val sgv = Math.round(mgdl).toInt()
+        DebugLog.log(message = "Parsed: $sgv mg/dL")
+
+        val intent = Intent(this, com.psjostrom.strimma.service.StrimmaService::class.java).apply {
+            action = ACTION_GLUCOSE_RECEIVED
+            putExtra(EXTRA_MGDL, mgdl)
+            putExtra(
+                EXTRA_TIMESTAMP,
+                resolveReadingTimestamp(
+                    notifWhen = notification.`when`,
+                    postTime = sbn.postTime,
+                    now = System.currentTimeMillis(),
+                ),
+            )
+            putExtra(EXTRA_SOURCE, sbn.packageName)
+        }
+        startForegroundService(intent)
     }
 
     private fun shouldProcess(sbn: StatusBarNotification): Boolean {
@@ -226,56 +219,6 @@ class GlucoseNotificationListener : NotificationListenerService() {
         }
 
         return true
-    }
-
-    /**
-     * Parses [notification] and consults [stuckDetector]. Returns the parsed mg/dL value
-     * when the reading should be forwarded, or null when it should be dropped (unparseable,
-     * invalid, or detected as a stuck repost). Marker observations and accepted SGVs are
-     * recorded on the detector regardless of the early-return path so a "---" arriving in
-     * the same notification as a parseable value still arms suspicion.
-     */
-    private fun parseAndFilter(sbn: StatusBarNotification, notification: Notification): Double? {
-        val attempt = extractGlucose(notification)
-        if (attempt.sawNoValueMarker) {
-            stuckDetector.recordNoValue(sbn.packageName)
-        }
-        val mgdl = attempt.mgdl
-
-        if (mgdl == null || !GlucoseReading.isValidSgv(mgdl)) {
-            DebugLog.log(message = "Could not parse glucose from notification")
-            return null
-        }
-
-        // Match ReadingPipeline's mg/dL → SGV conversion (Math.round, not Double.toInt) so
-        // the comparison against the prior forwarded SGV stays consistent with what the
-        // pipeline actually stores in the DB.
-        val sgv = Math.round(mgdl).toInt()
-        if (stuckDetector.isStuck(sbn.packageName, sgv, STUCK_VALUE_SUSPICION_MS)) {
-            DebugLog.log(message = "Stuck-value rejected: pkg=${sbn.packageName} sgv=$sgv")
-            return null
-        }
-
-        stuckDetector.recordAccept(sbn.packageName, sgv)
-        DebugLog.log(message = "Parsed: $sgv mg/dL")
-        return mgdl
-    }
-
-    private fun forwardReading(sbn: StatusBarNotification, notification: Notification, mgdl: Double) {
-        val intent = Intent(this, com.psjostrom.strimma.service.StrimmaService::class.java).apply {
-            action = ACTION_GLUCOSE_RECEIVED
-            putExtra(EXTRA_MGDL, mgdl)
-            putExtra(
-                EXTRA_TIMESTAMP,
-                resolveReadingTimestamp(
-                    notifWhen = notification.`when`,
-                    postTime = sbn.postTime,
-                    now = System.currentTimeMillis(),
-                ),
-            )
-            putExtra(EXTRA_SOURCE, sbn.packageName)
-        }
-        startForegroundService(intent)
     }
 
     /**
@@ -308,9 +251,7 @@ class GlucoseNotificationListener : NotificationListenerService() {
         return now
     }
 
-    private data class ParseAttempt(val mgdl: Double?, val sawNoValueMarker: Boolean)
-
-    private fun extractGlucose(notification: Notification): ParseAttempt {
+    private fun extractGlucose(notification: Notification): Double? {
         // Collect parse candidates from all four sources, in priority order:
         // contentView texts (in TextView order) → title → text → ticker. First
         // parseable wins. tickerText fallback is required for Eversense, which
@@ -330,9 +271,7 @@ class GlucoseNotificationListener : NotificationListenerService() {
             texts.add(ticker)
         }
 
-        val mgdl = texts.firstNotNullOfOrNull { tryParseGlucose(it) }
-        val sawNoValueMarker = texts.any { it.trim() == NO_VALUE_MARKER }
-        return ParseAttempt(mgdl = mgdl, sawNoValueMarker = sawNoValueMarker)
+        return texts.firstNotNullOfOrNull { tryParseGlucose(it) }
     }
 
     private fun collectContentViewTexts(notification: Notification, out: MutableList<String>) {
