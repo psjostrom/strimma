@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <lint>
-    <!-- AGP 9.1.0 only supports compileSdk 36; lint compares against whatever SDK
-         is installed on the machine (including betas). Remove when AGP catches up. -->
+    <!-- compileSdk is allowed to move ahead for dependency/toolchain support.
+         targetSdk stays on API 36 until Android 17 runtime behavior changes are audited. -->
     <issue id="OldTargetApi" severity="ignore" />
 
     <!-- Dependency freshness is a release-management concern, not a PR-gating signal.

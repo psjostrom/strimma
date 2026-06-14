@@ -17,7 +17,7 @@ kotlin {
 android {
     namespace = "com.psjostrom.strimma"
     //noinspection GradleDependency
-    compileSdk = 36
+    compileSdk = 37
 
     signingConfigs {
         create("release") {
@@ -39,7 +39,7 @@ android {
         minSdk = 33 // Only targets devices still receiving security updates — this is medical data
         targetSdk = 36
         versionCode = 2
-        versionName = "1.3.0"
+        versionName = "1.3.1-rc.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -144,6 +144,9 @@ dependencies {
 
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
+    // Hilt 2.59.2 needs Kotlin 2.4 metadata support on its annotation processor classpath.
+    annotationProcessor(libs.kotlin.metadata.jvm)
+    testAnnotationProcessor(libs.kotlin.metadata.jvm)
     implementation(libs.hilt.navigation.compose)
 
     implementation(libs.ktor.client.core)
