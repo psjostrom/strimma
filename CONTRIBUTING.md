@@ -123,9 +123,9 @@ Every data source needs tests covering: valid data, invalid data, out-of-range v
 
 ## Quality Gates
 
-### Pre-commit (local)
+### Local hooks
 
-The pre-commit hook runs Detekt automatically. Set it up once:
+The local hooks catch signing issues before commits and reject pushes containing unsigned or unverifiable commits. Set them up once:
 
 ```bash
 git config core.hooksPath .githooks
