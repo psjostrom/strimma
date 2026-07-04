@@ -76,31 +76,63 @@ Guidelines:
 - Prepend the new version section above existing entries
 - Omit empty sections (if no fixes, skip ### Fixed)
 
-### 4. Update versionName
+### 4. Check docs staleness
+
+Check docs for staleness against the release changes:
+
+```bash
+git diff --name-only ${LAST_TAG}..main -- docs/
+```
+
+For every user-visible change in the release, grep `docs/` for references to the changed feature or behavior. Update affected docs, and flag screenshots that may be stale.
+
+### 5. Update versionName
 
 Edit `app/build.gradle.kts` line ~41:
 - Change `versionName = "X.Y.Z"` to the new version (no `v` prefix)
 - Do NOT touch `versionCode` (line ~40)
 
-### 5. Create release branch and PR
+### 6. Create release branch and PR
 
 ```bash
 git checkout -b release/vX.Y.Z
 git add app/build.gradle.kts CHANGELOG.md
 ```
 
-Commit and push. Create a PR with the changelog section in the body and a checklist:
+Commit and push. Create a PR with two distinct sections:
+
+1. Inside a ` ```markdown ` fenced block: release notes only, for end users.
+2. Outside the fence: testing plan and release checklist.
+
+Example:
+
+````markdown
+```markdown
+## vX.Y.Z
+
+### Added
+- User-facing release note.
+```
+
+## Testing
+
 - [ ] CI passes
 - [ ] Merge PR
-- [ ] Tag from main: `git tag vX.Y.Z && git push origin vX.Y.Z`
+- [ ] Tag from main: `git tag -a vX.Y.Z -m "vX.Y.Z" && git push origin vX.Y.Z`
+````
 
-### 6. After merge
+Checklist outside the release-notes fence:
+- [ ] CI passes
+- [ ] Merge PR
+- [ ] Tag from main: `git tag -a vX.Y.Z -m "vX.Y.Z" && git push origin vX.Y.Z`
+
+### 7. After merge
 
 Remind the user to tag from main:
 ```bash
 git checkout main && git pull
-git tag vX.Y.Z
+git tag -a vX.Y.Z -m "vX.Y.Z"
 git push origin vX.Y.Z
 ```
 
-CI will build the signed APK and create the GitHub Release with auto-generated notes.
+CI will build the signed APK and create the GitHub Release from the fenced release notes.

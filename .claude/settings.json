@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "input=$(cat); file=$(echo \"$input\" | jq -r '.tool_input.file_path // empty'); if echo \"$file\" | grep -qE 'lint-baseline\\.xml|detekt-baseline\\.xml'; then echo '{\"decision\":\"block\",\"reason\":\"HARD RULE: Never update lint baselines to make CI pass. Fix the actual lint errors instead.\"}'; else echo '{\"decision\":\"approve\"}'; fi",
+            "command": "./scripts/agent-baseline-guard.sh --host claude",
             "timeout": 3000
           }
         ]
@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "input=$(cat); file=$(echo \"$input\" | jq -r '.tool_input.file_path // empty'); if echo \"$file\" | grep -q 'app/src/.*\\.kt'; then if ! echo \"$file\" | grep -q '/docs/'; then echo 'DOCS CHECK: You edited a source file that may affect user-visible behavior. Before declaring done: grep docs/ for references to this feature, update affected docs, flag stale screenshots. See CLAUDE.md Documentation Updates rule.'; fi; fi",
+            "command": "./scripts/agent-docs-reminder.sh --host claude",
             "timeout": 3000
           }
         ]
