@@ -22,5 +22,8 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
+      - name: Agent workflow hooks
+        run: bash scripts/test-agent-workflow.sh
+
       - name: Test, lint & detekt
         run: ./gradlew testDebugUnitTest lintDebug detekt

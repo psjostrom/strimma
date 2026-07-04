@@ -1,0 +1,21 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./scripts/agent-baseline-guard.sh --host codex-stop",
+            "timeout": 3000,
+            "statusMessage": "Checking Strimma baseline policy"
+          },
+          {
+            "type": "command",
+            "command": "./scripts/agent-docs-reminder.sh --host codex-stop",
+            "timeout": 3000
+          }
+        ]
+      }
+    ]
+  }
+}

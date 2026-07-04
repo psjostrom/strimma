@@ -1,6 +1,6 @@
 #!/bin/sh
-# Pre-commit hook: run detekt for fast local feedback.
-# Full test + lint suite runs in CI.
+# Pre-commit hook: keep local commits signable.
+# Test and lint gates run in CI.
 
 # Verify SSH agent is reachable for commit signing
 if [ "$(git config commit.gpgsign)" = "true" ]; then
@@ -10,13 +10,4 @@ if [ "$(git config commit.gpgsign)" = "true" ]; then
         echo "   Run: ssh-add ~/.ssh/id_ed25519"
         exit 1
     fi
-fi
-
-echo "Running detekt..."
-./gradlew detekt --daemon 2>/dev/null
-
-if [ $? -ne 0 ]; then
-    echo ""
-    echo "❌ Detekt found issues. Fix them before committing."
-    exit 1
 fi
