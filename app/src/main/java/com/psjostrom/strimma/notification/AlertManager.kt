@@ -361,7 +361,7 @@ class AlertManager @Inject constructor(
         val urgentLowThreshold = effective.alertUrgentLowMgdl
         val lowEnabled = settings.alertLowEnabled.first()
         val lowThreshold = effective.alertLowMgdl
-        val cooldownMs = settings.alertCooldownMinutes.first().toLong() * 60_000L
+        val cooldownMs = settings.alertCooldownMinutes.first().toLong() * MS_PER_MINUTE
 
         if (urgentLowEnabled && mgdl <= urgentLowThreshold) {
             if (!isCategoryPausedAtLevel(snoozePrefs, AlertCategory.LOW, ALERT_LEVEL_URGENT)
@@ -404,7 +404,7 @@ class AlertManager @Inject constructor(
         val urgentHighThreshold = effective.alertUrgentHighMgdl
         val highEnabled = settings.alertHighEnabled.first()
         val highThreshold = effective.alertHighMgdl
-        val cooldownMs = settings.alertCooldownMinutes.first().toLong() * 60_000L
+        val cooldownMs = settings.alertCooldownMinutes.first().toLong() * MS_PER_MINUTE
 
         if (urgentHighEnabled && mgdl >= urgentHighThreshold) {
             if (!isCategoryPausedAtLevel(snoozePrefs, AlertCategory.HIGH, ALERT_LEVEL_URGENT)
