@@ -140,3 +140,26 @@ Alerts **keep firing** as long as the condition persists. Each new glucose readi
 If you snooze an alert and you're still out of range when the snooze expires, the alert fires again on the next reading.
 
 This is intentional — a persistent low or high should not be silently ignored.
+
+## Re-alert Interval (Cooldown)
+
+By default, alerts fire on **every reading** while the condition persists. To reduce notification fatigue during prolonged episodes, you can set a **Re-alert Interval** in the Alerts settings:
+
+| Option | Behavior |
+|--------|----------|
+| **Default** | No cooldown — alerts fire on every reading (sensor rate) |
+| **5 min** | After an alarm fires, that same alarm won't re-fire for 5 minutes |
+| **10 min** | After an alarm fires, that same alarm won't re-fire for 10 minutes |
+| **15 min** | After an alarm fires, that same alarm won't re-fire for 15 minutes |
+
+### Per-alarm cooldown
+
+Each alarm type (Urgent Low, Low, High, Urgent High) has its **own independent cooldown timer**. If you set a 15-minute cooldown:
+
+- Low fires at 10:00 → next Low suppressed until 10:15
+- Urgent Low at 10:05 → **fires immediately** (separate alarm, separate timer)
+- Low at 10:16 → fires (cooldown expired)
+
+### Cooldown reset
+
+When glucose returns to range, all cooldown timers **reset immediately**. The next episode alerts right away regardless of remaining cooldown.

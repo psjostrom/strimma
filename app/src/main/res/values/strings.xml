@@ -214,6 +214,8 @@
     <string name="settings_alerts_high_soon">High Soon</string>
     <string name="settings_alerts_high_soon_desc">Predicted high within prediction window</string>
     <string name="settings_alerts_stale">Stale Data (10+ min)</string>
+    <string name="settings_alerts_cooldown">Re-alert Interval</string>
+    <string name="settings_alerts_cooldown_desc">Reduce notification fatigue during prolonged episodes. Default fires on every reading. Each alarm type has its own independent cooldown.</string>
 
     <!-- Data Settings -->
     <string name="settings_data_title">Sharing</string>

@@ -166,6 +166,8 @@
     <string name="settings_alerts_high_soon">Bald hoch</string>
     <string name="settings_alerts_high_soon_desc">Vorhergesagt hoch innerhalb des Vorhersagefensters</string>
     <string name="settings_alerts_stale">Veraltete Daten (10+ Min.)</string>
+    <string name="settings_alerts_cooldown">Alarm-Intervall</string>
+    <string name="settings_alerts_cooldown_desc">Reduziere Alarmerm\u00FCdung bei l\u00E4ngeren Episoden. Standard alarmiert bei jeder Messung. Jeder Alarmtyp hat einen eigenen Cooldown.</string>
 
     <!-- Data Settings -->
     <string name="settings_data_title">Daten</string>

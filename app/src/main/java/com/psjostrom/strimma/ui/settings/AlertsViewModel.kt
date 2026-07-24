@@ -43,6 +43,9 @@ class AlertsViewModel @Inject constructor(
     val alertHighSoonEnabled: StateFlow<Boolean> = settings.alertHighSoonEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
+    val alertCooldownMinutes: StateFlow<Int> = settings.alertCooldownMinutes
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
     val pauseLowExpiryMs: StateFlow<Long?> = alertManager.pauseLowExpiryMs
     val pauseHighExpiryMs: StateFlow<Long?> = alertManager.pauseHighExpiryMs
 
@@ -79,6 +82,7 @@ class AlertsViewModel @Inject constructor(
     fun setAlertStaleEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertStaleEnabled(enabled) }
     fun setAlertLowSoonEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertLowSoonEnabled(enabled) }
     fun setAlertHighSoonEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertHighSoonEnabled(enabled) }
+    fun setAlertCooldownMinutes(minutes: Int) = viewModelScope.launch { settings.setAlertCooldownMinutes(minutes) }
 
     fun openAlertChannelSettings(channelId: String) = alertManager.openChannelSettings(channelId)
 
