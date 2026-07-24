@@ -166,34 +166,3 @@ fun AlertBlock(
     }
 }
 
-@Composable
-fun CooldownPicker(
-    label: String,
-    value: Int,
-    onValueChange: (Int) -> Unit,
-    textColor: Color,
-    outlineColor: Color
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(label, color = textColor, fontSize = 14.sp)
-        var text by remember(value) { mutableStateOf(if (value == 0) "Disabled" else "${value} min") }
-        OutlinedTextField(
-            value = text,
-            onValueChange = { newText ->
-                text = newText
-                val parsed = newText.replace(" min", "").replace("Disabled", "0").toIntOrNull()
-                if (parsed != null && parsed >= 0 && parsed <= 60) {
-                    onValueChange(parsed)
-                }
-            },
-            modifier = Modifier.fillMaxWidth().padding(start = 16.dp),
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            label = { Text(stringResource(R.string.settings_alerts_cooldown_min)) }
-        )
-    }
-}

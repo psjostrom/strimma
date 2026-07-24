@@ -166,6 +166,8 @@
     <string name="settings_alerts_high_soon">Bient\u00F4t haut</string>
     <string name="settings_alerts_high_soon_desc">Glyc\u00E9mie pr\u00E9dite haute dans la fen\u00EAtre de pr\u00E9diction</string>
     <string name="settings_alerts_stale">Donn\u00E9es obsol\u00E8tes (10+ min)</string>
+    <string name="settings_alerts_cooldown">Intervalle de r\u00E9-alerte</string>
+    <string name="settings_alerts_cooldown_desc">R\u00E9duire la fatigue des notifications lors d\u2019\u00E9pisodes prolong\u00E9s. Par d\u00E9faut, alerte \u00E0 chaque lecture. Chaque type d\u2019alarme a son propre cooldown ind\u00E9pendant.</string>
 
     <!-- Data Settings -->
     <string name="settings_data_title">Donn\u00E9es</string>

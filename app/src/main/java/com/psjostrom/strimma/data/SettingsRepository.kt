@@ -146,8 +146,7 @@ class SettingsRepository @Inject constructor(
         private val KEY_ALERT_STALE_ENABLED = booleanPreferencesKey("alert_stale_enabled")
         private val KEY_ALERT_LOW_SOON_ENABLED = booleanPreferencesKey("alert_low_soon_enabled")
         private val KEY_ALERT_HIGH_SOON_ENABLED = booleanPreferencesKey("alert_high_soon_enabled")
-        private val KEY_ALERT_LOW_COOLDOWN_MINUTES = intPreferencesKey("alert_low_cooldown_minutes")
-        private val KEY_ALERT_HIGH_COOLDOWN_MINUTES = intPreferencesKey("alert_high_cooldown_minutes")
+        private val KEY_ALERT_COOLDOWN_MINUTES = intPreferencesKey("alert_cooldown_minutes")
         private val KEY_THEME_MODE = stringPreferencesKey("theme_mode")
         private val KEY_NOTIF_GRAPH_MINUTES = intPreferencesKey("notif_graph_minutes")
         private val KEY_NOTIF_PREDICTION_MINUTES = intPreferencesKey("notif_prediction_minutes")
@@ -282,10 +281,8 @@ class SettingsRepository @Inject constructor(
     val alertLowSoonEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_LOW_SOON_ENABLED] ?: true }
     val alertHighSoonEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_HIGH_SOON_ENABLED] ?: true }
 
-    val alertLowCooldownMinutes: Flow<Int> = dataStore.data.map { it[KEY_ALERT_LOW_COOLDOWN_MINUTES] ?: DEFAULT_ALERT_COOLDOWN_MINUTES }
-    val alertHighCooldownMinutes: Flow<Int> = dataStore.data.map { it[KEY_ALERT_HIGH_COOLDOWN_MINUTES] ?: DEFAULT_ALERT_COOLDOWN_MINUTES }
-    suspend fun setAlertLowCooldownMinutes(minutes: Int) { dataStore.edit { it[KEY_ALERT_LOW_COOLDOWN_MINUTES] = minutes } }
-    suspend fun setAlertHighCooldownMinutes(minutes: Int) { dataStore.edit { it[KEY_ALERT_HIGH_COOLDOWN_MINUTES] = minutes } }
+    val alertCooldownMinutes: Flow<Int> = dataStore.data.map { it[KEY_ALERT_COOLDOWN_MINUTES] ?: DEFAULT_ALERT_COOLDOWN_MINUTES }
+    suspend fun setAlertCooldownMinutes(minutes: Int) { dataStore.edit { it[KEY_ALERT_COOLDOWN_MINUTES] = minutes } }
 
     // --- Workout thresholds ---
     val workoutAlertLow: Flow<Float> = dataStore.data.map { it[KEY_WORKOUT_ALERT_LOW] ?: DEFAULT_WORKOUT_ALERT_LOW }
@@ -708,8 +705,7 @@ class SettingsRepository @Inject constructor(
             put("alert_stale_enabled", prefs[KEY_ALERT_STALE_ENABLED] ?: true)
             put("alert_low_soon_enabled", prefs[KEY_ALERT_LOW_SOON_ENABLED] ?: true)
             put("alert_high_soon_enabled", prefs[KEY_ALERT_HIGH_SOON_ENABLED] ?: true)
-            put("alert_low_cooldown_minutes", prefs[KEY_ALERT_LOW_COOLDOWN_MINUTES] ?: DEFAULT_ALERT_COOLDOWN_MINUTES)
-            put("alert_high_cooldown_minutes", prefs[KEY_ALERT_HIGH_COOLDOWN_MINUTES] ?: DEFAULT_ALERT_COOLDOWN_MINUTES)
+            put("alert_cooldown_minutes", prefs[KEY_ALERT_COOLDOWN_MINUTES] ?: DEFAULT_ALERT_COOLDOWN_MINUTES)
             put("theme_mode", prefs[KEY_THEME_MODE] ?: "System")
             put("notif_graph_minutes", prefs[KEY_NOTIF_GRAPH_MINUTES] ?: DEFAULT_NOTIF_GRAPH_MINUTES)
             put("notif_prediction_minutes", prefs[KEY_NOTIF_PREDICTION_MINUTES] ?: DEFAULT_PREDICTION_MINUTES)
@@ -774,8 +770,7 @@ class SettingsRepository @Inject constructor(
             if (settings.has("alert_stale_enabled")) prefs[KEY_ALERT_STALE_ENABLED] = settings.getBoolean("alert_stale_enabled")
             if (settings.has("alert_low_soon_enabled")) prefs[KEY_ALERT_LOW_SOON_ENABLED] = settings.getBoolean("alert_low_soon_enabled")
             if (settings.has("alert_high_soon_enabled")) prefs[KEY_ALERT_HIGH_SOON_ENABLED] = settings.getBoolean("alert_high_soon_enabled")
-            if (settings.has("alert_low_cooldown_minutes")) prefs[KEY_ALERT_LOW_COOLDOWN_MINUTES] = settings.getInt("alert_low_cooldown_minutes")
-            if (settings.has("alert_high_cooldown_minutes")) prefs[KEY_ALERT_HIGH_COOLDOWN_MINUTES] = settings.getInt("alert_high_cooldown_minutes")
+            if (settings.has("alert_cooldown_minutes")) prefs[KEY_ALERT_COOLDOWN_MINUTES] = settings.getInt("alert_cooldown_minutes")
             if (settings.has("theme_mode")) prefs[KEY_THEME_MODE] = settings.getString("theme_mode")
             if (settings.has("notif_graph_minutes")) prefs[KEY_NOTIF_GRAPH_MINUTES] = settings.getInt("notif_graph_minutes")
             if (settings.has("notif_prediction_minutes")) prefs[KEY_NOTIF_PREDICTION_MINUTES] = settings.getInt("notif_prediction_minutes")

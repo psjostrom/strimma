@@ -143,15 +143,23 @@ This is intentional — a persistent low or high should not be silently ignored.
 
 ## Re-alert Interval (Cooldown)
 
-By default, alerts fire on **every reading** while the condition persists (e.g., every 1 minute for Libre CGM). To reduce notification fatigue during prolonged episodes, you can set a **Re-alert Interval** per category:
+By default, alerts fire on **every reading** while the condition persists. To reduce notification fatigue during prolonged episodes, you can set a **Re-alert Interval** in the Alerts settings:
 
-| Setting | Category | Default |
-|---------|----------|---------|
-| **Low Re-alert Interval** | Urgent Low, Low, Low Soon | 0 min (every reading) |
-| **High Re-alert Interval** | Urgent High, High, High Soon | 0 min (every reading) |
+| Option | Behavior |
+|--------|----------|
+| **Default** | No cooldown — alerts fire on every reading (sensor rate) |
+| **5 min** | After an alarm fires, that same alarm won't re-fire for 5 minutes |
+| **10 min** | After an alarm fires, that same alarm won't re-fire for 10 minutes |
+| **15 min** | After an alarm fires, that same alarm won't re-fire for 15 minutes |
 
-- **0 = disabled** — alerts fire on every reading (current behavior)
-- **1–60 minutes** — after an alert fires, the same category will not re-fire until the interval elapses **or** glucose returns to range
-- When glucose returns to range, the cooldown **resets immediately** — the next episode alerts right away
+### Per-alarm cooldown
 
-This is useful for sensors with frequent readings (Libre 1-min, Dexcom G7 5-min) where a sustained low would otherwise alarm every cycle.
+Each alarm type (Urgent Low, Low, High, Urgent High) has its **own independent cooldown timer**. If you set a 15-minute cooldown:
+
+- Low fires at 10:00 → next Low suppressed until 10:15
+- Urgent Low at 10:05 → **fires immediately** (separate alarm, separate timer)
+- Low at 10:16 → fires (cooldown expired)
+
+### Cooldown reset
+
+When glucose returns to range, all cooldown timers **reset immediately**. The next episode alerts right away regardless of remaining cooldown.

@@ -166,6 +166,8 @@
     <string name="settings_alerts_high_soon">Alto pronto</string>
     <string name="settings_alerts_high_soon_desc">Glucosa predicha alta dentro de la ventana de predicci\u00F3n</string>
     <string name="settings_alerts_stale">Datos obsoletos (10+ min)</string>
+    <string name="settings_alerts_cooldown">Intervalo de re-alerta</string>
+    <string name="settings_alerts_cooldown_desc">Reduce la fatiga de notificaciones durante episodios prolongados. Por defecto alerta en cada lectura. Cada tipo de alarma tiene su propio cooldown independiente.</string>
 
     <!-- Data Settings -->
     <string name="settings_data_title">Datos</string>

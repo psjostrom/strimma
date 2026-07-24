@@ -429,14 +429,35 @@ class AlertManagerTest {
     }
 
     // -- Cooldown / Re-alert Interval --
-    // When a cooldown is configured, repeated alerts for the same category
-    // are suppressed until the cooldown expires or glucose returns to range.
+    // Cooldown is per-alarm (each alarm type has its own timer).
+    // Escalation (e.g. Low → Urgent Low) always fires immediately.
+
+    @Test
+    fun `isInCooldown returns true when within cooldown window`() {
+        val now = System.currentTimeMillis()
+        assertTrue(AlertManager.isInCooldown(lastFireMs = now - 30_000, cooldownMs = 60_000))
+    }
+
+    @Test
+    fun `isInCooldown returns false when cooldown expired`() {
+        val now = System.currentTimeMillis()
+        assertFalse(AlertManager.isInCooldown(lastFireMs = now - 120_000, cooldownMs = 60_000))
+    }
+
+    @Test
+    fun `isInCooldown returns false when cooldown is zero`() {
+        assertFalse(AlertManager.isInCooldown(lastFireMs = System.currentTimeMillis(), cooldownMs = 0))
+    }
+
+    @Test
+    fun `isInCooldown returns false when lastFireMs is zero`() {
+        assertFalse(AlertManager.isInCooldown(lastFireMs = 0, cooldownMs = 60_000))
+    }
 
     @Test
     fun `low alert respects cooldown — repeated reading within cooldown does not re-fire`() = runTest {
-        settings.setAlertLowCooldownMinutes(15) // 15 min cooldown
+        settings.setAlertCooldownMinutes(15)
 
-        // First reading triggers low alert
         alertManager.checkReading(reading(60), emptyList(), 0)
         assertTrue(isNotificationActive(AlertManager.ALERT_LOW_ID))
 
@@ -446,27 +467,9 @@ class AlertManagerTest {
     }
 
     @Test
-    fun `low alert fires again after cooldown expires`() = runTest {
-        settings.setAlertLowCooldownMinutes(1) // 1 min cooldown
-
-        alertManager.checkReading(reading(60), emptyList(), 0)
-        assertTrue(isNotificationActive(AlertManager.ALERT_LOW_ID))
-
-        // Manually expire the cooldown by setting last fire to past
-        val field = AlertManager::class.java.getDeclaredField("lastLowFireMs")
-        field.isAccessible = true
-        field.set(alertManager, System.currentTimeMillis() - 2 * 60_000L)
-
-        // Next check should fire again
-        alertManager.checkReading(reading(60), emptyList(), 0)
-        assertTrue(isNotificationActive(AlertManager.ALERT_LOW_ID))
-    }
-
-    @Test
     fun `low alert resets cooldown when glucose returns to range`() = runTest {
-        settings.setAlertLowCooldownMinutes(15)
+        settings.setAlertCooldownMinutes(15)
 
-        // Fire low alert
         alertManager.checkReading(reading(60), emptyList(), 0)
         assertTrue(isNotificationActive(AlertManager.ALERT_LOW_ID))
 
@@ -480,19 +483,50 @@ class AlertManagerTest {
     }
 
     @Test
+    fun `urgent low fires during active low cooldown — escalation always fires`() = runTest {
+        settings.setAlertCooldownMinutes(15)
+
+        // Regular low fires
+        alertManager.checkReading(reading(60), emptyList(), 0)
+        assertTrue(isNotificationActive(AlertManager.ALERT_LOW_ID))
+
+        // Advance past urgent-low threshold within cooldown — urgent low must still fire
+        alertManager.checkReading(reading(50), emptyList(), 0)
+        assertTrue("urgent low must fire regardless of low cooldown",
+            isNotificationActive(AlertManager.ALERT_URGENT_LOW_ID))
+        assertFalse("regular low should be cleared", isNotificationActive(AlertManager.ALERT_LOW_ID))
+    }
+
+    @Test
     fun `high alert respects cooldown`() = runTest {
-        settings.setAlertHighCooldownMinutes(15)
+        settings.setAlertCooldownMinutes(15)
 
         alertManager.checkReading(reading(200), emptyList(), 0)
         assertTrue(isNotificationActive(AlertManager.ALERT_HIGH_ID))
 
+        // Immediately check again — suppressed
         alertManager.checkReading(reading(200), emptyList(), 0)
         assertTrue(isNotificationActive(AlertManager.ALERT_HIGH_ID))
     }
 
     @Test
+    fun `urgent high fires during active high cooldown — escalation always fires`() = runTest {
+        settings.setAlertCooldownMinutes(15)
+
+        // Regular high fires
+        alertManager.checkReading(reading(200), emptyList(), 0)
+        assertTrue(isNotificationActive(AlertManager.ALERT_HIGH_ID))
+
+        // Advance past urgent-high threshold within cooldown — urgent high must still fire
+        alertManager.checkReading(reading(240), emptyList(), 0)
+        assertTrue("urgent high must fire regardless of high cooldown",
+            isNotificationActive(AlertManager.ALERT_URGENT_HIGH_ID))
+        assertFalse("regular high should be cleared", isNotificationActive(AlertManager.ALERT_HIGH_ID))
+    }
+
+    @Test
     fun `cooldown of 0 means no cooldown — fires on every reading`() = runTest {
-        settings.setAlertLowCooldownMinutes(0)
+        settings.setAlertCooldownMinutes(0)
 
         alertManager.checkReading(reading(60), emptyList(), 0)
         assertTrue(isNotificationActive(AlertManager.ALERT_LOW_ID))

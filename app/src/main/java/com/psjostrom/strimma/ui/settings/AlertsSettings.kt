@@ -13,6 +13,10 @@ import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.ui.theme.InRange
 
+private val cooldownOptions = listOf(0, 5, 10, 15)
+private val cooldownLabels = listOf("Default", "5 min", "10 min", "15 min")
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlertsSettings(
     glucoseUnit: GlucoseUnit,
@@ -27,8 +31,7 @@ fun AlertsSettings(
     alertStaleEnabled: Boolean,
     alertLowSoonEnabled: Boolean,
     alertHighSoonEnabled: Boolean,
-    alertLowCooldownMinutes: Int,
-    alertHighCooldownMinutes: Int,
+    alertCooldownMinutes: Int,
     onAlertLowEnabledChange: (Boolean) -> Unit,
     onAlertHighEnabledChange: (Boolean) -> Unit,
     onAlertUrgentLowEnabledChange: (Boolean) -> Unit,
@@ -40,8 +43,7 @@ fun AlertsSettings(
     onAlertStaleEnabledChange: (Boolean) -> Unit,
     onAlertLowSoonEnabledChange: (Boolean) -> Unit,
     onAlertHighSoonEnabledChange: (Boolean) -> Unit,
-    onAlertLowCooldownChange: (Int) -> Unit,
-    onAlertHighCooldownChange: (Int) -> Unit,
+    onAlertCooldownChange: (Int) -> Unit,
     onOpenAlertSound: (String) -> Unit,
     onBack: () -> Unit
 ) {
@@ -85,14 +87,6 @@ fun AlertsSettings(
                 textColor = onBg
             )
 
-            CooldownPicker(
-                label = stringResource(R.string.settings_alerts_cooldown),
-                value = alertLowCooldownMinutes,
-                onValueChange = onAlertLowCooldownChange,
-                textColor = onBg,
-                outlineColor = outline
-            )
-
             HorizontalDivider(color = outlineVar)
 
             AlertBlock(
@@ -106,14 +100,6 @@ fun AlertsSettings(
                 channelId = AlertManager.CHANNEL_HIGH,
                 onOpenSound = onOpenAlertSound,
                 textColor = onBg
-            )
-
-            CooldownPicker(
-                label = stringResource(R.string.settings_alerts_cooldown),
-                value = alertHighCooldownMinutes,
-                onValueChange = onAlertHighCooldownChange,
-                textColor = onBg,
-                outlineColor = outline
             )
 
             HorizontalDivider(color = outlineVar)
@@ -182,6 +168,27 @@ fun AlertsSettings(
             if (alertStaleEnabled) {
                 TextButton(onClick = { onOpenAlertSound(AlertManager.CHANNEL_STALE) }) {
                     Text(stringResource(R.string.common_sound), color = InRange, fontSize = 13.sp)
+                }
+            }
+
+            HorizontalDivider(color = outlineVar)
+
+            // Cooldown — at bottom of alerts section
+            Text(stringResource(R.string.settings_alerts_cooldown), color = onBg, fontSize = 14.sp)
+            Text(
+                stringResource(R.string.settings_alerts_cooldown_desc),
+                color = outline,
+                fontSize = 12.sp
+            )
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                cooldownOptions.forEachIndexed { index, minutes ->
+                    SegmentedButton(
+                        selected = alertCooldownMinutes == minutes,
+                        onClick = { onAlertCooldownChange(minutes) },
+                        shape = SegmentedButtonDefaults.itemShape(index, cooldownOptions.size)
+                    ) {
+                        Text(cooldownLabels[index])
+                    }
                 }
             }
         }
