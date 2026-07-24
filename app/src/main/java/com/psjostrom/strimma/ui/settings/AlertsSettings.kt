@@ -27,6 +27,8 @@ fun AlertsSettings(
     alertStaleEnabled: Boolean,
     alertLowSoonEnabled: Boolean,
     alertHighSoonEnabled: Boolean,
+    alertLowCooldownMinutes: Int,
+    alertHighCooldownMinutes: Int,
     onAlertLowEnabledChange: (Boolean) -> Unit,
     onAlertHighEnabledChange: (Boolean) -> Unit,
     onAlertUrgentLowEnabledChange: (Boolean) -> Unit,
@@ -38,6 +40,8 @@ fun AlertsSettings(
     onAlertStaleEnabledChange: (Boolean) -> Unit,
     onAlertLowSoonEnabledChange: (Boolean) -> Unit,
     onAlertHighSoonEnabledChange: (Boolean) -> Unit,
+    onAlertLowCooldownChange: (Int) -> Unit,
+    onAlertHighCooldownChange: (Int) -> Unit,
     onOpenAlertSound: (String) -> Unit,
     onBack: () -> Unit
 ) {
@@ -81,6 +85,14 @@ fun AlertsSettings(
                 textColor = onBg
             )
 
+            CooldownPicker(
+                label = stringResource(R.string.settings_alerts_cooldown),
+                value = alertLowCooldownMinutes,
+                onValueChange = onAlertLowCooldownChange,
+                textColor = onBg,
+                outlineColor = outline
+            )
+
             HorizontalDivider(color = outlineVar)
 
             AlertBlock(
@@ -94,6 +106,14 @@ fun AlertsSettings(
                 channelId = AlertManager.CHANNEL_HIGH,
                 onOpenSound = onOpenAlertSound,
                 textColor = onBg
+            )
+
+            CooldownPicker(
+                label = stringResource(R.string.settings_alerts_cooldown),
+                value = alertHighCooldownMinutes,
+                onValueChange = onAlertHighCooldownChange,
+                textColor = onBg,
+                outlineColor = outline
             )
 
             HorizontalDivider(color = outlineVar)

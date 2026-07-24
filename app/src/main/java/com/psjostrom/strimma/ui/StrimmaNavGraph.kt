@@ -428,6 +428,8 @@ fun StrimmaNavGraph(
             val alertStaleEnabled by alertsViewModel.alertStaleEnabled.collectAsState()
             val alertLowSoonEnabled by alertsViewModel.alertLowSoonEnabled.collectAsState()
             val alertHighSoonEnabled by alertsViewModel.alertHighSoonEnabled.collectAsState()
+            val alertLowCooldownMinutes by alertsViewModel.alertLowCooldownMinutes.collectAsState()
+            val alertHighCooldownMinutes by alertsViewModel.alertHighCooldownMinutes.collectAsState()
             AlertsSettings(
                 glucoseUnit = glucoseUnit,
                 alertLowEnabled = alertLowEnabled,
@@ -441,6 +443,8 @@ fun StrimmaNavGraph(
                 alertStaleEnabled = alertStaleEnabled,
                 alertLowSoonEnabled = alertLowSoonEnabled,
                 alertHighSoonEnabled = alertHighSoonEnabled,
+                alertLowCooldownMinutes = alertLowCooldownMinutes,
+                alertHighCooldownMinutes = alertHighCooldownMinutes,
                 onAlertLowEnabledChange = alertsViewModel::setAlertLowEnabled,
                 onAlertHighEnabledChange = alertsViewModel::setAlertHighEnabled,
                 onAlertUrgentLowEnabledChange = alertsViewModel::setAlertUrgentLowEnabled,
@@ -452,6 +456,8 @@ fun StrimmaNavGraph(
                 onAlertStaleEnabledChange = alertsViewModel::setAlertStaleEnabled,
                 onAlertLowSoonEnabledChange = alertsViewModel::setAlertLowSoonEnabled,
                 onAlertHighSoonEnabledChange = alertsViewModel::setAlertHighSoonEnabled,
+                onAlertLowCooldownChange = alertsViewModel::setAlertLowCooldownMinutes,
+                onAlertHighCooldownChange = alertsViewModel::setAlertHighCooldownMinutes,
                 onOpenAlertSound = alertsViewModel::openAlertChannelSettings,
                 onBack = { navController.popBackStack() }
             )

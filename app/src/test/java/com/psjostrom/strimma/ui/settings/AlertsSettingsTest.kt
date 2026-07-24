@@ -27,6 +27,8 @@ class AlertsSettingsTest {
         alertStaleEnabled: Boolean = true,
         alertLowSoonEnabled: Boolean = true,
         alertHighSoonEnabled: Boolean = true,
+        alertLowCooldownMinutes: Int = 0,
+        alertHighCooldownMinutes: Int = 0,
         onAlertLowEnabledChange: (Boolean) -> Unit = {},
         onAlertHighEnabledChange: (Boolean) -> Unit = {},
         onAlertUrgentLowEnabledChange: (Boolean) -> Unit = {},
@@ -34,6 +36,8 @@ class AlertsSettingsTest {
         onAlertStaleEnabledChange: (Boolean) -> Unit = {},
         onAlertLowSoonEnabledChange: (Boolean) -> Unit = {},
         onAlertHighSoonEnabledChange: (Boolean) -> Unit = {},
+        onAlertLowCooldownChange: (Int) -> Unit = {},
+        onAlertHighCooldownChange: (Int) -> Unit = {},
         onOpenAlertSound: (String) -> Unit = {},
         onBack: () -> Unit = {}
     ) {
@@ -51,6 +55,8 @@ class AlertsSettingsTest {
                 alertStaleEnabled = alertStaleEnabled,
                 alertLowSoonEnabled = alertLowSoonEnabled,
                 alertHighSoonEnabled = alertHighSoonEnabled,
+                alertLowCooldownMinutes = alertLowCooldownMinutes,
+                alertHighCooldownMinutes = alertHighCooldownMinutes,
                 onAlertLowEnabledChange = onAlertLowEnabledChange,
                 onAlertHighEnabledChange = onAlertHighEnabledChange,
                 onAlertUrgentLowEnabledChange = onAlertUrgentLowEnabledChange,
@@ -62,6 +68,8 @@ class AlertsSettingsTest {
                 onAlertStaleEnabledChange = onAlertStaleEnabledChange,
                 onAlertLowSoonEnabledChange = onAlertLowSoonEnabledChange,
                 onAlertHighSoonEnabledChange = onAlertHighSoonEnabledChange,
+                onAlertLowCooldownChange = onAlertLowCooldownChange,
+                onAlertHighCooldownChange = onAlertHighCooldownChange,
                 onOpenAlertSound = onOpenAlertSound,
                 onBack = onBack
             )

@@ -140,3 +140,18 @@ Alerts **keep firing** as long as the condition persists. Each new glucose readi
 If you snooze an alert and you're still out of range when the snooze expires, the alert fires again on the next reading.
 
 This is intentional — a persistent low or high should not be silently ignored.
+
+## Re-alert Interval (Cooldown)
+
+By default, alerts fire on **every reading** while the condition persists (e.g., every 1 minute for Libre CGM). To reduce notification fatigue during prolonged episodes, you can set a **Re-alert Interval** per category:
+
+| Setting | Category | Default |
+|---------|----------|---------|
+| **Low Re-alert Interval** | Urgent Low, Low, Low Soon | 0 min (every reading) |
+| **High Re-alert Interval** | Urgent High, High, High Soon | 0 min (every reading) |
+
+- **0 = disabled** — alerts fire on every reading (current behavior)
+- **1–60 minutes** — after an alert fires, the same category will not re-fire until the interval elapses **or** glucose returns to range
+- When glucose returns to range, the cooldown **resets immediately** — the next episode alerts right away
+
+This is useful for sensors with frequent readings (Libre 1-min, Dexcom G7 5-min) where a sustained low would otherwise alarm every cycle.

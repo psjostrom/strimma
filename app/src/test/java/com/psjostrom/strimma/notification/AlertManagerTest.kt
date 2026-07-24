@@ -427,4 +427,77 @@ class AlertManagerTest {
             (notif.notification.flags and android.app.Notification.FLAG_ONLY_ALERT_ONCE) == 0
         )
     }
+
+    // -- Cooldown / Re-alert Interval --
+    // When a cooldown is configured, repeated alerts for the same category
+    // are suppressed until the cooldown expires or glucose returns to range.
+
+    @Test
+    fun `low alert respects cooldown — repeated reading within cooldown does not re-fire`() = runTest {
+        settings.setAlertLowCooldownMinutes(15) // 15 min cooldown
+
+        // First reading triggers low alert
+        alertManager.checkReading(reading(60), emptyList(), 0)
+        assertTrue(isNotificationActive(AlertManager.ALERT_LOW_ID))
+
+        // Immediately check again — should NOT re-fire (cooldown active)
+        alertManager.checkReading(reading(60), emptyList(), 0)
+        assertTrue("should still have the original notification", isNotificationActive(AlertManager.ALERT_LOW_ID))
+    }
+
+    @Test
+    fun `low alert fires again after cooldown expires`() = runTest {
+        settings.setAlertLowCooldownMinutes(1) // 1 min cooldown
+
+        alertManager.checkReading(reading(60), emptyList(), 0)
+        assertTrue(isNotificationActive(AlertManager.ALERT_LOW_ID))
+
+        // Manually expire the cooldown by setting last fire to past
+        val field = AlertManager::class.java.getDeclaredField("lastLowFireMs")
+        field.isAccessible = true
+        field.set(alertManager, System.currentTimeMillis() - 2 * 60_000L)
+
+        // Next check should fire again
+        alertManager.checkReading(reading(60), emptyList(), 0)
+        assertTrue(isNotificationActive(AlertManager.ALERT_LOW_ID))
+    }
+
+    @Test
+    fun `low alert resets cooldown when glucose returns to range`() = runTest {
+        settings.setAlertLowCooldownMinutes(15)
+
+        // Fire low alert
+        alertManager.checkReading(reading(60), emptyList(), 0)
+        assertTrue(isNotificationActive(AlertManager.ALERT_LOW_ID))
+
+        // Return to range — cooldown should reset
+        alertManager.checkReading(reading(120), emptyList(), 0)
+        assertFalse(isNotificationActive(AlertManager.ALERT_LOW_ID))
+
+        // Immediately go low again — should fire (cooldown was reset)
+        alertManager.checkReading(reading(60), emptyList(), 0)
+        assertTrue(isNotificationActive(AlertManager.ALERT_LOW_ID))
+    }
+
+    @Test
+    fun `high alert respects cooldown`() = runTest {
+        settings.setAlertHighCooldownMinutes(15)
+
+        alertManager.checkReading(reading(200), emptyList(), 0)
+        assertTrue(isNotificationActive(AlertManager.ALERT_HIGH_ID))
+
+        alertManager.checkReading(reading(200), emptyList(), 0)
+        assertTrue(isNotificationActive(AlertManager.ALERT_HIGH_ID))
+    }
+
+    @Test
+    fun `cooldown of 0 means no cooldown — fires on every reading`() = runTest {
+        settings.setAlertLowCooldownMinutes(0)
+
+        alertManager.checkReading(reading(60), emptyList(), 0)
+        assertTrue(isNotificationActive(AlertManager.ALERT_LOW_ID))
+
+        alertManager.checkReading(reading(60), emptyList(), 0)
+        assertTrue(isNotificationActive(AlertManager.ALERT_LOW_ID))
+    }
 }
