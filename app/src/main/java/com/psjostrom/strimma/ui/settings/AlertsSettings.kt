@@ -14,7 +14,6 @@ import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.ui.theme.InRange
 
 private val cooldownOptions = listOf(0, 5, 10, 15)
-private val cooldownLabels = listOf("Default", "5 min", "10 min", "15 min")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -187,7 +186,13 @@ fun AlertsSettings(
                         onClick = { onAlertCooldownChange(minutes) },
                         shape = SegmentedButtonDefaults.itemShape(index, cooldownOptions.size)
                     ) {
-                        Text(cooldownLabels[index])
+                        val labelResId = when (minutes) {
+                            5 -> R.string.cooldown_label_5
+                            10 -> R.string.cooldown_label_10
+                            15 -> R.string.cooldown_label_15
+                            else -> R.string.cooldown_default
+                        }
+                        Text(stringResource(labelResId))
                     }
                 }
             }

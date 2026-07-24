@@ -166,8 +166,12 @@
     <string name="settings_alerts_high_soon">Snart h\u00F6gt</string>
     <string name="settings_alerts_high_soon_desc">F\u00F6ruts\u00E4gt h\u00F6gt inom prediktionsf\u00F6nstret</string>
     <string name="settings_alerts_stale">Gammal data (10+ min)</string>
-    <string name="settings_alerts_cooldown">Ny-larmintervall</string>
-    <string name="settings_alerts_cooldown_desc">Minska larmtr\u00F6tthet under l\u00E4ngre episoder. Standardalarmer vid varje avl\u00E4sning. Varje larmtyp har egen oberoende cooldown.</string>
+    <string name="settings_alerts_cooldown">Återlarmsintervall</string>
+    <string name="settings_alerts_cooldown_desc">Minska larmtr\u00F6tthet under l\u00E4ngre episoder. Standard alarmerar vid varje avl\u00E4sning. Varje larmtyp har egen oberoende \u00E5terlarmsintervall.</string>
+    <string name="cooldown_default">Standard</string>
+    <string name="cooldown_label_5">5 min</string>
+    <string name="cooldown_label_10">10 min</string>
+    <string name="cooldown_label_15">15 min</string>
 
     <!-- Data Settings -->
     <string name="settings_data_title">Data</string>

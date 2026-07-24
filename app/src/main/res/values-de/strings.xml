@@ -168,6 +168,10 @@
     <string name="settings_alerts_stale">Veraltete Daten (10+ Min.)</string>
     <string name="settings_alerts_cooldown">Alarm-Intervall</string>
     <string name="settings_alerts_cooldown_desc">Reduziere Alarmerm\u00FCdung bei l\u00E4ngeren Episoden. Standard alarmiert bei jeder Messung. Jeder Alarmtyp hat einen eigenen Cooldown.</string>
+    <string name="cooldown_default">Standard</string>
+    <string name="cooldown_label_5">5 min</string>
+    <string name="cooldown_label_10">10 min</string>
+    <string name="cooldown_label_15">15 min</string>
 
     <!-- Data Settings -->
     <string name="settings_data_title">Daten</string>

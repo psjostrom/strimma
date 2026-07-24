@@ -143,7 +143,7 @@ This is intentional — a persistent low or high should not be silently ignored.
 
 ## Re-alert Interval (Cooldown)
 
-By default, alerts fire on **every reading** while the condition persists. To reduce notification fatigue during prolonged episodes, you can set a **Re-alert Interval** in the Alerts settings:
+By default (Re-alert Interval set to **Default**), alerts fire on **every reading** while the condition persists. To reduce notification fatigue during prolonged episodes, you can set a **Re-alert Interval** in the Alerts settings:
 
 | Option | Behavior |
 |--------|----------|

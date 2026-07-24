@@ -3,7 +3,10 @@ package com.psjostrom.strimma.ui.settings
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import com.psjostrom.strimma.data.GlucoseUnit
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -109,5 +112,33 @@ class AlertsSettingsTest {
         render(glucoseUnit = GlucoseUnit.MGDL)
         composeRule.onNodeWithText("Low Alert (mg/dL)").assertExists()
         composeRule.onNodeWithText("High Alert (mg/dL)").assertExists()
+    }
+
+    @Test
+    fun `cooldown picker shows selected value and triggers callback`() {
+        var receivedMinutes = -1
+        render(
+            alertCooldownMinutes = 10,
+            onAlertCooldownChange = { receivedMinutes = it }
+        )
+        composeRule.onNodeWithText("10 min", useUnmergedTree = true).assertExists()
+
+        // SegmentedButton merges semantics — find by text in unmerged tree
+        composeRule.onNodeWithText("Default", useUnmergedTree = true).performScrollTo().performClick()
+        assertEquals(0, receivedMinutes)
+    }
+
+    @Test
+    fun `cooldown picker can select non-default value`() {
+        var receivedMinutes = -1
+        render(
+            alertCooldownMinutes = 0,
+            onAlertCooldownChange = { receivedMinutes = it }
+        )
+        composeRule.onNodeWithText("Default", useUnmergedTree = true).assertExists()
+
+        // SegmentedButton merges semantics — find by text in unmerged tree
+        composeRule.onNodeWithText("15 min", useUnmergedTree = true).performScrollTo().performClick()
+        assertEquals(15, receivedMinutes)
     }
 }
