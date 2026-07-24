@@ -261,6 +261,8 @@ class SettingsRepository @Inject constructor(
         private const val DEFAULT_FOLLOWER_POLL_SECONDS = 60
         private const val DEFAULT_CUSTOM_DIA_FLOAT = 5.0f
         private const val DEFAULT_ALERT_COOLDOWN_MINUTES = 0
+        const val COOLDOWN_MINUTES_MIN = 0
+        const val COOLDOWN_MINUTES_MAX = 60
         private const val MINUTES_PER_DAY = 1440
     }
 
@@ -281,8 +283,13 @@ class SettingsRepository @Inject constructor(
     val alertLowSoonEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_LOW_SOON_ENABLED] ?: true }
     val alertHighSoonEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_HIGH_SOON_ENABLED] ?: true }
 
-    val alertCooldownMinutes: Flow<Int> = dataStore.data.map { it[KEY_ALERT_COOLDOWN_MINUTES] ?: DEFAULT_ALERT_COOLDOWN_MINUTES }
-    suspend fun setAlertCooldownMinutes(minutes: Int) { dataStore.edit { it[KEY_ALERT_COOLDOWN_MINUTES] = minutes } }
+    val alertCooldownMinutes: Flow<Int> = dataStore.data.map {
+        (it[KEY_ALERT_COOLDOWN_MINUTES] ?: DEFAULT_ALERT_COOLDOWN_MINUTES)
+            .coerceIn(COOLDOWN_MINUTES_MIN, COOLDOWN_MINUTES_MAX)
+    }
+    suspend fun setAlertCooldownMinutes(minutes: Int) {
+        dataStore.edit { it[KEY_ALERT_COOLDOWN_MINUTES] = minutes.coerceIn(COOLDOWN_MINUTES_MIN, COOLDOWN_MINUTES_MAX) }
+    }
 
     // --- Workout thresholds ---
     val workoutAlertLow: Flow<Float> = dataStore.data.map { it[KEY_WORKOUT_ALERT_LOW] ?: DEFAULT_WORKOUT_ALERT_LOW }
