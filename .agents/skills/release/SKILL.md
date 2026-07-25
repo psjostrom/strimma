@@ -1,6 +1,6 @@
 ---
 name: release
-description: Prepare a Strimma release — bumps versionName, generates AI changelog, creates release PR. Tag is automatic on merge.
+description: Prepare a Strimma release — bumps versionName, creates release PR. Tag is automatic on merge.
 disable-model-invocation: true
 ---
 
@@ -31,9 +31,10 @@ Use the GitHub Actions workflow or the local script.
 2. Fill in:
    - **version**: explicit version (e.g. `1.4.0` or `1.4.0-rc.1`), OR
    - **bump**: patch/minor/major (when version is empty)
-   - **model**: AI model for changelog (default: `openai/gpt-4o-mini`)
-3. Workflow creates a PR with version bump + AI-generated changelog
-4. Review PR, merge — tag is created automatically by `tag-release.yml`
+   - **prerelease**: check for release candidate
+3. Workflow bumps `versionName`, categorizes commits, creates a PR
+4. Fill in the test plan in the PR body
+5. Review PR, merge — tag is created automatically by `tag-release.yml`
 
 ### Option B: Local script
 
@@ -44,11 +45,11 @@ scripts/release.sh --version 1.4.0
 # Auto-bump
 scripts/release.sh --bump minor
 
-# Supports pre-release suffixes
-scripts/release.sh --version 1.4.0-rc.1
+# Release candidate
+scripts/release.sh --version 1.4.0 --rc
 ```
 
-Script: bumps `versionName`, generates changelog via GitHub Models API (GPT-4o mini), updates `CHANGELOG.md`, creates branch + PR. Requires `GITHUB_TOKEN` env var for AI changelog (falls back to raw commit list).
+Script: bumps `versionName`, categorizes commits by conventional prefix, updates `CHANGELOG.md`, creates branch + PR.
 
 ## Manual Path (fallback)
 
@@ -71,22 +72,55 @@ git log ${LAST_TAG}..main --oneline
 
 Edit `app/build.gradle.kts` line ~41. Do NOT touch `versionCode`.
 
-### 4. Write CHANGELOG.md
+### 4. Write the changelog
 
-Keep a Changelog format. User-facing language. PR numbers: `(#123)`.
+Create or update `CHANGELOG.md` at the repo root. Use [Keep a Changelog](https://keepachangelog.com/) format:
 
-### 5. Create branch and PR
+```markdown
+## [X.Y.Z] - YYYY-MM-DD
+
+### Added
+- Feature descriptions (user-facing language)
+
+### Fixed
+- Bug fix descriptions
+
+### Changed
+- Improvements, behavior changes
+
+### Internal
+- Refactors, test improvements, CI changes
+```
+
+### 5. Create release branch and PR
 
 ```bash
 git checkout -b release/X.Y.Z
 git add app/build.gradle.kts CHANGELOG.md
 git commit -m "chore(release): bump versionName to X.Y.Z"
 git push -u origin release/X.Y.Z
-gh pr create --base main --title "chore(release): bump versionName to X.Y.Z"
 ```
 
-PR body: release notes in ` ```markdown ` fence + testing checklist outside.
+Create PR with:
+- Inside ` ```markdown ` fence: release notes for end users
+- Outside fence: test plan
 
-### 6. After merge
+### 6. Tag after merge
 
-Tag is created automatically by `tag-release.yml`. CI builds APK + GitHub Release from the fenced release notes.
+Tag is created automatically by `tag-release.yml` on PR merge. If it fails:
+
+```bash
+git checkout main && git pull
+git tag -a vX.Y.Z -m "vX.Y.Z"
+git push origin vX.Y.Z
+```
+
+CI builds the signed APK and creates the GitHub Release from the fenced release notes.
+
+## Testing
+
+```bash
+scripts/test-release.sh
+```
+
+Covers version bumping, RC resolution, edge cases, and changelog generation.
