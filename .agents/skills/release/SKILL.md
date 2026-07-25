@@ -78,11 +78,11 @@ Keep a Changelog format. User-facing language. PR numbers: `(#123)`.
 ### 5. Create branch and PR
 
 ```bash
-git checkout -b release/vX.Y.Z
+git checkout -b release/X.Y.Z
 git add app/build.gradle.kts CHANGELOG.md
-git commit -m "chore(release): bump versionName to vX.Y.Z"
-git push -u origin release/vX.Y.Z
-gh pr create --base main --title "chore(release): bump versionName to vX.Y.Z"
+git commit -m "chore(release): bump versionName to X.Y.Z"
+git push -u origin release/X.Y.Z
+gh pr create --base main --title "chore(release): bump versionName to X.Y.Z"
 ```
 
 PR body: release notes in ` ```markdown ` fence + testing checklist outside.

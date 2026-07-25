@@ -109,7 +109,7 @@ When a merge or push fails, ALWAYS check CI status (`gh pr checks`) and read the
 
 **Manual fallback:**
 1. Run `git log <last-tag>..main --oneline` to see ALL changes since the last release. Never assume the latest commit is all that changed.
-2. Create branch `release/vX.Y.Z` from main.
+2. Create branch `release/X.Y.Z` from main.
 3. Bump `versionName` in `app/build.gradle.kts`. Never bump `versionCode` (not on Google Play).
 4. Check docs for staleness against the changes (see Documentation Updates above).
 5. Create PR with two distinct sections in the body:
