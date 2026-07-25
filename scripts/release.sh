@@ -7,10 +7,10 @@ set -euo pipefail
 #
 # Usage:
 #   scripts/release.sh --version 1.4.0
-#   scripts/release.sh --version 1.4.0-rc.1
+#   scripts/release.sh --version 1.4.0 --rc          # → 1.4.0-rc.1
 #   scripts/release.sh --bump patch
-#   scripts/release.sh --bump minor
-#   scripts/release.sh --prepare --bump patch   # CI mode
+#   scripts/release.sh --bump minor --rc             # → X.Y.0-rc.1
+#   scripts/release.sh --prepare --bump patch        # CI mode
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -21,10 +21,13 @@ MODEL="${STRIMMA_RELEASE_MODEL:-openai/gpt-4o-mini}"
 usage() {
   cat <<EOF
 Usage:
-  scripts/release.sh --version <x.y.z>       Explicit version (supports x.y.z-rc.N)
-  scripts/release.sh --bump <patch|minor|major>  Auto-bump from current versionName
+  scripts/release.sh --version <x.y.z>          Explicit version
+  scripts/release.sh --version <x.y.z> --rc     Explicit version as RC (appends -rc.N)
+  scripts/release.sh --bump <patch|minor|major> Auto-bump from current versionName
+  scripts/release.sh --bump minor --rc          Bump + mark as RC
 
 Options:
+  --rc         Mark as release candidate. Appends -rc.1 (or increments if already RC).
   --prepare    CI mode: skip git ops, write outputs to \$GITHUB_OUTPUT
   --help       Show this help
 EOF
@@ -35,11 +38,13 @@ EOF
 VERSION=""
 BUMP=""
 PREPARE=false
+RC=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --version) VERSION="$2"; shift 2 ;;
     --bump) BUMP="$2"; shift 2 ;;
+    --rc) RC=true; shift ;;
     --prepare) PREPARE=true; shift ;;
     --help|-h) usage; exit 0 ;;
     *) echo "Unknown argument: $1" >&2; exit 1 ;;
@@ -89,6 +94,19 @@ if [[ -n "$VERSION" ]]; then
 else
   CURRENT="$(current_version)"
   TARGET_VERSION="$(bump_version "$CURRENT" "$BUMP")"
+fi
+
+# Apply RC suffix if requested
+if [[ "$RC" == true ]]; then
+  if [[ "$TARGET_VERSION" =~ -rc\.([0-9]+)$ ]]; then
+    # Already has RC suffix — increment
+    CURRENT_RC="${BASH_REMATCH[1]}"
+    NEXT_RC=$((CURRENT_RC + 1))
+    TARGET_VERSION="${TARGET_VERSION%-rc.*}-rc.${NEXT_RC}"
+  else
+    # No RC suffix — append
+    TARGET_VERSION="${TARGET_VERSION}-rc.1"
+  fi
 fi
 
 BRANCH="release/${TARGET_VERSION}"

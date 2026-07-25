@@ -16,6 +16,11 @@ on:
           - patch
           - minor
           - major
+      prerelease:
+        description: "Mark as release candidate (appends -rc.N)"
+        required: false
+        default: false
+        type: boolean
       model:
         description: "AI model for changelog generation."
         required: false
@@ -44,14 +49,19 @@ jobs:
         env:
           VERSION_INPUT: ${{ inputs.version }}
           BUMP_INPUT: ${{ inputs.bump }}
+          PRERELEASE: ${{ inputs.prerelease }}
           STRIMMA_RELEASE_MODEL: ${{ inputs.model }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           chmod +x scripts/release.sh
+          RC_FLAG=""
+          if [ "$PRERELEASE" = "true" ]; then
+            RC_FLAG="--rc"
+          fi
           if [ -n "$VERSION_INPUT" ]; then
-            scripts/release.sh --prepare --version "$VERSION_INPUT"
+            scripts/release.sh --prepare --version "$VERSION_INPUT" $RC_FLAG
           else
-            scripts/release.sh --prepare --bump "$BUMP_INPUT"
+            scripts/release.sh --prepare --bump "$BUMP_INPUT" $RC_FLAG
           fi
 
       - name: Create verified commit, branch, and PR
