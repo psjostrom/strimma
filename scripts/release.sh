@@ -242,6 +242,8 @@ ${code_context}"
   local prompt
   prompt="Generate release notes AND a test plan for version ${version} (date: ${date}).
 
+You MUST return both sections. Do NOT skip the test plan.
+
 The output must have TWO sections separated by exactly this line: ===TEST_PLAN===
 
 SECTION 1 — Release notes (Keep a Changelog format):
@@ -277,7 +279,7 @@ ${commits}"
         model: $model,
         messages: [{ role: "user", content: $prompt }],
         temperature: 0.3,
-        max_tokens: 2048
+        max_tokens: 4096
       }')" \
     "https://models.github.ai/inference/chat/completions" 2>/dev/null)" || true
 
@@ -290,6 +292,9 @@ ${commits}"
     TEST_PLAN_ONLY=""
     return
   fi
+
+  # Strip markdown fences the AI may wrap around its output
+  full_response="$(echo "$full_response" | sed '/^```/d')"
 
   # Split on ===TEST_PLAN===
   if echo "$full_response" | grep -q '^===TEST_PLAN===$'; then
