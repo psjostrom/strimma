@@ -142,7 +142,7 @@ echo "Branch:          $BRANCH"
 
 # --- Find previous release tag ---
 
-PREV_TAG="$(git -C "$REPO_ROOT" tag --sort=-v:refname | grep '^v' | head -1 || true)"
+PREV_TAG="$(git -C "$REPO_ROOT" tag --sort=-v:refname | grep '^v' | grep -v '\-rc\.' | head -1 || true)"
 if [[ -n "$PREV_TAG" ]]; then
   echo "Previous tag: $PREV_TAG"
 else
@@ -183,15 +183,20 @@ generate_changelog() {
   local prompt
   prompt="Generate a changelog section for version ${version} (date: ${date}).
 
-Rules:
-- Keep a Changelog format (## [version] - date, then ### Category sections)
+Format:
+- Keep a Changelog format: ## [version] - date, then ### Category sections
 - Categories: Added, Fixed, Changed, Internal
-- User-facing language: 'Added exercise screen' not 'Created ExerciseScreen.kt'
-- Group related commits into single entries
 - Link PR numbers: (#123)
-- Skip trivial changes (typo fixes, import reordering)
+
+Rules:
+- Each entry must describe what changed for the USER, not what the developer did
+- Bad: 'Created ExerciseScreen.kt' → Good: 'Added exercise tracking screen'
+- Bad: 'Refactored GlucoseStore to use Flow' → Good: 'Improved glucose data loading performance'
+- Group related commits into single entries (e.g. multiple dependency bumps → one entry)
+- Combine commits that together deliver one feature or fix
+- Skip purely internal/infrastructure changes (CI config, test fixes, dependency bumps that don't affect behavior)
 - Omit empty categories
-- Be concise. No fluff. Straight to the point.
+- Be concise but descriptive — one sentence per entry, no fluff
 - Only output the markdown, nothing else.
 
 Previous tag: ${prev_tag:-none}
