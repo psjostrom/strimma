@@ -1,6 +1,6 @@
 ---
 name: release
-description: Prepare and tag a Strimma release -- checks commit history, determines version bump, updates versionName in app/build.gradle.kts, writes CHANGELOG.md, creates release branch and PR
+description: Prepare a Strimma release — bumps versionName, generates AI changelog, creates release PR. Tag is automatic on merge.
 disable-model-invocation: true
 ---
 
@@ -57,7 +57,7 @@ Use when the automated path doesn't work or you need full control.
 ### 1. Determine what changed
 
 ```bash
-LAST_TAG=$(git tag --sort=-v:refname | grep '^v' | head -1)
+LAST_TAG=$(git tag --sort=-v:refname | grep '^v' | grep -v '\-rc\.' | head -1)
 git log ${LAST_TAG}..main --oneline
 ```
 
@@ -89,8 +89,4 @@ PR body: release notes in ` ```markdown ` fence + testing checklist outside.
 
 ### 6. After merge
 
-```bash
-git tag -a vX.Y.Z -m "vX.Y.Z" && git push origin vX.Y.Z
-```
-
-CI builds APK + GitHub Release from the fenced release notes.
+Tag is created automatically by `tag-release.yml`. CI builds APK + GitHub Release from the fenced release notes.
