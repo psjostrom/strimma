@@ -1,0 +1,85 @@
+name: Tag release
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    name: tag
+    if: >
+      github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.title, 'chore(release):')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Validate PR trust boundaries
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          BASE_REPO: ${{ github.event.pull_request.base.repo.full_name }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          # Only tag PRs from the same repo (not forks)
+          if [[ "$HEAD_REPO" != "$BASE_REPO" ]]; then
+            echo "Error: head repo ($HEAD_REPO) != base repo ($BASE_REPO), skipping" >&2
+            exit 1
+          fi
+
+          # Only tag PRs from release/* branches
+          if [[ ! "$HEAD_REF" =~ ^release/ ]]; then
+            echo "Error: head ref ($HEAD_REF) is not a release/* branch, skipping" >&2
+            exit 1
+          fi
+
+      - name: Extract and validate version
+        id: version
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          VERSION="${PR_TITLE#chore(release): bump versionName to }"
+          VERSION="${VERSION#chore(release): }"
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
+            echo "Error: could not extract valid version from title: $PR_TITLE" >&2
+            exit 1
+          fi
+
+          # Verify head ref matches extracted version
+          EXPECTED_REF="release/${VERSION}"
+          if [[ "$HEAD_REF" != "$EXPECTED_REF" ]]; then
+            echo "Error: head ref ($HEAD_REF) != expected ($EXPECTED_REF)" >&2
+            exit 1
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create and push tag
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          COMMIT_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        run: |
+          # Check if tag already exists (peeled = dereferenced commit SHA)
+          EXISTING_SHA="$(git ls-remote --tags origin "${TAG}^{}" | cut -f1 || true)"
+
+          if [[ -n "$EXISTING_SHA" ]]; then
+            # Tag exists — verify it points to the merge commit
+            if [[ "$EXISTING_SHA" == "$COMMIT_SHA" ]]; then
+              echo "Tag $TAG already exists and points to correct commit, skipping"
+              exit 0
+            else
+              echo "Error: tag $TAG exists but points to $EXISTING_SHA, expected $COMMIT_SHA" >&2
+              exit 1
+            fi
+          fi
+
+          git tag -a "$TAG" -m "$TAG"
+          git push origin "$TAG"

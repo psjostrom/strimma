@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Strimma Release
 
-Prepare a release for the Strimma Android app. This is a mechanical process -- follow every step.
+Prepare a release for the Strimma Android app.
 
 ## Context
 
@@ -21,118 +21,76 @@ Prepare a release for the Strimma Android app. This is a mechanical process -- f
 - **NEVER use `gh release create`.** CI does this automatically when a version tag is pushed (`.github/workflows/release.yml`).
 - **NEVER assume the latest commit is all that changed.** Always check the full commit log since the last tag.
 
-## Process
+## Automated Path (preferred)
+
+Use the GitHub Actions workflow or the local script.
+
+### Option A: GitHub Actions (recommended)
+
+1. Go to Actions → "Create release PR" → Run workflow
+2. Fill in:
+   - **version**: explicit version (e.g. `1.4.0` or `1.4.0-rc.1`), OR
+   - **bump**: patch/minor/major (when version is empty)
+   - **model**: AI model for changelog (default: `openai/gpt-4o-mini`)
+3. Workflow creates a PR with version bump + AI-generated changelog
+4. Review PR, merge — tag is created automatically by `tag-release.yml`
+
+### Option B: Local script
+
+```bash
+# Explicit version
+scripts/release.sh --version 1.4.0
+
+# Auto-bump
+scripts/release.sh --bump minor
+
+# Supports pre-release suffixes
+scripts/release.sh --version 1.4.0-rc.1
+```
+
+Script: bumps `versionName`, generates changelog via GitHub Models API (GPT-4o mini), updates `CHANGELOG.md`, creates branch + PR. Requires `GITHUB_TOKEN` env var for AI changelog (falls back to raw commit list).
+
+## Manual Path (fallback)
+
+Use when the automated path doesn't work or you need full control.
 
 ### 1. Determine what changed
 
 ```bash
 LAST_TAG=$(git tag --sort=-v:refname | grep '^v' | head -1)
-echo "Last release: $LAST_TAG"
 git log ${LAST_TAG}..main --oneline
 ```
 
-Read every commit. Categorize each as:
-- **Feature** -- new user-facing capability
-- **Fix** -- bug fix
-- **Improvement** -- enhancement to existing feature
-- **Internal** -- refactor, test, CI, docs
-
 ### 2. Determine version bump
 
-Based on ALL commits (not just the latest):
-- **Major** (1.0.0): Breaking changes, fundamental redesign
-- **Minor** (0.X.0): New features or significant enhancements present
-- **Patch** (0.0.X): Bug fixes only, zero new features
+- **Major** (X.0.0): Breaking changes
+- **Minor** (x.Y.0): New features or significant enhancements
+- **Patch** (x.y.Z): Bug fixes only
 
-A single bug fix on top of multiple features is a **minor** bump, not a patch.
+### 3. Update versionName
 
-Present the categorized commits and proposed version. Wait for approval before proceeding.
+Edit `app/build.gradle.kts` line ~41. Do NOT touch `versionCode`.
 
-### 3. Write the changelog
+### 4. Write CHANGELOG.md
 
-Create or update `CHANGELOG.md` at the repo root. Use [Keep a Changelog](https://keepachangelog.com/) format:
+Keep a Changelog format. User-facing language. PR numbers: `(#123)`.
 
-```markdown
-## [vX.Y.Z] - YYYY-MM-DD
-
-### Added
-- Feature descriptions (user-facing language, one per line)
-
-### Fixed
-- Bug fix descriptions
-
-### Changed
-- Improvements, behavior changes
-
-### Internal
-- Refactors, test improvements, CI changes (keep brief)
-```
-
-Guidelines:
-- Write from the **user's perspective** -- "Added exercise history screen" not "Created ExerciseHistoryScreen.kt"
-- Group related commits into single entries where it makes sense
-- Skip trivial internal changes (typo fixes, import reordering)
-- Link PR numbers where available: `(#123)`
-- Prepend the new version section above existing entries
-- Omit empty sections (if no fixes, skip ### Fixed)
-
-### 4. Check docs staleness
-
-Check docs for staleness against the release changes:
+### 5. Create branch and PR
 
 ```bash
-git diff --name-only ${LAST_TAG}..main -- docs/
-```
-
-For every user-visible change in the release, grep `docs/` for references to the changed feature or behavior. Update affected docs, and flag screenshots that may be stale.
-
-### 5. Update versionName
-
-Edit `app/build.gradle.kts` line ~41:
-- Change `versionName = "X.Y.Z"` to the new version (no `v` prefix)
-- Do NOT touch `versionCode` (line ~40)
-
-### 6. Create release branch and PR
-
-```bash
-git checkout -b release/vX.Y.Z
+git checkout -b release/X.Y.Z
 git add app/build.gradle.kts CHANGELOG.md
+git commit -m "chore(release): bump versionName to X.Y.Z"
+git push -u origin release/X.Y.Z
+gh pr create --base main --title "chore(release): bump versionName to X.Y.Z"
 ```
 
-Commit and push. Create a PR with two distinct sections:
+PR body: release notes in ` ```markdown ` fence + testing checklist outside.
 
-1. Inside a ` ```markdown ` fenced block: release notes only, for end users.
-2. Outside the fence: testing plan and release checklist.
+### 6. After merge
 
-Example:
-
-````markdown
-```markdown
-## vX.Y.Z
-
-### Added
-- User-facing release note.
-```
-
-## Testing
-
-- [ ] CI passes
-- [ ] Merge PR
-- [ ] Tag from main: `git tag -a vX.Y.Z -m "vX.Y.Z" && git push origin vX.Y.Z`
-````
-
-Checklist outside the release-notes fence:
-- [ ] CI passes
-- [ ] Merge PR
-- [ ] Tag from main: `git tag -a vX.Y.Z -m "vX.Y.Z" && git push origin vX.Y.Z`
-
-### 7. After merge
-
-Remind the user to tag from main:
 ```bash
-git checkout main && git pull
-git tag -a vX.Y.Z -m "vX.Y.Z"
-git push origin vX.Y.Z
+git tag -a vX.Y.Z -m "vX.Y.Z" && git push origin vX.Y.Z
 ```
 
-CI will build the signed APK and create the GitHub Release from the fenced release notes.
+CI builds APK + GitHub Release from the fenced release notes.
