@@ -210,7 +210,7 @@ assert_exit_nonzero "invalid version" \
 # --- Test 10: Both --version and --bump fails ---
 
 assert_exit_nonzero "both flags" \
-  bash "$tmp_repo/release.sh" --prepare --version 1.4.0 --bump patch
+  bash "$tmp_repo/scripts/release.sh" --prepare --version 1.4.0 --bump patch
 
 # --- Test 11: Raw changelog fallback (no GITHUB_TOKEN) ---
 
@@ -227,6 +227,7 @@ GRADLE
 echo "# Changelog" > "$tmp_repo/CHANGELOG.md"
 
 output="$(cd "$tmp_repo" && unset GITHUB_TOKEN; bash "$release_sh" --prepare --version 1.4.0 2>&1)"
-assert_contains "$output" "1.4.0" "raw changelog output"
+changelog_content="$(cat "$tmp_repo/CHANGELOG.md")"
+assert_contains "$changelog_content" "1.4.0" "changelog contains version"
 
 echo "Release script tests passed."

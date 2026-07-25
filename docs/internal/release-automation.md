@@ -46,7 +46,7 @@ The PR title must start with `chore(release):` and contain a valid semver versio
 
 ## Workflow DAG
 
-```
+```text
 workflow_dispatch
   → create-release-pr.yml
     → release.sh --prepare (bump version, generate changelog)
