@@ -65,7 +65,7 @@ fi
 # --- Version resolution ---
 
 current_version() {
-  grep -oP 'versionName = "\K[^"]+' "$GRADLE_FILE"
+  sed -n 's/.*versionName = "\([^"]*\)".*/\1/p' "$GRADLE_FILE"
 }
 
 is_valid_version() {
@@ -104,8 +104,22 @@ if [[ "$RC" == true ]]; then
     NEXT_RC=$((CURRENT_RC + 1))
     TARGET_VERSION="${TARGET_VERSION%-rc.*}-rc.${NEXT_RC}"
   else
-    # No RC suffix — append
-    TARGET_VERSION="${TARGET_VERSION}-rc.1"
+    # No RC suffix — check if current is already a stable release of this version
+    CURRENT="$(current_version)"
+    CURRENT_BASE="${CURRENT%%-*}"  # strip any existing pre-release suffix
+    if [[ "$TARGET_VERSION" == "$CURRENT_BASE" && ! "$CURRENT" == *-* ]]; then
+      echo "Error: ${TARGET_VERSION} is already the current stable version." >&2
+      echo "Use --bump to target the next version, or specify a higher version." >&2
+      exit 1
+    fi
+    # Check if current is an RC of this same base — increment instead of creating -rc.1
+    if [[ "$CURRENT" =~ ^${TARGET_VERSION}-rc\.([0-9]+)$ ]]; then
+      CURRENT_RC="${BASH_REMATCH[1]}"
+      NEXT_RC=$((CURRENT_RC + 1))
+      TARGET_VERSION="${TARGET_VERSION}-rc.${NEXT_RC}"
+    else
+      TARGET_VERSION="${TARGET_VERSION}-rc.1"
+    fi
   fi
 fi
 
