@@ -1,3 +1,13 @@
+```markdown
+## [1.4.0-rc.2] - 2026-07-25
+
+### Added
+- Introduced a setting to configure alert cooldown and re-alert intervals, giving users more control over notification timing. (#245)
+
+### Fixed
+- Resolved an issue in StoryViewModel where navigation state could fail to update correctly, ensuring smoother navigation experiences. (#247)
+```
+
 ## [v1.3.1-rc.1] - 2026-06-14
 
 ### Internal
