@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Strimma release script.
-# Bumps versionName, categorizes commits, updates CHANGELOG.md.
+# Bumps versionName, categorizes commits for PR body release notes.
 # Works locally and in CI (--prepare mode).
 #
 # Usage:
@@ -15,7 +15,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 GRADLE_FILE="$REPO_ROOT/app/build.gradle.kts"
-CHANGELOG_FILE="$REPO_ROOT/CHANGELOG.md"
 
 usage() {
   cat <<EOF
@@ -238,9 +237,9 @@ generate_changelog() {
 }
 
 echo "Generating changelog..."
-CHANGELOG_ONLY="$(generate_changelog "$COMMITS" "$TARGET_VERSION")"
+RELEASE_NOTES="$(generate_changelog "$COMMITS" "$TARGET_VERSION")"
 echo "Generated changelog:"
-echo "$CHANGELOG_ONLY"
+echo "$RELEASE_NOTES"
 
 # --- Update files ---
 
@@ -248,16 +247,7 @@ echo "$CHANGELOG_ONLY"
 sed -i.bak "s|versionName = \"$(current_version)\"|versionName = \"${TARGET_VERSION}\"|" "$GRADLE_FILE"
 rm -f "${GRADLE_FILE}.bak"
 
-# Prepend changelog section to CHANGELOG.md
-{
-  echo "$CHANGELOG_ONLY"
-  echo ""
-  cat "$CHANGELOG_FILE"
-} > "${CHANGELOG_FILE}.tmp"
-mv "${CHANGELOG_FILE}.tmp" "$CHANGELOG_FILE"
-
 echo "Updated versionName to $TARGET_VERSION in build.gradle.kts"
-echo "Updated CHANGELOG.md"
 
 # --- CI mode: write outputs ---
 
@@ -275,7 +265,7 @@ if [[ "$PREPARE" == true ]]; then
 ### Changes
 
 \`\`\`markdown
-${CHANGELOG_ONLY}
+${RELEASE_NOTES}
 \`\`\`
 
 ---
@@ -301,7 +291,7 @@ fi
 echo ""
 echo "Creating branch $BRANCH..."
 git -C "$REPO_ROOT" checkout -B "$BRANCH"
-git -C "$REPO_ROOT" add app/build.gradle.kts CHANGELOG.md
+git -C "$REPO_ROOT" add app/build.gradle.kts
 git -C "$REPO_ROOT" commit -m "$TITLE"
 
 echo "Pushing..."
@@ -315,7 +305,7 @@ cat > "$BODY_FILE" <<EOF
 ### Changes
 
 \`\`\`markdown
-${CHANGELOG_ONLY}
+${RELEASE_NOTES}
 \`\`\`
 
 ---

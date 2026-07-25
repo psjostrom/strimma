@@ -1,6 +1,6 @@
 ---
 name: release
-description: Prepare and tag a Strimma release -- checks commit history, determines version bump, updates versionName in app/build.gradle.kts, writes CHANGELOG.md, creates release branch and PR
+description: Prepare and tag a Strimma release -- checks commit history, determines version bump, updates versionName in app/build.gradle.kts, creates release branch and PR
 disable-model-invocation: true
 ---
 
@@ -48,35 +48,7 @@ A single bug fix on top of multiple features is a **minor** bump, not a patch.
 
 Present the categorized commits and proposed version. Wait for approval before proceeding.
 
-### 3. Write the changelog
-
-Create or update `CHANGELOG.md` at the repo root. Use [Keep a Changelog](https://keepachangelog.com/) format:
-
-```markdown
-## [vX.Y.Z] - YYYY-MM-DD
-
-### Added
-- Feature descriptions (user-facing language, one per line)
-
-### Fixed
-- Bug fix descriptions
-
-### Changed
-- Improvements, behavior changes
-
-### Internal
-- Refactors, test improvements, CI changes (keep brief)
-```
-
-Guidelines:
-- Write from the **user's perspective** -- "Added exercise history screen" not "Created ExerciseHistoryScreen.kt"
-- Group related commits into single entries where it makes sense
-- Skip trivial internal changes (typo fixes, import reordering)
-- Link PR numbers where available: `(#123)`
-- Prepend the new version section above existing entries
-- Omit empty sections (if no fixes, skip ### Fixed)
-
-### 4. Check docs staleness
+### 3. Check docs staleness
 
 Check docs for staleness against the release changes:
 
@@ -86,17 +58,17 @@ git diff --name-only ${LAST_TAG}..main -- docs/
 
 For every user-visible change in the release, grep `docs/` for references to the changed feature or behavior. Update affected docs, and flag screenshots that may be stale.
 
-### 5. Update versionName
+### 4. Update versionName
 
 Edit `app/build.gradle.kts` line ~41:
 - Change `versionName = "X.Y.Z"` to the new version (no `v` prefix)
 - Do NOT touch `versionCode` (line ~40)
 
-### 6. Create release branch and PR
+### 5. Create release branch and PR
 
 ```bash
-git checkout -b release/vX.Y.Z
-git add app/build.gradle.kts CHANGELOG.md
+git checkout -b release/X.Y.Z
+git add app/build.gradle.kts
 ```
 
 Commit and push. Create a PR with two distinct sections:
@@ -126,7 +98,7 @@ Checklist outside the release-notes fence:
 - [ ] Merge PR
 - [ ] Tag from main: `git tag -a vX.Y.Z -m "vX.Y.Z" && git push origin vX.Y.Z`
 
-### 7. After merge
+### 6. After merge
 
 Remind the user to tag from main:
 ```bash
