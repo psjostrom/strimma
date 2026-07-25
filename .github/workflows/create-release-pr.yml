@@ -136,7 +136,10 @@ jobs:
               ],
             });
 
-            // Create verified commit via the API
+            // Create commit via the GitHub API (attributed to github-actions bot).
+            // API commits show as "Verified" but are not cryptographically signed.
+            // Security guarantee: tag-release.yml validates trust boundaries
+            // (same repo, release/* branch) before tagging any release.
             const { data: commit } = await github.rest.git.createCommit({
               owner: context.repo.owner,
               repo: context.repo.repo,
