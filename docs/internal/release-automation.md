@@ -17,7 +17,7 @@ Strimma uses a two-stage release pipeline:
 
 | File | Role |
 |------|------|
-| `scripts/release.sh` | Bumps `versionName`, categorizes commits by conventional prefix, updates `CHANGELOG.md`. Works locally and in CI (`--prepare` mode). |
+| `scripts/release.sh` | Bumps `versionName`, categorizes commits by conventional prefix, generates PR body. Works locally and in CI (`--prepare` mode). |
 | `.github/workflows/create-release-pr.yml` | `workflow_dispatch` — runs `release.sh --prepare`, creates verified commit + PR via GitHub API. Idempotent on re-run. |
 | `.github/workflows/tag-release.yml` | Triggers on PR merge to `main` — validates trust boundaries, extracts version, creates `v*` tag. |
 | `.github/workflows/release.yml` | (Existing) Triggers on `v*` tag — builds APK, creates GitHub Release with fenced markdown notes. |

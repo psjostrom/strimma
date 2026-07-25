@@ -61,13 +61,6 @@ android {
 }
 GRADLE
 
-cat > "$tmp_repo/CHANGELOG.md" <<'CL'
-# Changelog
-
-## Previous
-- Old entry
-CL
-
 git -C "$tmp_repo" add -A
 git -C "$tmp_repo" commit -qm "initial"
 
@@ -84,10 +77,6 @@ assert_eq "1.4.0" "$current_ver" "build.gradle.kts versionName"
 # Verify versionCode untouched
 version_code="$(sed -n 's/.*versionCode = \([0-9]*\).*/\1/p' "$tmp_repo/app/build.gradle.kts")"
 assert_eq "1" "$version_code" "versionCode unchanged"
-
-# Verify CHANGELOG.md prepended
-changelog_head="$(head -1 "$tmp_repo/CHANGELOG.md")"
-assert_contains "$changelog_head" "1.4.0" "changelog prepended"
 
 # --- Test 2: Auto-bump patch ---
 
@@ -222,12 +211,5 @@ android {
     }
 }
 GRADLE
-
-# Reset CHANGELOG.md
-echo "# Changelog" > "$tmp_repo/CHANGELOG.md"
-
-output="$(cd "$tmp_repo" && unset GITHUB_TOKEN; bash "$release_sh" --prepare --version 1.4.0 2>&1)"
-changelog_content="$(cat "$tmp_repo/CHANGELOG.md")"
-assert_contains "$changelog_content" "1.4.0" "changelog contains version"
 
 echo "Release script tests passed."
