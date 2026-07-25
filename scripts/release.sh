@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Strimma release script.
-# Bumps versionName, generates changelog via AI, updates CHANGELOG.md.
+# Bumps versionName, categorizes commits, updates CHANGELOG.md.
 # Works locally and in CI (--prepare mode).
 #
 # Usage:
@@ -16,7 +16,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 GRADLE_FILE="$REPO_ROOT/app/build.gradle.kts"
 CHANGELOG_FILE="$REPO_ROOT/CHANGELOG.md"
-MODEL="${STRIMMA_RELEASE_MODEL:-openai/gpt-4o}"
 
 usage() {
   cat <<EOF
@@ -166,186 +165,82 @@ echo "Commits since ${PREV_TAG:-initial}:"
 echo "$COMMITS"
 echo ""
 
-# --- Extract code context from changed files ---
-
-extract_code_context() {
-  local prev="$1"
-  local context=""
-
-  # Get changed Kotlin files
-  local changed_files
-  if [[ -n "$prev" ]]; then
-    changed_files="$(git -C "$REPO_ROOT" diff --name-only "$prev"..HEAD -- '*.kt' 2>/dev/null || true)"
-  else
-    changed_files="$(git -C "$REPO_ROOT" diff --name-only HEAD -- '*.kt' 2>/dev/null || true)"
-  fi
-
-  if [[ -z "$changed_files" ]]; then
-    echo ""
-    return
-  fi
-
-  while IFS= read -r file; do
-    [[ -z "$file" ]] && continue
-
-    # Extract full diff hunks (up to 50 lines per file) — gives AI real UI code, not just signatures
-    local hunks
-    hunks="$(git -C "$REPO_ROOT" diff "$prev"..HEAD -U3 -- "$file" 2>/dev/null \
-      | grep -E '^[+-].*' \
-      | grep -v '^[+-]{3}' \
-      | head -50)"
-
-    if [[ -n "$hunks" ]]; then
-      context+="=== $file ==="$'\n'
-      context+="$hunks"$'\n'
-      context+=$'\n'
-    fi
-  done <<< "$changed_files"
-
-  echo "$context"
-}
-
-CODE_CONTEXT="$(extract_code_context "$PREV_TAG")"
-
-if [[ -n "$CODE_CONTEXT" ]]; then
-  echo "Code context extracted:"
-  echo "$CODE_CONTEXT" | head -60
-  echo ""
-fi
-
-# --- Generate changelog via AI ---
+# --- Categorize commits by conventional commit prefix ---
 
 generate_changelog() {
-  local commits="$1" version="$2" prev_tag="$3" code_context="$4"
-
-  if [[ -z "${GITHUB_TOKEN:-}" ]]; then
-    echo "Warning: GITHUB_TOKEN not set, generating raw changelog" >&2
-    raw_changelog "$commits" "$version"
-    CHANGELOG_ONLY="$(raw_changelog "$commits" "$version")"
-    TEST_PLAN_ONLY=""
-    return
-  fi
-
-  local date
-  date="$(date -u +%Y-%m-%d)"
-
-  local context_block=""
-  if [[ -n "$code_context" ]]; then
-    context_block="
-
-Key code changes (function signatures, class declarations):
-${code_context}"
-  fi
-
-  local prompt
-  prompt="Generate release notes AND a test plan for version ${version} (date: ${date}).
-
-You MUST return both sections. Do NOT skip the test plan.
-
-The output must have TWO sections separated by exactly this line: ===TEST_PLAN===
-
-SECTION 1 — Release notes (Keep a Changelog format):
-- ## [version] - date, then ### Category sections (Added, Fixed, Changed, Internal)
-- Link PR numbers: (#123)
-
-Rules:
-- Each entry must describe what changed for the USER, not what the developer did
-- Bad: 'Created ExerciseScreen.kt' → Good: 'Added exercise tracking screen'
-- Bad: 'Refactored GlucoseStore to use Flow' → Good: 'Improved glucose data loading performance'
-- Group related commits into single entries (e.g. multiple dependency bumps → one entry)
-- If multiple commits reference the same PR number, they are ONE change — merge into a single entry
-- Skip purely internal/infrastructure changes (CI config, test fixes, dependency bumps that don't affect behavior)
-- Skip commits prefixed with fix(test):, test:, chore:, ci:, build:, docs: — these are NOT user-facing
-- Only describe changes visible to the end user
-- Omit empty categories
-- Be concise but descriptive — one sentence per entry, no fluff
-- Only output the markdown, nothing else.
-
-SECTION 2 — Test plan (after ===TEST_PLAN===):
-- Group test steps by feature/area changed
-- Write concrete manual steps: what to tap, what to verify, what to expect
-- Cover the happy path AND edge cases for each change
-- Include regression checks for related features that might be affected
-- Use checkboxes: - [ ] Step description
-- This is for a real person testing on a physical Android device
-- CRITICAL: Only describe what the code ACTUALLY does. Read the diff carefully:
-  - What UI components are used? (buttons, sliders, segmented controls, text fields)
-  - What are the actual option values/labels shown to the user?
-  - What are the validation bounds? Are they user-selectable or just limits?
-  - Never guess UI details — if unsure, describe the feature generically${context_block}
-
-Previous tag: ${prev_tag:-none}
-
-Commits:
-${commits}"
-
-  local response
-  response="$(curl -sS --max-time 60 \
-    -H "Content-Type: application/json" \
-    -H "Authorization: Bearer $GITHUB_TOKEN" \
-    -d "$(jq -n \
-      --arg model "$MODEL" \
-      --arg prompt "$prompt" \
-      '{
-        model: $model,
-        messages: [{ role: "user", content: $prompt }],
-        temperature: 0.3,
-        max_tokens: 4096
-      }')" \
-    "https://models.github.ai/inference/chat/completions" 2>/dev/null)" || true
-
-  local full_response
-  full_response="$(echo "$response" | jq -r '.choices[0].message.content // empty' 2>/dev/null || true)"
-
-  if [[ -z "$full_response" ]]; then
-    echo "Warning: AI changelog failed, using raw format" >&2
-    CHANGELOG_ONLY="$(raw_changelog "$commits" "$version")"
-    TEST_PLAN_ONLY=""
-    return
-  fi
-
-  # Strip markdown fences the AI may wrap around its output
-  full_response="$(echo "$full_response" | sed '/^```/d')"
-
-  # Split on ===TEST_PLAN===
-  if echo "$full_response" | grep -q '^===TEST_PLAN===$'; then
-    CHANGELOG_ONLY="$(echo "$full_response" | sed -n '1,/===TEST_PLAN===/p' | sed '$d')"
-    TEST_PLAN_ONLY="$(echo "$full_response" | sed -n '/===TEST_PLAN===/,$ p' | tail -n +2)"
-  else
-    CHANGELOG_ONLY="$full_response"
-    TEST_PLAN_ONLY=""
-  fi
-}
-
-raw_changelog() {
   local commits="$1" version="$2"
   local date
   date="$(date -u +%Y-%m-%d)"
 
-  local lines=""
+  local added="" fixed="" changed="" internal=""
+
   while IFS='	' read -r sha subject; do
-    lines+="- \`${sha}\` ${subject}"$'\n'
+    [[ -z "$sha" ]] && continue
+
+    # Skip non-user-facing commits
+    # 1. Check scope — feat(ci): is NOT user-facing even though it starts with feat
+    local scope=""
+    local scope_re='^[a-z]+\(([^)]+)\):'
+    if [[ "$subject" =~ $scope_re ]]; then
+      scope="${BASH_REMATCH[1]}"
+    fi
+    case "$scope" in
+      ci|test|chore|docs|build) continue ;;
+    esac
+    # 2. Check type — chore:, ci:, test:, etc. are never user-facing
+    local type=""
+    local type_re='^([a-z]+)'
+    if [[ "$subject" =~ $type_re ]]; then
+      type="${BASH_REMATCH[1]}"
+    fi
+    case "$type" in
+      chore|ci|test|docs|build) continue ;;
+    esac
+
+    # Categorize and strip prefix
+    local category="" entry=""
+    case "$subject" in
+      feat:*)     category="added"  ; entry="- ${subject#feat: }" ;;
+      feat\(*:*)  category="added"  ; entry="- ${subject#*: }" ;;
+      fix:*)      category="fixed"  ; entry="- ${subject#fix: }" ;;
+      fix\(*:*)   category="fixed"  ; entry="- ${subject#*: }" ;;
+      refactor:*) category="changed"; entry="- ${subject#refactor: }" ;;
+      refactor\(*:*) category="changed"; entry="- ${subject#*: }" ;;
+      *)          category="internal"; entry="- ${subject}" ;;
+    esac
+
+    entry+=" (\`${sha}\`)"
+    case "$category" in
+      added)    added+="$entry"$'\n' ;;
+      fixed)    fixed+="$entry"$'\n' ;;
+      changed)  changed+="$entry"$'\n' ;;
+      internal) internal+="$entry"$'\n' ;;
+    esac
   done <<< "$commits"
 
-  cat <<EOF
-## [${version}] - ${date}
+  # Build output — only include non-empty sections
+  local output="## [${version}] - ${date}"$'\n\n'
 
-### Internal
-${lines}
-EOF
+  if [[ -n "$added" ]]; then
+    output+="### Added"$'\n'"${added}"$'\n'
+  fi
+  if [[ -n "$fixed" ]]; then
+    output+="### Fixed"$'\n'"${fixed}"$'\n'
+  fi
+  if [[ -n "$changed" ]]; then
+    output+="### Changed"$'\n'"${changed}"$'\n'
+  fi
+  if [[ -n "$internal" ]]; then
+    output+="### Internal"$'\n'"${internal}"$'\n'
+  fi
+
+  echo "$output"
 }
 
 echo "Generating changelog..."
-CHANGELOG_ONLY=""
-TEST_PLAN_ONLY=""
-generate_changelog "$COMMITS" "$TARGET_VERSION" "$PREV_TAG" "$CODE_CONTEXT"
+CHANGELOG_ONLY="$(generate_changelog "$COMMITS" "$TARGET_VERSION")"
 echo "Generated changelog:"
 echo "$CHANGELOG_ONLY"
-if [[ -n "$TEST_PLAN_ONLY" ]]; then
-  echo "Generated test plan:"
-  echo "$TEST_PLAN_ONLY"
-fi
-echo ""
 
 # --- Update files ---
 
@@ -382,16 +277,13 @@ if [[ "$PREPARE" == true ]]; then
 \`\`\`markdown
 ${CHANGELOG_ONLY}
 \`\`\`
+
+---
+
+## Test plan
+
+<!-- Fill in manual test steps for the changes above -->
 EOF
-
-  if [[ -n "$TEST_PLAN_ONLY" ]]; then
-    cat >> "$BODY_FILE" <<EOF
-
-### Test plan
-
-${TEST_PLAN_ONLY}
-EOF
-  fi
 
   {
     echo "version=${TARGET_VERSION}"
@@ -425,16 +317,13 @@ cat > "$BODY_FILE" <<EOF
 \`\`\`markdown
 ${CHANGELOG_ONLY}
 \`\`\`
+
+---
+
+## Test plan
+
+<!-- Fill in manual test steps for the changes above -->
 EOF
-
-if [[ -n "$TEST_PLAN_ONLY" ]]; then
-  cat >> "$BODY_FILE" <<EOF
-
-### Test plan
-
-${TEST_PLAN_ONLY}
-EOF
-fi
 
 REPO_SLUG="$(git -C "$REPO_ROOT" remote get-url origin | sed 's|.*github.com[:/]||; s|\.git$||')"
 

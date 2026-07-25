@@ -105,11 +105,11 @@ When a merge or push fails, ALWAYS check CI status (`gh pr checks`) and read the
 
 ## Releasing
 
-**Preferred:** Use the automated workflow. Go to Actions → "Create release PR" → Run workflow. Provide version + prerelease checkbox. The workflow bumps `versionName`, generates AI changelog, and creates a PR. After merge, the tag is created automatically and CI builds the APK.
+**Preferred:** Use the automated workflow. Go to Actions → "Create release PR" → Run workflow. Provide version + prerelease checkbox. The workflow bumps `versionName`, categorizes commits, and creates a PR. After merge, the tag is created automatically and CI builds the APK.
 
 **Manual fallback:**
 1. Run `git log $(git tag --sort=-v:refname | grep '^v' | grep -v '\-rc\.' | head -1)..main --oneline` to see ALL changes since the last stable release. Never assume the latest commit is all that changed. Skip RC tags — they are not real releases.
-2. Create branch `release/X.Y.Z` from main.
+2. Create branch `release/vX.Y.Z` from main.
 3. Bump `versionName` in `app/build.gradle.kts`. Never bump `versionCode` (not on Google Play).
 4. Check docs for staleness against the changes (see Documentation Updates above).
 5. Create PR with two distinct sections in the body:

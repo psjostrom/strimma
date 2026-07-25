@@ -9,7 +9,7 @@
 
 Strimma uses a two-stage release pipeline:
 
-1. **create-release-pr** — bumps `versionName`, generates AI changelog, creates a PR
+1. **create-release-pr** — bumps `versionName`, categorizes commits, creates a PR
 2. **tag-release** — on PR merge, extracts version from title, creates a `v*` tag
 3. **release.yml** (existing) — on `v*` tag push, builds signed APK + GitHub Release
 
@@ -17,7 +17,7 @@ Strimma uses a two-stage release pipeline:
 
 | File | Role |
 |------|------|
-| `scripts/release.sh` | Bumps `versionName`, generates changelog via GitHub Models API, updates `CHANGELOG.md`. Works locally and in CI (`--prepare` mode). |
+| `scripts/release.sh` | Bumps `versionName`, categorizes commits by conventional prefix, updates `CHANGELOG.md`. Works locally and in CI (`--prepare` mode). |
 | `.github/workflows/create-release-pr.yml` | `workflow_dispatch` — runs `release.sh --prepare`, creates verified commit + PR via GitHub API. Idempotent on re-run. |
 | `.github/workflows/tag-release.yml` | Triggers on PR merge to `main` — validates trust boundaries, extracts version, creates `v*` tag. |
 | `.github/workflows/release.yml` | (Existing) Triggers on `v*` tag — builds APK, creates GitHub Release with fenced markdown notes. |
@@ -49,7 +49,7 @@ The PR title must start with `chore(release):` and contain a valid semver versio
 ```text
 workflow_dispatch
   → create-release-pr.yml
-    → release.sh --prepare (bump version, generate changelog)
+    → release.sh --prepare (bump version, categorize commits)
     → GitHub API: create commit, branch, PR
 
 PR merged to main
@@ -79,7 +79,18 @@ scripts/release.sh --version 1.4.0 --rc
 scripts/release.sh --prepare --bump minor
 ```
 
-Requires `GITHUB_TOKEN` env var for AI changelog. Falls back to raw commit list without it.
+## Changelog Generation
+
+Commits are categorized by conventional commit prefix (no AI):
+
+| Prefix | Category | Example |
+|--------|----------|---------|
+| `feat:` | Added | `feat: add alert cooldown setting` |
+| `fix:` | Fixed | `fix: correct tag range in release script` |
+| `refactor:` | Changed | `refactor: simplify glucose unit conversion` |
+| `chore:`, `ci:`, `test:`, `docs:`, `build:` | Skipped | Not user-facing |
+| Scoped non-user-facing | Skipped | `feat(ci): ...`, `fix(test): ...` |
+| Uncategorized | Internal | Anything without a recognized prefix |
 
 ## RC (Release Candidate) Logic
 
@@ -94,7 +105,6 @@ Requires `GITHUB_TOKEN` env var for AI changelog. Falls back to raw commit list 
 |---------|-------|-----|
 | PR created but never auto-tagged | Branch name has `v` prefix (`release/v1.4.0`) | Use `release/1.4.0` (no `v`) |
 | Tag workflow skips | PR title doesn't start with `chore(release):` | Ensure title matches format |
-| Changelog is raw commit list | `GITHUB_TOKEN` not set in env | Set token or accept raw format |
 | Version validation fails | Title contains `v` prefix in version | Use `X.Y.Z` not `vX.Y.Z` in title |
 
 ## Testing

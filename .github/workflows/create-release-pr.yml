@@ -21,16 +21,10 @@ on:
         required: false
         default: false
         type: boolean
-      model:
-        description: "AI model for changelog generation."
-        required: false
-        default: openai/gpt-4o
-        type: string
 
 permissions:
   contents: write
   pull-requests: write
-  models: read
 
 jobs:
   create-release-pr:
@@ -51,8 +45,6 @@ jobs:
           VERSION_INPUT: ${{ inputs.version }}
           BUMP_INPUT: ${{ inputs.bump }}
           PRERELEASE: ${{ inputs.prerelease }}
-          STRIMMA_RELEASE_MODEL: ${{ inputs.model }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           chmod +x scripts/release.sh
           RC_FLAG=""
