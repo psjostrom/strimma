@@ -16,7 +16,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 GRADLE_FILE="$REPO_ROOT/app/build.gradle.kts"
 CHANGELOG_FILE="$REPO_ROOT/CHANGELOG.md"
-MODEL="${STRIMMA_RELEASE_MODEL:-openai/gpt-4o-mini}"
+MODEL="${STRIMMA_RELEASE_MODEL:-openai/gpt-4o}"
 
 usage() {
   cat <<EOF
@@ -166,38 +166,100 @@ echo "Commits since ${PREV_TAG:-initial}:"
 echo "$COMMITS"
 echo ""
 
+# --- Extract code context from changed files ---
+
+extract_code_context() {
+  local prev="$1"
+  local context=""
+
+  # Get changed Kotlin files
+  local changed_files
+  if [[ -n "$prev" ]]; then
+    changed_files="$(git -C "$REPO_ROOT" diff --name-only "$prev"..HEAD -- '*.kt' 2>/dev/null || true)"
+  else
+    changed_files="$(git -C "$REPO_ROOT" diff --name-only HEAD -- '*.kt' 2>/dev/null || true)"
+  fi
+
+  if [[ -z "$changed_files" ]]; then
+    echo ""
+    return
+  fi
+
+  while IFS= read -r file; do
+    [[ -z "$file" ]] && continue
+
+    # Extract function signatures, class/object/interface declarations, val/var at top level
+    local sigs
+    sigs="$(git -C "$REPO_ROOT" diff "$prev"..HEAD -- "$file" 2>/dev/null \
+      | grep -E '^\+.*(class |object |interface |fun |val |var )' \
+      | sed 's/^+//' \
+      | sed 's/^\s*//' \
+      | grep -v '^\*' \
+      | head -20)"
+
+    if [[ -n "$sigs" ]]; then
+      context+="=== $file ==="$'\n'
+      context+="$sigs"$'\n'
+      context+=$'\n'
+    fi
+  done <<< "$changed_files"
+
+  echo "$context"
+}
+
+CODE_CONTEXT="$(extract_code_context "$PREV_TAG")"
+
+if [[ -n "$CODE_CONTEXT" ]]; then
+  echo "Code context extracted:"
+  echo "$CODE_CONTEXT" | head -60
+  echo ""
+fi
+
 # --- Generate changelog via AI ---
 
 generate_changelog() {
-  local commits="$1" version="$2" prev_tag="$3"
+  local commits="$1" version="$2" prev_tag="$3" code_context="$4"
 
   if [[ -z "${GITHUB_TOKEN:-}" ]]; then
     echo "Warning: GITHUB_TOKEN not set, generating raw changelog" >&2
     raw_changelog "$commits" "$version"
+    CHANGELOG_ONLY="$(raw_changelog "$commits" "$version")"
+    TEST_PLAN_ONLY=""
     return
   fi
 
   local date
   date="$(date -u +%Y-%m-%d)"
 
+  local context_block=""
+  if [[ -n "$code_context" ]]; then
+    context_block="
+
+Key code changes (function signatures, class declarations):
+${code_context}"
+  fi
+
   local prompt
-  prompt="Generate a changelog section for version ${version} (date: ${date}).
+  prompt="Generate release notes AND a test plan for version ${version} (date: ${date}).
 
-Format:
-- Keep a Changelog format: ## [version] - date, then ### Category sections
-- Categories: Added, Fixed, Changed, Internal
+The output must have TWO sections separated by exactly this line: ===TEST_PLAN===
+
+SECTION 1 — Release notes (Keep a Changelog format):
+- ## [version] - date, then ### Category sections (Added, Fixed, Changed, Internal)
 - Link PR numbers: (#123)
-
-Rules:
-- Each entry must describe what changed for the USER, not what the developer did
-- Bad: 'Created ExerciseScreen.kt' → Good: 'Added exercise tracking screen'
-- Bad: 'Refactored GlucoseStore to use Flow' → Good: 'Improved glucose data loading performance'
-- Group related commits into single entries (e.g. multiple dependency bumps → one entry)
-- Combine commits that together deliver one feature or fix
-- Skip purely internal/infrastructure changes (CI config, test fixes, dependency bumps that don't affect behavior)
+- Each entry describes what changed for the USER, not what the developer did
+- Group related commits into single entries
+- Skip purely internal changes (CI config, test fixes, dependency bumps)
 - Omit empty categories
-- Be concise but descriptive — one sentence per entry, no fluff
-- Only output the markdown, nothing else.
+
+SECTION 2 — Test plan (after ===TEST_PLAN===):
+- Group test steps by feature/area changed
+- Write concrete manual steps: what to tap, what to verify, what to expect
+- Cover the happy path AND edge cases for each change
+- Include regression checks for related features that might be affected
+- Use checkboxes: - [ ] Step description
+- This is for a real person testing on a physical Android device
+- Use the code changes below to understand WHAT changed — reference specific functions, screens, and behaviors${context_block}
 
 Previous tag: ${prev_tag:-none}
 
@@ -205,7 +267,7 @@ Commits:
 ${commits}"
 
   local response
-  response="$(curl -sS --max-time 30 \
+  response="$(curl -sS --max-time 60 \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer $GITHUB_TOKEN" \
     -d "$(jq -n \
@@ -215,20 +277,28 @@ ${commits}"
         model: $model,
         messages: [{ role: "user", content: $prompt }],
         temperature: 0.3,
-        max_tokens: 1024
+        max_tokens: 2048
       }')" \
     "https://models.github.ai/inference/chat/completions" 2>/dev/null)" || true
 
-  local changelog
-  changelog="$(echo "$response" | jq -r '.choices[0].message.content // empty' 2>/dev/null || true)"
+  local full_response
+  full_response="$(echo "$response" | jq -r '.choices[0].message.content // empty' 2>/dev/null || true)"
 
-  if [[ -z "$changelog" ]]; then
+  if [[ -z "$full_response" ]]; then
     echo "Warning: AI changelog failed, using raw format" >&2
-    raw_changelog "$commits" "$version"
+    CHANGELOG_ONLY="$(raw_changelog "$commits" "$version")"
+    TEST_PLAN_ONLY=""
     return
   fi
 
-  echo "$changelog"
+  # Split on ===TEST_PLAN===
+  if echo "$full_response" | grep -q '^===TEST_PLAN===$'; then
+    CHANGELOG_ONLY="$(echo "$full_response" | sed -n '1,/===TEST_PLAN===/p' | sed '$d')"
+    TEST_PLAN_ONLY="$(echo "$full_response" | sed -n '/===TEST_PLAN===/,$ p' | tail -n +2)"
+  else
+    CHANGELOG_ONLY="$full_response"
+    TEST_PLAN_ONLY=""
+  fi
 }
 
 raw_changelog() {
@@ -250,9 +320,15 @@ EOF
 }
 
 echo "Generating changelog..."
-CHANGELOG_SECTION="$(generate_changelog "$COMMITS" "$TARGET_VERSION" "$PREV_TAG")"
+CHANGELOG_ONLY=""
+TEST_PLAN_ONLY=""
+generate_changelog "$COMMITS" "$TARGET_VERSION" "$PREV_TAG" "$CODE_CONTEXT"
 echo "Generated changelog:"
-echo "$CHANGELOG_SECTION"
+echo "$CHANGELOG_ONLY"
+if [[ -n "$TEST_PLAN_ONLY" ]]; then
+  echo "Generated test plan:"
+  echo "$TEST_PLAN_ONLY"
+fi
 echo ""
 
 # --- Update files ---
@@ -263,7 +339,7 @@ rm -f "${GRADLE_FILE}.bak"
 
 # Prepend changelog section to CHANGELOG.md
 {
-  echo "$CHANGELOG_SECTION"
+  echo "$CHANGELOG_ONLY"
   echo ""
   cat "$CHANGELOG_FILE"
 } > "${CHANGELOG_FILE}.tmp"
@@ -288,17 +364,18 @@ if [[ "$PREPARE" == true ]]; then
 ### Changes
 
 \`\`\`markdown
-${CHANGELOG_SECTION}
+${CHANGELOG_ONLY}
 \`\`\`
-
----
-
-## Checklist
-
-- [ ] Version bump is the only metadata change
-- [ ] CI is green
-- [ ] Merge PR — tag is created automatically by CI
 EOF
+
+  if [[ -n "$TEST_PLAN_ONLY" ]]; then
+    cat >> "$BODY_FILE" <<EOF
+
+### Test plan
+
+${TEST_PLAN_ONLY}
+EOF
+  fi
 
   {
     echo "version=${TARGET_VERSION}"
@@ -330,17 +407,18 @@ cat > "$BODY_FILE" <<EOF
 ### Changes
 
 \`\`\`markdown
-${CHANGELOG_SECTION}
+${CHANGELOG_ONLY}
 \`\`\`
-
----
-
-## Checklist
-
-- [ ] Version bump is the only metadata change
-- [ ] CI is green
-- [ ] Merge PR — tag is created automatically by CI
 EOF
+
+if [[ -n "$TEST_PLAN_ONLY" ]]; then
+  cat >> "$BODY_FILE" <<EOF
+
+### Test plan
+
+${TEST_PLAN_ONLY}
+EOF
+fi
 
 REPO_SLUG="$(git -C "$REPO_ROOT" remote get-url origin | sed 's|.*github.com[:/]||; s|\.git$||')"
 

@@ -24,7 +24,7 @@ on:
       model:
         description: "AI model for changelog generation."
         required: false
-        default: openai/gpt-4o-mini
+        default: openai/gpt-4o
         type: string
 
 permissions:
