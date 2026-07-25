@@ -238,7 +238,7 @@ generate_changelog() {
 
 echo "Generating changelog..."
 RELEASE_NOTES="$(generate_changelog "$COMMITS" "$TARGET_VERSION")"
-echo "Generated changelog:"
+echo "Release notes:"
 echo "$RELEASE_NOTES"
 
 # --- Update files ---

@@ -85,7 +85,7 @@ Create PR with:
 - Inside ` ```markdown ` fence: release notes for end users
 - Outside fence: test plan
 
-### 6. Tag after merge
+### 5. Tag after merge
 
 Tag is created automatically by `tag-release.yml` on PR merge. If it fails:
 
