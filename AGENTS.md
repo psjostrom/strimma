@@ -108,7 +108,7 @@ When a merge or push fails, ALWAYS check CI status (`gh pr checks`) and read the
 **Preferred:** Use the automated workflow. Go to Actions → "Create release PR" → Run workflow. Provide version + prerelease checkbox. The workflow bumps `versionName`, generates AI changelog, and creates a PR. After merge, the tag is created automatically and CI builds the APK.
 
 **Manual fallback:**
-1. Run `git log <last-tag>..main --oneline` to see ALL changes since the last release. Never assume the latest commit is all that changed.
+1. Run `git log $(git tag --sort=-v:refname | grep '^v' | grep -v '\-rc\.' | head -1)..main --oneline` to see ALL changes since the last stable release. Never assume the latest commit is all that changed. Skip RC tags — they are not real releases.
 2. Create branch `release/X.Y.Z` from main.
 3. Bump `versionName` in `app/build.gradle.kts`. Never bump `versionCode` (not on Google Play).
 4. Check docs for staleness against the changes (see Documentation Updates above).
@@ -116,8 +116,7 @@ When a merge or push fails, ALWAYS check CI status (`gh pr checks`) and read the
    - **Inside a ` ```markdown ` fenced block: release notes only** (end-user audience). CI extracts this block as the GitHub Release body. If no fenced block is found, CI falls back to auto-generated notes from PR titles.
    - **Outside the fence: testing plan as plain markdown** (developer audience, lives in the PR forever). Checkboxes inside the fence render as code (uninteractive); putting the plan outside makes them clickable for tracking.
    - For prereleases (`-rc.*` / `-beta.*`) CI auto-prepends `**Test plan & verification:** [#PR](url)` to the extracted release notes — don't add this manually.
-6. Merge PR — tag is created automatically by `tag-release.yml`. CI builds the APK and creates the GitHub Release.
-7. Always create releases by pushing a version tag. Never use `gh release create` manually.
+6. Merge PR — tag is created automatically by `tag-release.yml`. CI builds the APK and creates the GitHub Release. Never use `gh release create` manually.
 
 ## Spec
 
