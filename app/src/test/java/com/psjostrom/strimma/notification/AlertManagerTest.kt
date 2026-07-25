@@ -16,6 +16,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.runTest
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -426,5 +427,154 @@ class AlertManagerTest {
             "low alert must keep re-alerting (FLAG_ONLY_ALERT_ONCE must be unset)",
             (notif.notification.flags and android.app.Notification.FLAG_ONLY_ALERT_ONCE) == 0
         )
+    }
+
+    // -- Cooldown / Re-alert Interval --
+    // Cooldown is per-alarm (each alarm type has its own timer).
+    // Escalation (e.g. Low → Urgent Low) always fires immediately.
+
+    @Test
+    fun `isInCooldown returns true when within cooldown window`() {
+        val now = System.currentTimeMillis()
+        assertTrue(AlertManager.isInCooldown(lastFireMs = now - 30_000, cooldownMs = 60_000))
+    }
+
+    @Test
+    fun `isInCooldown returns false when cooldown expired`() {
+        val now = System.currentTimeMillis()
+        assertFalse(AlertManager.isInCooldown(lastFireMs = now - 120_000, cooldownMs = 60_000))
+    }
+
+    @Test
+    fun `isInCooldown returns false when cooldown is zero`() {
+        assertFalse(AlertManager.isInCooldown(lastFireMs = System.currentTimeMillis(), cooldownMs = 0))
+    }
+
+    @Test
+    fun `isInCooldown returns false when lastFireMs is zero`() {
+        assertFalse(AlertManager.isInCooldown(lastFireMs = 0, cooldownMs = 60_000))
+    }
+
+    @Test
+    fun `low alert respects cooldown — repeated reading within cooldown does not re-fire`() = runTest {
+        settings.setAlertCooldownMinutes(15)
+
+        alertManager.checkReading(reading(60), emptyList(), 0)
+        assertTrue(isNotificationActive(AlertManager.ALERT_LOW_ID))
+
+        val countAfterFirst = notificationManager.activeNotifications.count { it.id == AlertManager.ALERT_LOW_ID }
+
+        // Immediately check again — should NOT re-fire (cooldown active)
+        alertManager.checkReading(reading(60), emptyList(), 0)
+        assertTrue("should still have the original notification", isNotificationActive(AlertManager.ALERT_LOW_ID))
+        assertEquals("notification count must not increase within cooldown",
+            countAfterFirst, notificationManager.activeNotifications.count { it.id == AlertManager.ALERT_LOW_ID })
+    }
+
+    @Test
+    fun `low alert resets cooldown when glucose returns to range`() = runTest {
+        settings.setAlertCooldownMinutes(15)
+
+        alertManager.checkReading(reading(60), emptyList(), 0)
+        assertTrue(isNotificationActive(AlertManager.ALERT_LOW_ID))
+
+        // Return to range — cooldown should reset
+        alertManager.checkReading(reading(120), emptyList(), 0)
+        assertFalse(isNotificationActive(AlertManager.ALERT_LOW_ID))
+
+        // Immediately go low again — should fire (cooldown was reset)
+        alertManager.checkReading(reading(60), emptyList(), 0)
+        assertTrue(isNotificationActive(AlertManager.ALERT_LOW_ID))
+    }
+
+    @Test
+    fun `urgent low fires during active low cooldown — escalation always fires`() = runTest {
+        settings.setAlertCooldownMinutes(15)
+
+        // Regular low fires
+        alertManager.checkReading(reading(60), emptyList(), 0)
+        assertTrue(isNotificationActive(AlertManager.ALERT_LOW_ID))
+
+        // Advance past urgent-low threshold within cooldown — urgent low must still fire
+        alertManager.checkReading(reading(50), emptyList(), 0)
+        assertTrue("urgent low must fire regardless of low cooldown",
+            isNotificationActive(AlertManager.ALERT_URGENT_LOW_ID))
+        assertFalse("regular low should be cleared", isNotificationActive(AlertManager.ALERT_LOW_ID))
+    }
+
+    @Test
+    fun `urgent low respects its own cooldown`() = runTest {
+        settings.setAlertCooldownMinutes(15)
+
+        // First urgent-low fires
+        alertManager.checkReading(reading(50), emptyList(), 0)
+        assertTrue(isNotificationActive(AlertManager.ALERT_URGENT_LOW_ID))
+
+        val countAfterFirst = notificationManager.activeNotifications.count { it.id == AlertManager.ALERT_URGENT_LOW_ID }
+
+        // Second urgent-low reading within cooldown — suppressed
+        alertManager.checkReading(reading(50), emptyList(), 0)
+        assertTrue(isNotificationActive(AlertManager.ALERT_URGENT_LOW_ID))
+        assertEquals("urgent low count must not increase within cooldown",
+            countAfterFirst, notificationManager.activeNotifications.count { it.id == AlertManager.ALERT_URGENT_LOW_ID })
+    }
+
+    @Test
+    fun `high alert respects cooldown`() = runTest {
+        settings.setAlertCooldownMinutes(15)
+
+        alertManager.checkReading(reading(200), emptyList(), 0)
+        assertTrue(isNotificationActive(AlertManager.ALERT_HIGH_ID))
+
+        val countAfterFirst = notificationManager.activeNotifications.count { it.id == AlertManager.ALERT_HIGH_ID }
+
+        // Immediately check again — suppressed
+        alertManager.checkReading(reading(200), emptyList(), 0)
+        assertTrue(isNotificationActive(AlertManager.ALERT_HIGH_ID))
+        assertEquals("notification count must not increase within cooldown",
+            countAfterFirst, notificationManager.activeNotifications.count { it.id == AlertManager.ALERT_HIGH_ID })
+    }
+
+    @Test
+    fun `urgent high fires during active high cooldown — escalation always fires`() = runTest {
+        settings.setAlertCooldownMinutes(15)
+
+        // Regular high fires
+        alertManager.checkReading(reading(200), emptyList(), 0)
+        assertTrue(isNotificationActive(AlertManager.ALERT_HIGH_ID))
+
+        // Advance past urgent-high threshold within cooldown — urgent high must still fire
+        alertManager.checkReading(reading(240), emptyList(), 0)
+        assertTrue("urgent high must fire regardless of high cooldown",
+            isNotificationActive(AlertManager.ALERT_URGENT_HIGH_ID))
+        assertFalse("regular high should be cleared", isNotificationActive(AlertManager.ALERT_HIGH_ID))
+    }
+
+    @Test
+    fun `urgent high respects its own cooldown`() = runTest {
+        settings.setAlertCooldownMinutes(15)
+
+        // First urgent-high fires
+        alertManager.checkReading(reading(240), emptyList(), 0)
+        assertTrue(isNotificationActive(AlertManager.ALERT_URGENT_HIGH_ID))
+
+        val countAfterFirst = notificationManager.activeNotifications.count { it.id == AlertManager.ALERT_URGENT_HIGH_ID }
+
+        // Second urgent-high reading within cooldown — suppressed
+        alertManager.checkReading(reading(240), emptyList(), 0)
+        assertTrue(isNotificationActive(AlertManager.ALERT_URGENT_HIGH_ID))
+        assertEquals("urgent high count must not increase within cooldown",
+            countAfterFirst, notificationManager.activeNotifications.count { it.id == AlertManager.ALERT_URGENT_HIGH_ID })
+    }
+
+    @Test
+    fun `cooldown of 0 means no cooldown — fires on every reading`() = runTest {
+        settings.setAlertCooldownMinutes(0)
+
+        alertManager.checkReading(reading(60), emptyList(), 0)
+        assertTrue(isNotificationActive(AlertManager.ALERT_LOW_ID))
+
+        alertManager.checkReading(reading(60), emptyList(), 0)
+        assertTrue(isNotificationActive(AlertManager.ALERT_LOW_ID))
     }
 }
