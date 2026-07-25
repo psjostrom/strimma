@@ -33,11 +33,7 @@ Use the GitHub Actions workflow or the local script.
    - **bump**: patch/minor/major (when version is empty)
    - **model**: AI model for changelog (default: `openai/gpt-4o-mini`)
 3. Workflow creates a PR with version bump + AI-generated changelog
-4. Review PR, merge
-5. Tag from main:
-   ```bash
-   git tag -a vX.Y.Z -m "vX.Y.Z" && git push origin vX.Y.Z
-   ```
+4. Review PR, merge — tag is created automatically by `tag-release.yml`
 
 ### Option B: Local script
 
