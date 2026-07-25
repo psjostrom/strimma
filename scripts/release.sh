@@ -188,18 +188,16 @@ extract_code_context() {
   while IFS= read -r file; do
     [[ -z "$file" ]] && continue
 
-    # Extract function signatures, class/object/interface declarations, val/var at top level
-    local sigs
-    sigs="$(git -C "$REPO_ROOT" diff "$prev"..HEAD -- "$file" 2>/dev/null \
-      | grep -E '^\+.*(class |object |interface |fun |val |var )' \
-      | sed 's/^+//' \
-      | sed 's/^\s*//' \
-      | grep -v '^\*' \
-      | head -20)"
+    # Extract full diff hunks (up to 50 lines per file) — gives AI real UI code, not just signatures
+    local hunks
+    hunks="$(git -C "$REPO_ROOT" diff "$prev"..HEAD -U3 -- "$file" 2>/dev/null \
+      | grep -E '^[+-].*' \
+      | grep -v '^[+-]{3}' \
+      | head -50)"
 
-    if [[ -n "$sigs" ]]; then
+    if [[ -n "$hunks" ]]; then
       context+="=== $file ==="$'\n'
-      context+="$sigs"$'\n'
+      context+="$hunks"$'\n'
       context+=$'\n'
     fi
   done <<< "$changed_files"
@@ -255,8 +253,10 @@ Rules:
 - Bad: 'Created ExerciseScreen.kt' → Good: 'Added exercise tracking screen'
 - Bad: 'Refactored GlucoseStore to use Flow' → Good: 'Improved glucose data loading performance'
 - Group related commits into single entries (e.g. multiple dependency bumps → one entry)
-- Combine commits that together deliver one feature or fix
+- If multiple commits reference the same PR number, they are ONE change — merge into a single entry
 - Skip purely internal/infrastructure changes (CI config, test fixes, dependency bumps that don't affect behavior)
+- Skip commits prefixed with fix(test):, test:, chore:, ci:, build:, docs: — these are NOT user-facing
+- Only describe changes visible to the end user
 - Omit empty categories
 - Be concise but descriptive — one sentence per entry, no fluff
 - Only output the markdown, nothing else.
@@ -268,7 +268,11 @@ SECTION 2 — Test plan (after ===TEST_PLAN===):
 - Include regression checks for related features that might be affected
 - Use checkboxes: - [ ] Step description
 - This is for a real person testing on a physical Android device
-- Use the code changes below to understand WHAT changed — reference specific functions, screens, and behaviors${context_block}
+- CRITICAL: Only describe what the code ACTUALLY does. Read the diff carefully:
+  - What UI components are used? (buttons, sliders, segmented controls, text fields)
+  - What are the actual option values/labels shown to the user?
+  - What are the validation bounds? Are they user-selectable or just limits?
+  - Never guess UI details — if unsure, describe the feature generically${context_block}
 
 Previous tag: ${prev_tag:-none}
 
