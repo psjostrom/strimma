@@ -43,6 +43,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: main
+          persist-credentials: false
 
       - name: Prepare release
         id: prepare
@@ -85,11 +86,18 @@ jobs:
               'CHANGELOG.md', 'utf8'
             );
 
+            // Resolve refs/heads/main explicitly (workflow_dispatch can run from non-main ref)
+            const { data: mainRef } = await github.rest.git.getRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: 'heads/main',
+            });
+
             // Get the base commit from main
             const { data: mainCommit } = await github.rest.git.getCommit({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              commit_sha: context.sha,
+              commit_sha: mainRef.object.sha,
             });
 
             // Create blobs for modified files
@@ -134,7 +142,7 @@ jobs:
               repo: context.repo.repo,
               message: TITLE,
               tree: tree.sha,
-              parents: [context.sha],
+              parents: [mainCommit.sha],
             });
 
             // Create branch (or update if it already exists)

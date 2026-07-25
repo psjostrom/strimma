@@ -105,7 +105,7 @@ When a merge or push fails, ALWAYS check CI status (`gh pr checks`) and read the
 
 ## Releasing
 
-**Preferred:** Use the automated workflow. Go to Actions → "Create release PR" → Run workflow. Provide version + prerelease checkbox. The workflow bumps `versionName`, generates AI changelog, and creates a PR. After merge, tag: `git tag -a vX.Y.Z -m "vX.Y.Z" && git push origin vX.Y.Z`.
+**Preferred:** Use the automated workflow. Go to Actions → "Create release PR" → Run workflow. Provide version + prerelease checkbox. The workflow bumps `versionName`, generates AI changelog, and creates a PR. After merge, the tag is created automatically and CI builds the APK.
 
 **Manual fallback:**
 1. Run `git log <last-tag>..main --oneline` to see ALL changes since the last release. Never assume the latest commit is all that changed.

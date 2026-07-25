@@ -1,0 +1,39 @@
+name: Tag release
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    name: tag
+    if: >
+      github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.title, 'chore(release):')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Extract version from PR title
+        id: version
+        run: |
+          VERSION="${{ github.event.pull_request.title }}"
+          VERSION="${VERSION#chore(release): bump versionName to }"
+          VERSION="${VERSION#chore(release): }"
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
+            echo "Error: could not extract version from title: ${{ github.event.pull_request.title }}" >&2
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create and push tag
+        run: |
+          git tag -a "${{ steps.version.outputs.tag }}" -m "${{ steps.version.outputs.tag }}"
+          git push origin "${{ steps.version.outputs.tag }}"

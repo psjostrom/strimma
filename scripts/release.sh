@@ -77,6 +77,10 @@ bump_version() {
   local major minor patch
   IFS='.' read -r major minor patch_raw <<< "$current"
   patch="${patch_raw%%-*}"  # strip pre-release suffix
+  if [[ "$patch_raw" == *-* && "$kind" == "patch" ]]; then
+    echo "${major}.${minor}.${patch}"
+    return
+  fi
   case "$kind" in
     major) echo "$((major + 1)).0.0" ;;
     minor) echo "${major}.$((minor + 1)).0" ;;
@@ -98,6 +102,12 @@ fi
 
 # Apply RC suffix if requested
 if [[ "$RC" == true ]]; then
+  RC_BASE="${TARGET_VERSION%%-rc.*}"
+  if git -C "$REPO_ROOT" rev-parse -q --verify "refs/tags/v${RC_BASE}" > /dev/null; then
+    echo "Error: ${RC_BASE} has already been released (tag v${RC_BASE} exists)." >&2
+    exit 1
+  fi
+
   if [[ "$TARGET_VERSION" =~ -rc\.([0-9]+)$ ]]; then
     # Already has RC suffix — increment
     CURRENT_RC="${BASH_REMATCH[1]}"
@@ -272,7 +282,9 @@ if [[ "$PREPARE" == true ]]; then
 
 ### Changes
 
+\`\`\`markdown
 ${CHANGELOG_SECTION}
+\`\`\`
 
 ---
 
@@ -280,8 +292,7 @@ ${CHANGELOG_SECTION}
 
 - [ ] Version bump is the only metadata change
 - [ ] CI is green
-- [ ] Merge PR, then tag from main:
-  \`git tag -a v${TARGET_VERSION} -m "v${TARGET_VERSION}" && git push origin v${TARGET_VERSION}\`
+- [ ] Merge PR — tag is created automatically by CI
 EOF
 
   {
@@ -299,12 +310,12 @@ fi
 
 echo ""
 echo "Creating branch $BRANCH..."
-git -C "$REPO_ROOT" checkout -b "$BRANCH"
+git -C "$REPO_ROOT" checkout -B "$BRANCH"
 git -C "$REPO_ROOT" add app/build.gradle.kts CHANGELOG.md
 git -C "$REPO_ROOT" commit -m "$TITLE"
 
 echo "Pushing..."
-git -C "$REPO_ROOT" push -u origin "$BRANCH"
+git -C "$REPO_ROOT" push -u origin "$BRANCH" --force-with-lease
 
 echo "Creating PR..."
 BODY_FILE="/tmp/strimma-release-pr-body-${TARGET_VERSION}.md"
@@ -313,7 +324,9 @@ cat > "$BODY_FILE" <<EOF
 
 ### Changes
 
+\`\`\`markdown
 ${CHANGELOG_SECTION}
+\`\`\`
 
 ---
 
@@ -321,17 +334,26 @@ ${CHANGELOG_SECTION}
 
 - [ ] Version bump is the only metadata change
 - [ ] CI is green
-- [ ] Merge PR, then tag from main:
-  \`git tag -a v${TARGET_VERSION} -m "v${TARGET_VERSION}" && git push origin v${TARGET_VERSION}\`
+- [ ] Merge PR — tag is created automatically by CI
 EOF
 
-gh pr create \
-  --repo "$(git -C "$REPO_ROOT" remote get-url origin | sed 's|.*github.com[:/]||; s|\.git$||')" \
-  --base main \
-  --head "$BRANCH" \
-  --title "$TITLE" \
-  --body-file "$BODY_FILE"
+REPO_SLUG="$(git -C "$REPO_ROOT" remote get-url origin | sed 's|.*github.com[:/]||; s|\.git$||')"
 
-echo ""
-echo "Done! PR created for v${TARGET_VERSION}"
-echo "After merge, tag: git tag -a v${TARGET_VERSION} -m \"v${TARGET_VERSION}\" && git push origin v${TARGET_VERSION}"
+# Check for existing open PR for this branch
+EXISTING_PR_URL="$(gh pr list --repo "$REPO_SLUG" --head "$BRANCH" --base main --state open --json url --jq '.[0].url' 2>/dev/null || true)"
+
+if [[ -n "$EXISTING_PR_URL" ]]; then
+  PR_NUMBER="$(gh pr list --repo "$REPO_SLUG" --head "$BRANCH" --base main --state open --json number --jq '.[0].number')"
+  gh pr edit "$PR_NUMBER" --repo "$REPO_SLUG" --title "$TITLE" --body-file "$BODY_FILE"
+  echo ""
+  echo "Done! Updated existing PR #${PR_NUMBER} for v${TARGET_VERSION}"
+else
+  gh pr create \
+    --repo "$REPO_SLUG" \
+    --base main \
+    --head "$BRANCH" \
+    --title "$TITLE" \
+    --body-file "$BODY_FILE"
+  echo ""
+  echo "Done! PR created for v${TARGET_VERSION}"
+fi
