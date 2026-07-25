@@ -1,3 +1,8 @@
+## [v1.3.1-rc.2] - 2026-07-24
+
+### Added
+- Re-alert interval (cooldown) setting for glucose alerts — configurable per-alarm (Urgent Low, Low, High, Urgent High) with 5/10/15-minute options or Default (no cooldown). Supports 5 languages (en, de, es, fr, sv). Cooldown resets when glucose returns to range; predictive alerts (Low Soon/High Soon) excluded by design. (#245)
+
 ## [v1.3.1-rc.1] - 2026-06-14
 
 ### Internal
