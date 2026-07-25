@@ -67,8 +67,8 @@ jobs:
           TAG: ${{ steps.version.outputs.tag }}
           COMMIT_SHA: ${{ github.event.pull_request.merge_commit_sha }}
         run: |
-          # Check if tag already exists
-          EXISTING_SHA="$(git ls-remote --tags origin "$TAG" | cut -f1 || true)"
+          # Check if tag already exists (peeled = dereferenced commit SHA)
+          EXISTING_SHA="$(git ls-remote --tags origin "${TAG}^{}" | cut -f1 || true)"
 
           if [[ -n "$EXISTING_SHA" ]]; then
             # Tag exists — verify it points to the merge commit
