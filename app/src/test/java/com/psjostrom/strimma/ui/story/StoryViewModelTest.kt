@@ -140,6 +140,9 @@ class StoryViewModelTest {
         val vm = createViewModel(2020, 3) // open March; Feb is older
 
         awaitLoaded(vm)
+        // canGoBack depends on earliestMonth (a Room Flow), which may not have
+        // emitted by the time loading completes. Wait for it to settle.
+        withTimeout(5000) { vm.canGoBack.first { it } }
 
         assertTrue(vm.canGoBack.value)
     }
