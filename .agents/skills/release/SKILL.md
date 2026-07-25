@@ -77,7 +77,7 @@ Edit `app/build.gradle.kts` line ~41. Do NOT touch `versionCode`.
 Create or update `CHANGELOG.md` at the repo root. Use [Keep a Changelog](https://keepachangelog.com/) format:
 
 ```markdown
-## [vX.Y.Z] - YYYY-MM-DD
+## [X.Y.Z] - YYYY-MM-DD
 
 ### Added
 - Feature descriptions (user-facing language)
@@ -95,10 +95,10 @@ Create or update `CHANGELOG.md` at the repo root. Use [Keep a Changelog](https:/
 ### 5. Create release branch and PR
 
 ```bash
-git checkout -b release/vX.Y.Z
+git checkout -b release/X.Y.Z
 git add app/build.gradle.kts CHANGELOG.md
-git commit -m "chore(release): bump versionName to vX.Y.Z"
-git push -u origin release/vX.Y.Z
+git commit -m "chore(release): bump versionName to X.Y.Z"
+git push -u origin release/X.Y.Z
 ```
 
 Create PR with:
