@@ -67,11 +67,14 @@ jobs:
           TAG: ${{ steps.version.outputs.tag }}
           COMMIT_SHA: ${{ github.event.pull_request.merge_commit_sha }}
         run: |
-          # Check if tag already exists (peeled = dereferenced commit SHA)
+          # Check if tag already exists — peel (^{}) dereferences annotated tags;
+          # lightweight tags have no tag object so we fall back to the raw ref.
           EXISTING_SHA="$(git ls-remote --tags origin "${TAG}^{}" | cut -f1 || true)"
+          if [[ -z "$EXISTING_SHA" ]]; then
+            EXISTING_SHA="$(git ls-remote --tags origin "$TAG" | cut -f1 || true)"
+          fi
 
           if [[ -n "$EXISTING_SHA" ]]; then
-            # Tag exists — verify it points to the merge commit
             if [[ "$EXISTING_SHA" == "$COMMIT_SHA" ]]; then
               echo "Tag $TAG already exists and points to correct commit, skipping"
               exit 0
@@ -81,5 +84,5 @@ jobs:
             fi
           fi
 
-          git tag -a "$TAG" -m "$TAG"
+          git tag "$TAG"
           git push origin "$TAG"
