@@ -202,6 +202,8 @@ class SyncOrchestratorTest {
      */
     @Test
     fun `start always prunes stale unpushed rows even with INDEFINITE retention`() = runTest {
+        settings.setRetentionPolicy(RetentionPolicy.INDEFINITE)
+
         val now = System.currentTimeMillis()
         val staleUnpushed = now - 35L * 24 * 60 * 60 * 1000 // 35 days old, never pushed
         val freshUnpushed = now - 60_000L // 1 minute old, never pushed
