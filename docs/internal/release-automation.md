@@ -39,6 +39,7 @@ The PR title must start with `chore(release):` and contain a valid semver versio
 | Branch | `release/X.Y.Z` | `release/1.4.0` |
 | PR title | `chore(release): bump versionName to X.Y.Z` | `chore(release): bump versionName to 1.4.0` |
 | Git tag | `vX.Y.Z` | `v1.4.0` |
+| GitHub Release name | `vX.Y.Z` | `v1.4.0` |
 | `versionName` in build.gradle.kts | `X.Y.Z` | `1.4.0` |
 | Pre-release | `X.Y.Z-rc.N` | `1.4.0-rc.1` |
 
