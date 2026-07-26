@@ -93,11 +93,6 @@ Example:
 - [ ] Tag from main: `git tag -a vX.Y.Z -m "vX.Y.Z" && git push origin vX.Y.Z`
 ````
 
-Checklist outside the release-notes fence:
-- [ ] CI passes
-- [ ] Merge PR
-- [ ] Tag from main: `git tag -a vX.Y.Z -m "vX.Y.Z" && git push origin vX.Y.Z`
-
 ### 6. After merge
 
 Remind the user to tag from main:
