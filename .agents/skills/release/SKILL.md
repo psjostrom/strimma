@@ -49,7 +49,7 @@ scripts/release.sh --bump minor
 scripts/release.sh --version 1.4.0 --rc
 ```
 
-Script: bumps `versionName`, categorizes commits by conventional prefix, updates `CHANGELOG.md`, creates branch + PR.
+Script: bumps `versionName`, categorizes commits by conventional prefix, creates branch + PR.
 
 ## Manual Path (fallback)
 
@@ -72,31 +72,11 @@ git log ${LAST_TAG}..main --oneline
 
 Edit `app/build.gradle.kts` line ~41. Do NOT touch `versionCode`.
 
-### 4. Write the changelog
-
-Create or update `CHANGELOG.md` at the repo root. Use [Keep a Changelog](https://keepachangelog.com/) format:
-
-```markdown
-## [X.Y.Z] - YYYY-MM-DD
-
-### Added
-- Feature descriptions (user-facing language)
-
-### Fixed
-- Bug fix descriptions
-
-### Changed
-- Improvements, behavior changes
-
-### Internal
-- Refactors, test improvements, CI changes
-```
-
-### 5. Create release branch and PR
+### 4. Create release branch and PR
 
 ```bash
 git checkout -b release/X.Y.Z
-git add app/build.gradle.kts CHANGELOG.md
+git add app/build.gradle.kts
 git commit -m "chore(release): bump versionName to X.Y.Z"
 git push -u origin release/X.Y.Z
 ```
@@ -105,7 +85,7 @@ Create PR with:
 - Inside ` ```markdown ` fence: release notes for end users
 - Outside fence: test plan
 
-### 6. Tag after merge
+### 5. Tag after merge
 
 Tag is created automatically by `tag-release.yml` on PR merge. If it fails:
 
