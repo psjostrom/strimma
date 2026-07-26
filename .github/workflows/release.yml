@@ -67,14 +67,20 @@ jobs:
               "$PR_NUMBER" "${{ github.repository }}" "$PR_NUMBER" "$NOTES")
           fi
 
+          # Always set --title to the tag name. Without it, GitHub leaves name
+          # empty and the releases UI synthesizes "tag: PR title" from the
+          # squash-merge PR (e.g. "v1.4.0-rc.1: chore(release): ... (#263)").
+          # --generate-notes also auto-titles unless --title is passed.
           if [ -n "$NOTES" ]; then
             gh release create "${{ github.ref_name }}" \
               "$APK" \
+              --title "${{ github.ref_name }}" \
               --notes "$NOTES" \
               $PRERELEASE_FLAG
           else
             gh release create "${{ github.ref_name }}" \
               "$APK" \
+              --title "${{ github.ref_name }}" \
               --generate-notes \
               --notes-start-tag "$PREV_TAG" \
               $PRERELEASE_FLAG
