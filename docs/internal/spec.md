@@ -519,14 +519,11 @@ Single-screen app in phase 1. Settings accessible via gear icon in toolbar. No d
 
 Non-sensitive settings (thresholds, graph window) stored in Jetpack `DataStore` (Preferences). The API secret stored in `EncryptedSharedPreferences` (from `androidx.security.crypto`, backed by Android Keystore). This is the only sensitive field — no reason to encrypt threshold values.
 
-### Phase 2 Settings (Specced, Not Built)
+### Phase 2 Settings
 
-- Alert thresholds and sounds
-- Unit switching (mmol/L ↔ mg/dL)
-- Notification style options
-- Graph appearance (dot size, line thickness)
-- Data retention period
-- Export/backup
+Delivered in Phase 2 (see §15): alert thresholds and sounds, unit switching, notification options, data retention, export/backup.
+
+Not built: graph appearance customization (dot size, line thickness).
 
 ---
 
