@@ -110,4 +110,8 @@ site/
 
 # Git worktrees
 .worktrees/
+
+# superpowers ephemeral artifacts (plans are consumed during implementation)
 .superpowers/
+docs/superpowers/
+docs/specs/
