@@ -141,16 +141,16 @@ If you snooze an alert and you're still out of range when the snooze expires, th
 
 This is intentional — a persistent low or high should not be silently ignored.
 
-## Re-alert Interval (Cooldown)
+## Cooldown
 
-By default (Re-alert Interval set to **Default**), alerts fire on **every reading** while the condition persists. To reduce notification fatigue during prolonged episodes, you can set a **Re-alert Interval** in the Alerts settings:
+By default (Cooldown set to **Off**), alerts fire on **every reading** while the condition persists. To reduce notification fatigue during prolonged episodes, you can set a **Cooldown** in the Alerts settings:
 
 | Option | Behavior |
 |--------|----------|
-| **Default** | No cooldown — alerts fire on every reading (sensor rate) |
-| **5 min** | After an alarm fires, that same alarm won't re-fire for 5 minutes |
-| **10 min** | After an alarm fires, that same alarm won't re-fire for 10 minutes |
-| **15 min** | After an alarm fires, that same alarm won't re-fire for 15 minutes |
+| **Off** | No cooldown — alerts fire on every reading (sensor rate) |
+| **5m** | After an alarm fires, that same alarm won't re-fire for 5 minutes |
+| **10m** | After an alarm fires, that same alarm won't re-fire for 10 minutes |
+| **15m** | After an alarm fires, that same alarm won't re-fire for 15 minutes |
 
 ### Per-alarm cooldown
 
