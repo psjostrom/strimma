@@ -92,7 +92,7 @@ Yes. Urgent Low and Urgent High alerts bypass Do Not Disturb mode by default. Yo
 
 ### Do alerts keep repeating if I stay low/high?
 
-Yes. Alerts fire on every new glucose reading as long as the condition persists. If you want temporary silence, tap **Snooze** on the alert notification — it silences that alert for the **Alert Snooze Duration** configured in Settings > Alerts (default 30 minutes). After the snooze expires, it fires again if the condition still holds.
+Yes. Alerts fire on every new glucose reading as long as the condition persists. If you want temporary silence, tap **Snooze** on the alert notification — it silences that alert and less severe alerts in the same category for the **Alert Snooze Duration** configured in Settings > Alerts (default 30 minutes). After the snooze expires, alerts resume if their conditions still hold.
 
 ### Can I change the alert sounds?
 

@@ -169,7 +169,7 @@
     <string name="settings_alerts_cooldown">Intervalo de re-alerta</string>
     <string name="settings_alerts_cooldown_desc">Reduce la fatiga de notificaciones durante episodios prolongados. Por defecto, se alerta en cada lectura. Cada tipo de alarma tiene su propio intervalo de re-alerta.</string>
     <string name="settings_alerts_snooze_duration">Duración de snooze de alerta</string>
-    <string name="settings_alerts_snooze_duration_desc">Cuánto silencia el botón Snooze de una notificación de alerta esa alerta. Independiente del botón de acción de la notificación.</string>
+    <string name="settings_alerts_snooze_duration_desc">Cuánto tiempo silencia el botón Snooze de una notificación de alerta esa alerta. Independiente del botón de acción de la notificación.</string>
     <string name="cooldown_default">Por defecto</string>
     <string name="cooldown_label_5">5 min</string>
     <string name="cooldown_label_10">10 min</string>

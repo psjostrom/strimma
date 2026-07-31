@@ -59,4 +59,19 @@ class SettingsRepositoryAlertSnoozeTest {
         assertEquals(SnoozeDuration.H2, target.alertSnoozeDuration.first())
         assertEquals(SnoozeDuration.H1, target.notifSnoozeDuration.first())
     }
+
+    @Test
+    fun `import normalizes invalid alert_snooze_duration to M30`() = runTest {
+        val r = repo()
+        val json = JSONObject()
+            .put("version", 2)
+            .put("settings", JSONObject().put("alert_snooze_duration", "NOT_A_DURATION"))
+            .toString()
+        r.importFromJson(json)
+        assertEquals(SnoozeDuration.M30, r.alertSnoozeDuration.first())
+        assertEquals(
+            "M30",
+            JSONObject(r.exportToJson()).getJSONObject("settings").getString("alert_snooze_duration")
+        )
+    }
 }
