@@ -6,6 +6,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import com.psjostrom.strimma.data.GlucoseUnit
+import com.psjostrom.strimma.data.notification.SnoozeDuration
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -29,6 +30,7 @@ class AlertsSettingsTest {
         alertLowSoonEnabled: Boolean = true,
         alertHighSoonEnabled: Boolean = true,
         alertCooldownMinutes: Int = 0,
+        alertSnoozeDuration: SnoozeDuration = SnoozeDuration.M30,
         onAlertLowEnabledChange: (Boolean) -> Unit = {},
         onAlertHighEnabledChange: (Boolean) -> Unit = {},
         onAlertUrgentLowEnabledChange: (Boolean) -> Unit = {},
@@ -37,6 +39,7 @@ class AlertsSettingsTest {
         onAlertLowSoonEnabledChange: (Boolean) -> Unit = {},
         onAlertHighSoonEnabledChange: (Boolean) -> Unit = {},
         onAlertCooldownChange: (Int) -> Unit = {},
+        onAlertSnoozeDurationChange: (SnoozeDuration) -> Unit = {},
         onOpenAlertSound: (String) -> Unit = {},
         onBack: () -> Unit = {}
     ) {
@@ -55,6 +58,7 @@ class AlertsSettingsTest {
                 alertLowSoonEnabled = alertLowSoonEnabled,
                 alertHighSoonEnabled = alertHighSoonEnabled,
                 alertCooldownMinutes = alertCooldownMinutes,
+                alertSnoozeDuration = alertSnoozeDuration,
                 onAlertLowEnabledChange = onAlertLowEnabledChange,
                 onAlertHighEnabledChange = onAlertHighEnabledChange,
                 onAlertUrgentLowEnabledChange = onAlertUrgentLowEnabledChange,
@@ -67,6 +71,7 @@ class AlertsSettingsTest {
                 onAlertLowSoonEnabledChange = onAlertLowSoonEnabledChange,
                 onAlertHighSoonEnabledChange = onAlertHighSoonEnabledChange,
                 onAlertCooldownChange = onAlertCooldownChange,
+                onAlertSnoozeDurationChange = onAlertSnoozeDurationChange,
                 onOpenAlertSound = onOpenAlertSound,
                 onBack = onBack
             )
@@ -140,5 +145,16 @@ class AlertsSettingsTest {
         // SegmentedButton merges semantics — find by text in unmerged tree
         composeRule.onNodeWithText("15 min", useUnmergedTree = true).performScrollTo().performClick()
         assertEquals(15, receivedMinutes)
+    }
+
+    @Test
+    fun `alert snooze duration picker selects 1h`() {
+        var selected: SnoozeDuration? = null
+        render(
+            alertSnoozeDuration = SnoozeDuration.M30,
+            onAlertSnoozeDurationChange = { selected = it },
+        )
+        composeRule.onNodeWithText("1h", useUnmergedTree = true).performScrollTo().performClick()
+        assertEquals(SnoozeDuration.H1, selected)
     }
 }

@@ -15,6 +15,7 @@ import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.MS_PER_MINUTE
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.SettingsRepository
+import com.psjostrom.strimma.data.notification.SnoozeDuration
 import com.psjostrom.strimma.data.workout.EffectiveThresholds
 import com.psjostrom.strimma.data.workout.WorkoutMode
 import com.psjostrom.strimma.data.workout.WorkoutModeManager
@@ -28,8 +29,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
@@ -87,8 +90,6 @@ class AlertManager @Inject constructor(
         // Non-category alerts keep their own const ids
         const val ALERT_STALE_ID = 103
         const val ALERT_PUSH_FAIL_ID = 107
-
-        private const val SNOOZE_DURATION_MS = 30 * 60 * 1000L
 
         // Severity levels — snooze suppresses alerts at or below the snoozed level
         const val ALERT_LEVEL_SOON = 0     // predictive ("low in X min")
@@ -211,6 +212,12 @@ class AlertManager @Inject constructor(
 
     private val notificationManager = context.getSystemService(NotificationManager::class.java)
     private val snoozePrefs = context.getSharedPreferences("strimma_snooze", Context.MODE_PRIVATE)
+
+    private val alertSnoozeDuration = settings.alertSnoozeDuration.stateIn(
+        cleanupScope,
+        SharingStarted.Eagerly,
+        SnoozeDuration.M30,
+    )
 
     // Per-alarm cooldown tracking. Each alarm type has its own timestamp.
     // Reset when glucose returns to range.
@@ -549,16 +556,16 @@ class AlertManager @Inject constructor(
         }
     }
 
-    fun snooze(alertId: Int) {
+    fun snooze(alertId: Int, durationMs: Long = SnoozeDuration.M30.durationMs) {
         val categoryAndLevel = alertCategoryAndLevel(alertId)
         if (categoryAndLevel != null) {
             val (category, level) = categoryAndLevel
-            pauseAlertCategory(category, SNOOZE_DURATION_MS, level)
+            pauseAlertCategory(category, durationMs, level)
         } else {
-            snoozePrefs.edit { putLong(alertId.toString(), System.currentTimeMillis() + SNOOZE_DURATION_MS) }
+            snoozePrefs.edit { putLong(alertId.toString(), System.currentTimeMillis() + durationMs) }
         }
         notificationManager.cancel(alertId)
-        DebugLog.log("Alert $alertId snoozed for 30 min")
+        DebugLog.log("Alert $alertId snoozed for ${durationMs / 60_000} min")
     }
 
     // Reverse lookup of (alertId -> category, level) derived from AlertCategory.entries
@@ -670,6 +677,17 @@ class AlertManager @Inject constructor(
     ) {
         DebugLog.log("ALERT: $title — $text")
 
+        val duration = alertSnoozeDuration.value
+        val durationLabel = context.getString(
+            when (duration) {
+                SnoozeDuration.M15 -> R.string.snooze_duration_15m
+                SnoozeDuration.M30 -> R.string.snooze_duration_30m
+                SnoozeDuration.H1 -> R.string.snooze_duration_1h
+                SnoozeDuration.H2 -> R.string.snooze_duration_2h
+                SnoozeDuration.H3 -> R.string.snooze_duration_3h
+            }
+        )
+
         val contentIntent = PendingIntent.getActivity(
             context, alertId,
             Intent(context, MainActivity::class.java),
@@ -680,6 +698,7 @@ class AlertManager @Inject constructor(
             context, alertId + SNOOZE_INTENT_ID_OFFSET,
             Intent(context, AlertSnoozeReceiver::class.java).apply {
                 putExtra("alert_id", alertId)
+                putExtra(AlertSnoozeReceiver.EXTRA_DURATION, duration.name)
             },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -693,7 +712,7 @@ class AlertManager @Inject constructor(
             .setContentIntent(contentIntent)
             .setAutoCancel(false)
             .setOnlyAlertOnce(alertOnce)
-            .addAction(0, context.getString(R.string.alert_snooze), snoozeIntent)
+            .addAction(0, context.getString(R.string.alert_snooze, durationLabel), snoozeIntent)
             .build()
 
         notificationManager.notify(alertId, notification)
