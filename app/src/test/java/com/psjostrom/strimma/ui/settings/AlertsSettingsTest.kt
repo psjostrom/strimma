@@ -2,6 +2,7 @@ package com.psjostrom.strimma.ui.settings
 
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -142,8 +143,9 @@ class AlertsSettingsTest {
         )
         composeRule.onNodeWithText("Off", useUnmergedTree = true).assertExists()
 
-        // SegmentedButton merges semantics — find by text in unmerged tree
-        composeRule.onNodeWithText("15m", useUnmergedTree = true).performScrollTo().performClick()
+        // "15m" also appears on Alert Snooze Duration — cooldown is the last match.
+        composeRule.onAllNodesWithText("15m", useUnmergedTree = true).onLast()
+            .performScrollTo().performClick()
         assertEquals(15, receivedMinutes)
     }
 

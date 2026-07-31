@@ -166,20 +166,11 @@
     <string name="settings_alerts_high_soon">Bald hoch</string>
     <string name="settings_alerts_high_soon_desc">Vorhergesagt hoch innerhalb des Vorhersagefensters</string>
     <string name="settings_alerts_stale">Veraltete Daten (10+ Min.)</string>
-<<<<<<< HEAD
     <string name="settings_alerts_cooldown">Abklingzeit</string>
     <string name="settings_alerts_cooldown_desc">Reduziere Alarmerm\u00FCdung bei l\u00E4ngeren Episoden. Aus l\u00F6st bei jeder Messung einen Alarm aus. Jeder Alarmtyp verf\u00FCgt \u00FCber eine eigene Abklingzeit.</string>
-    <string name="cooldown_off">Aus</string>
-=======
-    <string name="settings_alerts_cooldown">Alarm-Intervall</string>
-    <string name="settings_alerts_cooldown_desc">Reduziere Alarmerm\u00FCdung bei l\u00E4ngeren Episoden. Standard wird bei jeder Messung ein Alarm ausgel\u00F6st. Jeder Alarmtyp verf\u00FCgt \u00FCber ein eigenes Alarm-Intervall.</string>
     <string name="settings_alerts_snooze_duration">Alarm-Snooze-Dauer</string>
     <string name="settings_alerts_snooze_duration_desc">Wie lange die Snooze-Taste einer Alarmbenachrichtigung diesen Alarm stummschaltet. Unabhängig von der Aktions-Taste der Vordergrundbenachrichtigung.</string>
-    <string name="cooldown_default">Standard</string>
-    <string name="cooldown_label_5">5 min</string>
-    <string name="cooldown_label_10">10 min</string>
-    <string name="cooldown_label_15">15 min</string>
->>>>>>> dea35f0 (feat: add configurable alert snooze duration)
+    <string name="cooldown_off">Aus</string>
 
     <!-- Data Settings -->
     <string name="settings_data_title">Daten</string>

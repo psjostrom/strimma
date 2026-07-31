@@ -166,20 +166,11 @@
     <string name="settings_alerts_high_soon">Snart h\u00F6gt</string>
     <string name="settings_alerts_high_soon_desc">F\u00F6ruts\u00E4gt h\u00F6gt inom prediktionsf\u00F6nstret</string>
     <string name="settings_alerts_stale">Gammal data (10+ min)</string>
-<<<<<<< HEAD
     <string name="settings_alerts_cooldown">Cooldown</string>
     <string name="settings_alerts_cooldown_desc">Minska larmtr\u00F6tthet under l\u00E4ngre episoder. Av alarmerar vid varje avl\u00E4sning. Varje larmtyp har egen oberoende cooldown.</string>
-    <string name="cooldown_off">Av</string>
-=======
-    <string name="settings_alerts_cooldown">Återlarmsintervall</string>
-    <string name="settings_alerts_cooldown_desc">Minska larmtr\u00F6tthet under l\u00E4ngre episoder. Standard alarmerar vid varje avl\u00E4sning. Varje larmtyp har egen oberoende \u00E5terlarmsintervall.</string>
     <string name="settings_alerts_snooze_duration">Snooze-längd för larm</string>
     <string name="settings_alerts_snooze_duration_desc">Hur länge Snooze-knappen på ett larm tystar det larmet. Separat från notisens åtgärdsknapp.</string>
-    <string name="cooldown_default">Standard</string>
-    <string name="cooldown_label_5">5 min</string>
-    <string name="cooldown_label_10">10 min</string>
-    <string name="cooldown_label_15">15 min</string>
->>>>>>> dea35f0 (feat: add configurable alert snooze duration)
+    <string name="cooldown_off">Av</string>
 
     <!-- Data Settings -->
     <string name="settings_data_title">Data</string>
