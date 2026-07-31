@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.SettingsRepository
+import com.psjostrom.strimma.data.notification.SnoozeDuration
 import com.psjostrom.strimma.createTestDataStore
 import com.psjostrom.strimma.widget.WidgetSettingsRepository
 import com.psjostrom.strimma.data.workout.WorkoutModeManager
@@ -18,6 +19,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -239,6 +241,40 @@ class AlertManagerTest {
         // Re-check — should fire again
         alertManager.checkReading(reading(60), emptyList(), 0)
         assertTrue(isNotificationActive(AlertManager.ALERT_LOW_ID))
+    }
+
+    @Test
+    fun `snooze with H1 duration sets category pause ~1 hour ahead`() = runTest {
+        alertManager.checkReading(reading(60), emptyList(), 0)
+        val before = System.currentTimeMillis()
+        alertManager.snooze(AlertManager.ALERT_LOW_ID, SnoozeDuration.H1.durationMs)
+        val expiry = alertManager.alertPauseExpiryMs(AlertCategory.LOW)
+        assertNotNull(expiry)
+        val expectedMin = before + SnoozeDuration.H1.durationMs - 5_000
+        val expectedMax = before + SnoozeDuration.H1.durationMs + 5_000
+        assertTrue("expiry=$expiry", expiry!! in expectedMin..expectedMax)
+    }
+
+    @Test
+    fun `snooze default duration remains ~30 minutes`() = runTest {
+        alertManager.checkReading(reading(60), emptyList(), 0)
+        val before = System.currentTimeMillis()
+        alertManager.snooze(AlertManager.ALERT_LOW_ID)
+        val expiry = alertManager.alertPauseExpiryMs(AlertCategory.LOW)
+        assertNotNull(expiry)
+        val expectedMin = before + SnoozeDuration.M30.durationMs - 5_000
+        val expectedMax = before + SnoozeDuration.M30.durationMs + 5_000
+        assertTrue("expiry=$expiry", expiry!! in expectedMin..expectedMax)
+    }
+
+    @Test
+    fun `stale snooze with custom duration stores per-alert until`() = runTest {
+        val before = System.currentTimeMillis()
+        alertManager.snooze(AlertManager.ALERT_STALE_ID, SnoozeDuration.H2.durationMs)
+        val snoozePrefs = context.getSharedPreferences("strimma_snooze", Context.MODE_PRIVATE)
+        val until = snoozePrefs.getLong(AlertManager.ALERT_STALE_ID.toString(), 0L)
+        assertTrue(until >= before + SnoozeDuration.H2.durationMs - 5_000)
+        assertTrue(until <= before + SnoozeDuration.H2.durationMs + 5_000)
     }
 
     // -- Predictive alerts --

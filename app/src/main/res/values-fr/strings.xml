@@ -166,9 +166,20 @@
     <string name="settings_alerts_high_soon">Bient\u00F4t haut</string>
     <string name="settings_alerts_high_soon_desc">Glyc\u00E9mie pr\u00E9dite haute dans la fen\u00EAtre de pr\u00E9diction</string>
     <string name="settings_alerts_stale">Donn\u00E9es obsol\u00E8tes (10+ min)</string>
+<<<<<<< HEAD
     <string name="settings_alerts_cooldown">Cooldown</string>
     <string name="settings_alerts_cooldown_desc">R\u00E9duire la fatigue des notifications lors d\u2019\u00E9pisodes prolong\u00E9s. Off alerte \u00E0 chaque lecture. Chaque type d\u2019alarme poss\u00E8de son propre cooldown.</string>
     <string name="cooldown_off">Off</string>
+=======
+    <string name="settings_alerts_cooldown">Intervalle de r\u00E9-alerte</string>
+    <string name="settings_alerts_cooldown_desc">R\u00E9duire la fatigue des notifications lors d\u2019\u00E9pisodes prolong\u00E9s. Par d\u00E9faut, une alerte est \u00E9mise \u00E0 chaque lecture. Chaque type d\u2019alarme poss\u00E8de son propre intervalle de r\u00E9-alerte.</string>
+    <string name="settings_alerts_snooze_duration">Dur\u00E9e de snooze d\u2019alerte</string>
+    <string name="settings_alerts_snooze_duration_desc">Dur\u00E9e pendant laquelle le bouton Snooze d\u2019une notification d\u2019alerte silence cette alerte. Ind\u00E9pendant du bouton d\u2019action de la notification.</string>
+    <string name="cooldown_default">Par d\u00E9faut</string>
+    <string name="cooldown_label_5">5 min</string>
+    <string name="cooldown_label_10">10 min</string>
+    <string name="cooldown_label_15">15 min</string>
+>>>>>>> dea35f0 (feat: add configurable alert snooze duration)
 
     <!-- Data Settings -->
     <string name="settings_data_title">Donn\u00E9es</string>
@@ -256,7 +267,7 @@
     <string name="alert_push_fail_body">L\u0027envoi de glyc\u00E9mie \u00E9choue depuis 15+ minutes. V\u00E9rifiez les param\u00E8tres Nightscout.</string>
     <string name="alert_channel_push_fail">Erreur d\u0027envoi</string>
     <string name="alert_channel_push_fail_desc">L\u0027envoi de glyc\u00E9mie \u00E9choue pendant une p\u00E9riode prolong\u00E9e</string>
-    <string name="alert_snooze">Snooze 30 min</string>
+    <string name="alert_snooze">Snooze %1$s</string>
 
     <!-- Foreground Notification -->
     <string name="notif_channel_name">Lectures de glyc\u00E9mie</string>
