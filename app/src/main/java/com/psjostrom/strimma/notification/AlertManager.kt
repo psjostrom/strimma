@@ -29,11 +29,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -212,12 +211,6 @@ class AlertManager @Inject constructor(
 
     private val notificationManager = context.getSystemService(NotificationManager::class.java)
     private val snoozePrefs = context.getSharedPreferences("strimma_snooze", Context.MODE_PRIVATE)
-
-    private val alertSnoozeDuration = settings.alertSnoozeDuration.stateIn(
-        cleanupScope,
-        SharingStarted.Eagerly,
-        SnoozeDuration.M30,
-    )
 
     // Per-alarm cooldown tracking. Each alarm type has its own timestamp.
     // Reset when glucose returns to range.
@@ -544,12 +537,16 @@ class AlertManager @Inject constructor(
     fun handlePushFailure(firing: Boolean) {
         if (firing) {
             if (!isSnoozed(ALERT_PUSH_FAIL_ID, System.currentTimeMillis())) {
-                fireAlert(
-                    ALERT_PUSH_FAIL_ID, CHANNEL_PUSH_FAIL,
-                    context.getString(R.string.alert_push_fail_title),
-                    context.getString(R.string.alert_push_fail_body),
-                    alertOnce = true
-                )
+                // Sync API (NightscoutPusher callback) — block for the persisted snooze
+                // duration rather than racing a StateFlow seed default.
+                runBlocking {
+                    fireAlert(
+                        ALERT_PUSH_FAIL_ID, CHANNEL_PUSH_FAIL,
+                        context.getString(R.string.alert_push_fail_title),
+                        context.getString(R.string.alert_push_fail_body),
+                        alertOnce = true
+                    )
+                }
             }
         } else {
             notificationManager.cancel(ALERT_PUSH_FAIL_ID)
@@ -668,7 +665,7 @@ class AlertManager @Inject constructor(
         return true
     }
 
-    private fun fireAlert(
+    private suspend fun fireAlert(
         alertId: Int,
         channelId: String,
         title: String,
@@ -677,7 +674,8 @@ class AlertManager @Inject constructor(
     ) {
         DebugLog.log("ALERT: $title — $text")
 
-        val duration = alertSnoozeDuration.value
+        // Suspend for the persisted value — never use a StateFlow seed default.
+        val duration = settings.alertSnoozeDuration.first()
         val durationLabel = context.getString(
             when (duration) {
                 SnoozeDuration.M15 -> R.string.snooze_duration_15m

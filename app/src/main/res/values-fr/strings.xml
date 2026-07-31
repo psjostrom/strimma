@@ -174,7 +174,7 @@
     <string name="settings_alerts_cooldown">Intervalle de r\u00E9-alerte</string>
     <string name="settings_alerts_cooldown_desc">R\u00E9duire la fatigue des notifications lors d\u2019\u00E9pisodes prolong\u00E9s. Par d\u00E9faut, une alerte est \u00E9mise \u00E0 chaque lecture. Chaque type d\u2019alarme poss\u00E8de son propre intervalle de r\u00E9-alerte.</string>
     <string name="settings_alerts_snooze_duration">Dur\u00E9e de snooze d\u2019alerte</string>
-    <string name="settings_alerts_snooze_duration_desc">Dur\u00E9e pendant laquelle le bouton Snooze d\u2019une notification d\u2019alerte silence cette alerte. Ind\u00E9pendant du bouton d\u2019action de la notification.</string>
+    <string name="settings_alerts_snooze_duration_desc">Dur\u00E9e pendant laquelle le bouton Snooze d\u2019une notification d\u2019alerte silence cette alerte. Ind\u00E9pendante du bouton d\u2019action de la notification.</string>
     <string name="cooldown_default">Par d\u00E9faut</string>
     <string name="cooldown_label_5">5 min</string>
     <string name="cooldown_label_10">10 min</string>

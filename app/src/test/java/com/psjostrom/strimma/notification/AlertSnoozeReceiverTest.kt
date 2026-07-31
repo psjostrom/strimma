@@ -14,9 +14,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import org.junit.After
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -24,32 +22,27 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class AlertSnoozeReceiverTest {
 
-    private lateinit var context: Context
-    private lateinit var alertManager: AlertManager
-    private lateinit var managerScope: CoroutineScope
-
-    @Before
-    fun setup() {
-        context = ApplicationProvider.getApplicationContext()
+    private fun withAlertManager(block: (Context, AlertManager) -> Unit) {
+        val context: Context = ApplicationProvider.getApplicationContext()
         val settings = SettingsRepository(context, WidgetSettingsRepository(context), createTestDataStore())
-        managerScope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
-        val workoutModeManager = WorkoutModeManager(
-            settings,
-            FakeCalendarPoller(),
-            MutableClock(System.currentTimeMillis()),
-            managerScope,
-        )
-        alertManager = AlertManager(context, settings, workoutModeManager, managerScope)
-        context.getSharedPreferences("strimma_snooze", Context.MODE_PRIVATE).edit().clear().apply()
-    }
-
-    @After
-    fun tearDown() {
-        managerScope.cancel()
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+        try {
+            val workoutModeManager = WorkoutModeManager(
+                settings,
+                FakeCalendarPoller(),
+                MutableClock(System.currentTimeMillis()),
+                scope,
+            )
+            val alertManager = AlertManager(context, settings, workoutModeManager, scope)
+            context.getSharedPreferences("strimma_snooze", Context.MODE_PRIVATE).edit().clear().apply()
+            block(context, alertManager)
+        } finally {
+            scope.cancel()
+        }
     }
 
     @Test
-    fun `missing duration extra falls back to M30`() {
+    fun `missing duration extra falls back to M30`() = withAlertManager { context, alertManager ->
         val before = System.currentTimeMillis()
         val intent = Intent().putExtra("alert_id", AlertManager.ALERT_STALE_ID)
         AlertSnoozeReceiver.handleSnooze(intent, alertManager)
@@ -59,7 +52,7 @@ class AlertSnoozeReceiverTest {
     }
 
     @Test
-    fun `invalid duration extra falls back to M30`() {
+    fun `invalid duration extra falls back to M30`() = withAlertManager { context, alertManager ->
         val before = System.currentTimeMillis()
         val intent = Intent()
             .putExtra("alert_id", AlertManager.ALERT_STALE_ID)
@@ -71,7 +64,7 @@ class AlertSnoozeReceiverTest {
     }
 
     @Test
-    fun `valid duration extra uses H1`() {
+    fun `valid duration extra uses H1`() = withAlertManager { context, alertManager ->
         val before = System.currentTimeMillis()
         val intent = Intent()
             .putExtra("alert_id", AlertManager.ALERT_STALE_ID)
