@@ -184,13 +184,14 @@ fun AlertsSettings(
                     SegmentedButton(
                         selected = alertCooldownMinutes == minutes,
                         onClick = { onAlertCooldownChange(minutes) },
-                        shape = SegmentedButtonDefaults.itemShape(index, cooldownOptions.size)
+                        shape = SegmentedButtonDefaults.itemShape(index, cooldownOptions.size),
+                        icon = {},
                     ) {
                         val labelResId = when (minutes) {
                             5 -> R.string.cooldown_label_5
                             10 -> R.string.cooldown_label_10
                             15 -> R.string.cooldown_label_15
-                            else -> R.string.cooldown_default
+                            else -> R.string.cooldown_off
                         }
                         Text(stringResource(labelResId))
                     }

@@ -166,12 +166,9 @@
     <string name="settings_alerts_high_soon">Alto pronto</string>
     <string name="settings_alerts_high_soon_desc">Glucosa predicha alta dentro de la ventana de predicci\u00F3n</string>
     <string name="settings_alerts_stale">Datos obsoletos (10+ min)</string>
-    <string name="settings_alerts_cooldown">Intervalo de re-alerta</string>
-    <string name="settings_alerts_cooldown_desc">Reduce la fatiga de notificaciones durante episodios prolongados. Por defecto, se alerta en cada lectura. Cada tipo de alarma tiene su propio intervalo de re-alerta.</string>
-    <string name="cooldown_default">Por defecto</string>
-    <string name="cooldown_label_5">5 min</string>
-    <string name="cooldown_label_10">10 min</string>
-    <string name="cooldown_label_15">15 min</string>
+    <string name="settings_alerts_cooldown">Cooldown</string>
+    <string name="settings_alerts_cooldown_desc">Reduce la fatiga de notificaciones durante episodios prolongados. Off alerta en cada lectura. Cada tipo de alarma tiene su propio cooldown.</string>
+    <string name="cooldown_off">Off</string>
 
     <!-- Data Settings -->
     <string name="settings_data_title">Datos</string>

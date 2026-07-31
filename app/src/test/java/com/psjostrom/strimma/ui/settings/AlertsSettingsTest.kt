@@ -121,10 +121,10 @@ class AlertsSettingsTest {
             alertCooldownMinutes = 10,
             onAlertCooldownChange = { receivedMinutes = it }
         )
-        composeRule.onNodeWithText("10 min", useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithText("10m", useUnmergedTree = true).assertExists()
 
         // SegmentedButton merges semantics — find by text in unmerged tree
-        composeRule.onNodeWithText("Default", useUnmergedTree = true).performScrollTo().performClick()
+        composeRule.onNodeWithText("Off", useUnmergedTree = true).performScrollTo().performClick()
         assertEquals(0, receivedMinutes)
     }
 
@@ -135,10 +135,10 @@ class AlertsSettingsTest {
             alertCooldownMinutes = 0,
             onAlertCooldownChange = { receivedMinutes = it }
         )
-        composeRule.onNodeWithText("Default", useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithText("Off", useUnmergedTree = true).assertExists()
 
         // SegmentedButton merges semantics — find by text in unmerged tree
-        composeRule.onNodeWithText("15 min", useUnmergedTree = true).performScrollTo().performClick()
+        composeRule.onNodeWithText("15m", useUnmergedTree = true).performScrollTo().performClick()
         assertEquals(15, receivedMinutes)
     }
 }

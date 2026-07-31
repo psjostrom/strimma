@@ -429,7 +429,7 @@ class AlertManagerTest {
         )
     }
 
-    // -- Cooldown / Re-alert Interval --
+    // -- Cooldown --
     // Cooldown is per-alarm (each alarm type has its own timer).
     // Escalation (e.g. Low → Urgent Low) always fires immediately.
 
