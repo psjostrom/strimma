@@ -562,7 +562,7 @@ class AlertManager @Inject constructor(
             snoozePrefs.edit { putLong(alertId.toString(), System.currentTimeMillis() + durationMs) }
         }
         notificationManager.cancel(alertId)
-        DebugLog.log("Alert $alertId snoozed for ${durationMs / 60_000} min")
+        DebugLog.log("Alert $alertId snoozed for ${durationMs / MS_PER_MINUTE} min")
     }
 
     // Reverse lookup of (alertId -> category, level) derived from AlertCategory.entries

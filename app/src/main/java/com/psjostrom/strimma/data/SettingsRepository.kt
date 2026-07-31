@@ -761,7 +761,7 @@ class SettingsRepository @Inject constructor(
         }.toString(2)
     }
 
-    @Suppress("CyclomaticComplexMethod") // Flat deserialization of all settings
+    @Suppress("CyclomaticComplexMethod", "LongMethod") // Flat deserialization of all settings
     suspend fun importFromJson(json: String) {
         val root = JSONObject(json)
         val settings = root.getJSONObject("settings")
