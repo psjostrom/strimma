@@ -168,6 +168,8 @@
     <string name="settings_alerts_stale">Gammal data (10+ min)</string>
     <string name="settings_alerts_cooldown">Cooldown</string>
     <string name="settings_alerts_cooldown_desc">Minska larmtr\u00F6tthet under l\u00E4ngre episoder. Av alarmerar vid varje avl\u00E4sning. Varje larmtyp har egen oberoende cooldown.</string>
+    <string name="settings_alerts_snooze_duration">Snooze-längd för larm</string>
+    <string name="settings_alerts_snooze_duration_desc">Hur länge Snooze-knappen på ett larm tystar det larmet. Separat från notisens åtgärdsknapp.</string>
     <string name="cooldown_off">Av</string>
 
     <!-- Data Settings -->
@@ -259,7 +261,7 @@
     <string name="alert_push_fail_body">Glukosuppladdning har misslyckats i 15+ minuter. Kontrollera Nightscout-inst\u00E4llningarna.</string>
     <string name="alert_channel_push_fail">Uppladdningsfel</string>
     <string name="alert_channel_push_fail_desc">Glukosuppladdning misslyckas under l\u00E4ngre tid</string>
-    <string name="alert_snooze">Snooze 30 min</string>
+    <string name="alert_snooze">Snooze %1$s</string>
 
     <!-- Foreground Notification -->
     <string name="notif_channel_name">Glukosavl\u00E4sningar</string>

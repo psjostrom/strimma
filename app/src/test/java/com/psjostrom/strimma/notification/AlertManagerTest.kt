@@ -18,12 +18,12 @@ import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.Shadows
 import kotlinx.coroutines.runBlocking
 
 @RunWith(RobolectricTestRunner::class)
@@ -375,13 +375,13 @@ class AlertManagerTest {
     // -- Push failure --
 
     @Test
-    fun `push failure alert fires when handlePushFailure called with true`() {
+    fun `push failure alert fires when handlePushFailure called with true`() = runTest {
         alertManager.handlePushFailure(true)
         assertTrue(isNotificationActive(AlertManager.ALERT_PUSH_FAIL_ID))
     }
 
     @Test
-    fun `push failure alert clears when handlePushFailure called with false`() {
+    fun `push failure alert clears when handlePushFailure called with false`() = runTest {
         alertManager.handlePushFailure(true)
         assertTrue(isNotificationActive(AlertManager.ALERT_PUSH_FAIL_ID))
 
@@ -408,7 +408,7 @@ class AlertManagerTest {
     }
 
     @Test
-    fun `push failure notification sets FLAG_ONLY_ALERT_ONCE so repeats do not re-sound`() {
+    fun `push failure notification sets FLAG_ONLY_ALERT_ONCE so repeats do not re-sound`() = runTest {
         alertManager.handlePushFailure(true)
 
         val notif = notificationManager.activeNotifications.first { it.id == AlertManager.ALERT_PUSH_FAIL_ID }

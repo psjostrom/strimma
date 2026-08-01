@@ -168,6 +168,8 @@
     <string name="settings_alerts_stale">Datos obsoletos (10+ min)</string>
     <string name="settings_alerts_cooldown">Cooldown</string>
     <string name="settings_alerts_cooldown_desc">Reduce la fatiga de notificaciones durante episodios prolongados. Off alerta en cada lectura. Cada tipo de alarma tiene su propio cooldown.</string>
+    <string name="settings_alerts_snooze_duration">Duración de snooze de alerta</string>
+    <string name="settings_alerts_snooze_duration_desc">Cuánto tiempo silencia el botón Snooze de una notificación de alerta esa alerta. Independiente del botón de acción de la notificación.</string>
     <string name="cooldown_off">Off</string>
 
     <!-- Data Settings -->
@@ -256,7 +258,7 @@
     <string name="alert_push_fail_body">Las subidas de glucosa han fallado durante 15+ minutos. Revisa la configuraci\u00F3n de Nightscout.</string>
     <string name="alert_channel_push_fail">Error de subida</string>
     <string name="alert_channel_push_fail_desc">Las subidas de glucosa fallan durante un per\u00EDodo prolongado</string>
-    <string name="alert_snooze">Snooze 30 min</string>
+    <string name="alert_snooze">Snooze %1$s</string>
 
     <!-- Foreground Notification -->
     <string name="notif_channel_name">Lecturas de glucosa</string>

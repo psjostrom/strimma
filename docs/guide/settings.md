@@ -133,6 +133,8 @@ Configure glucose alerts. Each alert has an enable toggle and a threshold value.
 | **Low Soon** | Alert when predicted to go low | Enabled |
 | **High Soon** | Alert when predicted to go high | Enabled |
 | **Stale Data** | Alert when no reading for 10+ minutes | Enabled |
+| **Alert Snooze Duration** | How long the alert notification Snooze button silences that alert and less severe alerts in the same category — 15m, 30m, 1h, 2h, or 3h. Independent of Notifications → Action Button → Duration | 30m |
+| **Cooldown** | Suppresses repeats of the same alarm while out of range — Off, 5m, 10m, or 15m | Off |
 
 Each alert also has a **Sound** button that opens the Android notification channel settings for customization.
 

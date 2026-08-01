@@ -168,6 +168,8 @@
     <string name="settings_alerts_stale">Veraltete Daten (10+ Min.)</string>
     <string name="settings_alerts_cooldown">Abklingzeit</string>
     <string name="settings_alerts_cooldown_desc">Reduziere Alarmerm\u00FCdung bei l\u00E4ngeren Episoden. Aus l\u00F6st bei jeder Messung einen Alarm aus. Jeder Alarmtyp verf\u00FCgt \u00FCber eine eigene Abklingzeit.</string>
+    <string name="settings_alerts_snooze_duration">Alarm-Snooze-Dauer</string>
+    <string name="settings_alerts_snooze_duration_desc">Wie lange die Snooze-Taste einer Alarmbenachrichtigung diesen Alarm stummschaltet. Unabhängig von der Aktions-Taste der Vordergrundbenachrichtigung.</string>
     <string name="cooldown_off">Aus</string>
 
     <!-- Data Settings -->
@@ -256,7 +258,7 @@
     <string name="alert_push_fail_body">Glukose-Uploads schlagen seit 15+ Minuten fehl. Nightscout-Einstellungen pr\u00FCfen.</string>
     <string name="alert_channel_push_fail">Upload-Fehler</string>
     <string name="alert_channel_push_fail_desc">Glukose-Uploads schlagen l\u00E4ngere Zeit fehl</string>
-    <string name="alert_snooze">Snooze 30 Min.</string>
+    <string name="alert_snooze">Snooze %1$s</string>
 
     <!-- Foreground Notification -->
     <string name="notif_channel_name">Glukosemesswerte</string>

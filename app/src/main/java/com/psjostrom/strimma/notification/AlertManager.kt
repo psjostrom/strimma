@@ -15,6 +15,7 @@ import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.MS_PER_MINUTE
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.SettingsRepository
+import com.psjostrom.strimma.data.notification.SnoozeDuration
 import com.psjostrom.strimma.data.workout.EffectiveThresholds
 import com.psjostrom.strimma.data.workout.WorkoutMode
 import com.psjostrom.strimma.data.workout.WorkoutModeManager
@@ -31,6 +32,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -87,8 +90,6 @@ class AlertManager @Inject constructor(
         // Non-category alerts keep their own const ids
         const val ALERT_STALE_ID = 103
         const val ALERT_PUSH_FAIL_ID = 107
-
-        private const val SNOOZE_DURATION_MS = 30 * 60 * 1000L
 
         // Severity levels — snooze suppresses alerts at or below the snoozed level
         const val ALERT_LEVEL_SOON = 0     // predictive ("low in X min")
@@ -534,31 +535,39 @@ class AlertManager @Inject constructor(
         }
     }
 
-    fun handlePushFailure(firing: Boolean) {
-        if (firing) {
-            if (!isSnoozed(ALERT_PUSH_FAIL_ID, System.currentTimeMillis())) {
-                fireAlert(
-                    ALERT_PUSH_FAIL_ID, CHANNEL_PUSH_FAIL,
-                    context.getString(R.string.alert_push_fail_title),
-                    context.getString(R.string.alert_push_fail_body),
-                    alertOnce = true
-                )
+    private val pushFailAlertMutex = Mutex()
+
+    /**
+     * Must be called from a coroutine (NightscoutPusher's scope). Mutex keeps a
+     * fire-alert completion ahead of a later recovery cancel across concurrent pushes.
+     */
+    suspend fun handlePushFailure(firing: Boolean) {
+        pushFailAlertMutex.withLock {
+            if (firing) {
+                if (!isSnoozed(ALERT_PUSH_FAIL_ID, System.currentTimeMillis())) {
+                    fireAlert(
+                        ALERT_PUSH_FAIL_ID, CHANNEL_PUSH_FAIL,
+                        context.getString(R.string.alert_push_fail_title),
+                        context.getString(R.string.alert_push_fail_body),
+                        alertOnce = true
+                    )
+                }
+            } else {
+                notificationManager.cancel(ALERT_PUSH_FAIL_ID)
             }
-        } else {
-            notificationManager.cancel(ALERT_PUSH_FAIL_ID)
         }
     }
 
-    fun snooze(alertId: Int) {
+    fun snooze(alertId: Int, durationMs: Long = SnoozeDuration.M30.durationMs) {
         val categoryAndLevel = alertCategoryAndLevel(alertId)
         if (categoryAndLevel != null) {
             val (category, level) = categoryAndLevel
-            pauseAlertCategory(category, SNOOZE_DURATION_MS, level)
+            pauseAlertCategory(category, durationMs, level)
         } else {
-            snoozePrefs.edit { putLong(alertId.toString(), System.currentTimeMillis() + SNOOZE_DURATION_MS) }
+            snoozePrefs.edit { putLong(alertId.toString(), System.currentTimeMillis() + durationMs) }
         }
         notificationManager.cancel(alertId)
-        DebugLog.log("Alert $alertId snoozed for 30 min")
+        DebugLog.log("Alert $alertId snoozed for ${durationMs / MS_PER_MINUTE} min")
     }
 
     // Reverse lookup of (alertId -> category, level) derived from AlertCategory.entries
@@ -661,7 +670,7 @@ class AlertManager @Inject constructor(
         return true
     }
 
-    private fun fireAlert(
+    private suspend fun fireAlert(
         alertId: Int,
         channelId: String,
         title: String,
@@ -669,6 +678,18 @@ class AlertManager @Inject constructor(
         alertOnce: Boolean = false
     ) {
         DebugLog.log("ALERT: $title — $text")
+
+        // Suspend for the persisted value — never use a StateFlow seed default.
+        val duration = settings.alertSnoozeDuration.first()
+        val durationLabel = context.getString(
+            when (duration) {
+                SnoozeDuration.M15 -> R.string.snooze_duration_15m
+                SnoozeDuration.M30 -> R.string.snooze_duration_30m
+                SnoozeDuration.H1 -> R.string.snooze_duration_1h
+                SnoozeDuration.H2 -> R.string.snooze_duration_2h
+                SnoozeDuration.H3 -> R.string.snooze_duration_3h
+            }
+        )
 
         val contentIntent = PendingIntent.getActivity(
             context, alertId,
@@ -680,6 +701,7 @@ class AlertManager @Inject constructor(
             context, alertId + SNOOZE_INTENT_ID_OFFSET,
             Intent(context, AlertSnoozeReceiver::class.java).apply {
                 putExtra("alert_id", alertId)
+                putExtra(AlertSnoozeReceiver.EXTRA_DURATION, duration.name)
             },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -693,7 +715,7 @@ class AlertManager @Inject constructor(
             .setContentIntent(contentIntent)
             .setAutoCancel(false)
             .setOnlyAlertOnce(alertOnce)
-            .addAction(0, context.getString(R.string.alert_snooze), snoozeIntent)
+            .addAction(0, context.getString(R.string.alert_snooze, durationLabel), snoozeIntent)
             .build()
 
         notificationManager.notify(alertId, notification)
