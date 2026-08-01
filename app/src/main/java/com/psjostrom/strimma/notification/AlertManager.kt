@@ -32,7 +32,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -534,12 +535,16 @@ class AlertManager @Inject constructor(
         }
     }
 
-    fun handlePushFailure(firing: Boolean) {
-        if (firing) {
-            if (!isSnoozed(ALERT_PUSH_FAIL_ID, System.currentTimeMillis())) {
-                // Sync API (NightscoutPusher callback) — block for the persisted snooze
-                // duration rather than racing a StateFlow seed default.
-                runBlocking {
+    private val pushFailAlertMutex = Mutex()
+
+    /**
+     * Must be called from a coroutine (NightscoutPusher's scope). Mutex keeps a
+     * fire-alert completion ahead of a later recovery cancel across concurrent pushes.
+     */
+    suspend fun handlePushFailure(firing: Boolean) {
+        pushFailAlertMutex.withLock {
+            if (firing) {
+                if (!isSnoozed(ALERT_PUSH_FAIL_ID, System.currentTimeMillis())) {
                     fireAlert(
                         ALERT_PUSH_FAIL_ID, CHANNEL_PUSH_FAIL,
                         context.getString(R.string.alert_push_fail_title),
@@ -547,9 +552,9 @@ class AlertManager @Inject constructor(
                         alertOnce = true
                     )
                 }
+            } else {
+                notificationManager.cancel(ALERT_PUSH_FAIL_ID)
             }
-        } else {
-            notificationManager.cancel(ALERT_PUSH_FAIL_ID)
         }
     }
 
