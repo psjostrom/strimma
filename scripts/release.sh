@@ -70,15 +70,46 @@ is_valid_version() {
   [[ "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]
 }
 
+# Rank of a bump kind / RC train shape: patch < minor < major
+bump_rank() {
+  case "$1" in
+    patch) echo 0 ;;
+    minor) echo 1 ;;
+    major) echo 2 ;;
+    *) echo "Invalid bump kind: $1" >&2; exit 1 ;;
+  esac
+}
+
+# Shape of an X.Y.Z base: patch (Z!=0), minor (Y!=0,Z==0), major (Y==0,Z==0)
+train_rank() {
+  local major minor patch
+  IFS='.' read -r major minor patch <<< "$1"
+  if [[ "$patch" != "0" ]]; then
+    echo 0
+  elif [[ "$minor" != "0" ]]; then
+    echo 1
+  else
+    echo 2
+  fi
+}
+
 bump_version() {
   local current="$1" kind="$2"
   local major minor patch
   IFS='.' read -r major minor patch_raw <<< "$current"
   patch="${patch_raw%%-*}"  # strip pre-release suffix
-  if [[ "$patch_raw" == *-* && "$kind" == "patch" ]]; then
-    echo "${major}.${minor}.${patch}"
-    return
+
+  # On an RC train: same/smaller bump keeps the base; larger bump escalates.
+  # 1.4.0-rc.1 + minor → 1.4.0; + patch → 1.4.0; + major → 2.0.0
+  if [[ "$patch_raw" == *-* ]]; then
+    local base="${major}.${minor}.${patch}"
+    if [[ "$(bump_rank "$kind")" -le "$(train_rank "$base")" ]]; then
+      echo "$base"
+      return
+    fi
+    # Escalate from the already-parsed base (major/minor/patch).
   fi
+
   case "$kind" in
     major) echo "$((major + 1)).0.0" ;;
     minor) echo "${major}.$((minor + 1)).0" ;;
