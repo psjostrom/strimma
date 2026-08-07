@@ -7,11 +7,11 @@
 
 ## Overview
 
-Strimma uses a two-stage release pipeline:
+Strimma uses a three-stage release pipeline:
 
 1. **create-release-pr** — bumps `versionName`, categorizes commits, creates a PR
-2. **tag-release** — on PR merge, extracts version from title, creates a `v*` tag
-3. **release.yml** (existing) — on `v*` tag push, builds signed APK + GitHub Release
+2. **tag-release** — on PR merge, extracts version from title, creates a `v*` tag, then dispatches Release APK
+3. **release.yml** — builds signed APK + GitHub Release (tag push from a human, or `workflow_dispatch` from tag-release)
 
 ## Components
 
@@ -19,8 +19,8 @@ Strimma uses a two-stage release pipeline:
 |------|------|
 | `scripts/release.sh` | Bumps `versionName`, categorizes commits by conventional prefix, generates PR body. Works locally and in CI (`--prepare` mode). |
 | `.github/workflows/create-release-pr.yml` | `workflow_dispatch` — runs `release.sh --prepare`, creates verified commit + PR via GitHub API. Idempotent on re-run. |
-| `.github/workflows/tag-release.yml` | Triggers on PR merge to `main` — validates trust boundaries, extracts version, creates `v*` tag. |
-| `.github/workflows/release.yml` | (Existing) Triggers on `v*` tag — builds APK, creates GitHub Release with fenced markdown notes. |
+| `.github/workflows/tag-release.yml` | Triggers on PR merge to `main` — validates trust boundaries, extracts version, creates `v*` tag, dispatches Release APK. |
+| `.github/workflows/release.yml` | Triggers on `v*` tag push or `workflow_dispatch` — builds APK, creates GitHub Release with fenced markdown notes. |
 
 ## Trust Boundaries
 
@@ -57,11 +57,12 @@ PR merged to main
   → tag-release.yml
     → Validate: same repo, release/* branch, version match
     → Create + push v* tag
+    → workflow_dispatch release.yml --ref v*
+      (required: tags pushed with GITHUB_TOKEN do not trigger on:push workflows)
 
-v* tag pushed
-  → release.yml
-    → Build signed APK
-    → Create GitHub Release (fenced markdown from PR body)
+release.yml (tag push from a human, or dispatch from tag-release)
+  → Build signed APK
+  → Create GitHub Release (fenced markdown from PR body)
 ```
 
 ## Release Script Usage
@@ -112,6 +113,7 @@ Commits are categorized by conventional commit prefix (no AI):
 | PR created but never auto-tagged | Branch name has `v` prefix (`release/v1.4.0`) | Use `release/1.4.0` (no `v`) |
 | Tag workflow skips | PR title doesn't start with `chore(release):` | Ensure title matches format |
 | Version validation fails | Title contains `v` prefix in version | Use `X.Y.Z` not `vX.Y.Z` in title |
+| Tag exists but no GitHub Release | Tag was pushed with `GITHUB_TOKEN` and Release APK was not dispatched | Re-push the tag from a human credential, or re-run tag-release after the dispatch step is in place |
 
 ## Testing
 

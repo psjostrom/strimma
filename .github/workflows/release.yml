@@ -4,6 +4,9 @@ on:
   push:
     tags:
       - 'v*'
+  # Explicit dispatch from tag-release.yml — required because tags pushed with
+  # GITHUB_TOKEN do not trigger other workflows (GitHub anti-recursion).
+  workflow_dispatch:
 
 permissions:
   contents: write
