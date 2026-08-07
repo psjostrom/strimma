@@ -114,6 +114,7 @@ Commits are categorized by conventional commit prefix (no AI):
 | Tag workflow skips | PR title doesn't start with `chore(release):` | Ensure title matches format |
 | Version validation fails | Title contains `v` prefix in version | Use `X.Y.Z` not `vX.Y.Z` in title |
 | Tag exists but no GitHub Release | Tag was pushed with `GITHUB_TOKEN` and Release APK was not dispatched | Re-push the tag from a human credential, or re-run tag-release after the dispatch step is in place |
+| Release body is auto-generated PR list | Fenced ` ```markdown ` notes failed to extract (often CRLF in PR body) | `release.yml` strips `\r` before fence matching; edit the release notes manually if already published |
 
 ## Testing
 

@@ -60,7 +60,10 @@ jobs:
           # (e.g. "Release v1.2.0" matches "Release v1.2.0-rc.2").
           PR_DATA=$(gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/pulls" --jq '.[0] // empty')
           PR_NUMBER=$(echo "$PR_DATA" | jq -r '.number // empty')
+          # Strip CR so fence markers match even when the PR body has CRLF
+          # (GitHub/API often stores Windows line endings; ^...$ then fails).
           NOTES=$(echo "$PR_DATA" | jq -r '.body // empty' \
+          | tr -d '\r' \
           | sed -n '/^```markdown$/,/^```$/{ /^```/d; p; }')
 
           # For prereleases, prepend a link to the release PR so the testing-plan
