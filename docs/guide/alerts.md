@@ -55,10 +55,17 @@ Alerts follow a priority system to avoid duplicate noise:
 
 ## Snooze
 
-Each alert has a **30-minute snooze**. When an alert fires, the notification includes a **Snooze** button. Tapping it silences that alert and any less severe alerts in the same category for 30 minutes.
+When an alert fires, the notification includes a **Snooze** button (label shows the configured duration, e.g. **Snooze 30m**). Tapping it silences that alert and any less severe alerts in the same category for the **Alert Snooze Duration** set in **Settings > Alerts**.
+
+| Option | Effect |
+|--------|--------|
+| **15m** / **30m** / **1h** / **2h** / **3h** | Silence window for the alert Snooze button |
+| Default | **30m** |
+
+This setting is independent of **Settings > Notifications → Action Button → Duration** (that control pauses ALL / High / Low from the foreground notification).
 
 - Snoozing a lower-severity alert does not suppress higher-severity alerts — snoozing Low Soon doesn't affect Low or Urgent Low, and snoozing Low doesn't affect Urgent Low
-- After 30 minutes, alerts can fire again if the condition persists
+- After the configured duration, alerts can fire again if the condition persists
 - Snooze state is stored locally and survives app restarts
 
 ---
@@ -79,7 +86,7 @@ You can pause entire alert categories for a custom duration — useful during ex
 - The **All alerts** shortcut at the top of the pause sheet sets both Low and High to the same duration in one tap. The header shows a single **All alerts paused** pill while the two expiries match; cancelling or rescheduling one category from the sheet splits it back into per-category pills
 
 !!! note "Snooze vs Pause"
-    **Snooze** silences an alert and any less severe alerts in the same category for 30 minutes. **Pause** silences an entire category (all low alerts or all high alerts) for a duration you choose.
+    **Snooze** silences an alert and any less severe alerts in the same category for the **Alert Snooze Duration**. **Pause** silences an entire category (all low alerts or all high alerts) for a duration you choose.
 
 ---
 
@@ -134,23 +141,23 @@ This is an Android feature — once you change a channel's DND setting, Android 
 
 Alerts **keep firing** as long as the condition persists. Each new glucose reading triggers a check — if you're still low and the alert isn't snoozed, it fires again. This means you'll get alerted on every reading until you either:
 
-- **Snooze** the alert (silences it for 30 minutes), or
+- **Snooze** the alert (silences it for the configured Alert Snooze Duration), or
 - **Return to range** (the condition clears)
 
 If you snooze an alert and you're still out of range when the snooze expires, the alert fires again on the next reading.
 
 This is intentional — a persistent low or high should not be silently ignored.
 
-## Re-alert Interval (Cooldown)
+## Cooldown
 
-By default (Re-alert Interval set to **Default**), alerts fire on **every reading** while the condition persists. To reduce notification fatigue during prolonged episodes, you can set a **Re-alert Interval** in the Alerts settings:
+By default (Cooldown set to **Off**), alerts fire on **every reading** while the condition persists. To reduce notification fatigue during prolonged episodes, you can set a **Cooldown** in the Alerts settings:
 
 | Option | Behavior |
 |--------|----------|
-| **Default** | No cooldown — alerts fire on every reading (sensor rate) |
-| **5 min** | After an alarm fires, that same alarm won't re-fire for 5 minutes |
-| **10 min** | After an alarm fires, that same alarm won't re-fire for 10 minutes |
-| **15 min** | After an alarm fires, that same alarm won't re-fire for 15 minutes |
+| **Off** | No cooldown — alerts fire on every reading (sensor rate) |
+| **5m** | After an alarm fires, that same alarm won't re-fire for 5 minutes |
+| **10m** | After an alarm fires, that same alarm won't re-fire for 10 minutes |
+| **15m** | After an alarm fires, that same alarm won't re-fire for 15 minutes |
 
 ### Per-alarm cooldown
 

@@ -147,6 +147,7 @@ class SettingsRepository @Inject constructor(
         private val KEY_ALERT_LOW_SOON_ENABLED = booleanPreferencesKey("alert_low_soon_enabled")
         private val KEY_ALERT_HIGH_SOON_ENABLED = booleanPreferencesKey("alert_high_soon_enabled")
         private val KEY_ALERT_COOLDOWN_MINUTES = intPreferencesKey("alert_cooldown_minutes")
+        private val KEY_ALERT_SNOOZE_DURATION = stringPreferencesKey("alert_snooze_duration")
         private val KEY_THEME_MODE = stringPreferencesKey("theme_mode")
         private val KEY_NOTIF_GRAPH_MINUTES = intPreferencesKey("notif_graph_minutes")
         private val KEY_NOTIF_PREDICTION_MINUTES = intPreferencesKey("notif_prediction_minutes")
@@ -289,6 +290,17 @@ class SettingsRepository @Inject constructor(
     }
     suspend fun setAlertCooldownMinutes(minutes: Int) {
         dataStore.edit { it[KEY_ALERT_COOLDOWN_MINUTES] = minutes.coerceIn(COOLDOWN_MINUTES_MIN, COOLDOWN_MINUTES_MAX) }
+    }
+
+    val alertSnoozeDuration: Flow<SnoozeDuration> = dataStore.data.map {
+        try {
+            SnoozeDuration.valueOf(it[KEY_ALERT_SNOOZE_DURATION] ?: SnoozeDuration.M30.name)
+        } catch (_: Exception) {
+            SnoozeDuration.M30
+        }
+    }
+    suspend fun setAlertSnoozeDuration(duration: SnoozeDuration) {
+        dataStore.edit { it[KEY_ALERT_SNOOZE_DURATION] = duration.name }
     }
 
     // --- Workout thresholds ---
@@ -713,6 +725,7 @@ class SettingsRepository @Inject constructor(
             put("alert_low_soon_enabled", prefs[KEY_ALERT_LOW_SOON_ENABLED] ?: true)
             put("alert_high_soon_enabled", prefs[KEY_ALERT_HIGH_SOON_ENABLED] ?: true)
             put("alert_cooldown_minutes", prefs[KEY_ALERT_COOLDOWN_MINUTES] ?: DEFAULT_ALERT_COOLDOWN_MINUTES)
+            put("alert_snooze_duration", normalizedAlertSnoozeDurationName(prefs[KEY_ALERT_SNOOZE_DURATION]))
             put("theme_mode", prefs[KEY_THEME_MODE] ?: "System")
             put("notif_graph_minutes", prefs[KEY_NOTIF_GRAPH_MINUTES] ?: DEFAULT_NOTIF_GRAPH_MINUTES)
             put("notif_prediction_minutes", prefs[KEY_NOTIF_PREDICTION_MINUTES] ?: DEFAULT_PREDICTION_MINUTES)
@@ -748,7 +761,7 @@ class SettingsRepository @Inject constructor(
         }.toString(2)
     }
 
-    @Suppress("CyclomaticComplexMethod") // Flat deserialization of all settings
+    @Suppress("CyclomaticComplexMethod", "LongMethod") // Flat deserialization of all settings
     suspend fun importFromJson(json: String) {
         val root = JSONObject(json)
         val settings = root.getJSONObject("settings")
@@ -778,6 +791,10 @@ class SettingsRepository @Inject constructor(
             if (settings.has("alert_low_soon_enabled")) prefs[KEY_ALERT_LOW_SOON_ENABLED] = settings.getBoolean("alert_low_soon_enabled")
             if (settings.has("alert_high_soon_enabled")) prefs[KEY_ALERT_HIGH_SOON_ENABLED] = settings.getBoolean("alert_high_soon_enabled")
             if (settings.has("alert_cooldown_minutes")) prefs[KEY_ALERT_COOLDOWN_MINUTES] = settings.getInt("alert_cooldown_minutes")
+            if (settings.has("alert_snooze_duration")) {
+                prefs[KEY_ALERT_SNOOZE_DURATION] =
+                    normalizedAlertSnoozeDurationName(settings.getString("alert_snooze_duration"))
+            }
             if (settings.has("theme_mode")) prefs[KEY_THEME_MODE] = settings.getString("theme_mode")
             if (settings.has("notif_graph_minutes")) prefs[KEY_NOTIF_GRAPH_MINUTES] = settings.getInt("notif_graph_minutes")
             if (settings.has("notif_prediction_minutes")) prefs[KEY_NOTIF_PREDICTION_MINUTES] = settings.getInt("notif_prediction_minutes")
@@ -818,4 +835,11 @@ class SettingsRepository @Inject constructor(
             widgetSettingsRepository.importFromJson(root.getJSONObject("widget"))
         }
     }
+
+    private fun normalizedAlertSnoozeDurationName(raw: String?): String =
+        try {
+            SnoozeDuration.valueOf(raw ?: SnoozeDuration.M30.name).name
+        } catch (_: IllegalArgumentException) {
+            SnoozeDuration.M30.name
+        }
 }

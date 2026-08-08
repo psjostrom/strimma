@@ -3,6 +3,7 @@ package com.psjostrom.strimma.ui.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.psjostrom.strimma.data.SettingsRepository
+import com.psjostrom.strimma.data.notification.SnoozeDuration
 import com.psjostrom.strimma.notification.AlertCategory
 import com.psjostrom.strimma.notification.AlertManager
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -46,6 +47,9 @@ class AlertsViewModel @Inject constructor(
     val alertCooldownMinutes: StateFlow<Int> = settings.alertCooldownMinutes
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
+    val alertSnoozeDuration: StateFlow<SnoozeDuration> = settings.alertSnoozeDuration
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SnoozeDuration.M30)
+
     val pauseLowExpiryMs: StateFlow<Long?> = alertManager.pauseLowExpiryMs
     val pauseHighExpiryMs: StateFlow<Long?> = alertManager.pauseHighExpiryMs
 
@@ -83,6 +87,7 @@ class AlertsViewModel @Inject constructor(
     fun setAlertLowSoonEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertLowSoonEnabled(enabled) }
     fun setAlertHighSoonEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertHighSoonEnabled(enabled) }
     fun setAlertCooldownMinutes(minutes: Int) = viewModelScope.launch { settings.setAlertCooldownMinutes(minutes) }
+    fun setAlertSnoozeDuration(duration: SnoozeDuration) = viewModelScope.launch { settings.setAlertSnoozeDuration(duration) }
 
     fun openAlertChannelSettings(channelId: String) = alertManager.openChannelSettings(channelId)
 

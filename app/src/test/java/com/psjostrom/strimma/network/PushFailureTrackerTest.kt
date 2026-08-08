@@ -1,5 +1,6 @@
 package com.psjostrom.strimma.network
 
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -8,7 +9,7 @@ class PushFailureTrackerTest {
     private val fifteenMinutes = 15 * 60 * 1000L
 
     @Test
-    fun `first failure sets timestamp but does not fire alert`() {
+    fun `first failure sets timestamp but does not fire alert`() = runBlocking {
         var alertFired = false
         val tracker = PushFailureTracker(
             alertThresholdMs = fifteenMinutes,
@@ -22,7 +23,7 @@ class PushFailureTrackerTest {
     }
 
     @Test
-    fun `failures within threshold do not fire alert`() {
+    fun `failures within threshold do not fire alert`() = runBlocking {
         var alertFired = false
         var time = 1_000_000L
         val tracker = PushFailureTracker(
@@ -39,7 +40,7 @@ class PushFailureTrackerTest {
     }
 
     @Test
-    fun `alert fires after threshold of consecutive failures`() {
+    fun `alert fires after threshold of consecutive failures`() = runBlocking {
         var alertFired = false
         var time = 1_000_000L
         val tracker = PushFailureTracker(
@@ -56,7 +57,7 @@ class PushFailureTrackerTest {
     }
 
     @Test
-    fun `success resets timestamp and cancels alert`() {
+    fun `success resets timestamp and cancels alert`() = runBlocking {
         val alerts = mutableListOf<Boolean>()
         var time = 1_000_000L
         val tracker = PushFailureTracker(
@@ -75,7 +76,7 @@ class PushFailureTrackerTest {
     }
 
     @Test
-    fun `failure after success restarts the window`() {
+    fun `failure after success restarts the window`() = runBlocking {
         var alertFired = false
         var time = 1_000_000L
         val tracker = PushFailureTracker(

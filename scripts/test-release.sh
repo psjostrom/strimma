@@ -163,6 +163,84 @@ GRADLE
 output="$(cd "$tmp_repo" && bash "$release_sh" --prepare --bump patch 2>&1)"
 assert_contains "$output" "Target version:  1.4.0" "bump patch from RC drops suffix"
 
+# --- Test 7b: Same/smaller bump + RC stays on train ---
+
+cat > "$tmp_repo/app/build.gradle.kts" <<'GRADLE'
+android {
+    defaultConfig {
+        versionCode = 1
+        versionName = "1.4.0-rc.1"
+    }
+}
+GRADLE
+
+output="$(cd "$tmp_repo" && bash "$release_sh" --prepare --bump minor --rc 2>&1)"
+assert_contains "$output" "Target version:  1.4.0-rc.2" "minor+rc on minor RC train increments"
+
+cat > "$tmp_repo/app/build.gradle.kts" <<'GRADLE'
+android {
+    defaultConfig {
+        versionCode = 1
+        versionName = "1.4.0-rc.1"
+    }
+}
+GRADLE
+
+output="$(cd "$tmp_repo" && bash "$release_sh" --prepare --bump patch --rc 2>&1)"
+assert_contains "$output" "Target version:  1.4.0-rc.2" "patch+rc on minor RC train stays"
+
+# --- Test 7c: Larger bump + RC starts a new train ---
+
+cat > "$tmp_repo/app/build.gradle.kts" <<'GRADLE'
+android {
+    defaultConfig {
+        versionCode = 1
+        versionName = "1.4.0-rc.1"
+    }
+}
+GRADLE
+
+output="$(cd "$tmp_repo" && bash "$release_sh" --prepare --bump major --rc 2>&1)"
+assert_contains "$output" "Target version:  2.0.0-rc.1" "major+rc on minor RC train escalates"
+
+cat > "$tmp_repo/app/build.gradle.kts" <<'GRADLE'
+android {
+    defaultConfig {
+        versionCode = 1
+        versionName = "1.3.1-rc.1"
+    }
+}
+GRADLE
+
+output="$(cd "$tmp_repo" && bash "$release_sh" --prepare --bump minor --rc 2>&1)"
+assert_contains "$output" "Target version:  1.4.0-rc.1" "minor+rc on patch RC train escalates"
+
+# --- Test 7d: Major-shaped RC train keeps base for major/minor ---
+
+cat > "$tmp_repo/app/build.gradle.kts" <<'GRADLE'
+android {
+    defaultConfig {
+        versionCode = 1
+        versionName = "2.0.0-rc.1"
+    }
+}
+GRADLE
+
+output="$(cd "$tmp_repo" && bash "$release_sh" --prepare --bump major --rc 2>&1)"
+assert_contains "$output" "Target version:  2.0.0-rc.2" "major+rc on major RC train increments"
+
+cat > "$tmp_repo/app/build.gradle.kts" <<'GRADLE'
+android {
+    defaultConfig {
+        versionCode = 1
+        versionName = "2.0.0-rc.1"
+    }
+}
+GRADLE
+
+output="$(cd "$tmp_repo" && bash "$release_sh" --prepare --bump minor --rc 2>&1)"
+assert_contains "$output" "Target version:  2.0.0-rc.2" "minor+rc on major RC train stays"
+
 # --- Test 8: RC of already-released version fails ---
 
 cat > "$tmp_repo/app/build.gradle.kts" <<'GRADLE'

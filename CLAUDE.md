@@ -84,9 +84,7 @@ NEVER treat Strimma as a "single-user app" or use that as justification to cut c
 
 - minSdk 33 (Android 13) — oldest version still receiving security updates
 - Target device: Pixel 9 Pro, Android 16 (API 36)
-- Single user, single sensor (Libre 3)
 - Medical data — reliability is non-negotiable
-- xDrip+ retired — Strimma is the sole data source (validated equivalent coverage and accuracy)
 - `foregroundServiceType="specialUse"` (not connectedDevice — no direct BLE)
 
 ## Documentation Updates (HARD GATE)

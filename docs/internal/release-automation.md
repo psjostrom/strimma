@@ -98,6 +98,11 @@ Commits are categorized by conventional commit prefix (no AI):
 - `--version 1.4.0 --rc` → `1.4.0-rc.1` (first RC)
 - `--version 1.4.0 --rc` when current is `1.4.0-rc.2` → `1.4.0-rc.3` (increment)
 - `--bump patch` when current is `1.4.0-rc.1` → `1.4.0` (drop RC suffix)
+- While on an RC train, bump compares against the train shape (patch < minor < major):
+  - Same or smaller bump + `--rc` stays on the base and increments the RC
+    (`1.4.0-rc.1` + minor/patch + `--rc` → `1.4.0-rc.2`)
+  - Larger bump + `--rc` starts a new train
+    (`1.4.0-rc.1` + major + `--rc` → `2.0.0-rc.1`)
 - Errors if the base version `v1.4.0` tag already exists (already released)
 
 ## Failure Modes

@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.GlucoseUnit
+import com.psjostrom.strimma.data.notification.SnoozeDuration
 import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.ui.theme.InRange
 
@@ -31,6 +32,7 @@ fun AlertsSettings(
     alertLowSoonEnabled: Boolean,
     alertHighSoonEnabled: Boolean,
     alertCooldownMinutes: Int,
+    alertSnoozeDuration: SnoozeDuration,
     onAlertLowEnabledChange: (Boolean) -> Unit,
     onAlertHighEnabledChange: (Boolean) -> Unit,
     onAlertUrgentLowEnabledChange: (Boolean) -> Unit,
@@ -43,6 +45,7 @@ fun AlertsSettings(
     onAlertLowSoonEnabledChange: (Boolean) -> Unit,
     onAlertHighSoonEnabledChange: (Boolean) -> Unit,
     onAlertCooldownChange: (Int) -> Unit,
+    onAlertSnoozeDurationChange: (SnoozeDuration) -> Unit,
     onOpenAlertSound: (String) -> Unit,
     onBack: () -> Unit
 ) {
@@ -172,6 +175,32 @@ fun AlertsSettings(
 
             HorizontalDivider(color = outlineVar)
 
+            // Alert snooze duration — for the alert notification Snooze button
+            Text(stringResource(R.string.settings_alerts_snooze_duration), color = onBg, fontSize = 14.sp)
+            Text(
+                stringResource(R.string.settings_alerts_snooze_duration_desc),
+                color = outline,
+                fontSize = 12.sp
+            )
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                val durs = listOf(
+                    SnoozeDuration.M15 to stringResource(R.string.snooze_duration_15m),
+                    SnoozeDuration.M30 to stringResource(R.string.snooze_duration_30m),
+                    SnoozeDuration.H1 to stringResource(R.string.snooze_duration_1h),
+                    SnoozeDuration.H2 to stringResource(R.string.snooze_duration_2h),
+                    SnoozeDuration.H3 to stringResource(R.string.snooze_duration_3h),
+                )
+                durs.forEachIndexed { index, (dur, label) ->
+                    SegmentedButton(
+                        selected = alertSnoozeDuration == dur,
+                        onClick = { onAlertSnoozeDurationChange(dur) },
+                        shape = SegmentedButtonDefaults.itemShape(index, durs.size),
+                    ) {
+                        Text(label)
+                    }
+                }
+            }
+
             // Cooldown — at bottom of alerts section
             Text(stringResource(R.string.settings_alerts_cooldown), color = onBg, fontSize = 14.sp)
             Text(
@@ -184,13 +213,14 @@ fun AlertsSettings(
                     SegmentedButton(
                         selected = alertCooldownMinutes == minutes,
                         onClick = { onAlertCooldownChange(minutes) },
-                        shape = SegmentedButtonDefaults.itemShape(index, cooldownOptions.size)
+                        shape = SegmentedButtonDefaults.itemShape(index, cooldownOptions.size),
+                        icon = {},
                     ) {
                         val labelResId = when (minutes) {
                             5 -> R.string.cooldown_label_5
                             10 -> R.string.cooldown_label_10
                             15 -> R.string.cooldown_label_15
-                            else -> R.string.cooldown_default
+                            else -> R.string.cooldown_off
                         }
                         Text(stringResource(labelResId))
                     }
