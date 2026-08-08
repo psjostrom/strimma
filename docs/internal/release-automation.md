@@ -19,8 +19,8 @@ Strimma uses a three-stage release pipeline:
 |------|------|
 | `scripts/release.sh` | Bumps `versionName`, categorizes commits by conventional prefix, generates PR body. Works locally and in CI (`--prepare` mode). |
 | `.github/workflows/create-release-pr.yml` | `workflow_dispatch` — runs `release.sh --prepare`, creates verified commit + PR via GitHub API. Idempotent on re-run. |
-| `.github/workflows/tag-release.yml` | Triggers on PR merge to `main` — validates trust boundaries, extracts version, creates `v*` tag, dispatches Release APK. |
-| `.github/workflows/release.yml` | Triggers on `v*` tag push or `workflow_dispatch` — builds APK, creates GitHub Release with fenced markdown notes. |
+| `.github/workflows/tag-release.yml` | Triggers on PR merge to `main` — validates trust boundaries, extracts version, creates `v*` tag, dispatches Release APK (skips if the GitHub Release already exists). |
+| `.github/workflows/release.yml` | Triggers on `v*` tag push or `workflow_dispatch` against a `v*` tag — builds APK, creates GitHub Release with fenced markdown notes. Tag-scoped concurrency; skips create if the release already exists. |
 
 ## Trust Boundaries
 
@@ -59,10 +59,13 @@ PR merged to main
     → Create + push v* tag
     → workflow_dispatch release.yml --ref v*
       (required: tags pushed with GITHUB_TOKEN do not trigger on:push workflows)
+      (skipped when GitHub Release for the tag already exists)
 
 release.yml (tag push from a human, or dispatch from tag-release)
+  → Guard: ref must be refs/tags/v* (blocks branch dispatches)
+  → Concurrency: one run per tag ref
   → Build signed APK
-  → Create GitHub Release (fenced markdown from PR body)
+  → Create GitHub Release (skip if release already exists; notes from PR body)
 ```
 
 ## Release Script Usage
