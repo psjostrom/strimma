@@ -116,7 +116,7 @@ Commits are categorized by conventional commit prefix (no AI):
 | PR created but never auto-tagged | Branch name has `v` prefix (`release/v1.4.0`) | Use `release/1.4.0` (no `v`) |
 | Tag workflow skips | PR title doesn't start with `chore(release):` | Ensure title matches format |
 | Version validation fails | Title contains `v` prefix in version | Use `X.Y.Z` not `vX.Y.Z` in title |
-| Tag exists but no GitHub Release | Tag was pushed with `GITHUB_TOKEN` and Release APK was not dispatched | Re-push the tag from a human credential, or re-run tag-release after the dispatch step is in place |
+| Tag exists but no GitHub Release | Tag was pushed with `GITHUB_TOKEN` and Release APK was not dispatched | Manually dispatch `release.yml` with ref `vX.Y.Z` (Actions → Release APK → Run workflow → use the tag). Re-pushing the same tag may not fire a new tag event. Re-run `tag-release.yml` only after confirming its existing-tag path still calls `gh workflow run release.yml` |
 | Release body is auto-generated PR list | Fenced ` ```markdown ` notes failed to extract (often CRLF in PR body) | `release.yml` strips `\r` before fence matching; edit the release notes manually if already published |
 
 ## Testing
