@@ -152,6 +152,9 @@
     <!-- Alerts Settings -->
     <string name="settings_alerts_title">Alertas</string>
     <string name="settings_alerts_section">Alertas</string>
+    <string name="settings_alerts_exercise_section">Alertas de ejercicio</string>
+    <string name="settings_alerts_exercise_desc">Se usan mientras el modo de entrenamiento est\u00E1 activo. Bajo y Alto tambi\u00E9n definen el rango del gr\u00E1fico de ejercicio.</string>
+    <string name="settings_alerts_behavior_section">Comportamiento de las alertas</string>
     <string name="settings_alerts_tap_sound">Toca \"Sonido\" para elegir tono, vibraci\u00F3n y ajustes de anulaci\u00F3n por alarma.</string>
     <string name="settings_alerts_urgent_low">Bajo urgente</string>
     <string name="settings_alerts_urgent_low_threshold">Bajo urgente (%1$s)</string>
@@ -531,14 +534,8 @@
         <item quantity="many">Apagado automático tras %1$d horas</item>
         <item quantity="other">Apagado automático tras %1$d horas</item>
     </plurals>
-    <string name="workout_mode_thresholds_header">Umbrales de entrenamiento</string>
-    <string name="workout_mode_threshold_low">Bajo</string>
-    <string name="workout_mode_threshold_urgent_low">Bajo crítico</string>
-    <string name="workout_mode_threshold_high">Alto</string>
-    <string name="workout_mode_threshold_urgent_high">Alto crítico</string>
-    <string name="workout_mode_reset_defaults">Restablecer</string>
-    <string name="workout_mode_settings_info">Activo durante el ejercicio. Reemplaza tanto tus umbrales de alerta como la banda objetivo en los gráficos. Suprime las alertas de sensor obsoleto solo durante los primeros 30 minutos — después vuelven a activarse aunque el modo siga activo. Se activa desde el botón de MainScreen o desde eventos de calendario programados.</string>
-    <string name="workout_mode_threshold_order_error">Los umbrales deben cumplir: bajo crítico ≤ bajo ≤ alto ≤ alto crítico.</string>
+    <string name="workout_mode_settings_info">Las alertas de ejercicio se configuran en Ajustes \u203A Alertas \u203A Alertas de ejercicio. Bajo y Alto tambi\u00E9n definen el rango del gr\u00E1fico de ejercicio.</string>
+    <string name="exercise_alert_threshold_order_error">Los umbrales de las alertas de ejercicio deben cumplir: bajo crítico ≤ bajo ≤ alto ≤ alto crítico.</string>
     <string name="alert_workout_prefix">Entrenamiento · %1$s</string>
     <string name="widget_workout_indicator">ENTRENAMIENTO</string>
 

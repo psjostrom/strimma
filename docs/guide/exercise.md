@@ -120,11 +120,9 @@ Intensity keywords ("interval", "tempo", "hiit", "sprint") in the title override
 
 ### Workout Mode
 
-The **Workout mode** subsection at the top of Exercise Settings configures the runtime mode that raises alert thresholds and the in-range band during exercise. Settings include:
+The **Workout mode** subsection at the top of Exercise Settings configures the runtime mode's safety timeout. It contains only the auto-off timeout slider (1–12 h, default 3); manual sessions auto-end after this much elapsed time.
 
-- Four threshold inputs (Urgent low / Low / High / Urgent high) — see [Workout Mode](workout-mode.md) for defaults and what each one drives
-- Auto-off timeout slider (1–12 h, default 3) — manual sessions auto-end after this much elapsed time
-- Reset to defaults — restores the four thresholds (does NOT reset the auto-off timeout)
+Exercise-specific alert enablement and thresholds are configured under **Settings > Alerts > Exercise Alerts**, not in Exercise Settings. The Exercise Alerts section is an independent protocol selected by Workout Mode; Exercise Low and Exercise High also define the exercise graph range. The Alerts screen also contains the standard **Alerts** section and one shared **Alert Behavior** section for snooze duration and cooldown. Regular and Exercise alerts use the same notification channels, so Exercise alert rows do not have separate Sound buttons.
 
 ### Glucose Write
 

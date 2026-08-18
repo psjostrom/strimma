@@ -11,11 +11,15 @@ import com.psjostrom.strimma.testutil.workout.FakeCalendarPoller
 import com.psjostrom.strimma.testutil.workout.MutableClock
 import com.psjostrom.strimma.widget.WidgetSettingsRepository
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -24,6 +28,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -117,5 +122,54 @@ class AlertsViewModelTest {
         assertNull(viewModel.pauseLowExpiryMs.first())
         assertNotNull(viewModel.pauseHighExpiryMs.first())
         assertNull(viewModel.unifiedPauseExpiryMs.first())
+    }
+
+    @Test
+    fun `exercise threshold setter changes exercise protocol without changing regular value`() = runTest {
+        settings.setAlertLow(100f)
+        settings.setExerciseAlertLow(120f)
+
+        viewModel.setExerciseAlertLow(140f)
+
+        assertEquals(
+            140f,
+            viewModel.exerciseAlertProtocol.filterNotNull().first { it.lowMgdl == 140f }.lowMgdl
+        )
+        assertEquals(100f, settings.alertLow.first())
+    }
+
+    @Test
+    fun `invalid exercise threshold ordering leaves prior exercise value unchanged`() = runTest {
+        viewModel.setExerciseAlertLow(120f)
+        settings.exerciseAlertLow.first { it == 120f }
+
+        val validation = backgroundScope.async(start = CoroutineStart.UNDISPATCHED) {
+            viewModel.validationError.first()
+        }
+        viewModel.setExerciseAlertUrgentLow(130f)
+
+        assertEquals(AlertsViewModel.ValidationError.Order, validation.await())
+        assertEquals(90f, settings.exerciseAlertUrgentLow.first())
+    }
+
+    @Test
+    fun `grouped protocol state is unavailable until DataStore emits`() {
+        assertNull(viewModel.regularAlertProtocol.value)
+        assertNull(viewModel.exerciseAlertProtocol.value)
+    }
+
+    @Test
+    fun `concurrent exercise threshold edits leave persisted protocol ordered`() = runTest {
+        val jobs = listOf(
+            viewModel.setExerciseAlertLow(240f),
+            viewModel.setExerciseAlertHigh(200f),
+        )
+
+        jobs.joinAll()
+
+        val protocol = settings.exerciseAlertProtocol.first()
+        assertTrue(protocol.urgentLowMgdl <= protocol.lowMgdl)
+        assertTrue(protocol.lowMgdl <= protocol.highMgdl)
+        assertTrue(protocol.highMgdl <= protocol.urgentHighMgdl)
     }
 }

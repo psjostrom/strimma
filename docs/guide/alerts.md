@@ -6,7 +6,7 @@ Strimma can alert you with sound and vibration when your glucose crosses configu
 
 ## Alert Types
 
-Strimma has **eight** alert types, each with its own Android notification channel so you can customize the sound and vibration for each one independently.
+Strimma has **eight** alert types, each with its own Android notification channel so you can customize the sound and vibration for each one independently. Regular and Exercise protocols share the corresponding channels.
 
 ### Glucose Threshold Alerts
 
@@ -28,7 +28,7 @@ Strimma has **eight** alert types, each with its own Android notification channe
 
 | Alert | Trigger | Bypasses DND | Vibration |
 |-------|---------|-------------|-----------|
-| **Stale Data** | No reading received for 10+ minutes. **Suppressed during the first 30 minutes of a workout-mode session** (sensor often loses contact briefly when starting exercise); re-arms after 30 min even while workout mode stays on. See [Workout Mode](workout-mode.md). | No | Gentle |
+| **Stale Data** | No reading received for 10+ minutes. Uses the selected protocol's toggle; Workout Mode adds no grace period. See [Workout Mode](workout-mode.md). | No | Gentle |
 | **Push Failed** | Nightscout push failed after retries | No | Gentle |
 
 ---
@@ -37,9 +37,10 @@ Strimma has **eight** alert types, each with its own Android notification channe
 
 When workout mode is on (see [Workout Mode](workout-mode.md)):
 
-- **Alert thresholds are replaced** with the workout-mode set (defaults: 5.0 / 6.0 / 14.0 / 16.0 mmol/L), not adjusted on top of your standard thresholds.
+- **The Exercise protocol is selected** instead of the Regular protocol. Its independent enablement toggles, thresholds, predictive toggles, and stale toggle apply (defaults: 5.0 / 6.0 / 14.0 / 16.0 mmol/L).
+- **Exercise Low and Exercise High** also become the in-range bounds for graphs and other live displays while Workout Mode is on.
 - **Alert titles are prefixed** with `Workout · ` (e.g., `Workout · Urgent Low`) so the severity label is unambiguous — without this, an "Urgent Low" at 5.0 mmol/L could be misread as a normal-life crisis.
-- **Stale-data alerts** are suppressed for the first 30 minutes of the session, then re-arm.
+- **Stale-data alerts** use the selected protocol's toggle and the normal 10+ minute rule; Workout Mode does not add a grace period.
 
 ---
 
@@ -92,19 +93,29 @@ You can pause entire alert categories for a custom duration — useful during ex
 
 ## Configuring Alerts
 
-Go to **Settings > Alerts** to configure each alert:
+Go to **Settings > Alerts**. The screen has three sections, with independent Regular and Exercise protocols and one shared behavior section.
 
-### Enable/Disable
+### Alerts
 
-Each alert type has an independent toggle. Disabled alerts never fire, regardless of your glucose level.
+This section configures the Regular protocol used outside Workout Mode:
 
-### Set Thresholds
+- Each configurable alert has an independent toggle. Disabled alerts never fire, regardless of your glucose level.
+- The four glucose threshold alerts (Urgent Low, Low, High, Urgent High) each have an editable threshold in your configured unit (mmol/L or mg/dL).
+- Low Soon, High Soon, and Stale Data use the Regular protocol's enablement settings.
 
-For the four glucose threshold alerts (Urgent Low, Low, High, Urgent High), you can set the threshold value. Enter the value in your configured unit (mmol/L or mg/dL).
+### Exercise Alerts
+
+This section configures the independent Exercise protocol used while Workout Mode is active. It has its own enablement toggles and threshold values; changing it does not change the Regular protocol. Exercise Low and Exercise High also define the exercise graph range.
+
+Exercise alerts use the same notification channel as their corresponding Regular alert. Exercise rows intentionally have no Sound buttons or separate channel links.
+
+### Alert Behavior
+
+**Alert Snooze Duration** and **Cooldown** appear once in this shared section and apply to whichever protocol is active. They are not separate Regular and Exercise settings.
 
 ### Customize Sound
 
-Each alert type has a **Sound** button that opens the Android notification channel settings for that alert. From there you can:
+Regular alert rows have a **Sound** button that opens the Android notification channel settings for that alert. Exercise alert rows intentionally omit Sound buttons because both protocols use the same Android notification channels. From a Regular alert's Sound button you can:
 
 - Choose a different notification sound or alarm tone
 - Enable/disable vibration
@@ -123,7 +134,7 @@ Each alert type has a **Sound** button that opens the Android notification chann
 The other alerts (Low, High, Low Soon, High Soon, Stale Data) respect Do Not Disturb by default. However, you can change **any** alert to bypass DND:
 
 1. Go to **Settings > Alerts**
-2. Tap the **Sound** button next to the alert you want to change
+2. In the **Alerts** section, tap the **Sound** button next to the alert you want to change
 3. In the Android notification channel settings, enable **Override Do Not Disturb**
 
 This is an Android feature — once you change a channel's DND setting, Android remembers it.
