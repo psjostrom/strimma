@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   tag:
@@ -76,13 +77,34 @@ jobs:
 
           if [[ -n "$EXISTING_SHA" ]]; then
             if [[ "$EXISTING_SHA" == "$COMMIT_SHA" ]]; then
-              echo "Tag $TAG already exists and points to correct commit, skipping"
-              exit 0
+              echo "Tag $TAG already exists and points to correct commit"
             else
               echo "Error: tag $TAG exists but points to $EXISTING_SHA, expected $COMMIT_SHA" >&2
               exit 1
             fi
+          else
+            git tag "$TAG"
+            if ! git push origin "$TAG"; then
+              EXISTING_SHA="$(git ls-remote --tags origin "${TAG}^{}" | cut -f1 || true)"
+              if [[ -z "$EXISTING_SHA" ]]; then
+                EXISTING_SHA="$(git ls-remote --tags origin "$TAG" | cut -f1 || true)"
+              fi
+              if [[ "$EXISTING_SHA" != "$COMMIT_SHA" ]]; then
+                echo "Error: tag push failed and remote tag does not match $COMMIT_SHA" >&2
+                exit 1
+              fi
+            fi
           fi
 
-          git tag "$TAG"
-          git push origin "$TAG"
+      - name: Trigger Release APK
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Tags pushed with GITHUB_TOKEN do not trigger on:push workflows.
+          # workflow_dispatch is exempt from that restriction.
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists — skipping Release APK dispatch"
+            exit 0
+          fi
+          gh workflow run release.yml --ref "$TAG"
