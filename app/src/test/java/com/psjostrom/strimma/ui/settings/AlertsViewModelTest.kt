@@ -52,6 +52,7 @@ class AlertsViewModelTest {
     private lateinit var settings: SettingsRepository
     private lateinit var alertManager: AlertManager
     private lateinit var viewModel: AlertsViewModel
+    private lateinit var dataStoreScope: CoroutineScope
     private lateinit var managerScope: CoroutineScope
 
     @Before
@@ -62,7 +63,12 @@ class AlertsViewModelTest {
         context.getSharedPreferences("strimma_snooze", Context.MODE_PRIVATE)
             .edit().clear().apply()
 
-        settings = SettingsRepository(context, WidgetSettingsRepository(context), createTestDataStore())
+        dataStoreScope = CoroutineScope(SupervisorJob() + testDispatcher)
+        settings = SettingsRepository(
+            context,
+            WidgetSettingsRepository(context),
+            createTestDataStore(dataStoreScope),
+        )
         val poller = FakeCalendarPoller()
         val clock = MutableClock(System.currentTimeMillis())
         // Cancelled in @After so the eager ticker doesn't leak across tests.
@@ -75,6 +81,7 @@ class AlertsViewModelTest {
     @After
     fun tearDown() {
         managerScope.cancel()
+        dataStoreScope.cancel()
         Dispatchers.resetMain()
     }
 
