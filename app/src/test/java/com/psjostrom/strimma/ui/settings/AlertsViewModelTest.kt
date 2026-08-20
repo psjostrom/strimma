@@ -49,22 +49,22 @@ class AlertsViewModelTest {
 
     private fun runFixtureTest(block: suspend TestScope.(Fixture) -> Unit) = runTest {
         Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
-        val context = ApplicationProvider.getApplicationContext<Context>()
-        context.getSharedPreferences("strimma_snooze", Context.MODE_PRIVATE)
-            .edit().clear().apply()
-        val settings = SettingsRepository(
-            context,
-            WidgetSettingsRepository(context),
-            createTestDataStore(backgroundScope),
-        )
-        val workoutModeManager = WorkoutModeManager(
-            settings,
-            FakeCalendarPoller(),
-            MutableClock(System.currentTimeMillis()),
-            backgroundScope,
-        )
-        val alertManager = AlertManager(context, settings, workoutModeManager, backgroundScope)
         try {
+            val context = ApplicationProvider.getApplicationContext<Context>()
+            context.getSharedPreferences("strimma_snooze", Context.MODE_PRIVATE)
+                .edit().clear().apply()
+            val settings = SettingsRepository(
+                context,
+                WidgetSettingsRepository(context),
+                createTestDataStore(backgroundScope),
+            )
+            val workoutModeManager = WorkoutModeManager(
+                settings,
+                FakeCalendarPoller(),
+                MutableClock(System.currentTimeMillis()),
+                backgroundScope,
+            )
+            val alertManager = AlertManager(context, settings, workoutModeManager, backgroundScope)
             block(Fixture(settings, AlertsViewModel(settings, alertManager)))
         } finally {
             Dispatchers.resetMain()

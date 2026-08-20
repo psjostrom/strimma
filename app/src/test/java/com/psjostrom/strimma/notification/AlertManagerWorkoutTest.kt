@@ -1,5 +1,6 @@
 package com.psjostrom.strimma.notification
 
+import android.app.Notification
 import android.app.NotificationManager
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
@@ -12,6 +13,7 @@ import com.psjostrom.strimma.testutil.workout.MutableClock
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -43,7 +45,7 @@ class AlertManagerWorkoutTest {
         val poller = FakeCalendarPoller()
         val clock = MutableClock(baseNowMs)
         val manager = WorkoutModeManager(settings, poller, clock, backgroundScope)
-        val alertManager = AlertManager(context, settings, manager, backgroundScope)
+        val alertManager = AlertManager(context, settings, manager, backgroundScope, clock)
         val notificationManager = context.getSystemService(NotificationManager::class.java)
         alertManager.createChannels()
         notificationManager.cancelAll()
@@ -284,18 +286,24 @@ class AlertManagerWorkoutTest {
         rig.manager.effectiveThresholds.first { it.workoutModeOn && it.alertProtocol.lowMgdl == 120f }
 
         rig.alertManager.checkReading(reading(110), emptyList(), predictionMinutes = 0)
-        assertTrue(
-            Shadows.shadowOf(rig.notificationManager)
-                .getNotification(AlertManager.ALERT_LOW_ID) != null
-        )
-        val notificationAfterFirst =
-            Shadows.shadowOf(rig.notificationManager).getNotification(AlertManager.ALERT_LOW_ID)
+        val notificationManager = Shadows.shadowOf(rig.notificationManager)
+        val firstText = notificationManager.getNotification(AlertManager.ALERT_LOW_ID)
+            .extras.getCharSequence(Notification.EXTRA_TEXT)
 
-        rig.alertManager.checkReading(reading(110), emptyList(), predictionMinutes = 0)
-
+        rig.clock.nowMs = baseNowMs + 14 * 60_000L
+        rig.alertManager.checkReading(reading(115), emptyList(), predictionMinutes = 0)
         assertEquals(
-            notificationAfterFirst,
-            Shadows.shadowOf(rig.notificationManager).getNotification(AlertManager.ALERT_LOW_ID)
+            firstText,
+            notificationManager.getNotification(AlertManager.ALERT_LOW_ID)
+                .extras.getCharSequence(Notification.EXTRA_TEXT),
+        )
+
+        rig.clock.nowMs = baseNowMs + 16 * 60_000L
+        rig.alertManager.checkReading(reading(115), emptyList(), predictionMinutes = 0)
+        assertNotEquals(
+            firstText,
+            notificationManager.getNotification(AlertManager.ALERT_LOW_ID)
+                .extras.getCharSequence(Notification.EXTRA_TEXT),
         )
     }
 }

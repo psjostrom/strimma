@@ -10,6 +10,9 @@ import androidx.test.core.app.ApplicationProvider
 import com.psjostrom.strimma.createTestDataStore
 import com.psjostrom.strimma.data.workout.AlertProtocol
 import com.psjostrom.strimma.widget.WidgetSettingsRepository
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.json.JSONObject
@@ -22,6 +25,37 @@ import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
 class SettingsRepositoryExerciseAlertTest {
+
+    private class GatedDataStore(
+        private val delegate: DataStore<Preferences>,
+    ) : DataStore<Preferences> {
+        private val updateStarted = CompletableDeferred<Unit>()
+        private val continueUpdate = CompletableDeferred<Unit>()
+        private var shouldGateNextUpdate = false
+
+        override val data: Flow<Preferences> = delegate.data
+
+        fun gateNextUpdate() {
+            shouldGateNextUpdate = true
+        }
+
+        suspend fun awaitUpdate() = updateStarted.await()
+
+        fun releaseUpdate() {
+            continueUpdate.complete(Unit)
+        }
+
+        override suspend fun updateData(
+            transform: suspend (Preferences) -> Preferences,
+        ): Preferences {
+            if (shouldGateNextUpdate) {
+                shouldGateNextUpdate = false
+                updateStarted.complete(Unit)
+                continueUpdate.await()
+            }
+            return delegate.updateData(transform)
+        }
+    }
 
     private fun kotlinx.coroutines.test.TestScope.makeFixture(): SettingsRepository {
         val context = ApplicationProvider.getApplicationContext<Context>()
@@ -164,6 +198,35 @@ class SettingsRepositoryExerciseAlertTest {
 
         assertTrue(result.exceptionOrNull() is IllegalArgumentException)
         assertEquals(before, settings.exerciseAlertProtocol.first())
+    }
+
+    @Test
+    fun `import validates omitted thresholds against concurrent updates`() = runTest {
+        val dataStore = GatedDataStore(createTestDataStore(this))
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val settings = SettingsRepository(context, WidgetSettingsRepository(context), dataStore)
+        settings.setExerciseAlertLow(120f)
+        settings.setExerciseAlertHigh(252f)
+
+        dataStore.gateNextUpdate()
+        val import = async {
+            runCatching {
+                settings.importFromJson(
+                    JSONObject()
+                        .put("version", 3)
+                        .put("settings", JSONObject().put("exercise_alert_low", 240.0))
+                        .toString()
+                )
+            }
+        }
+        dataStore.awaitUpdate()
+        settings.setExerciseAlertHigh(200f)
+        dataStore.releaseUpdate()
+
+        assertTrue(import.await().exceptionOrNull() is IllegalArgumentException)
+        assertEquals(120f, settings.exerciseAlertLow.first())
+        assertEquals(200f, settings.exerciseAlertHigh.first())
+        assertTrue(settings.exerciseAlertProtocol.first().hasOrderedThresholds())
     }
 
     @Test

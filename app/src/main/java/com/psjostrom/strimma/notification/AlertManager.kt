@@ -17,6 +17,8 @@ import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.notification.SnoozeDuration
 import com.psjostrom.strimma.data.workout.AlertProtocol
+import com.psjostrom.strimma.data.workout.Clock
+import com.psjostrom.strimma.data.workout.SystemClock
 import com.psjostrom.strimma.data.workout.WorkoutModeManager
 import com.psjostrom.strimma.graph.CrossingType
 import com.psjostrom.strimma.graph.Prediction
@@ -61,6 +63,7 @@ class AlertManager @Inject constructor(
     private val settings: SettingsRepository,
     private val workoutModeManager: WorkoutModeManager,
     private val cleanupScope: CoroutineScope,
+    private val clock: Clock = SystemClock(),
 ) {
     companion object {
         // Each alert type has its own channel so the user can set a different sound per alarm
@@ -115,9 +118,13 @@ class AlertManager @Inject constructor(
                 (System.currentTimeMillis() - lastReadingTs) > STALE_THRESHOLD_MINUTES * MS_PER_MINUTE
         }
 
-        fun isInCooldown(lastFireMs: Long, cooldownMs: Long): Boolean {
+        fun isInCooldown(
+            lastFireMs: Long,
+            cooldownMs: Long,
+            nowMs: Long = System.currentTimeMillis(),
+        ): Boolean {
             if (cooldownMs == 0L || lastFireMs == 0L) return false
-            return (System.currentTimeMillis() - lastFireMs) < cooldownMs
+            return (nowMs - lastFireMs) < cooldownMs
         }
 
 
@@ -358,14 +365,15 @@ class AlertManager @Inject constructor(
         val lowEnabled = protocol.lowEnabled
         val lowThreshold = protocol.lowMgdl
         val cooldownMs = settings.alertCooldownMinutes.first().toLong() * MS_PER_MINUTE
+        val now = clock.nowMs()
 
         if (urgentLowEnabled && mgdl <= urgentLowThreshold) {
             if (!isCategoryPausedAtLevel(snoozePrefs, AlertCategory.LOW, ALERT_LEVEL_URGENT)
-                && !isInCooldown(lastUrgentLowFireMs, cooldownMs)
+                && !isInCooldown(lastUrgentLowFireMs, cooldownMs, now)
             ) {
                 val title = workoutPrefixedTitle(R.string.alert_urgent_low_title, workoutOn)
                 fireAlert(ALERT_URGENT_LOW_ID, CHANNEL_URGENT_LOW, title, unit.formatWithUnit(mgdl))
-                lastUrgentLowFireMs = System.currentTimeMillis()
+                lastUrgentLowFireMs = now
             }
             notificationManager.cancel(ALERT_LOW_ID)
             return true
@@ -373,11 +381,11 @@ class AlertManager @Inject constructor(
 
         if (lowEnabled && mgdl < lowThreshold) {
             if (!isCategoryPausedAtLevel(snoozePrefs, AlertCategory.LOW, ALERT_LEVEL_REGULAR)
-                && !isInCooldown(lastLowFireMs, cooldownMs)
+                && !isInCooldown(lastLowFireMs, cooldownMs, now)
             ) {
                 val title = workoutPrefixedTitle(R.string.alert_low_title, workoutOn)
                 fireAlert(ALERT_LOW_ID, CHANNEL_LOW, title, unit.formatWithUnit(mgdl))
-                lastLowFireMs = System.currentTimeMillis()
+                lastLowFireMs = now
             }
             notificationManager.cancel(ALERT_URGENT_LOW_ID)
             return true
@@ -401,14 +409,15 @@ class AlertManager @Inject constructor(
         val highEnabled = protocol.highEnabled
         val highThreshold = protocol.highMgdl
         val cooldownMs = settings.alertCooldownMinutes.first().toLong() * MS_PER_MINUTE
+        val now = clock.nowMs()
 
         if (urgentHighEnabled && mgdl >= urgentHighThreshold) {
             if (!isCategoryPausedAtLevel(snoozePrefs, AlertCategory.HIGH, ALERT_LEVEL_URGENT)
-                && !isInCooldown(lastUrgentHighFireMs, cooldownMs)
+                && !isInCooldown(lastUrgentHighFireMs, cooldownMs, now)
             ) {
                 val title = workoutPrefixedTitle(R.string.alert_urgent_high_title, workoutOn)
                 fireAlert(ALERT_URGENT_HIGH_ID, CHANNEL_URGENT_HIGH, title, unit.formatWithUnit(mgdl))
-                lastUrgentHighFireMs = System.currentTimeMillis()
+                lastUrgentHighFireMs = now
             }
             notificationManager.cancel(ALERT_HIGH_ID)
             return true
@@ -416,11 +425,11 @@ class AlertManager @Inject constructor(
 
         if (highEnabled && mgdl > highThreshold) {
             if (!isCategoryPausedAtLevel(snoozePrefs, AlertCategory.HIGH, ALERT_LEVEL_REGULAR)
-                && !isInCooldown(lastHighFireMs, cooldownMs)
+                && !isInCooldown(lastHighFireMs, cooldownMs, now)
             ) {
                 val title = workoutPrefixedTitle(R.string.alert_high_title, workoutOn)
                 fireAlert(ALERT_HIGH_ID, CHANNEL_HIGH, title, unit.formatWithUnit(mgdl))
-                lastHighFireMs = System.currentTimeMillis()
+                lastHighFireMs = now
             }
             notificationManager.cancel(ALERT_URGENT_HIGH_ID)
             return true

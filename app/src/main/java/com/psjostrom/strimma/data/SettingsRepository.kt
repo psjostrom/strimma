@@ -161,6 +161,22 @@ private fun JSONObject.importExerciseAlertProtocol(isV1: Boolean, current: Alert
     return imported
 }
 
+private fun Preferences.exerciseAlertProtocol(): AlertProtocol = AlertProtocol(
+    urgentLowEnabled = this[KEY_EXERCISE_ALERT_URGENT_LOW_ENABLED] ?: true,
+    lowEnabled = this[KEY_EXERCISE_ALERT_LOW_ENABLED] ?: true,
+    highEnabled = this[KEY_EXERCISE_ALERT_HIGH_ENABLED] ?: true,
+    urgentHighEnabled = this[KEY_EXERCISE_ALERT_URGENT_HIGH_ENABLED] ?: true,
+    urgentLowMgdl = this[KEY_EXERCISE_ALERT_URGENT_LOW]
+        ?: SettingsRepository.DEFAULT_WORKOUT_ALERT_URGENT_LOW,
+    lowMgdl = this[KEY_EXERCISE_ALERT_LOW] ?: SettingsRepository.DEFAULT_WORKOUT_ALERT_LOW,
+    highMgdl = this[KEY_EXERCISE_ALERT_HIGH] ?: SettingsRepository.DEFAULT_WORKOUT_ALERT_HIGH,
+    urgentHighMgdl = this[KEY_EXERCISE_ALERT_URGENT_HIGH]
+        ?: SettingsRepository.DEFAULT_WORKOUT_ALERT_URGENT_HIGH,
+    lowSoonEnabled = this[KEY_EXERCISE_ALERT_LOW_SOON_ENABLED] ?: true,
+    highSoonEnabled = this[KEY_EXERCISE_ALERT_HIGH_SOON_ENABLED] ?: true,
+    staleEnabled = this[KEY_EXERCISE_ALERT_STALE_ENABLED] ?: true,
+)
+
 private val EXERCISE_ALERT_BOOLEAN_FIELDS = listOf(
     Triple("exercise_alert_low_enabled", KEY_EXERCISE_ALERT_LOW_ENABLED, KEY_ALERT_LOW_ENABLED),
     Triple("exercise_alert_high_enabled", KEY_EXERCISE_ALERT_HIGH_ENABLED, KEY_ALERT_HIGH_ENABLED),
@@ -173,9 +189,10 @@ private val EXERCISE_ALERT_BOOLEAN_FIELDS = listOf(
 
 private fun MutablePreferences.importExerciseAlerts(
     settings: JSONObject,
-    protocol: AlertProtocol,
+    isV1: Boolean,
     inheritRegularEnablement: Boolean,
 ) {
+    val protocol = settings.importExerciseAlertProtocol(isV1, exerciseAlertProtocol())
     EXERCISE_ALERT_BOOLEAN_FIELDS.forEach { (field, exerciseKey, regularKey) ->
         when {
             settings.has(field) -> this[exerciseKey] = settings.getBoolean(field)
@@ -435,21 +452,7 @@ class SettingsRepository @Inject constructor(
         it[KEY_EXERCISE_ALERT_URGENT_HIGH] ?: DEFAULT_WORKOUT_ALERT_URGENT_HIGH
     }
 
-    val exerciseAlertProtocol: Flow<AlertProtocol> = dataStore.data.map { prefs ->
-        AlertProtocol(
-            urgentLowEnabled = prefs[KEY_EXERCISE_ALERT_URGENT_LOW_ENABLED] ?: true,
-            lowEnabled = prefs[KEY_EXERCISE_ALERT_LOW_ENABLED] ?: true,
-            highEnabled = prefs[KEY_EXERCISE_ALERT_HIGH_ENABLED] ?: true,
-            urgentHighEnabled = prefs[KEY_EXERCISE_ALERT_URGENT_HIGH_ENABLED] ?: true,
-            urgentLowMgdl = prefs[KEY_EXERCISE_ALERT_URGENT_LOW] ?: DEFAULT_WORKOUT_ALERT_URGENT_LOW,
-            lowMgdl = prefs[KEY_EXERCISE_ALERT_LOW] ?: DEFAULT_WORKOUT_ALERT_LOW,
-            highMgdl = prefs[KEY_EXERCISE_ALERT_HIGH] ?: DEFAULT_WORKOUT_ALERT_HIGH,
-            urgentHighMgdl = prefs[KEY_EXERCISE_ALERT_URGENT_HIGH] ?: DEFAULT_WORKOUT_ALERT_URGENT_HIGH,
-            lowSoonEnabled = prefs[KEY_EXERCISE_ALERT_LOW_SOON_ENABLED] ?: true,
-            highSoonEnabled = prefs[KEY_EXERCISE_ALERT_HIGH_SOON_ENABLED] ?: true,
-            staleEnabled = prefs[KEY_EXERCISE_ALERT_STALE_ENABLED] ?: true,
-        )
-    }
+    val exerciseAlertProtocol: Flow<AlertProtocol> = dataStore.data.map { it.exerciseAlertProtocol() }
 
     // --- Workout safety timeout ---
     val workoutModeMaxHours: Flow<Int> = dataStore.data.map { it[KEY_WORKOUT_MODE_MAX_HOURS] ?: DEFAULT_WORKOUT_MODE_MAX_HOURS }
@@ -933,7 +936,6 @@ class SettingsRepository @Inject constructor(
         val importVersion = root.optInt("version", 1)
         val isV1 = importVersion < 2
         fun importThreshold(key: String): Float = settings.importThreshold(key, isV1)
-        val importedExerciseProtocol = settings.importExerciseAlertProtocol(isV1, exerciseAlertProtocol.first())
 
         dataStore.edit { prefs ->
             if (settings.has("nightscout_url")) prefs[KEY_NIGHTSCOUT_URL] = settings.getString("nightscout_url").trim()
@@ -955,7 +957,7 @@ class SettingsRepository @Inject constructor(
             if (settings.has("alert_high_soon_enabled")) prefs[KEY_ALERT_HIGH_SOON_ENABLED] = settings.getBoolean("alert_high_soon_enabled")
             prefs.importExerciseAlerts(
                 settings,
-                importedExerciseProtocol,
+                isV1,
                 inheritRegularEnablement = importVersion < SETTINGS_EXPORT_VERSION,
             )
             if (settings.has("alert_cooldown_minutes")) prefs[KEY_ALERT_COOLDOWN_MINUTES] = settings.getInt("alert_cooldown_minutes")
