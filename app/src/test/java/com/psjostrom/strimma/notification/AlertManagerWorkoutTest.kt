@@ -246,7 +246,7 @@ class AlertManagerWorkoutTest {
         rig.settings.setExerciseAlertStaleEnabled(true)
         rig.manager.setManualOn()
         rig.manager.effectiveThresholds.first { it.workoutModeOn && it.alertProtocol.staleEnabled }
-        val staleTs = System.currentTimeMillis() - 11 * 60_000L
+        val staleTs = rig.clock.nowMs - 11 * 60_000L
 
         rig.alertManager.checkStale(staleTs)
 
@@ -264,7 +264,7 @@ class AlertManagerWorkoutTest {
         rig.settings.setAlertStaleEnabled(true)
         rig.settings.setExerciseAlertStaleEnabled(true)
         rig.manager.effectiveThresholds.first { !it.workoutModeOn && it.alertProtocol.staleEnabled }
-        val staleTs = System.currentTimeMillis() - 11 * 60_000L
+        val staleTs = rig.clock.nowMs - 11 * 60_000L
 
         rig.alertManager.checkStale(staleTs)
         assertNotNull(Shadows.shadowOf(rig.notificationManager).getNotification(AlertManager.ALERT_STALE_ID))
