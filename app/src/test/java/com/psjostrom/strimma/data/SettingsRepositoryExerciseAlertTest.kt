@@ -123,6 +123,30 @@ class SettingsRepositoryExerciseAlertTest {
     }
 
     @Test
+    fun `import rejects unordered exercise thresholds without changing protocol`() = runTest {
+        val settings = makeFixture()
+        val before = settings.exerciseAlertProtocol.first()
+
+        val result = runCatching {
+            settings.importFromJson(
+                JSONObject()
+                    .put("version", 3)
+                    .put(
+                        "settings",
+                        JSONObject()
+                            .put("exercise_alert_low_enabled", false)
+                            .put("exercise_alert_low", 260.0)
+                            .put("exercise_alert_high", 200.0),
+                    )
+                    .toString()
+            )
+        }
+
+        assertTrue(result.exceptionOrNull() is IllegalArgumentException)
+        assertEquals(before, settings.exerciseAlertProtocol.first())
+    }
+
+    @Test
     fun `v1 threshold import still converts mmol to mgdl`() = runTest {
         val settings = makeFixture()
 

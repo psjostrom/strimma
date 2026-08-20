@@ -160,11 +160,13 @@ class AlertsViewModel @Inject constructor(
     ): Job = viewModelScope.launch {
         exerciseThresholdMutex.withLock {
             val current = settings.exerciseAlertProtocol.first()
-            val nextUrgentLow = urgentLow ?: current.urgentLowMgdl
-            val nextLow = low ?: current.lowMgdl
-            val nextHigh = high ?: current.highMgdl
-            val nextUrgentHigh = urgentHigh ?: current.urgentHighMgdl
-            if (nextUrgentLow <= nextLow && nextLow <= nextHigh && nextHigh <= nextUrgentHigh) {
+            val next = current.copy(
+                urgentLowMgdl = urgentLow ?: current.urgentLowMgdl,
+                lowMgdl = low ?: current.lowMgdl,
+                highMgdl = high ?: current.highMgdl,
+                urgentHighMgdl = urgentHigh ?: current.urgentHighMgdl,
+            )
+            if (next.hasOrderedThresholds()) {
                 onValid()
             } else {
                 _validationError.tryEmit(ValidationError.Order)

@@ -12,4 +12,7 @@ data class AlertProtocol(
     val lowSoonEnabled: Boolean,
     val highSoonEnabled: Boolean,
     val staleEnabled: Boolean,
-)
+) {
+    fun hasOrderedThresholds(): Boolean =
+        urgentLowMgdl <= lowMgdl && lowMgdl <= highMgdl && highMgdl <= urgentHighMgdl
+}

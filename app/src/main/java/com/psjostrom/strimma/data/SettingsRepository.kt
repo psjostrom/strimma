@@ -124,6 +124,59 @@ private val KEY_EXERCISE_ALERT_LOW_SOON_ENABLED = booleanPreferencesKey("exercis
 private val KEY_EXERCISE_ALERT_HIGH_SOON_ENABLED = booleanPreferencesKey("exercise_alert_high_soon_enabled")
 private val KEY_EXERCISE_ALERT_STALE_ENABLED = booleanPreferencesKey("exercise_alert_stale_enabled")
 
+private val EXERCISE_ALERT_THRESHOLD_FIELDS = listOf(
+    "exercise_alert_urgent_low",
+    "exercise_alert_low",
+    "exercise_alert_high",
+    "exercise_alert_urgent_high",
+)
+
+private fun JSONObject.importThreshold(key: String, isV1: Boolean): Float {
+    val value = getDouble(key).toFloat()
+    return if (isV1) Math.round(value * GlucoseUnit.MGDL_FACTOR.toFloat()).toFloat() else value
+}
+
+private fun JSONObject.importExerciseAlertProtocol(isV1: Boolean, current: AlertProtocol): AlertProtocol {
+    fun thresholdOr(key: String, fallback: Float): Float =
+        if (has(key)) importThreshold(key, isV1) else fallback
+
+    val imported = current.copy(
+        urgentLowMgdl = thresholdOr("exercise_alert_urgent_low", current.urgentLowMgdl),
+        lowMgdl = thresholdOr("exercise_alert_low", current.lowMgdl),
+        highMgdl = thresholdOr("exercise_alert_high", current.highMgdl),
+        urgentHighMgdl = thresholdOr("exercise_alert_urgent_high", current.urgentHighMgdl),
+    )
+    if (EXERCISE_ALERT_THRESHOLD_FIELDS.any(::has)) {
+        require(imported.hasOrderedThresholds()) {
+            "Exercise alert thresholds must be ordered urgent low, low, high, urgent high"
+        }
+    }
+    return imported
+}
+
+private val EXERCISE_ALERT_BOOLEAN_FIELDS = listOf(
+    "exercise_alert_low_enabled" to KEY_EXERCISE_ALERT_LOW_ENABLED,
+    "exercise_alert_high_enabled" to KEY_EXERCISE_ALERT_HIGH_ENABLED,
+    "exercise_alert_urgent_low_enabled" to KEY_EXERCISE_ALERT_URGENT_LOW_ENABLED,
+    "exercise_alert_urgent_high_enabled" to KEY_EXERCISE_ALERT_URGENT_HIGH_ENABLED,
+    "exercise_alert_low_soon_enabled" to KEY_EXERCISE_ALERT_LOW_SOON_ENABLED,
+    "exercise_alert_high_soon_enabled" to KEY_EXERCISE_ALERT_HIGH_SOON_ENABLED,
+    "exercise_alert_stale_enabled" to KEY_EXERCISE_ALERT_STALE_ENABLED,
+)
+
+private fun MutablePreferences.importExerciseAlerts(settings: JSONObject, protocol: AlertProtocol) {
+    EXERCISE_ALERT_BOOLEAN_FIELDS.forEach { (field, key) ->
+        if (settings.has(field)) this[key] = settings.getBoolean(field)
+    }
+    if (settings.has("exercise_alert_low")) this[KEY_EXERCISE_ALERT_LOW] = protocol.lowMgdl
+    if (settings.has("exercise_alert_high")) this[KEY_EXERCISE_ALERT_HIGH] = protocol.highMgdl
+    if (settings.has("exercise_alert_urgent_low")) this[KEY_EXERCISE_ALERT_URGENT_LOW] = protocol.urgentLowMgdl
+    if (settings.has("exercise_alert_urgent_high")) this[KEY_EXERCISE_ALERT_URGENT_HIGH] = protocol.urgentHighMgdl
+    if ((EXERCISE_ALERT_BOOLEAN_FIELDS.map { it.first } + EXERCISE_ALERT_THRESHOLD_FIELDS).any(settings::has)) {
+        this[ExerciseAlertSettingsMigration.KEY_INITIALIZED] = true
+    }
+}
+
 @Suppress("TooManyFunctions") // One getter+setter per setting
 @Singleton
 class SettingsRepository @Inject constructor(
@@ -869,10 +922,8 @@ class SettingsRepository @Inject constructor(
         val settings = root.getJSONObject("settings")
         // v1 exports stored thresholds in mmol/L — convert to mg/dL on import
         val isV1 = root.optInt("version", 1) < 2
-        fun importThreshold(key: String): Float {
-            val value = settings.getDouble(key).toFloat()
-            return if (isV1) Math.round(value * GlucoseUnit.MGDL_FACTOR.toFloat()).toFloat() else value
-        }
+        fun importThreshold(key: String): Float = settings.importThreshold(key, isV1)
+        val importedExerciseProtocol = settings.importExerciseAlertProtocol(isV1, exerciseAlertProtocol.first())
 
         dataStore.edit { prefs ->
             if (settings.has("nightscout_url")) prefs[KEY_NIGHTSCOUT_URL] = settings.getString("nightscout_url").trim()
@@ -892,48 +943,7 @@ class SettingsRepository @Inject constructor(
             if (settings.has("alert_stale_enabled")) prefs[KEY_ALERT_STALE_ENABLED] = settings.getBoolean("alert_stale_enabled")
             if (settings.has("alert_low_soon_enabled")) prefs[KEY_ALERT_LOW_SOON_ENABLED] = settings.getBoolean("alert_low_soon_enabled")
             if (settings.has("alert_high_soon_enabled")) prefs[KEY_ALERT_HIGH_SOON_ENABLED] = settings.getBoolean("alert_high_soon_enabled")
-            if (settings.has("exercise_alert_low_enabled")) {
-                prefs[KEY_EXERCISE_ALERT_LOW_ENABLED] = settings.getBoolean("exercise_alert_low_enabled")
-            }
-            if (settings.has("exercise_alert_high_enabled")) {
-                prefs[KEY_EXERCISE_ALERT_HIGH_ENABLED] = settings.getBoolean("exercise_alert_high_enabled")
-            }
-            if (settings.has("exercise_alert_urgent_low_enabled")) {
-                prefs[KEY_EXERCISE_ALERT_URGENT_LOW_ENABLED] = settings.getBoolean("exercise_alert_urgent_low_enabled")
-            }
-            if (settings.has("exercise_alert_urgent_high_enabled")) {
-                prefs[KEY_EXERCISE_ALERT_URGENT_HIGH_ENABLED] = settings.getBoolean("exercise_alert_urgent_high_enabled")
-            }
-            if (settings.has("exercise_alert_low_soon_enabled")) {
-                prefs[KEY_EXERCISE_ALERT_LOW_SOON_ENABLED] = settings.getBoolean("exercise_alert_low_soon_enabled")
-            }
-            if (settings.has("exercise_alert_high_soon_enabled")) {
-                prefs[KEY_EXERCISE_ALERT_HIGH_SOON_ENABLED] = settings.getBoolean("exercise_alert_high_soon_enabled")
-            }
-            if (settings.has("exercise_alert_stale_enabled")) {
-                prefs[KEY_EXERCISE_ALERT_STALE_ENABLED] = settings.getBoolean("exercise_alert_stale_enabled")
-            }
-            if (settings.has("exercise_alert_low")) prefs[KEY_EXERCISE_ALERT_LOW] = importThreshold("exercise_alert_low")
-            if (settings.has("exercise_alert_high")) prefs[KEY_EXERCISE_ALERT_HIGH] = importThreshold("exercise_alert_high")
-            if (settings.has("exercise_alert_urgent_low")) {
-                prefs[KEY_EXERCISE_ALERT_URGENT_LOW] = importThreshold("exercise_alert_urgent_low")
-            }
-            if (settings.has("exercise_alert_urgent_high")) {
-                prefs[KEY_EXERCISE_ALERT_URGENT_HIGH] = importThreshold("exercise_alert_urgent_high")
-            }
-            val exerciseFields = listOf(
-                "exercise_alert_low_enabled", "exercise_alert_high_enabled",
-                "exercise_alert_urgent_low_enabled", "exercise_alert_urgent_high_enabled",
-                "exercise_alert_low_soon_enabled", "exercise_alert_high_soon_enabled",
-                "exercise_alert_stale_enabled",
-                "exercise_alert_low", "exercise_alert_high",
-                "exercise_alert_urgent_low", "exercise_alert_urgent_high",
-            )
-            if (exerciseFields.any { settings.has(it) }) {
-                // Imported exercise settings must not be overwritten by the
-                // one-shot enablement migration on the next launch.
-                prefs[ExerciseAlertSettingsMigration.KEY_INITIALIZED] = true
-            }
+            prefs.importExerciseAlerts(settings, importedExerciseProtocol)
             if (settings.has("alert_cooldown_minutes")) prefs[KEY_ALERT_COOLDOWN_MINUTES] = settings.getInt("alert_cooldown_minutes")
             if (settings.has("alert_snooze_duration")) {
                 prefs[KEY_ALERT_SNOOZE_DURATION] =

@@ -250,6 +250,36 @@ class WorkoutModeManagerTest {
     }
 
     @Test
+    fun `first effective thresholds use persisted exercise mode`() = runTest {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val dataStore = createTestDataStore(this)
+        val settings = SettingsRepository(
+            context,
+            com.psjostrom.strimma.widget.WidgetSettingsRepository(context),
+            dataStore,
+        )
+        settings.setManualWorkoutSession(
+            sinceMs = baseNowMs,
+            expiresMs = baseNowMs + 3 * msPerHour,
+        )
+        settings.setAlertLowEnabled(false)
+        settings.setExerciseAlertLowEnabled(true)
+        settings.setExerciseAlertLow(120f)
+        val manager = WorkoutModeManager(
+            settings,
+            FakeCalendarPoller(MutableStateFlow(null)),
+            MutableClock(baseNowMs),
+            backgroundScope,
+        )
+
+        val thresholds = manager.currentEffectiveThresholds()
+
+        assertTrue(thresholds.workoutModeOn)
+        assertTrue(thresholds.alertProtocol.lowEnabled)
+        assertEquals(120f, thresholds.alertProtocol.lowMgdl)
+    }
+
+    @Test
     fun `effective settings in exercise mode use exercise protocol and graph bounds`() = runTest {
         val rig = setup()
         rig.settings.setExerciseAlertLow(120f)

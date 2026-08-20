@@ -108,6 +108,7 @@ class AlertManager @Inject constructor(
 
         // Stale data threshold
         const val STALE_THRESHOLD_MINUTES = 10
+        const val STALE_SUPPRESSION_DURING_WORKOUT_MS = 30L * 60 * 1000
 
         fun isStale(lastReadingTs: Long?): Boolean {
             return lastReadingTs == null ||
@@ -499,6 +500,11 @@ class AlertManager @Inject constructor(
     suspend fun checkStale(lastReadingTs: Long?) {
         val effective = workoutModeManager.currentEffectiveThresholds()
         if (!effective.alertProtocol.staleEnabled) {
+            notificationManager.cancel(ALERT_STALE_ID)
+            return
+        }
+        val sessionElapsedMs = workoutModeManager.currentSessionElapsedMs()
+        if (sessionElapsedMs != null && sessionElapsedMs < STALE_SUPPRESSION_DURING_WORKOUT_MS) {
             notificationManager.cancel(ALERT_STALE_ID)
             return
         }

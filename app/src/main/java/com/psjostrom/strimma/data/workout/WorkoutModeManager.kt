@@ -67,7 +67,7 @@ class WorkoutModeManager @Inject constructor(
         StateInputs(manualSince, manualExpires, overrideUntil, maxHours, nextEvent)
     }
 
-    val state: StateFlow<WorkoutMode> = stateInputs.combine(ticker) { inputs, _ ->
+    private val loadedState: Flow<WorkoutMode> = stateInputs.combine(ticker) { inputs, _ ->
         computeState(
             manualSince = inputs.manualSince,
             manualExpires = inputs.manualExpires,
@@ -76,7 +76,10 @@ class WorkoutModeManager @Inject constructor(
             nextEvent = inputs.nextEvent,
             now = clock.nowMs()
         )
-    }.stateIn(scope, SharingStarted.Eagerly, WorkoutMode.Off)
+    }.shareIn(scope, SharingStarted.Eagerly, replay = 1)
+
+    val state: StateFlow<WorkoutMode> =
+        loadedState.stateIn(scope, SharingStarted.Eagerly, WorkoutMode.Off)
 
     /**
      * Pure state derivation — no side effects, fully testable in isolation.
@@ -144,7 +147,7 @@ class WorkoutModeManager @Inject constructor(
      * the sentinel.
      */
     val effectiveThresholds: StateFlow<EffectiveThresholds> = combine(
-        state,
+        loadedState,
         thresholdSnapshot
     ) { mode, snap ->
         val on = mode is WorkoutMode.On
@@ -181,6 +184,9 @@ class WorkoutModeManager @Inject constructor(
         val nextEvent = calendarSource.nextEvent.value
         return computeState(manualSince, manualExpires, overrideUntil, maxHours, nextEvent, clock.nowMs())
     }
+
+    suspend fun currentSessionElapsedMs(): Long? =
+        (currentState() as? WorkoutMode.On)?.let { (clock.nowMs() - it.sinceMs).coerceAtLeast(0L) }
 
     init {
         // Side-effect 1: clean expired DataStore values on every tick. Atomic

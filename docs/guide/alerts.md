@@ -28,7 +28,7 @@ Strimma has **eight** alert types, each with its own Android notification channe
 
 | Alert | Trigger | Bypasses DND | Vibration |
 |-------|---------|-------------|-----------|
-| **Stale Data** | No reading received for 10+ minutes. Uses the selected protocol's toggle; Workout Mode adds no grace period. See [Workout Mode](workout-mode.md). | No | Gentle |
+| **Stale Data** | No reading received for 10+ minutes. Uses the selected protocol's toggle; suppressed during the first 30 minutes of Workout Mode. See [Workout Mode](workout-mode.md). | No | Gentle |
 | **Push Failed** | Nightscout push failed after retries | No | Gentle |
 
 ---
@@ -40,7 +40,7 @@ When workout mode is on (see [Workout Mode](workout-mode.md)):
 - **The Exercise protocol is selected** instead of the Regular protocol. Its independent enablement toggles, thresholds, predictive toggles, and stale toggle apply (defaults: 5.0 / 6.0 / 14.0 / 16.0 mmol/L).
 - **Exercise Low and Exercise High** also become the in-range bounds for graphs and other live displays while Workout Mode is on.
 - **Alert titles are prefixed** with `Workout · ` (e.g., `Workout · Urgent Low`) so the severity label is unambiguous — without this, an "Urgent Low" at 5.0 mmol/L could be misread as a normal-life crisis.
-- **Stale-data alerts** use the selected protocol's toggle and the normal 10+ minute rule; Workout Mode does not add a grace period.
+- **Stale-data alerts** use the selected protocol's toggle. They are suppressed for the first 30 minutes of Workout Mode, then use the normal 10+ minute rule.
 
 ---
 

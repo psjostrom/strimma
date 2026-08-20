@@ -18,7 +18,7 @@ You can change all four Exercise alert thresholds and their enablement in **Sett
 - **Alerts** use the complete Exercise protocol instead of the Regular protocol: its enablement toggles, threshold values, predictive toggles, and stale toggle. Alert titles are prefixed with `Workout · ` (e.g., `Workout · Urgent Low`) so the severity label stays unambiguous — see [Alerts](alerts.md).
 - **In-range band on graphs** (and the BG hero color, widget, web server) uses Exercise Low and Exercise High, so 12 mmol shows as in-range green during exercise instead of amber high.
 - **Predict-low / predict-high** alerts use the Exercise protocol's thresholds and enablement — fewer false alarms during the rapid swings of exercise.
-- **Stale-sensor alerts** use the selected protocol's stale toggle and the normal 10+ minute rule. Workout Mode does not add a grace period.
+- **Stale-sensor alerts** use the selected protocol's stale toggle. They are suppressed for the first 30 minutes of Workout Mode, then use the normal 10+ minute rule.
 - **Historical analysis is unaffected.** The Story screen (monthly TIR / AGP / meal stats) always uses your standard thresholds, never Exercise thresholds, so opening Stats during a workout doesn't corrupt last-month's report.
 
 ## How to turn it on

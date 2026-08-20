@@ -32,6 +32,7 @@ class AlertManagerWorkoutTest {
         val manager: WorkoutModeManager,
         val alertManager: AlertManager,
         val notificationManager: NotificationManager,
+        val clock: MutableClock,
     )
 
     private fun kotlinx.coroutines.test.TestScope.setup(): Rig {
@@ -45,7 +46,7 @@ class AlertManagerWorkoutTest {
         val alertManager = AlertManager(context, settings, manager, backgroundScope)
         val notificationManager = context.getSystemService(NotificationManager::class.java)
         alertManager.createChannels()
-        return Rig(context, settings, manager, alertManager, notificationManager)
+        return Rig(context, settings, manager, alertManager, notificationManager, clock)
     }
 
     private fun reading(mgdl: Int, tsMs: Long = 1_700_000_000_000L): GlucoseReading =
@@ -236,14 +237,21 @@ class AlertManagerWorkoutTest {
     }
 
     @Test
-    fun `exercise stale alert uses exercise toggle without workout grace period`() = runTest {
+    fun `exercise stale alert is suppressed for first 30 minutes then fires`() = runTest {
         val rig = setup()
         rig.settings.setAlertStaleEnabled(false)
         rig.settings.setExerciseAlertStaleEnabled(true)
         rig.manager.setManualOn()
         rig.manager.effectiveThresholds.first { it.workoutModeOn && it.alertProtocol.staleEnabled }
         val staleTs = System.currentTimeMillis() - 11 * 60_000L
+
         rig.alertManager.checkStale(staleTs)
+
+        assertNull(Shadows.shadowOf(rig.notificationManager).getNotification(AlertManager.ALERT_STALE_ID))
+
+        rig.clock.nowMs = baseNowMs + 31 * 60_000L
+        rig.alertManager.checkStale(staleTs)
+
         assertNotNull(Shadows.shadowOf(rig.notificationManager).getNotification(AlertManager.ALERT_STALE_ID))
     }
 
