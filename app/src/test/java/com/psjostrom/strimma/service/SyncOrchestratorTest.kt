@@ -64,9 +64,13 @@ class SyncOrchestratorTest {
         db = Room.inMemoryDatabaseBuilder(context, StrimmaDatabase::class.java)
             .allowMainThreadQueries()
             .build()
-        settings = SettingsRepository(context, WidgetSettingsRepository(context), createTestDataStore())
-        // Cancelled in @After so eager tickers (AlertManager, WorkoutModeManager) don't leak.
+        // Cancelled in @After so DataStore and eager tickers don't leak.
         managerScope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+        settings = SettingsRepository(
+            context,
+            WidgetSettingsRepository(context),
+            createTestDataStore(managerScope),
+        )
 
         val poller = FakeCalendarPoller()
         val clock = MutableClock(System.currentTimeMillis())
