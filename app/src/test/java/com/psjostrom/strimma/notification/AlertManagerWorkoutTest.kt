@@ -46,6 +46,7 @@ class AlertManagerWorkoutTest {
         val alertManager = AlertManager(context, settings, manager, backgroundScope)
         val notificationManager = context.getSystemService(NotificationManager::class.java)
         alertManager.createChannels()
+        notificationManager.cancelAll()
         return Rig(context, settings, manager, alertManager, notificationManager, clock)
     }
 

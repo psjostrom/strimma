@@ -1,7 +1,10 @@
 package com.psjostrom.strimma.data
 
 import android.content.Context
+import androidx.datastore.core.DataMigration
+import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.preferencesOf
 import androidx.test.core.app.ApplicationProvider
 import com.psjostrom.strimma.createTestDataStore
@@ -23,6 +26,22 @@ class SettingsRepositoryExerciseAlertTest {
     private fun kotlinx.coroutines.test.TestScope.makeFixture(): SettingsRepository {
         val context = ApplicationProvider.getApplicationContext<Context>()
         return SettingsRepository(context, WidgetSettingsRepository(context), createTestDataStore(this))
+    }
+
+    private fun kotlinx.coroutines.test.TestScope.makeMigratedFixture(
+        legacyPreferences: Preferences,
+    ): Pair<SettingsRepository, DataStore<Preferences>> {
+        val seedLegacyPreferences = object : DataMigration<Preferences> {
+            override suspend fun shouldMigrate(currentData: Preferences) = true
+            override suspend fun migrate(currentData: Preferences) = legacyPreferences
+            override suspend fun cleanUp() = Unit
+        }
+        val dataStore = createTestDataStore(
+            this,
+            migrations = listOf(seedLegacyPreferences, ExerciseAlertSettingsMigration),
+        )
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        return SettingsRepository(context, WidgetSettingsRepository(context), dataStore) to dataStore
     }
 
     @Test
@@ -84,18 +103,19 @@ class SettingsRepositoryExerciseAlertTest {
     }
 
     @Test
-    fun `import without exercise fields leaves existing exercise protocol untouched`() = runTest {
+    fun `v2 import copies regular enablement into exercise protocol`() = runTest {
         val settings = makeFixture()
-        settings.setExerciseAlertLowEnabled(false)
+        settings.setExerciseAlertLowEnabled(true)
         settings.setExerciseAlertLow(120f)
 
         settings.importFromJson(
             JSONObject()
                 .put("version", 2)
-                .put("settings", JSONObject().put("alert_low_enabled", true))
+                .put("settings", JSONObject().put("alert_low_enabled", false))
                 .toString()
         )
 
+        assertFalse(settings.alertLowEnabled.first())
         assertFalse(settings.exerciseAlertLowEnabled.first())
         assertEquals(120f, settings.exerciseAlertLow.first())
     }
@@ -203,8 +223,7 @@ class SettingsRepositoryExerciseAlertTest {
 
     @Test
     fun `exercise settings migration copies regular enablement and marks initialization`() = runTest {
-        val migration = ExerciseAlertSettingsMigration
-        val migrated = migration.migrate(
+        val (settings, dataStore) = makeMigratedFixture(
             preferencesOf(
                 booleanPreferencesKey("alert_low_enabled") to false,
                 booleanPreferencesKey("alert_high_enabled") to false,
@@ -215,45 +234,47 @@ class SettingsRepositoryExerciseAlertTest {
                 booleanPreferencesKey("alert_stale_enabled") to false,
             )
         )
+        val protocol = settings.exerciseAlertProtocol.first()
 
-        assertFalse(migrated[booleanPreferencesKey("exercise_alert_low_enabled")]!!)
-        assertFalse(migrated[booleanPreferencesKey("exercise_alert_high_enabled")]!!)
-        assertFalse(migrated[booleanPreferencesKey("exercise_alert_urgent_low_enabled")]!!)
-        assertFalse(migrated[booleanPreferencesKey("exercise_alert_urgent_high_enabled")]!!)
-        assertFalse(migrated[booleanPreferencesKey("exercise_alert_low_soon_enabled")]!!)
-        assertFalse(migrated[booleanPreferencesKey("exercise_alert_high_soon_enabled")]!!)
-        assertFalse(migrated[booleanPreferencesKey("exercise_alert_stale_enabled")]!!)
-        assertTrue(migrated[booleanPreferencesKey("exercise_alerts_initialized")]!!)
-        assertFalse(ExerciseAlertSettingsMigration.shouldMigrate(migrated))
+        assertFalse(protocol.lowEnabled)
+        assertFalse(protocol.highEnabled)
+        assertFalse(protocol.urgentLowEnabled)
+        assertFalse(protocol.urgentHighEnabled)
+        assertFalse(protocol.lowSoonEnabled)
+        assertFalse(protocol.highSoonEnabled)
+        assertFalse(protocol.staleEnabled)
+        assertFalse(ExerciseAlertSettingsMigration.shouldMigrate(dataStore.data.first()))
     }
 
     @Test
     fun `exercise settings migration uses regular defaults when values are absent`() = runTest {
-        val migrated = ExerciseAlertSettingsMigration.migrate(preferencesOf())
+        val (settings, dataStore) = makeMigratedFixture(preferencesOf())
+        val protocol = settings.exerciseAlertProtocol.first()
 
-        assertTrue(migrated[booleanPreferencesKey("exercise_alert_low_enabled")]!!)
-        assertTrue(migrated[booleanPreferencesKey("exercise_alert_high_enabled")]!!)
-        assertTrue(migrated[booleanPreferencesKey("exercise_alert_urgent_low_enabled")]!!)
-        assertTrue(migrated[booleanPreferencesKey("exercise_alert_urgent_high_enabled")]!!)
-        assertTrue(migrated[booleanPreferencesKey("exercise_alert_low_soon_enabled")]!!)
-        assertTrue(migrated[booleanPreferencesKey("exercise_alert_high_soon_enabled")]!!)
-        assertTrue(migrated[booleanPreferencesKey("exercise_alert_stale_enabled")]!!)
+        assertTrue(protocol.lowEnabled)
+        assertTrue(protocol.highEnabled)
+        assertTrue(protocol.urgentLowEnabled)
+        assertTrue(protocol.urgentHighEnabled)
+        assertTrue(protocol.lowSoonEnabled)
+        assertTrue(protocol.highSoonEnabled)
+        assertTrue(protocol.staleEnabled)
+        assertFalse(ExerciseAlertSettingsMigration.shouldMigrate(dataStore.data.first()))
     }
 
     @Test
     fun `exercise settings migration does not overwrite initialized exercise values`() = runTest {
         val marker = booleanPreferencesKey("exercise_alerts_initialized")
         val exerciseLow = booleanPreferencesKey("exercise_alert_low_enabled")
-        val current = preferencesOf(
-            booleanPreferencesKey("alert_low_enabled") to false,
-            exerciseLow to true,
-            marker to true,
+        val (settings, dataStore) = makeMigratedFixture(
+            preferencesOf(
+                booleanPreferencesKey("alert_low_enabled") to false,
+                exerciseLow to true,
+                marker to true,
+            )
         )
+        val protocol = settings.exerciseAlertProtocol.first()
 
-        assertFalse(ExerciseAlertSettingsMigration.shouldMigrate(current))
-        val migrated = ExerciseAlertSettingsMigration.migrate(current)
-
-        assertTrue(migrated[exerciseLow]!!)
-        assertTrue(migrated[marker]!!)
+        assertTrue(protocol.lowEnabled)
+        assertFalse(ExerciseAlertSettingsMigration.shouldMigrate(dataStore.data.first()))
     }
 }

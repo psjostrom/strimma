@@ -1,6 +1,7 @@
 package com.psjostrom.strimma
 
 import androidx.datastore.core.DataStore
+import androidx.datastore.core.DataMigration
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import kotlinx.coroutines.CoroutineScope
@@ -14,9 +15,10 @@ import java.io.File
  * (avoids hangs from Dispatchers.IO inside runTest's virtual time).
  */
 fun createTestDataStore(
-    scope: CoroutineScope = CoroutineScope(Dispatchers.IO)
+    scope: CoroutineScope = CoroutineScope(Dispatchers.IO),
+    migrations: List<DataMigration<Preferences>> = emptyList(),
 ): DataStore<Preferences> {
     val file = File.createTempFile("test_settings", ".preferences_pb")
     file.deleteOnExit()
-    return PreferenceDataStoreFactory.create(scope = scope) { file }
+    return PreferenceDataStoreFactory.create(migrations = migrations, scope = scope) { file }
 }
