@@ -152,6 +152,9 @@
     <!-- Alerts Settings -->
     <string name="settings_alerts_title">Larm</string>
     <string name="settings_alerts_section">Larm</string>
+    <string name="settings_alerts_exercise_section">Tr\u00E4ningslarm</string>
+    <string name="settings_alerts_exercise_desc">Anv\u00E4nds n\u00E4r tr\u00E4ningsl\u00E4get \u00E4r aktivt. L\u00E5g och h\u00F6g definierar ocks\u00E5 tr\u00E4ningsdiagrammets intervall.</string>
+    <string name="settings_alerts_behavior_section">Larmbeteende</string>
     <string name="settings_alerts_tap_sound">Tryck p\u00E5 \"Ljud\" f\u00F6r att v\u00E4lja ringsignal, vibration och \u00E5sidos\u00E4ttningsinst\u00E4llningar per larm.</string>
     <string name="settings_alerts_urgent_low">Akut l\u00E5gt</string>
     <string name="settings_alerts_urgent_low_threshold">Akut l\u00E5gt (%1$s)</string>
@@ -529,14 +532,8 @@
         <item quantity="one">Auto-av efter %1$d timme</item>
         <item quantity="other">Auto-av efter %1$d timmar</item>
     </plurals>
-    <string name="workout_mode_thresholds_header">Tr\u00E4ningsgr\u00E4nser</string>
-    <string name="workout_mode_threshold_low">L\u00E5g</string>
-    <string name="workout_mode_threshold_urgent_low">Akut l\u00E5g</string>
-    <string name="workout_mode_threshold_high">H\u00F6g</string>
-    <string name="workout_mode_threshold_urgent_high">Akut h\u00F6g</string>
-    <string name="workout_mode_reset_defaults">\u00C5terst\u00E4ll standard</string>
-    <string name="workout_mode_settings_info">Aktivt under tr\u00E4ning. Ers\u00E4tter b\u00E5de dina larmgr\u00E4nser och m\u00E5lintervallet i graferna. Tystar sensor-stale-larm endast de f\u00F6rsta 30 minuterna \u2014 efter det larmar de igen \u00E4ven om l\u00E4get fortfarande \u00E4r p\u00E5. Aktiveras fr\u00E5n MainScreen-knappen eller schemalagda kalenderh\u00E4ndelser.</string>
-    <string name="workout_mode_threshold_order_error">Gr\u00E4nserna m\u00E5ste uppfylla: akut l\u00E5g \u2264 l\u00E5g \u2264 h\u00F6g \u2264 akut h\u00F6g.</string>
+    <string name="workout_mode_settings_info">Tr\u00E4ningslarm konfigureras under Inst\u00E4llningar \u203A Larm \u203A Tr\u00E4ningslarm. L\u00E5g och h\u00F6g definierar ocks\u00E5 tr\u00E4ningsdiagrammets intervall.</string>
+    <string name="exercise_alert_threshold_order_error">Tr\u00E4ningslarmens gr\u00E4nser m\u00E5ste uppfylla: akut l\u00E5g \u2264 l\u00E5g \u2264 h\u00F6g \u2264 akut h\u00F6g.</string>
     <string name="alert_workout_prefix">Tr\u00E4ning \u00B7 %1$s</string>
     <string name="widget_workout_indicator">TR\u00C4NING</string>
 

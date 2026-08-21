@@ -135,8 +135,8 @@ fun AlertBlock(
     onThresholdChange: (Float) -> Unit,
     thresholdLabel: String,
     glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
-    channelId: String,
-    onOpenSound: (String) -> Unit,
+    channelId: String? = null,
+    onOpenSound: ((String) -> Unit)? = null,
     textColor: Color
 ) {
     Row(
@@ -160,9 +160,10 @@ fun AlertBlock(
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
         )
-        TextButton(onClick = { onOpenSound(channelId) }) {
-            Text(stringResource(R.string.common_sound), color = InRange, fontSize = 13.sp)
+        if (channelId != null && onOpenSound != null) {
+            TextButton(onClick = { onOpenSound(channelId) }) {
+                Text(stringResource(R.string.common_sound), color = InRange, fontSize = 13.sp)
+            }
         }
     }
 }
-

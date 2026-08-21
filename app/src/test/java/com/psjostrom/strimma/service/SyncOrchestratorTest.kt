@@ -28,16 +28,16 @@ import com.psjostrom.strimma.update.UpdateChecker
 import com.psjostrom.strimma.webserver.LocalWebServer
 import com.psjostrom.strimma.widget.WidgetSettingsRepository
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -50,23 +50,36 @@ import org.robolectric.RobolectricTestRunner
  * stubbed via [SilentNightscoutClient], which always returns "no data" so the
  * launched coroutines exit cleanly without any real HTTP calls.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 class SyncOrchestratorTest {
 
-    private lateinit var db: StrimmaDatabase
-    private lateinit var settings: SettingsRepository
-    private lateinit var managerScope: CoroutineScope
-    private lateinit var orchestrator: SyncOrchestrator
+    private data class Fixture(
+        val db: StrimmaDatabase,
+        val settings: SettingsRepository,
+        val managerScope: CoroutineScope,
+        val orchestrator: SyncOrchestrator,
+    ) {
+        fun close() {
+            orchestrator.stop()
+            managerScope.cancel()
+            db.close()
+        }
+    }
 
-    @Before
-    fun setUp() {
+    private fun TestScope.makeFixture(): Fixture {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        db = Room.inMemoryDatabaseBuilder(context, StrimmaDatabase::class.java)
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val db = Room.inMemoryDatabaseBuilder(context, StrimmaDatabase::class.java)
             .allowMainThreadQueries()
+            .setQueryCoroutineContext(dispatcher)
             .build()
-        settings = SettingsRepository(context, WidgetSettingsRepository(context), createTestDataStore())
-        // Cancelled in @After so eager tickers (AlertManager, WorkoutModeManager) don't leak.
-        managerScope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+        val managerScope = CoroutineScope(SupervisorJob() + dispatcher)
+        val settings = SettingsRepository(
+            context,
+            WidgetSettingsRepository(context),
+            createTestDataStore(this),
+        )
 
         val poller = FakeCalendarPoller()
         val clock = MutableClock(System.currentTimeMillis())
@@ -76,7 +89,7 @@ class SyncOrchestratorTest {
         val healthConnect = HealthConnectManager(context)
 
         val pusher = NightscoutPusher(
-            nsClient, db.readingDao(), settings, alertManager, Dispatchers.Unconfined
+            nsClient, db.readingDao(), settings, alertManager, dispatcher
         )
         val tidepoolUploader = TidepoolUploader(
             context, TidepoolClient(), TidepoolAuthManager(context, settings), db.readingDao(), settings
@@ -87,63 +100,66 @@ class SyncOrchestratorTest {
         val nightscoutPuller = NightscoutPuller(nsClient, db.readingDao(), settings)
         val updateChecker = UpdateChecker()
 
-        orchestrator = SyncOrchestrator(
+        val orchestrator = SyncOrchestrator(
             pusher, tidepoolUploader,
             db.readingDao(), db.treatmentDao(), db.exerciseDao(),
             settings,
             treatmentSyncer, localWebServer, exerciseSyncer,
-            nightscoutPuller, updateChecker, Dispatchers.Unconfined
+            nightscoutPuller, updateChecker, dispatcher
         )
+        return Fixture(db, settings, managerScope, orchestrator)
     }
 
-    @After
-    fun tearDown() {
-        orchestrator.stop()
-        managerScope.cancel()
-        db.close()
-    }
-
-    @Test
-    fun `start sets started flag`() {
-        assertFalse(orchestrator.started)
-        orchestrator.start()
-        assertTrue(orchestrator.started)
+    private fun runFixtureTest(block: suspend TestScope.(Fixture) -> Unit) = runTest {
+        val fixture = makeFixture()
+        try {
+            block(fixture)
+        } finally {
+            fixture.close()
+        }
     }
 
     @Test
-    fun `start is idempotent — second call does not throw or change state`() {
-        orchestrator.start()
-        assertTrue(orchestrator.started)
+    fun `start sets started flag`() = runFixtureTest { rig ->
+        assertFalse(rig.orchestrator.started)
+        rig.orchestrator.start()
+        assertTrue(rig.orchestrator.started)
+    }
+
+    @Test
+    fun `start is idempotent — second call does not throw or change state`() = runFixtureTest { rig ->
+        rig.orchestrator.start()
+        assertTrue(rig.orchestrator.started)
         // A stray double-call must not duplicate the periodic loops or stack
         // two DataStore collectors. The guard inside start() makes it a no-op.
-        orchestrator.start()
-        assertTrue(orchestrator.started)
+        rig.orchestrator.start()
+        assertTrue(rig.orchestrator.started)
     }
 
     @Test
-    fun `stop clears started flag`() {
-        orchestrator.start()
-        orchestrator.stop()
-        assertFalse(orchestrator.started)
+    fun `stop clears started flag`() = runFixtureTest { rig ->
+        rig.orchestrator.start()
+        rig.orchestrator.stop()
+        assertFalse(rig.orchestrator.started)
     }
 
     @Test
-    fun `stop then start works — scope is rebuilt for re-entry`() {
-        orchestrator.start()
-        orchestrator.stop()
-        assertFalse(orchestrator.started)
+    fun `stop then start works — scope is rebuilt for re-entry`() = runFixtureTest { rig ->
+        rig.orchestrator.start()
+        rig.orchestrator.stop()
+        assertFalse(rig.orchestrator.started)
         // After stop(), the scope was cancelled and rebuilt. A fresh start()
         // must succeed — the singleton survives service teardown and is reused
         // when StrimmaService is re-created (e.g. via START_STICKY).
-        orchestrator.start()
-        assertTrue(orchestrator.started)
+        rig.orchestrator.start()
+        assertTrue(rig.orchestrator.started)
     }
 
     @Test
-    fun `stop without start is safe`() {
-        assertFalse(orchestrator.started)
-        orchestrator.stop()
-        assertFalse(orchestrator.started)
+    fun `stop without start is safe`() = runFixtureTest { rig ->
+        assertFalse(rig.orchestrator.started)
+        rig.orchestrator.stop()
+        assertFalse(rig.orchestrator.started)
     }
 
     /**
@@ -153,23 +169,21 @@ class SyncOrchestratorTest {
      * = 1825 days), so a regression that flipped the default to any finite
      * value would still prune it — only `INDEFINITE` survives.
      *
-     * Background loops launched from start() run on Dispatchers.Unconfined and
-     * execute their first body synchronously up to the first suspend; the
-     * `runCurrent()` below drains any continuation that picks up after the
-     * DataStore read so the assertion isn't racing the prune.
+     * Background loops and DataStore share this test's scheduler, so
+     * `runCurrent()` deterministically completes the initial prune.
      */
     @Test
-    fun `start with default retention keeps data older than the longest finite policy`() = runTest {
+    fun `start with default retention keeps data older than the longest finite policy`() = runFixtureTest { rig ->
         // 6 years — older than FIVE_YEARS (1825 days) so any finite policy would prune it.
         val ancient = System.currentTimeMillis() - 6L * 365 * 24 * 60 * 60 * 1000
-        seedAncient(ancient)
+        rig.seedAncient(ancient)
 
-        orchestrator.start()
+        rig.orchestrator.start()
         runCurrent()
 
-        assertEquals(1, db.readingDao().since(0).size)
-        assertEquals(1, db.treatmentDao().allSince(0).size)
-        assertEquals(1, db.exerciseDao().getSessionsInRange(0, Long.MAX_VALUE).size)
+        assertEquals(1, rig.db.readingDao().since(0).size)
+        assertEquals(1, rig.db.treatmentDao().allSince(0).size)
+        assertEquals(1, rig.db.exerciseDao().getSessionsInRange(0, Long.MAX_VALUE).size)
     }
 
     /**
@@ -180,18 +194,18 @@ class SyncOrchestratorTest {
      * surprises.
      */
     @Test
-    fun `start with bounded retention prunes ancient data across all three tables`() = runTest {
-        settings.setRetentionPolicy(RetentionPolicy.THREE_MONTHS)
+    fun `start with bounded retention prunes ancient data across all three tables`() = runFixtureTest { rig ->
+        rig.settings.setRetentionPolicy(RetentionPolicy.THREE_MONTHS)
 
         val ancient = System.currentTimeMillis() - 1000L * 24 * 60 * 60 * 1000 // ~3 years ago
-        seedAncient(ancient)
+        rig.seedAncient(ancient)
 
-        orchestrator.start()
+        rig.orchestrator.start()
         runCurrent()
 
-        assertEquals(0, db.readingDao().since(0).size)
-        assertEquals(0, db.treatmentDao().allSince(0).size)
-        assertEquals(0, db.exerciseDao().getSessionsInRange(0, Long.MAX_VALUE).size)
+        assertEquals(0, rig.db.readingDao().since(0).size)
+        assertEquals(0, rig.db.treatmentDao().allSince(0).size)
+        assertEquals(0, rig.db.exerciseDao().getSessionsInRange(0, Long.MAX_VALUE).size)
     }
 
     /**
@@ -201,30 +215,30 @@ class SyncOrchestratorTest {
      * of `unpushed()` keeps batch-failing and starves all newer pushes.
      */
     @Test
-    fun `start always prunes stale unpushed rows even with INDEFINITE retention`() = runTest {
-        settings.setRetentionPolicy(RetentionPolicy.INDEFINITE)
+    fun `start always prunes stale unpushed rows even with INDEFINITE retention`() = runFixtureTest { rig ->
+        rig.settings.setRetentionPolicy(RetentionPolicy.INDEFINITE)
 
         val now = System.currentTimeMillis()
         val staleUnpushed = now - 35L * 24 * 60 * 60 * 1000 // 35 days old, never pushed
         val freshUnpushed = now - 60_000L // 1 minute old, never pushed
-        db.readingDao().insert(
+        rig.db.readingDao().insert(
             GlucoseReading(ts = staleUnpushed, sgv = 100, direction = "Flat", delta = 0.0, pushed = 0)
         )
-        db.readingDao().insert(
+        rig.db.readingDao().insert(
             GlucoseReading(ts = freshUnpushed, sgv = 110, direction = "Flat", delta = 0.0, pushed = 0)
         )
 
-        orchestrator.start()
+        rig.orchestrator.start()
         runCurrent()
 
         // Stale unpushed gone, fresh unpushed kept — even though the user
         // never opted into a finite retention policy.
-        val survivors = db.readingDao().since(0)
+        val survivors = rig.db.readingDao().since(0)
         assertEquals(1, survivors.size)
         assertEquals(110, survivors[0].sgv)
     }
 
-    private suspend fun seedAncient(ts: Long) {
+    private suspend fun Fixture.seedAncient(ts: Long) {
         db.readingDao().insert(
             GlucoseReading(ts = ts, sgv = 120, direction = "Flat", delta = 0.0, pushed = 1)
         )
