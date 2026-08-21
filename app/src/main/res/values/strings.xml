@@ -200,6 +200,9 @@
     <!-- Alerts Settings -->
     <string name="settings_alerts_title">Alerts</string>
     <string name="settings_alerts_section">Alerts</string>
+    <string name="settings_alerts_exercise_section">Exercise Alerts</string>
+    <string name="settings_alerts_exercise_desc">Used while Workout Mode is active. Low and High also define the exercise graph range.</string>
+    <string name="settings_alerts_behavior_section">Alert Behavior</string>
     <string name="settings_alerts_tap_sound">Tap "Sound" to choose ringtone, vibration, and override settings per alarm.</string>
     <string name="settings_alerts_urgent_low">Urgent Low</string>
     <string name="settings_alerts_urgent_low_threshold">Urgent Low (%1$s)</string>
@@ -583,14 +586,8 @@
         <item quantity="one">Auto-off after %1$d hour</item>
         <item quantity="other">Auto-off after %1$d hours</item>
     </plurals>
-    <string name="workout_mode_thresholds_header">Workout thresholds</string>
-    <string name="workout_mode_threshold_low">Low</string>
-    <string name="workout_mode_threshold_urgent_low">Urgent low</string>
-    <string name="workout_mode_threshold_high">High</string>
-    <string name="workout_mode_threshold_urgent_high">Urgent high</string>
-    <string name="workout_mode_reset_defaults">Reset to defaults</string>
-    <string name="workout_mode_settings_info">Active during exercise. Replaces both your alert thresholds and the in-range band on graphs. Suppresses stale-sensor alerts for the first 30 minutes only — alerts re-arm after that even if mode stays on. Triggers from the MainScreen toggle or scheduled calendar events.</string>
-    <string name="workout_mode_threshold_order_error">Thresholds must satisfy: urgent low ≤ low ≤ high ≤ urgent high.</string>
+    <string name="workout_mode_settings_info">Exercise alerts are configured under Settings \u203A Alerts \u203A Exercise Alerts. Low and High also define the exercise graph range.</string>
+    <string name="exercise_alert_threshold_order_error">Exercise alert thresholds must satisfy: urgent low ≤ low ≤ high ≤ urgent high.</string>
 
     <!-- Alert title prefix when fired during workout mode (so "Urgent Low" at 5.0 mmol/L is unambiguous) -->
     <string name="alert_workout_prefix">Workout · %1$s</string>

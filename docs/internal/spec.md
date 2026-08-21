@@ -529,7 +529,7 @@ Not built: graph appearance customization (dot size, line thickness).
 
 ## 11.5 Workout Mode
 
-A runtime state that, while On, replaces both the in-range band (`bgLow` / `bgHigh`) and the alert thresholds (`alertLow` / `alertHigh` / `alertUrgentLow` / `alertUrgentHigh`) with a separate set of 4 workout-mode thresholds. Also suppresses stale-sensor alerts for the **first 30 minutes** of each session — sensor contact loss at workout start is expected; after 30 min, alerts re-arm even while workout mode stays on.
+A runtime state that, while On, selects the separate Exercise alert protocol (thresholds plus enablement toggles) and uses its Low/High values for the live in-range band. When Off, the Regular protocol and standard `bgLow` / `bgHigh` display bounds remain active. Stale-sensor alerts use the selected protocol's toggle. Workout Mode suppresses stale alerts for its first 30 minutes, then applies the normal 10+ minute rule.
 
 **State machine.** Owned by `WorkoutModeManager` (Hilt singleton, package `data/workout/`). Combines DataStore-backed manual state, the existing `CalendarPoller.nextEvent` flow filtered to "currently active," and a single shared 30-second ticker. Manual action always wins over calendar.
 
@@ -539,15 +539,15 @@ A runtime state that, while On, replaces both the in-range band (`bgLow` / `bgHi
 
 **Triggers.** Manual toggle (MainScreen runner icon, MainScreen workout pill, or foreground-notification action button) or active calendar event. Activity Recognition and notification-listener inference are out of scope for v1.
 
-**Settings.** `Settings → Exercise → Workout mode`. Configurable thresholds (default 6 / 5 / 14 / 16 mmol) with ordering validation (`urgent_low ≤ low ≤ high ≤ urgent_high`) and safety timeout (default 3 h, range 1–12 h). `Reset to defaults` restores the four thresholds but **deliberately leaves auto-off untouched**.
+**Settings.** `Settings → Alerts` contains three sections: `Alerts` for the independent Regular protocol, `Exercise Alerts` for the independent Exercise protocol, and `Alert Behavior` for shared Alert Snooze Duration and Cooldown controls. Exercise Low/High provide the live graph bounds while Workout Mode is on; Exercise thresholds use ordering validation (`urgent_low ≤ low ≤ high ≤ urgent_high`). `Settings → Exercise → Workout mode` contains only the manual safety timeout (default 3 h, range 1–12 h).
 
-**Effective thresholds.** A single `EffectiveThresholds` value type (display low/high + alert low/high/urgentLow/urgentHigh) is exposed by the manager. Consumers that need synchronous access call the suspending `currentEffectiveThresholds()` getter, which waits past the placeholder seed for real data — `AlertManager`, `LocalWebServer`, `StrimmaWidget`. `StrimmaService` and `MainViewModel` consume the StateFlow with a placeholder filter and seed-from-defaults fallback. `StoryViewModel` does **NOT** consume `EffectiveThresholds` — historical analysis must use standard `settings.bgLow`/`bgHigh` directly so monthly TIR is invariant to the user's current workout-mode state.
+**Effective thresholds.** A single `EffectiveThresholds` value type (display low/high + the selected typed `alertProtocol` + `workoutModeOn`) is exposed by the manager. In regular mode, display bounds come from `bgLow`/`bgHigh` and the regular alert protocol is selected; in workout mode, exercise alert low/high provide both display bounds and the selected exercise protocol. Consumers that need synchronous access call the suspending `currentEffectiveThresholds()` getter, which waits past the placeholder seed for real data — `AlertManager`, `LocalWebServer`, `StrimmaWidget`. `StrimmaService` and `MainViewModel` consume the StateFlow with a placeholder filter and seed-from-defaults fallback. `StoryViewModel` does **NOT** consume `EffectiveThresholds` — historical analysis must use standard `settings.bgLow`/`bgHigh` directly so monthly TIR is invariant to the user's current workout-mode state.
 
-**Alerts.** `AlertManager.checkReading` prefixes alert titles with `Workout · ` when workout mode is on, so an "Urgent Low" at e.g. 5.0 mmol/L (workout urgent_low) is distinguishable from the standard severity. `checkStale` uses `currentSessionElapsedMs()` to enforce the 30-minute suppression bound.
+**Alerts.** `AlertManager.checkReading` resolves one `EffectiveThresholds` snapshot per reading, passes its selected `alertProtocol` through threshold and predictive checks, and prefixes alert titles with `Workout · ` when workout mode is on, so an "Urgent Low" at e.g. 5.0 mmol/L (Exercise urgent_low) is distinguishable from the standard severity. Regular and Exercise protocols use the same notification channels; only Regular settings rows expose channel Sound controls. `checkStale` resolves the selected protocol's stale toggle, suppresses stale alerts for the first 30 minutes of a workout, and then applies the normal 10+ minute rule.
 
-**Notification refresh.** `StrimmaService.observeWorkoutModeForNotificationRefresh` rebuilds the notification on every `state` transition AND re-runs `checkStale` so a stuck stale alert clears immediately on Off→On. The 60-second stale-check loop also rebuilds the notification while workout mode is on so the elapsed time advances visibly.
+**Notification refresh.** `StrimmaService.observeWorkoutModeForNotificationRefresh` rebuilds the notification on every `state` transition AND re-runs `checkStale` so the selected stale-alert protocol is applied immediately. The 60-second stale-check loop also rebuilds the notification while workout mode is on so the elapsed time advances visibly.
 
-**User guide:** See `docs/guide/workout-mode.md`.
+**User guide:** See `docs/guide/alerts.md`, `docs/guide/workout-mode.md`, and `docs/guide/exercise.md`.
 
 ---
 
@@ -652,7 +652,7 @@ When Strimma is validated, flip the default. When Strimma is the sole data sourc
 | Graph         | Custom Compose Canvas + shared GraphColors     | Dot+line+prediction graphs, shared color/range logic                 |
 | Widget        | Jetpack Glance                                 | Compose-based widget API with AppWidgetManager updates               |
 | Notifications | NotificationCompat + RemoteViews               | Custom layouts with bitmap graphs                                    |
-| Alerts        | 5 notification channels                        | Per-alarm sound/vibration/DND via Android channel settings           |
+| Alerts        | 8 notification channels                        | Per-alarm sound/vibration/DND via Android channel settings           |
 | Testing       | JUnit 4 + Robolectric 4.16 + Room in-memory    | Unit + integration on JVM, SDK 37, no emulator                       |
 | Java          | 21 (Zulu)                                      | Repo-specific via `gradle.properties`, needed for Robolectric SDK 37 |
 | Build         | Gradle 9.x + AGP 9.x                           | Current                                                              |
@@ -678,7 +678,7 @@ For generic Nightscout setups, no backend changes are needed — Strimma uses th
 
 | Feature                 | Description                                                                                                                                                                                                                                                                                         |
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Alerts**              | 5 alert types (urgent low, low, high, urgent high, stale) with per-alarm notification channels, configurable thresholds, persistent snooze, DND bypass for urgent alerts                                                                                                                            |
+| **Alerts**              | 8 alert types (urgent low, low, high, urgent high, low soon, high soon, stale, push failed) with independent Regular and Exercise protocols, shared per-alarm notification channels, configurable thresholds, persistent snooze, DND bypass for urgent alerts |
 | **Prediction**          | Dampened velocity extrapolation on last 12 min of readings with exponential time decay (DECAY=0.35). Weighted linear regression slope, dampened forward projection. Renders prediction line on main graph and notification. "Low in X min" / "High in X min" warning shown in BG header and as dedicated alerts when prediction crosses thresholds. |
 | **Home screen widget**  | Jetpack Glance widget with BG, arrow, delta, mini graph, configurable opacity                                                                                                                                                                                                                       |
 | **Statistics**          | TIR, GMI, average glucose, CV%, coverage — with period selector (24h/7d/14d/30d) and CSV export                                                                                                                                                                                                     |

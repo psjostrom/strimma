@@ -4,14 +4,21 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.notification.SnoozeDuration
+import com.psjostrom.strimma.data.workout.AlertProtocol
 import com.psjostrom.strimma.notification.AlertCategory
 import com.psjostrom.strimma.notification.AlertManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 
 @Suppress("TooManyFunctions") // One getter+setter per alert setting
@@ -44,6 +51,20 @@ class AlertsViewModel @Inject constructor(
     val alertHighSoonEnabled: StateFlow<Boolean> = settings.alertHighSoonEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
+    val regularAlertProtocol: StateFlow<AlertProtocol?> = settings.regularAlertProtocol
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            null
+        )
+
+    val exerciseAlertProtocol: StateFlow<AlertProtocol?> = settings.exerciseAlertProtocol
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            null
+        )
+
     val alertCooldownMinutes: StateFlow<Int> = settings.alertCooldownMinutes
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
@@ -52,6 +73,10 @@ class AlertsViewModel @Inject constructor(
 
     val pauseLowExpiryMs: StateFlow<Long?> = alertManager.pauseLowExpiryMs
     val pauseHighExpiryMs: StateFlow<Long?> = alertManager.pauseHighExpiryMs
+
+    private val _validationError = MutableSharedFlow<ValidationError>(extraBufferCapacity = 1)
+    val validationError: SharedFlow<ValidationError> = _validationError
+    private val exerciseThresholdMutex = Mutex()
 
     /**
      * Single source of truth for "is the active pause unified?". Equal to the shared
@@ -89,6 +114,66 @@ class AlertsViewModel @Inject constructor(
     fun setAlertCooldownMinutes(minutes: Int) = viewModelScope.launch { settings.setAlertCooldownMinutes(minutes) }
     fun setAlertSnoozeDuration(duration: SnoozeDuration) = viewModelScope.launch { settings.setAlertSnoozeDuration(duration) }
 
+    fun setExerciseAlertLowEnabled(enabled: Boolean) =
+        viewModelScope.launch { settings.setExerciseAlertLowEnabled(enabled) }
+
+    fun setExerciseAlertHighEnabled(enabled: Boolean) =
+        viewModelScope.launch { settings.setExerciseAlertHighEnabled(enabled) }
+
+    fun setExerciseAlertUrgentLowEnabled(enabled: Boolean) =
+        viewModelScope.launch { settings.setExerciseAlertUrgentLowEnabled(enabled) }
+
+    fun setExerciseAlertUrgentHighEnabled(enabled: Boolean) =
+        viewModelScope.launch { settings.setExerciseAlertUrgentHighEnabled(enabled) }
+
+    fun setExerciseAlertLowSoonEnabled(enabled: Boolean) =
+        viewModelScope.launch { settings.setExerciseAlertLowSoonEnabled(enabled) }
+
+    fun setExerciseAlertHighSoonEnabled(enabled: Boolean) =
+        viewModelScope.launch { settings.setExerciseAlertHighSoonEnabled(enabled) }
+
+    fun setExerciseAlertStaleEnabled(enabled: Boolean) =
+        viewModelScope.launch { settings.setExerciseAlertStaleEnabled(enabled) }
+
+    fun setExerciseAlertLow(value: Float) = updateExerciseThreshold(low = value) {
+        settings.setExerciseAlertLow(value)
+    }
+
+    fun setExerciseAlertHigh(value: Float) = updateExerciseThreshold(high = value) {
+        settings.setExerciseAlertHigh(value)
+    }
+
+    fun setExerciseAlertUrgentLow(value: Float) = updateExerciseThreshold(urgentLow = value) {
+        settings.setExerciseAlertUrgentLow(value)
+    }
+
+    fun setExerciseAlertUrgentHigh(value: Float) = updateExerciseThreshold(urgentHigh = value) {
+        settings.setExerciseAlertUrgentHigh(value)
+    }
+
+    private fun updateExerciseThreshold(
+        urgentLow: Float? = null,
+        low: Float? = null,
+        high: Float? = null,
+        urgentHigh: Float? = null,
+        onValid: suspend () -> Unit,
+    ): Job = viewModelScope.launch {
+        exerciseThresholdMutex.withLock {
+            val current = settings.exerciseAlertProtocol.first()
+            val next = current.copy(
+                urgentLowMgdl = urgentLow ?: current.urgentLowMgdl,
+                lowMgdl = low ?: current.lowMgdl,
+                highMgdl = high ?: current.highMgdl,
+                urgentHighMgdl = urgentHigh ?: current.urgentHighMgdl,
+            )
+            if (next.hasOrderedThresholds()) {
+                onValid()
+            } else {
+                _validationError.tryEmit(ValidationError.Order)
+            }
+        }
+    }
+
     fun openAlertChannelSettings(channelId: String) = alertManager.openChannelSettings(channelId)
 
     fun pauseAlerts(category: AlertCategory, durationMs: Long) {
@@ -106,4 +191,6 @@ class AlertsViewModel @Inject constructor(
     fun cancelAllAlertPauses() {
         alertManager.cancelAllAlerts()
     }
+
+    enum class ValidationError { Order }
 }

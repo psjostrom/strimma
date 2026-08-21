@@ -11,6 +11,7 @@ import com.psjostrom.strimma.data.notification.NotificationActionConfig
 import com.psjostrom.strimma.data.notification.NotificationActionType
 import com.psjostrom.strimma.data.notification.SnoozeCategory
 import com.psjostrom.strimma.data.notification.SnoozeDuration
+import com.psjostrom.strimma.data.workout.AlertProtocol
 import com.psjostrom.strimma.receiver.DebugLog
 import com.psjostrom.strimma.ui.theme.ThemeMode
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -75,10 +76,139 @@ private object SetupCompletedMigration : DataMigration<Preferences> {
     override suspend fun cleanUp() { /* One-shot migration */ }
 }
 
+internal object ExerciseAlertSettingsMigration : DataMigration<Preferences> {
+    internal val KEY_INITIALIZED = booleanPreferencesKey("exercise_alerts_initialized")
+    private val ENABLEMENT_KEYS = listOf(
+        KEY_ALERT_LOW_ENABLED to KEY_EXERCISE_ALERT_LOW_ENABLED,
+        KEY_ALERT_HIGH_ENABLED to KEY_EXERCISE_ALERT_HIGH_ENABLED,
+        KEY_ALERT_URGENT_LOW_ENABLED to KEY_EXERCISE_ALERT_URGENT_LOW_ENABLED,
+        KEY_ALERT_URGENT_HIGH_ENABLED to KEY_EXERCISE_ALERT_URGENT_HIGH_ENABLED,
+        KEY_ALERT_LOW_SOON_ENABLED to KEY_EXERCISE_ALERT_LOW_SOON_ENABLED,
+        KEY_ALERT_HIGH_SOON_ENABLED to KEY_EXERCISE_ALERT_HIGH_SOON_ENABLED,
+        KEY_ALERT_STALE_ENABLED to KEY_EXERCISE_ALERT_STALE_ENABLED,
+    )
+
+    override suspend fun shouldMigrate(currentData: Preferences): Boolean {
+        return KEY_INITIALIZED !in currentData.asMap()
+    }
+
+    override suspend fun migrate(currentData: Preferences): Preferences {
+        if (KEY_INITIALIZED in currentData.asMap()) return currentData
+
+        val mutable = currentData.toMutablePreferences()
+        for ((regularKey, exerciseKey) in ENABLEMENT_KEYS) {
+            mutable[exerciseKey] = currentData[regularKey] ?: true
+        }
+        mutable[KEY_INITIALIZED] = true
+        return mutable.toPreferences()
+    }
+
+    override suspend fun cleanUp() { /* One-shot migration */ }
+}
+
 val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(
     name = "settings",
-    produceMigrations = { listOf(SetupCompletedMigration, MgdlSettingsMigration) }
+    produceMigrations = { listOf(SetupCompletedMigration, MgdlSettingsMigration, ExerciseAlertSettingsMigration) }
 )
+
+// Physical keys stay workout_* for persistence compatibility.
+private val KEY_EXERCISE_ALERT_LOW = floatPreferencesKey("workout_alert_low")
+private val KEY_EXERCISE_ALERT_HIGH = floatPreferencesKey("workout_alert_high")
+private val KEY_EXERCISE_ALERT_URGENT_LOW = floatPreferencesKey("workout_alert_urgent_low")
+private val KEY_EXERCISE_ALERT_URGENT_HIGH = floatPreferencesKey("workout_alert_urgent_high")
+private val KEY_EXERCISE_ALERT_LOW_ENABLED = booleanPreferencesKey("exercise_alert_low_enabled")
+private val KEY_EXERCISE_ALERT_HIGH_ENABLED = booleanPreferencesKey("exercise_alert_high_enabled")
+private val KEY_EXERCISE_ALERT_URGENT_LOW_ENABLED = booleanPreferencesKey("exercise_alert_urgent_low_enabled")
+private val KEY_EXERCISE_ALERT_URGENT_HIGH_ENABLED = booleanPreferencesKey("exercise_alert_urgent_high_enabled")
+private val KEY_EXERCISE_ALERT_LOW_SOON_ENABLED = booleanPreferencesKey("exercise_alert_low_soon_enabled")
+private val KEY_EXERCISE_ALERT_HIGH_SOON_ENABLED = booleanPreferencesKey("exercise_alert_high_soon_enabled")
+private val KEY_EXERCISE_ALERT_STALE_ENABLED = booleanPreferencesKey("exercise_alert_stale_enabled")
+private val KEY_ALERT_LOW_ENABLED = booleanPreferencesKey("alert_low_enabled")
+private val KEY_ALERT_HIGH_ENABLED = booleanPreferencesKey("alert_high_enabled")
+private val KEY_ALERT_URGENT_LOW_ENABLED = booleanPreferencesKey("alert_urgent_low_enabled")
+private val KEY_ALERT_URGENT_HIGH_ENABLED = booleanPreferencesKey("alert_urgent_high_enabled")
+private val KEY_ALERT_LOW_SOON_ENABLED = booleanPreferencesKey("alert_low_soon_enabled")
+private val KEY_ALERT_HIGH_SOON_ENABLED = booleanPreferencesKey("alert_high_soon_enabled")
+private val KEY_ALERT_STALE_ENABLED = booleanPreferencesKey("alert_stale_enabled")
+
+private val EXERCISE_ALERT_THRESHOLD_FIELDS = listOf(
+    "exercise_alert_urgent_low",
+    "exercise_alert_low",
+    "exercise_alert_high",
+    "exercise_alert_urgent_high",
+)
+
+private fun JSONObject.importThreshold(key: String, isV1: Boolean): Float {
+    val value = getDouble(key).toFloat()
+    return if (isV1) Math.round(value * GlucoseUnit.MGDL_FACTOR.toFloat()).toFloat() else value
+}
+
+private fun JSONObject.importExerciseAlertProtocol(isV1: Boolean, current: AlertProtocol): AlertProtocol {
+    fun thresholdOr(key: String, fallback: Float): Float =
+        if (has(key)) importThreshold(key, isV1) else fallback
+
+    val imported = current.copy(
+        urgentLowMgdl = thresholdOr("exercise_alert_urgent_low", current.urgentLowMgdl),
+        lowMgdl = thresholdOr("exercise_alert_low", current.lowMgdl),
+        highMgdl = thresholdOr("exercise_alert_high", current.highMgdl),
+        urgentHighMgdl = thresholdOr("exercise_alert_urgent_high", current.urgentHighMgdl),
+    )
+    if (EXERCISE_ALERT_THRESHOLD_FIELDS.any(::has)) {
+        require(imported.hasOrderedThresholds()) {
+            "Exercise alert thresholds must be ordered urgent low, low, high, urgent high"
+        }
+    }
+    return imported
+}
+
+private fun Preferences.exerciseAlertProtocol(): AlertProtocol = AlertProtocol(
+    urgentLowEnabled = this[KEY_EXERCISE_ALERT_URGENT_LOW_ENABLED] ?: true,
+    lowEnabled = this[KEY_EXERCISE_ALERT_LOW_ENABLED] ?: true,
+    highEnabled = this[KEY_EXERCISE_ALERT_HIGH_ENABLED] ?: true,
+    urgentHighEnabled = this[KEY_EXERCISE_ALERT_URGENT_HIGH_ENABLED] ?: true,
+    urgentLowMgdl = this[KEY_EXERCISE_ALERT_URGENT_LOW]
+        ?: SettingsRepository.DEFAULT_WORKOUT_ALERT_URGENT_LOW,
+    lowMgdl = this[KEY_EXERCISE_ALERT_LOW] ?: SettingsRepository.DEFAULT_WORKOUT_ALERT_LOW,
+    highMgdl = this[KEY_EXERCISE_ALERT_HIGH] ?: SettingsRepository.DEFAULT_WORKOUT_ALERT_HIGH,
+    urgentHighMgdl = this[KEY_EXERCISE_ALERT_URGENT_HIGH]
+        ?: SettingsRepository.DEFAULT_WORKOUT_ALERT_URGENT_HIGH,
+    lowSoonEnabled = this[KEY_EXERCISE_ALERT_LOW_SOON_ENABLED] ?: true,
+    highSoonEnabled = this[KEY_EXERCISE_ALERT_HIGH_SOON_ENABLED] ?: true,
+    staleEnabled = this[KEY_EXERCISE_ALERT_STALE_ENABLED] ?: true,
+)
+
+private val EXERCISE_ALERT_BOOLEAN_FIELDS = listOf(
+    Triple("exercise_alert_low_enabled", KEY_EXERCISE_ALERT_LOW_ENABLED, KEY_ALERT_LOW_ENABLED),
+    Triple("exercise_alert_high_enabled", KEY_EXERCISE_ALERT_HIGH_ENABLED, KEY_ALERT_HIGH_ENABLED),
+    Triple("exercise_alert_urgent_low_enabled", KEY_EXERCISE_ALERT_URGENT_LOW_ENABLED, KEY_ALERT_URGENT_LOW_ENABLED),
+    Triple("exercise_alert_urgent_high_enabled", KEY_EXERCISE_ALERT_URGENT_HIGH_ENABLED, KEY_ALERT_URGENT_HIGH_ENABLED),
+    Triple("exercise_alert_low_soon_enabled", KEY_EXERCISE_ALERT_LOW_SOON_ENABLED, KEY_ALERT_LOW_SOON_ENABLED),
+    Triple("exercise_alert_high_soon_enabled", KEY_EXERCISE_ALERT_HIGH_SOON_ENABLED, KEY_ALERT_HIGH_SOON_ENABLED),
+    Triple("exercise_alert_stale_enabled", KEY_EXERCISE_ALERT_STALE_ENABLED, KEY_ALERT_STALE_ENABLED),
+)
+
+private fun MutablePreferences.importExerciseAlerts(
+    settings: JSONObject,
+    isV1: Boolean,
+    inheritRegularEnablement: Boolean,
+) {
+    val protocol = settings.importExerciseAlertProtocol(isV1, exerciseAlertProtocol())
+    EXERCISE_ALERT_BOOLEAN_FIELDS.forEach { (field, exerciseKey, regularKey) ->
+        when {
+            settings.has(field) -> this[exerciseKey] = settings.getBoolean(field)
+            inheritRegularEnablement -> this[exerciseKey] = this[regularKey] ?: true
+        }
+    }
+    if (settings.has("exercise_alert_low")) this[KEY_EXERCISE_ALERT_LOW] = protocol.lowMgdl
+    if (settings.has("exercise_alert_high")) this[KEY_EXERCISE_ALERT_HIGH] = protocol.highMgdl
+    if (settings.has("exercise_alert_urgent_low")) this[KEY_EXERCISE_ALERT_URGENT_LOW] = protocol.urgentLowMgdl
+    if (settings.has("exercise_alert_urgent_high")) this[KEY_EXERCISE_ALERT_URGENT_HIGH] = protocol.urgentHighMgdl
+    if (inheritRegularEnablement ||
+        (EXERCISE_ALERT_BOOLEAN_FIELDS.map { it.first } + EXERCISE_ALERT_THRESHOLD_FIELDS).any(settings::has)
+    ) {
+        this[ExerciseAlertSettingsMigration.KEY_INITIALIZED] = true
+    }
+}
 
 @Suppress("TooManyFunctions") // One getter+setter per setting
 @Singleton
@@ -135,17 +265,10 @@ class SettingsRepository @Inject constructor(
         private val KEY_BG_HIGH = floatPreferencesKey("bg_high")
         private const val KEY_NIGHTSCOUT_SECRET = "nightscout_secret"
 
-        private val KEY_ALERT_LOW_ENABLED = booleanPreferencesKey("alert_low_enabled")
-        private val KEY_ALERT_HIGH_ENABLED = booleanPreferencesKey("alert_high_enabled")
-        private val KEY_ALERT_URGENT_LOW_ENABLED = booleanPreferencesKey("alert_urgent_low_enabled")
         private val KEY_ALERT_LOW = floatPreferencesKey("alert_low")
         private val KEY_ALERT_HIGH = floatPreferencesKey("alert_high")
         private val KEY_ALERT_URGENT_LOW = floatPreferencesKey("alert_urgent_low")
-        private val KEY_ALERT_URGENT_HIGH_ENABLED = booleanPreferencesKey("alert_urgent_high_enabled")
         private val KEY_ALERT_URGENT_HIGH = floatPreferencesKey("alert_urgent_high")
-        private val KEY_ALERT_STALE_ENABLED = booleanPreferencesKey("alert_stale_enabled")
-        private val KEY_ALERT_LOW_SOON_ENABLED = booleanPreferencesKey("alert_low_soon_enabled")
-        private val KEY_ALERT_HIGH_SOON_ENABLED = booleanPreferencesKey("alert_high_soon_enabled")
         private val KEY_ALERT_COOLDOWN_MINUTES = intPreferencesKey("alert_cooldown_minutes")
         private val KEY_ALERT_SNOOZE_DURATION = stringPreferencesKey("alert_snooze_duration")
         private val KEY_THEME_MODE = stringPreferencesKey("theme_mode")
@@ -201,13 +324,6 @@ class SettingsRepository @Inject constructor(
         private fun exerciseTargetHighKey(name: String) = floatPreferencesKey("exercise_target_high_$name")
         private val KEY_MAX_HEART_RATE = intPreferencesKey("max_heart_rate")
 
-        // --- Workout mode (added for workout-mode feature) ---
-        // Workout thresholds (stored as mg/dL; doubles as both display and alert)
-        private val KEY_WORKOUT_ALERT_LOW = floatPreferencesKey("workout_alert_low")
-        private val KEY_WORKOUT_ALERT_HIGH = floatPreferencesKey("workout_alert_high")
-        private val KEY_WORKOUT_ALERT_URGENT_LOW = floatPreferencesKey("workout_alert_urgent_low")
-        private val KEY_WORKOUT_ALERT_URGENT_HIGH = floatPreferencesKey("workout_alert_urgent_high")
-
         // Defaults: 6.0 / 5.0 / 14.0 / 16.0 mmol → mg/dL via factor 18.0182
         const val DEFAULT_WORKOUT_ALERT_LOW = 108f
         const val DEFAULT_WORKOUT_ALERT_URGENT_LOW = 90f
@@ -262,6 +378,7 @@ class SettingsRepository @Inject constructor(
         private const val DEFAULT_FOLLOWER_POLL_SECONDS = 60
         private const val DEFAULT_CUSTOM_DIA_FLOAT = 5.0f
         private const val DEFAULT_ALERT_COOLDOWN_MINUTES = 0
+        private const val SETTINGS_EXPORT_VERSION = 3
         const val COOLDOWN_MINUTES_MIN = 0
         const val COOLDOWN_MINUTES_MAX = 60
         private const val MINUTES_PER_DAY = 1440
@@ -284,6 +401,22 @@ class SettingsRepository @Inject constructor(
     val alertLowSoonEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_LOW_SOON_ENABLED] ?: true }
     val alertHighSoonEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_HIGH_SOON_ENABLED] ?: true }
 
+    val regularAlertProtocol: Flow<AlertProtocol> = dataStore.data.map { prefs ->
+        AlertProtocol(
+            urgentLowEnabled = prefs[KEY_ALERT_URGENT_LOW_ENABLED] ?: true,
+            lowEnabled = prefs[KEY_ALERT_LOW_ENABLED] ?: true,
+            highEnabled = prefs[KEY_ALERT_HIGH_ENABLED] ?: true,
+            urgentHighEnabled = prefs[KEY_ALERT_URGENT_HIGH_ENABLED] ?: true,
+            urgentLowMgdl = prefs[KEY_ALERT_URGENT_LOW] ?: DEFAULT_ALERT_URGENT_LOW,
+            lowMgdl = prefs[KEY_ALERT_LOW] ?: DEFAULT_ALERT_LOW,
+            highMgdl = prefs[KEY_ALERT_HIGH] ?: DEFAULT_ALERT_HIGH,
+            urgentHighMgdl = prefs[KEY_ALERT_URGENT_HIGH] ?: DEFAULT_ALERT_URGENT_HIGH,
+            lowSoonEnabled = prefs[KEY_ALERT_LOW_SOON_ENABLED] ?: true,
+            highSoonEnabled = prefs[KEY_ALERT_HIGH_SOON_ENABLED] ?: true,
+            staleEnabled = prefs[KEY_ALERT_STALE_ENABLED] ?: true,
+        )
+    }
+
     val alertCooldownMinutes: Flow<Int> = dataStore.data.map {
         (it[KEY_ALERT_COOLDOWN_MINUTES] ?: DEFAULT_ALERT_COOLDOWN_MINUTES)
             .coerceIn(COOLDOWN_MINUTES_MIN, COOLDOWN_MINUTES_MAX)
@@ -303,16 +436,23 @@ class SettingsRepository @Inject constructor(
         dataStore.edit { it[KEY_ALERT_SNOOZE_DURATION] = duration.name }
     }
 
-    // --- Workout thresholds ---
-    val workoutAlertLow: Flow<Float> = dataStore.data.map { it[KEY_WORKOUT_ALERT_LOW] ?: DEFAULT_WORKOUT_ALERT_LOW }
-    val workoutAlertHigh: Flow<Float> = dataStore.data.map { it[KEY_WORKOUT_ALERT_HIGH] ?: DEFAULT_WORKOUT_ALERT_HIGH }
-    val workoutAlertUrgentLow: Flow<Float> = dataStore.data.map { it[KEY_WORKOUT_ALERT_URGENT_LOW] ?: DEFAULT_WORKOUT_ALERT_URGENT_LOW }
-    val workoutAlertUrgentHigh: Flow<Float> = dataStore.data.map { it[KEY_WORKOUT_ALERT_URGENT_HIGH] ?: DEFAULT_WORKOUT_ALERT_URGENT_HIGH }
+    // --- Exercise alerts ---
+    val exerciseAlertLowEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_EXERCISE_ALERT_LOW_ENABLED] ?: true }
+    val exerciseAlertHighEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_EXERCISE_ALERT_HIGH_ENABLED] ?: true }
+    val exerciseAlertUrgentLowEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_EXERCISE_ALERT_URGENT_LOW_ENABLED] ?: true }
+    val exerciseAlertUrgentHighEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_EXERCISE_ALERT_URGENT_HIGH_ENABLED] ?: true }
+    val exerciseAlertLowSoonEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_EXERCISE_ALERT_LOW_SOON_ENABLED] ?: true }
+    val exerciseAlertHighSoonEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_EXERCISE_ALERT_HIGH_SOON_ENABLED] ?: true }
+    val exerciseAlertStaleEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_EXERCISE_ALERT_STALE_ENABLED] ?: true }
 
-    suspend fun setWorkoutAlertLow(mgdl: Float) { dataStore.edit { it[KEY_WORKOUT_ALERT_LOW] = mgdl } }
-    suspend fun setWorkoutAlertHigh(mgdl: Float) { dataStore.edit { it[KEY_WORKOUT_ALERT_HIGH] = mgdl } }
-    suspend fun setWorkoutAlertUrgentLow(mgdl: Float) { dataStore.edit { it[KEY_WORKOUT_ALERT_URGENT_LOW] = mgdl } }
-    suspend fun setWorkoutAlertUrgentHigh(mgdl: Float) { dataStore.edit { it[KEY_WORKOUT_ALERT_URGENT_HIGH] = mgdl } }
+    val exerciseAlertLow: Flow<Float> = dataStore.data.map { it[KEY_EXERCISE_ALERT_LOW] ?: DEFAULT_WORKOUT_ALERT_LOW }
+    val exerciseAlertHigh: Flow<Float> = dataStore.data.map { it[KEY_EXERCISE_ALERT_HIGH] ?: DEFAULT_WORKOUT_ALERT_HIGH }
+    val exerciseAlertUrgentLow: Flow<Float> = dataStore.data.map { it[KEY_EXERCISE_ALERT_URGENT_LOW] ?: DEFAULT_WORKOUT_ALERT_URGENT_LOW }
+    val exerciseAlertUrgentHigh: Flow<Float> = dataStore.data.map {
+        it[KEY_EXERCISE_ALERT_URGENT_HIGH] ?: DEFAULT_WORKOUT_ALERT_URGENT_HIGH
+    }
+
+    val exerciseAlertProtocol: Flow<AlertProtocol> = dataStore.data.map { it.exerciseAlertProtocol() }
 
     // --- Workout safety timeout ---
     val workoutModeMaxHours: Flow<Int> = dataStore.data.map { it[KEY_WORKOUT_MODE_MAX_HOURS] ?: DEFAULT_WORKOUT_MODE_MAX_HOURS }
@@ -400,6 +540,32 @@ class SettingsRepository @Inject constructor(
     suspend fun setAlertStaleEnabled(enabled: Boolean) { dataStore.edit { it[KEY_ALERT_STALE_ENABLED] = enabled } }
     suspend fun setAlertLowSoonEnabled(enabled: Boolean) { dataStore.edit { it[KEY_ALERT_LOW_SOON_ENABLED] = enabled } }
     suspend fun setAlertHighSoonEnabled(enabled: Boolean) { dataStore.edit { it[KEY_ALERT_HIGH_SOON_ENABLED] = enabled } }
+
+    suspend fun setExerciseAlertLowEnabled(enabled: Boolean) {
+        dataStore.edit { it[KEY_EXERCISE_ALERT_LOW_ENABLED] = enabled }
+    }
+    suspend fun setExerciseAlertHighEnabled(enabled: Boolean) {
+        dataStore.edit { it[KEY_EXERCISE_ALERT_HIGH_ENABLED] = enabled }
+    }
+    suspend fun setExerciseAlertUrgentLowEnabled(enabled: Boolean) {
+        dataStore.edit { it[KEY_EXERCISE_ALERT_URGENT_LOW_ENABLED] = enabled }
+    }
+    suspend fun setExerciseAlertUrgentHighEnabled(enabled: Boolean) {
+        dataStore.edit { it[KEY_EXERCISE_ALERT_URGENT_HIGH_ENABLED] = enabled }
+    }
+    suspend fun setExerciseAlertLowSoonEnabled(enabled: Boolean) {
+        dataStore.edit { it[KEY_EXERCISE_ALERT_LOW_SOON_ENABLED] = enabled }
+    }
+    suspend fun setExerciseAlertHighSoonEnabled(enabled: Boolean) {
+        dataStore.edit { it[KEY_EXERCISE_ALERT_HIGH_SOON_ENABLED] = enabled }
+    }
+    suspend fun setExerciseAlertStaleEnabled(enabled: Boolean) {
+        dataStore.edit { it[KEY_EXERCISE_ALERT_STALE_ENABLED] = enabled }
+    }
+    suspend fun setExerciseAlertLow(mgdl: Float) { dataStore.edit { it[KEY_EXERCISE_ALERT_LOW] = mgdl } }
+    suspend fun setExerciseAlertHigh(mgdl: Float) { dataStore.edit { it[KEY_EXERCISE_ALERT_HIGH] = mgdl } }
+    suspend fun setExerciseAlertUrgentLow(mgdl: Float) { dataStore.edit { it[KEY_EXERCISE_ALERT_URGENT_LOW] = mgdl } }
+    suspend fun setExerciseAlertUrgentHigh(mgdl: Float) { dataStore.edit { it[KEY_EXERCISE_ALERT_URGENT_HIGH] = mgdl } }
 
     val themeMode: Flow<ThemeMode> = dataStore.data.map {
         try { ThemeMode.valueOf(it[KEY_THEME_MODE] ?: "System") } catch (_: Exception) { ThemeMode.System }
@@ -724,6 +890,7 @@ class SettingsRepository @Inject constructor(
             put("alert_stale_enabled", prefs[KEY_ALERT_STALE_ENABLED] ?: true)
             put("alert_low_soon_enabled", prefs[KEY_ALERT_LOW_SOON_ENABLED] ?: true)
             put("alert_high_soon_enabled", prefs[KEY_ALERT_HIGH_SOON_ENABLED] ?: true)
+            putExerciseAlertSettings(prefs)
             put("alert_cooldown_minutes", prefs[KEY_ALERT_COOLDOWN_MINUTES] ?: DEFAULT_ALERT_COOLDOWN_MINUTES)
             put("alert_snooze_duration", normalizedAlertSnoozeDurationName(prefs[KEY_ALERT_SNOOZE_DURATION]))
             put("theme_mode", prefs[KEY_THEME_MODE] ?: "System")
@@ -753,7 +920,7 @@ class SettingsRepository @Inject constructor(
         }
 
         return JSONObject().apply {
-            put("version", 2)
+            put("version", SETTINGS_EXPORT_VERSION)
             put("exported_at", java.time.Instant.now().toString())
             put("settings", settings)
             put("secrets", secrets)
@@ -766,11 +933,9 @@ class SettingsRepository @Inject constructor(
         val root = JSONObject(json)
         val settings = root.getJSONObject("settings")
         // v1 exports stored thresholds in mmol/L — convert to mg/dL on import
-        val isV1 = root.optInt("version", 1) < 2
-        fun importThreshold(key: String): Float {
-            val value = settings.getDouble(key).toFloat()
-            return if (isV1) Math.round(value * GlucoseUnit.MGDL_FACTOR.toFloat()).toFloat() else value
-        }
+        val importVersion = root.optInt("version", 1)
+        val isV1 = importVersion < 2
+        fun importThreshold(key: String): Float = settings.importThreshold(key, isV1)
 
         dataStore.edit { prefs ->
             if (settings.has("nightscout_url")) prefs[KEY_NIGHTSCOUT_URL] = settings.getString("nightscout_url").trim()
@@ -790,6 +955,11 @@ class SettingsRepository @Inject constructor(
             if (settings.has("alert_stale_enabled")) prefs[KEY_ALERT_STALE_ENABLED] = settings.getBoolean("alert_stale_enabled")
             if (settings.has("alert_low_soon_enabled")) prefs[KEY_ALERT_LOW_SOON_ENABLED] = settings.getBoolean("alert_low_soon_enabled")
             if (settings.has("alert_high_soon_enabled")) prefs[KEY_ALERT_HIGH_SOON_ENABLED] = settings.getBoolean("alert_high_soon_enabled")
+            prefs.importExerciseAlerts(
+                settings,
+                isV1,
+                inheritRegularEnablement = importVersion < SETTINGS_EXPORT_VERSION,
+            )
             if (settings.has("alert_cooldown_minutes")) prefs[KEY_ALERT_COOLDOWN_MINUTES] = settings.getInt("alert_cooldown_minutes")
             if (settings.has("alert_snooze_duration")) {
                 prefs[KEY_ALERT_SNOOZE_DURATION] =
@@ -841,5 +1011,31 @@ class SettingsRepository @Inject constructor(
             SnoozeDuration.valueOf(raw ?: SnoozeDuration.M30.name).name
         } catch (_: IllegalArgumentException) {
             SnoozeDuration.M30.name
-        }
+    }
+}
+
+private fun JSONObject.putExerciseAlertSettings(prefs: Preferences) {
+    put("exercise_alert_low_enabled", prefs[KEY_EXERCISE_ALERT_LOW_ENABLED] ?: true)
+    put("exercise_alert_high_enabled", prefs[KEY_EXERCISE_ALERT_HIGH_ENABLED] ?: true)
+    put("exercise_alert_urgent_low_enabled", prefs[KEY_EXERCISE_ALERT_URGENT_LOW_ENABLED] ?: true)
+    put("exercise_alert_urgent_high_enabled", prefs[KEY_EXERCISE_ALERT_URGENT_HIGH_ENABLED] ?: true)
+    put("exercise_alert_low_soon_enabled", prefs[KEY_EXERCISE_ALERT_LOW_SOON_ENABLED] ?: true)
+    put("exercise_alert_high_soon_enabled", prefs[KEY_EXERCISE_ALERT_HIGH_SOON_ENABLED] ?: true)
+    put("exercise_alert_stale_enabled", prefs[KEY_EXERCISE_ALERT_STALE_ENABLED] ?: true)
+    put(
+        "exercise_alert_low",
+        prefs[KEY_EXERCISE_ALERT_LOW]?.toDouble() ?: SettingsRepository.DEFAULT_WORKOUT_ALERT_LOW.toDouble()
+    )
+    put(
+        "exercise_alert_high",
+        prefs[KEY_EXERCISE_ALERT_HIGH]?.toDouble() ?: SettingsRepository.DEFAULT_WORKOUT_ALERT_HIGH.toDouble()
+    )
+    put(
+        "exercise_alert_urgent_low",
+        prefs[KEY_EXERCISE_ALERT_URGENT_LOW]?.toDouble() ?: SettingsRepository.DEFAULT_WORKOUT_ALERT_URGENT_LOW.toDouble()
+    )
+    put(
+        "exercise_alert_urgent_high",
+        prefs[KEY_EXERCISE_ALERT_URGENT_HIGH]?.toDouble() ?: SettingsRepository.DEFAULT_WORKOUT_ALERT_URGENT_HIGH.toDouble()
+    )
 }

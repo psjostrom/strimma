@@ -67,7 +67,7 @@ class WorkoutModeManager @Inject constructor(
         StateInputs(manualSince, manualExpires, overrideUntil, maxHours, nextEvent)
     }
 
-    val state: StateFlow<WorkoutMode> = stateInputs.combine(ticker) { inputs, _ ->
+    private val loadedState: Flow<WorkoutMode> = stateInputs.combine(ticker) { inputs, _ ->
         computeState(
             manualSince = inputs.manualSince,
             manualExpires = inputs.manualExpires,
@@ -76,7 +76,10 @@ class WorkoutModeManager @Inject constructor(
             nextEvent = inputs.nextEvent,
             now = clock.nowMs()
         )
-    }.stateIn(scope, SharingStarted.Eagerly, WorkoutMode.Off)
+    }.shareIn(scope, SharingStarted.Eagerly, replay = 1)
+
+    val state: StateFlow<WorkoutMode> =
+        loadedState.stateIn(scope, SharingStarted.Eagerly, WorkoutMode.Off)
 
     /**
      * Pure state derivation — no side effects, fully testable in isolation.
@@ -122,30 +125,18 @@ class WorkoutModeManager @Inject constructor(
         return WorkoutMode.Off
     }
 
-    /** Combined snapshot of all threshold settings. */
+    /** Combined snapshot of display defaults and both alert protocols. */
     private val thresholdSnapshot: Flow<ThresholdSnapshot> = combine(
-        settings.bgLow,                    // [0]
-        settings.bgHigh,                   // [1]
-        settings.alertLow,                 // [2]
-        settings.alertHigh,                // [3]
-        settings.alertUrgentLow,           // [4]
-        settings.alertUrgentHigh,          // [5]
-        settings.workoutAlertLow,          // [6]
-        settings.workoutAlertHigh,         // [7]
-        settings.workoutAlertUrgentLow,    // [8]
-        settings.workoutAlertUrgentHigh    // [9]
-    ) { values: Array<Float> ->
+        settings.bgLow,
+        settings.bgHigh,
+        settings.regularAlertProtocol,
+        settings.exerciseAlertProtocol,
+    ) { bgLow, bgHigh, regularProtocol, exerciseProtocol ->
         ThresholdSnapshot(
-            bgLow = values[0],
-            bgHigh = values[1],
-            alertLow = values[2],
-            alertHigh = values[3],
-            alertUrgentLow = values[4],
-            alertUrgentHigh = values[5],
-            workoutLow = values[6],
-            workoutHigh = values[7],
-            workoutUrgentLow = values[8],
-            workoutUrgentHigh = values[9]
+            bgLow = bgLow,
+            bgHigh = bgHigh,
+            regularProtocol = regularProtocol,
+            exerciseProtocol = exerciseProtocol,
         )
     }
 
@@ -156,17 +147,16 @@ class WorkoutModeManager @Inject constructor(
      * the sentinel.
      */
     val effectiveThresholds: StateFlow<EffectiveThresholds> = combine(
-        state,
+        loadedState,
         thresholdSnapshot
     ) { mode, snap ->
         val on = mode is WorkoutMode.On
+        val protocol = if (on) snap.exerciseProtocol else snap.regularProtocol
         EffectiveThresholds(
-            displayLowMgdl = if (on) snap.workoutLow else snap.bgLow,
-            displayHighMgdl = if (on) snap.workoutHigh else snap.bgHigh,
-            alertLowMgdl = if (on) snap.workoutLow else snap.alertLow,
-            alertHighMgdl = if (on) snap.workoutHigh else snap.alertHigh,
-            alertUrgentLowMgdl = if (on) snap.workoutUrgentLow else snap.alertUrgentLow,
-            alertUrgentHighMgdl = if (on) snap.workoutUrgentHigh else snap.alertUrgentHigh,
+            displayLowMgdl = if (on) snap.exerciseProtocol.lowMgdl else snap.bgLow,
+            displayHighMgdl = if (on) snap.exerciseProtocol.highMgdl else snap.bgHigh,
+            alertProtocol = protocol,
+            workoutModeOn = on,
         )
     }.stateIn(scope, SharingStarted.Eagerly, PLACEHOLDER_THRESHOLDS)
 
@@ -183,9 +173,8 @@ class WorkoutModeManager @Inject constructor(
      * Read current state directly from persistence — does NOT trust state.value,
      * which can lag the truth across the eager seed and across cold start before
      * the upstream combine produces its first real emission. Use this from
-     * code paths that branch on the state correctness (toggle, setManualOff,
-     * stale-alert suppression decision); fine for the StateFlow to lag in
-     * eventually-consistent UI consumers.
+     * code paths that branch on the state correctness (toggle, setManualOff);
+     * fine for the StateFlow to lag in eventually-consistent UI consumers.
      */
     suspend fun currentState(): WorkoutMode {
         val manualSince = settings.manualWorkoutSinceMs.first()
@@ -196,16 +185,8 @@ class WorkoutModeManager @Inject constructor(
         return computeState(manualSince, manualExpires, overrideUntil, maxHours, nextEvent, clock.nowMs())
     }
 
-    /**
-     * Elapsed time in the current workout session, or `null` if not currently in
-     * workout mode. Computed against the manager's injected [Clock] so tests with
-     * a [Clock] override see a consistent timeline (rather than a mix of test
-     * time for `state.sinceMs` and real wall-clock time for the elapsed calc).
-     */
-    suspend fun currentSessionElapsedMs(): Long? {
-        val state = currentState()
-        return (state as? WorkoutMode.On)?.let { (clock.nowMs() - it.sinceMs).coerceAtLeast(0L) }
-    }
+    suspend fun currentSessionElapsedMs(): Long? =
+        (currentState() as? WorkoutMode.On)?.let { (clock.nowMs() - it.sinceMs).coerceAtLeast(0L) }
 
     init {
         // Side-effect 1: clean expired DataStore values on every tick. Atomic
@@ -292,10 +273,8 @@ class WorkoutModeManager @Inject constructor(
 
     private data class ThresholdSnapshot(
         val bgLow: Float, val bgHigh: Float,
-        val alertLow: Float, val alertHigh: Float,
-        val alertUrgentLow: Float, val alertUrgentHigh: Float,
-        val workoutLow: Float, val workoutHigh: Float,
-        val workoutUrgentLow: Float, val workoutUrgentHigh: Float,
+        val regularProtocol: AlertProtocol,
+        val exerciseProtocol: AlertProtocol,
     )
 
     companion object {
@@ -309,10 +288,20 @@ class WorkoutModeManager @Inject constructor(
         val PLACEHOLDER_THRESHOLDS = EffectiveThresholds(
             displayLowMgdl = Float.NaN,
             displayHighMgdl = Float.NaN,
-            alertLowMgdl = Float.NaN,
-            alertHighMgdl = Float.NaN,
-            alertUrgentLowMgdl = Float.NaN,
-            alertUrgentHighMgdl = Float.NaN,
+            alertProtocol = AlertProtocol(
+                urgentLowEnabled = false,
+                lowEnabled = false,
+                highEnabled = false,
+                urgentHighEnabled = false,
+                urgentLowMgdl = Float.NaN,
+                lowMgdl = Float.NaN,
+                highMgdl = Float.NaN,
+                urgentHighMgdl = Float.NaN,
+                lowSoonEnabled = false,
+                highSoonEnabled = false,
+                staleEnabled = false,
+            ),
+            workoutModeOn = false,
         )
     }
 }

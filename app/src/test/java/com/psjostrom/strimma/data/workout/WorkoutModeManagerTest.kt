@@ -15,6 +15,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
@@ -238,35 +239,93 @@ class WorkoutModeManagerTest {
         // currentEffectiveThresholds() suspends past the placeholder and returns
         // real values seeded from SettingsRepository defaults.
         val t = rig.manager.currentEffectiveThresholds()
+        assertFalse(t.workoutModeOn)
         assertEquals(72f, t.displayLowMgdl)
         assertEquals(180f, t.displayHighMgdl)
-        assertEquals(72f, t.alertLowMgdl)
-        assertEquals(180f, t.alertHighMgdl)
-        assertEquals(54f, t.alertUrgentLowMgdl)
-        assertEquals(234f, t.alertUrgentHighMgdl)
+        assertTrue(t.alertProtocol.lowEnabled)
+        assertEquals(72f, t.alertProtocol.lowMgdl)
+        assertEquals(180f, t.alertProtocol.highMgdl)
+        assertEquals(54f, t.alertProtocol.urgentLowMgdl)
+        assertEquals(234f, t.alertProtocol.urgentHighMgdl)
     }
 
     @Test
-    fun `effectiveThresholds in On mode uses workout values for both display and alerts`() = runTest {
-        val rig = setup()
-        rig.manager.setManualOn()
-        // Wait for the combine() to re-emit with workout values (default low=108)
-        val t = rig.manager.effectiveThresholds.first { it.alertLowMgdl == 108f }
-        assertEquals(108f, t.displayLowMgdl)
-        assertEquals(252f, t.displayHighMgdl)
-        assertEquals(108f, t.alertLowMgdl)
-        assertEquals(252f, t.alertHighMgdl)
-        assertEquals(90f, t.alertUrgentLowMgdl)
-        assertEquals(288f, t.alertUrgentHighMgdl)
+    fun `first effective thresholds use persisted exercise mode`() = runTest {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val dataStore = createTestDataStore(this)
+        val settings = SettingsRepository(
+            context,
+            com.psjostrom.strimma.widget.WidgetSettingsRepository(context),
+            dataStore,
+        )
+        settings.setManualWorkoutSession(
+            sinceMs = baseNowMs,
+            expiresMs = baseNowMs + 3 * msPerHour,
+        )
+        settings.setAlertLowEnabled(false)
+        settings.setExerciseAlertLowEnabled(true)
+        settings.setExerciseAlertLow(120f)
+        val manager = WorkoutModeManager(
+            settings,
+            FakeCalendarPoller(MutableStateFlow(null)),
+            MutableClock(baseNowMs),
+            backgroundScope,
+        )
+
+        val thresholds = manager.currentEffectiveThresholds()
+
+        assertTrue(thresholds.workoutModeOn)
+        assertTrue(thresholds.alertProtocol.lowEnabled)
+        assertEquals(120f, thresholds.alertProtocol.lowMgdl)
     }
 
     @Test
-    fun `currentSessionElapsedMs reports null when off, time-since-sinceMs when on`() = runTest {
+    fun `effective settings in exercise mode use exercise protocol and graph bounds`() = runTest {
         val rig = setup()
-        assertNull(rig.manager.currentSessionElapsedMs())
+        rig.settings.setExerciseAlertLow(120f)
+        rig.settings.setExerciseAlertHigh(260f)
+        rig.settings.setExerciseAlertLowEnabled(false)
         rig.manager.setManualOn()
-        rig.clock.nowMs = baseNowMs + 5 * 60_000L  // 5 min later
-        val elapsed = rig.manager.currentSessionElapsedMs()
-        assertEquals(5 * 60_000L, elapsed)
+        val t = rig.manager.effectiveThresholds.first { it.workoutModeOn }
+        assertTrue(t.workoutModeOn)
+        assertFalse(t.alertProtocol.lowEnabled)
+        assertEquals(120f, t.alertProtocol.lowMgdl)
+        assertEquals(260f, t.alertProtocol.highMgdl)
+        assertEquals(120f, t.displayLowMgdl)
+        assertEquals(260f, t.displayHighMgdl)
     }
+
+    @Test
+    fun `effective settings in calendar exercise mode restore regular protocol and graph bounds when mode ends`() = runTest {
+        val rig = setup()
+        rig.settings.setBgLow(80f)
+        rig.settings.setBgHigh(190f)
+        rig.settings.setAlertLow(70f)
+        rig.settings.setAlertHigh(200f)
+        rig.settings.setAlertLowEnabled(false)
+        rig.settings.setExerciseAlertLow(120f)
+        rig.settings.setExerciseAlertHigh(260f)
+        rig.settings.setExerciseAlertLowEnabled(true)
+        rig.nextEventFlow.value = event(
+            startMs = baseNowMs - 1000,
+            endMs = baseNowMs + msPerHour,
+        )
+
+        val exercise = rig.manager.effectiveThresholds.first { it.workoutModeOn }
+        assertTrue(exercise.alertProtocol.lowEnabled)
+        assertEquals(120f, exercise.alertProtocol.lowMgdl)
+        assertEquals(260f, exercise.alertProtocol.highMgdl)
+        assertEquals(120f, exercise.displayLowMgdl)
+        assertEquals(260f, exercise.displayHighMgdl)
+
+        rig.nextEventFlow.value = null
+        val regular = rig.manager.effectiveThresholds.first { !it.workoutModeOn }
+        assertFalse(regular.workoutModeOn)
+        assertFalse(regular.alertProtocol.lowEnabled)
+        assertEquals(70f, regular.alertProtocol.lowMgdl)
+        assertEquals(200f, regular.alertProtocol.highMgdl)
+        assertEquals(80f, regular.displayLowMgdl)
+        assertEquals(190f, regular.displayHighMgdl)
+    }
+
 }
