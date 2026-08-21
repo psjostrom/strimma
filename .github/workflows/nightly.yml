@@ -1,0 +1,70 @@
+name: Nightly APK
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: zulu
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Decode keystore
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > app/release.keystore
+
+      - name: Build nightly APK
+        run: ./gradlew assembleRelease
+        env:
+          STRIMMA_KEYSTORE_FILE: release.keystore
+          STRIMMA_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          STRIMMA_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          STRIMMA_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Run tests
+        run: ./gradlew testDebugUnitTest
+
+      - name: Publish nightly release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="nightly"
+          APK="strimma-nightly.apk"
+          SHA="$(git rev-parse HEAD)"
+          cp app/build/outputs/apk/release/app-release.apk "$APK"
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release delete "$TAG" --yes --cleanup-tag
+          elif git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            git push origin ":refs/tags/$TAG"
+          fi
+
+          gh release create "$TAG" \
+            "$APK" \
+            --target "$SHA" \
+            --title "Nightly" \
+            --notes "Automated nightly build from main at $SHA." \
+            --prerelease \
+            --latest=false

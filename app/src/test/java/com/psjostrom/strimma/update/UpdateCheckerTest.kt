@@ -254,6 +254,21 @@ class UpdateCheckerTest {
     }
 
     @Test
+    fun `checkBeta skips nightly release and finds RC`() = runTest {
+        val releases = """[
+            {"tag_name": "nightly", "prerelease": true, "body": "Nightly", "assets": [
+                {"name": "strimma-nightly.apk", "browser_download_url": "https://example.com/nightly.apk"}
+            ]},
+            {"tag_name": "v2.0.0-rc.1", "prerelease": true, "body": "RC", "assets": [
+                {"name": "strimma-2.0.0-rc.1.apk", "browser_download_url": "https://example.com/rc.apk"}
+            ]}
+        ]"""
+        val c = checker(betaMockClient(allReleasesJson = releases))
+        c.checkBeta()
+        assertEquals("2.0.0-rc.1", c.betaUpdateInfo.value?.version)
+    }
+
+    @Test
     fun `checkBeta ignores stable releases`() = runTest {
         val allStable = """[
             {"tag_name": "v2.0.0", "prerelease": false, "body": "Stable", "assets": [
