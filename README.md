@@ -93,6 +93,7 @@ git clone https://github.com/psjostrom/strimma.git
 cd strimma
 ./gradlew assembleDebug          # build
 ./gradlew installDebug           # build + install on connected device
+./scripts/install-debug.sh       # choose device, build + install + launch debug app
 ./gradlew testDebugUnitTest      # run tests
 ```
 
