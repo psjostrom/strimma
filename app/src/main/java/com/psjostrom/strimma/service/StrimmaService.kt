@@ -246,9 +246,8 @@ class StrimmaService : Service() {
      * notification rebuild on every transition.
      *
      * Also re-runs the stale check on every transition. AlertManager.checkStale
-     * cancels any visible stale notification when entering workout mode (so a
-     * stale alert that was firing the moment the user starts a workout disappears
-     * immediately, instead of silently sticking around behind the suppression).
+     * re-evaluates the selected alert protocol, so entering workout mode may fire
+     * or cancel a visible stale notification based on the Exercise Stale Data toggle.
      */
     private fun observeWorkoutModeForNotificationRefresh() {
         scope.launch {

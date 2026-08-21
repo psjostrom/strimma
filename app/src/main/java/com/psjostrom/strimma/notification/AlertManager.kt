@@ -16,8 +16,9 @@ import com.psjostrom.strimma.data.MS_PER_MINUTE
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.notification.SnoozeDuration
-import com.psjostrom.strimma.data.workout.EffectiveThresholds
-import com.psjostrom.strimma.data.workout.WorkoutMode
+import com.psjostrom.strimma.data.workout.AlertProtocol
+import com.psjostrom.strimma.data.workout.Clock
+import com.psjostrom.strimma.data.workout.SystemClock
 import com.psjostrom.strimma.data.workout.WorkoutModeManager
 import com.psjostrom.strimma.graph.CrossingType
 import com.psjostrom.strimma.graph.Prediction
@@ -62,6 +63,7 @@ class AlertManager @Inject constructor(
     private val settings: SettingsRepository,
     private val workoutModeManager: WorkoutModeManager,
     private val cleanupScope: CoroutineScope,
+    private val clock: Clock = SystemClock(),
 ) {
     companion object {
         // Each alert type has its own channel so the user can set a different sound per alarm
@@ -109,16 +111,6 @@ class AlertManager @Inject constructor(
 
         // Stale data threshold
         const val STALE_THRESHOLD_MINUTES = 10
-
-        /**
-         * Stale-sensor alerts are suppressed at the START of a workout because the
-         * sensor often loses contact briefly when the user starts exercising (sweat,
-         * arm motion). After this much elapsed time in a session, alerts re-arm even
-         * while workout mode is still on — for a multi-hour event like a marathon
-         * the user MUST hear about a sensor that died 30 min in, not "after the
-         * workout ends in 5 hours". 30 min was picked as the longest plausible
-         * "settle-in" window for a sensor.
-         */
         const val STALE_SUPPRESSION_DURING_WORKOUT_MS = 30L * 60 * 1000
 
         fun isStale(lastReadingTs: Long?): Boolean {
@@ -126,9 +118,13 @@ class AlertManager @Inject constructor(
                 (System.currentTimeMillis() - lastReadingTs) > STALE_THRESHOLD_MINUTES * MS_PER_MINUTE
         }
 
-        fun isInCooldown(lastFireMs: Long, cooldownMs: Long): Boolean {
+        fun isInCooldown(
+            lastFireMs: Long,
+            cooldownMs: Long,
+            nowMs: Long = System.currentTimeMillis(),
+        ): Boolean {
             if (cooldownMs == 0L || lastFireMs == 0L) return false
-            return (System.currentTimeMillis() - lastFireMs) < cooldownMs
+            return (nowMs - lastFireMs) < cooldownMs
         }
 
 
@@ -341,36 +337,43 @@ class AlertManager @Inject constructor(
         // placeholder seed) so a cold-start race can never silently use stale
         // defaults for a customized user.
         val effective = workoutModeManager.currentEffectiveThresholds()
-        val workoutOn = workoutModeManager.state.value is WorkoutMode.On
-        val lowThreshold = effective.alertLowMgdl
-        val highThreshold = effective.alertHighMgdl
+        val protocol = effective.alertProtocol
+        val workoutOn = effective.workoutModeOn
 
-        val alreadyLow = checkLowAlerts(mgdl, unit, effective, workoutOn)
-        val alreadyHigh = checkHighAlerts(mgdl, unit, effective, workoutOn)
+        val alreadyLow = checkLowAlerts(mgdl, unit, protocol, workoutOn)
+        val alreadyHigh = checkHighAlerts(mgdl, unit, protocol, workoutOn)
 
-        checkPredictive(recentReadings, predictionMinutes, lowThreshold.toDouble(),
-            highThreshold.toDouble(), alreadyLow, alreadyHigh, unit, prediction)
+        checkPredictive(
+            recentReadings,
+            predictionMinutes,
+            protocol,
+            alreadyLow,
+            alreadyHigh,
+            unit,
+            prediction,
+        )
     }
 
     private suspend fun checkLowAlerts(
         mgdl: Double,
         unit: GlucoseUnit,
-        effective: EffectiveThresholds,
+        protocol: AlertProtocol,
         workoutOn: Boolean
     ): Boolean {
-        val urgentLowEnabled = settings.alertUrgentLowEnabled.first()
-        val urgentLowThreshold = effective.alertUrgentLowMgdl
-        val lowEnabled = settings.alertLowEnabled.first()
-        val lowThreshold = effective.alertLowMgdl
+        val urgentLowEnabled = protocol.urgentLowEnabled
+        val urgentLowThreshold = protocol.urgentLowMgdl
+        val lowEnabled = protocol.lowEnabled
+        val lowThreshold = protocol.lowMgdl
         val cooldownMs = settings.alertCooldownMinutes.first().toLong() * MS_PER_MINUTE
+        val now = clock.nowMs()
 
         if (urgentLowEnabled && mgdl <= urgentLowThreshold) {
             if (!isCategoryPausedAtLevel(snoozePrefs, AlertCategory.LOW, ALERT_LEVEL_URGENT)
-                && !isInCooldown(lastUrgentLowFireMs, cooldownMs)
+                && !isInCooldown(lastUrgentLowFireMs, cooldownMs, now)
             ) {
                 val title = workoutPrefixedTitle(R.string.alert_urgent_low_title, workoutOn)
                 fireAlert(ALERT_URGENT_LOW_ID, CHANNEL_URGENT_LOW, title, unit.formatWithUnit(mgdl))
-                lastUrgentLowFireMs = System.currentTimeMillis()
+                lastUrgentLowFireMs = now
             }
             notificationManager.cancel(ALERT_LOW_ID)
             return true
@@ -378,11 +381,11 @@ class AlertManager @Inject constructor(
 
         if (lowEnabled && mgdl < lowThreshold) {
             if (!isCategoryPausedAtLevel(snoozePrefs, AlertCategory.LOW, ALERT_LEVEL_REGULAR)
-                && !isInCooldown(lastLowFireMs, cooldownMs)
+                && !isInCooldown(lastLowFireMs, cooldownMs, now)
             ) {
                 val title = workoutPrefixedTitle(R.string.alert_low_title, workoutOn)
                 fireAlert(ALERT_LOW_ID, CHANNEL_LOW, title, unit.formatWithUnit(mgdl))
-                lastLowFireMs = System.currentTimeMillis()
+                lastLowFireMs = now
             }
             notificationManager.cancel(ALERT_URGENT_LOW_ID)
             return true
@@ -398,22 +401,23 @@ class AlertManager @Inject constructor(
     private suspend fun checkHighAlerts(
         mgdl: Double,
         unit: GlucoseUnit,
-        effective: EffectiveThresholds,
+        protocol: AlertProtocol,
         workoutOn: Boolean
     ): Boolean {
-        val urgentHighEnabled = settings.alertUrgentHighEnabled.first()
-        val urgentHighThreshold = effective.alertUrgentHighMgdl
-        val highEnabled = settings.alertHighEnabled.first()
-        val highThreshold = effective.alertHighMgdl
+        val urgentHighEnabled = protocol.urgentHighEnabled
+        val urgentHighThreshold = protocol.urgentHighMgdl
+        val highEnabled = protocol.highEnabled
+        val highThreshold = protocol.highMgdl
         val cooldownMs = settings.alertCooldownMinutes.first().toLong() * MS_PER_MINUTE
+        val now = clock.nowMs()
 
         if (urgentHighEnabled && mgdl >= urgentHighThreshold) {
             if (!isCategoryPausedAtLevel(snoozePrefs, AlertCategory.HIGH, ALERT_LEVEL_URGENT)
-                && !isInCooldown(lastUrgentHighFireMs, cooldownMs)
+                && !isInCooldown(lastUrgentHighFireMs, cooldownMs, now)
             ) {
                 val title = workoutPrefixedTitle(R.string.alert_urgent_high_title, workoutOn)
                 fireAlert(ALERT_URGENT_HIGH_ID, CHANNEL_URGENT_HIGH, title, unit.formatWithUnit(mgdl))
-                lastUrgentHighFireMs = System.currentTimeMillis()
+                lastUrgentHighFireMs = now
             }
             notificationManager.cancel(ALERT_HIGH_ID)
             return true
@@ -421,11 +425,11 @@ class AlertManager @Inject constructor(
 
         if (highEnabled && mgdl > highThreshold) {
             if (!isCategoryPausedAtLevel(snoozePrefs, AlertCategory.HIGH, ALERT_LEVEL_REGULAR)
-                && !isInCooldown(lastHighFireMs, cooldownMs)
+                && !isInCooldown(lastHighFireMs, cooldownMs, now)
             ) {
                 val title = workoutPrefixedTitle(R.string.alert_high_title, workoutOn)
                 fireAlert(ALERT_HIGH_ID, CHANNEL_HIGH, title, unit.formatWithUnit(mgdl))
-                lastHighFireMs = System.currentTimeMillis()
+                lastHighFireMs = now
             }
             notificationManager.cancel(ALERT_URGENT_HIGH_ID)
             return true
@@ -454,15 +458,14 @@ class AlertManager @Inject constructor(
     private suspend fun checkPredictive(
         recentReadings: List<GlucoseReading>,
         predictionMinutes: Int,
-        bgLow: Double,
-        bgHigh: Double,
+        protocol: AlertProtocol,
         alreadyLow: Boolean,
         alreadyHigh: Boolean,
         unit: GlucoseUnit,
         precomputed: Prediction? = null
     ) {
-        val lowSoonEnabled = settings.alertLowSoonEnabled.first()
-        val highSoonEnabled = settings.alertHighSoonEnabled.first()
+        val lowSoonEnabled = protocol.lowSoonEnabled
+        val highSoonEnabled = protocol.highSoonEnabled
 
         if (predictionMinutes == 0 || (!lowSoonEnabled && !highSoonEnabled)) {
             notificationManager.cancel(ALERT_LOW_SOON_ID)
@@ -470,7 +473,12 @@ class AlertManager @Inject constructor(
             return
         }
 
-        val prediction = precomputed ?: PredictionComputer.compute(recentReadings, predictionMinutes, bgLow, bgHigh)
+        val prediction = precomputed ?: PredictionComputer.compute(
+            recentReadings,
+            predictionMinutes,
+            protocol.lowMgdl.toDouble(),
+            protocol.highMgdl.toDouble(),
+        )
         val crossing = prediction?.crossing
 
         // Low soon
@@ -499,26 +507,15 @@ class AlertManager @Inject constructor(
     }
 
     suspend fun checkStale(lastReadingTs: Long?) {
-        val staleEnabled = settings.alertStaleEnabled.first()
-        if (!staleEnabled) return
-
-        // Suspending elapsed read goes through the manager so the Clock injection
-        // is consistent with state.sinceMs (computing elapsed against System time
-        // here would mismatch the test Clock, and worse, mismatch any future
-        // production Clock change e.g. for trusted-time sources).
+        val effective = workoutModeManager.currentEffectiveThresholds()
+        if (!effective.alertProtocol.staleEnabled) {
+            notificationManager.cancel(ALERT_STALE_ID)
+            return
+        }
         val sessionElapsedMs = workoutModeManager.currentSessionElapsedMs()
-        if (sessionElapsedMs != null) {
-            if (sessionElapsedMs < STALE_SUPPRESSION_DURING_WORKOUT_MS) {
-                // Within the bounded suppression window. Cancel any visible stale alert
-                // so a notification that was firing when the user enabled workout mode
-                // clears immediately (without this, the early return leaves a stuck
-                // ringing alert until the user manually dismisses it).
-                notificationManager.cancel(ALERT_STALE_ID)
-                return
-            }
-            // Suppression window has elapsed (e.g. >30 min into a long workout). Fall
-            // through to normal stale handling — for a marathoner whose sensor died
-            // 30 min in, we want them alerted, not silently un-protected for hours.
+        if (sessionElapsedMs != null && sessionElapsedMs < STALE_SUPPRESSION_DURING_WORKOUT_MS) {
+            notificationManager.cancel(ALERT_STALE_ID)
+            return
         }
 
         val now = System.currentTimeMillis()

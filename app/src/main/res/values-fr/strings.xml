@@ -152,6 +152,9 @@
     <!-- Alerts Settings -->
     <string name="settings_alerts_title">Alertes</string>
     <string name="settings_alerts_section">Alertes</string>
+    <string name="settings_alerts_exercise_section">Alertes d\'entra\u00EEnement</string>
+    <string name="settings_alerts_exercise_desc">Utilis\u00E9es lorsque le mode entra\u00EEnement est actif. Les valeurs Bas et Haut d\u00E9finissent \u00E9galement la plage du graphique d\'entra\u00EEnement.</string>
+    <string name="settings_alerts_behavior_section">Comportement des alertes</string>
     <string name="settings_alerts_tap_sound">Appuyez sur \"Son\" pour choisir la sonnerie, la vibration et les param\u00E8tres de contournement par alarme.</string>
     <string name="settings_alerts_urgent_low">Bas urgent</string>
     <string name="settings_alerts_urgent_low_threshold">Bas urgent (%1$s)</string>
@@ -531,14 +534,8 @@
         <item quantity="many">Désactivation auto après %1$d heures</item>
         <item quantity="other">Désactivation auto après %1$d heures</item>
     </plurals>
-    <string name="workout_mode_thresholds_header">Seuils d\'entraînement</string>
-    <string name="workout_mode_threshold_low">Bas</string>
-    <string name="workout_mode_threshold_urgent_low">Bas critique</string>
-    <string name="workout_mode_threshold_high">Haut</string>
-    <string name="workout_mode_threshold_urgent_high">Haut critique</string>
-    <string name="workout_mode_reset_defaults">Réinitialiser</string>
-    <string name="workout_mode_settings_info">Actif pendant l\'exercice. Remplace à la fois vos seuils d\'alerte et la zone cible sur les graphiques. Supprime les alertes de capteur obsolète uniquement pendant les 30 premières minutes — ensuite, elles se réactivent même si le mode reste actif. Activé par le bouton MainScreen ou les événements de calendrier programmés.</string>
-    <string name="workout_mode_threshold_order_error">Les seuils doivent satisfaire : bas critique ≤ bas ≤ haut ≤ haut critique.</string>
+    <string name="workout_mode_settings_info">Les alertes d\'entra\u00EEnement se configurent dans Param\u00E8tres \u203A Alertes \u203A Alertes d\'entra\u00EEnement. Les valeurs Bas et Haut d\u00E9finissent \u00E9galement la plage du graphique d\'entra\u00EEnement.</string>
+    <string name="exercise_alert_threshold_order_error">Les seuils des alertes d\'entra\u00EEnement doivent respecter : bas critique ≤ bas ≤ haut ≤ haut critique.</string>
     <string name="alert_workout_prefix">Entraînement · %1$s</string>
     <string name="widget_workout_indicator">ENTRAÎNEMENT</string>
 

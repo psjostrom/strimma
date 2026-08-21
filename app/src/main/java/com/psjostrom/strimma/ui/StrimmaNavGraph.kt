@@ -2,8 +2,10 @@ package com.psjostrom.strimma.ui
 
 import android.content.Intent
 import android.os.PowerManager
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
@@ -14,6 +16,7 @@ import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.FitnessCenter
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.WaterDrop
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -25,6 +28,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
@@ -417,50 +421,55 @@ fun StrimmaNavGraph(
         }
         composable("settings/alerts") {
             val alertsViewModel: AlertsViewModel = hiltViewModel()
-            val alertLowEnabled by alertsViewModel.alertLowEnabled.collectAsState()
-            val alertHighEnabled by alertsViewModel.alertHighEnabled.collectAsState()
-            val alertUrgentLowEnabled by alertsViewModel.alertUrgentLowEnabled.collectAsState()
-            val alertLow by alertsViewModel.alertLow.collectAsState()
-            val alertHigh by alertsViewModel.alertHigh.collectAsState()
-            val alertUrgentLow by alertsViewModel.alertUrgentLow.collectAsState()
-            val alertUrgentHighEnabled by alertsViewModel.alertUrgentHighEnabled.collectAsState()
-            val alertUrgentHigh by alertsViewModel.alertUrgentHigh.collectAsState()
-            val alertStaleEnabled by alertsViewModel.alertStaleEnabled.collectAsState()
-            val alertLowSoonEnabled by alertsViewModel.alertLowSoonEnabled.collectAsState()
-            val alertHighSoonEnabled by alertsViewModel.alertHighSoonEnabled.collectAsState()
+            val regularAlertProtocol by alertsViewModel.regularAlertProtocol.collectAsState()
+            val exerciseAlertProtocol by alertsViewModel.exerciseAlertProtocol.collectAsState()
             val alertCooldownMinutes by alertsViewModel.alertCooldownMinutes.collectAsState()
             val alertSnoozeDuration by alertsViewModel.alertSnoozeDuration.collectAsState()
-            AlertsSettings(
-                glucoseUnit = glucoseUnit,
-                alertLowEnabled = alertLowEnabled,
-                alertHighEnabled = alertHighEnabled,
-                alertUrgentLowEnabled = alertUrgentLowEnabled,
-                alertUrgentHighEnabled = alertUrgentHighEnabled,
-                alertLow = alertLow,
-                alertHigh = alertHigh,
-                alertUrgentLow = alertUrgentLow,
-                alertUrgentHigh = alertUrgentHigh,
-                alertStaleEnabled = alertStaleEnabled,
-                alertLowSoonEnabled = alertLowSoonEnabled,
-                alertHighSoonEnabled = alertHighSoonEnabled,
-                alertCooldownMinutes = alertCooldownMinutes,
-                alertSnoozeDuration = alertSnoozeDuration,
-                onAlertLowEnabledChange = alertsViewModel::setAlertLowEnabled,
-                onAlertHighEnabledChange = alertsViewModel::setAlertHighEnabled,
-                onAlertUrgentLowEnabledChange = alertsViewModel::setAlertUrgentLowEnabled,
-                onAlertUrgentHighEnabledChange = alertsViewModel::setAlertUrgentHighEnabled,
-                onAlertLowChange = alertsViewModel::setAlertLow,
-                onAlertHighChange = alertsViewModel::setAlertHigh,
-                onAlertUrgentLowChange = alertsViewModel::setAlertUrgentLow,
-                onAlertUrgentHighChange = alertsViewModel::setAlertUrgentHigh,
-                onAlertStaleEnabledChange = alertsViewModel::setAlertStaleEnabled,
-                onAlertLowSoonEnabledChange = alertsViewModel::setAlertLowSoonEnabled,
-                onAlertHighSoonEnabledChange = alertsViewModel::setAlertHighSoonEnabled,
-                onAlertCooldownChange = alertsViewModel::setAlertCooldownMinutes,
-                onAlertSnoozeDurationChange = alertsViewModel::setAlertSnoozeDuration,
-                onOpenAlertSound = alertsViewModel::openAlertChannelSettings,
-                onBack = { navController.popBackStack() }
-            )
+            val regularProtocol = regularAlertProtocol
+            val exerciseProtocol = exerciseAlertProtocol
+            if (regularProtocol != null && exerciseProtocol != null) {
+                AlertsSettings(
+                    glucoseUnit = glucoseUnit,
+                    regularAlertProtocol = regularProtocol,
+                    exerciseAlertProtocol = exerciseProtocol,
+                    alertCooldownMinutes = alertCooldownMinutes,
+                    alertSnoozeDuration = alertSnoozeDuration,
+                    onAlertLowEnabledChange = alertsViewModel::setAlertLowEnabled,
+                    onAlertHighEnabledChange = alertsViewModel::setAlertHighEnabled,
+                    onAlertUrgentLowEnabledChange = alertsViewModel::setAlertUrgentLowEnabled,
+                    onAlertUrgentHighEnabledChange = alertsViewModel::setAlertUrgentHighEnabled,
+                    onAlertLowChange = alertsViewModel::setAlertLow,
+                    onAlertHighChange = alertsViewModel::setAlertHigh,
+                    onAlertUrgentLowChange = alertsViewModel::setAlertUrgentLow,
+                    onAlertUrgentHighChange = alertsViewModel::setAlertUrgentHigh,
+                    onAlertStaleEnabledChange = alertsViewModel::setAlertStaleEnabled,
+                    onAlertLowSoonEnabledChange = alertsViewModel::setAlertLowSoonEnabled,
+                    onAlertHighSoonEnabledChange = alertsViewModel::setAlertHighSoonEnabled,
+                    onAlertCooldownChange = alertsViewModel::setAlertCooldownMinutes,
+                    onAlertSnoozeDurationChange = alertsViewModel::setAlertSnoozeDuration,
+                    onExerciseAlertLowEnabledChange = alertsViewModel::setExerciseAlertLowEnabled,
+                    onExerciseAlertHighEnabledChange = alertsViewModel::setExerciseAlertHighEnabled,
+                    onExerciseAlertUrgentLowEnabledChange = alertsViewModel::setExerciseAlertUrgentLowEnabled,
+                    onExerciseAlertUrgentHighEnabledChange = alertsViewModel::setExerciseAlertUrgentHighEnabled,
+                    onExerciseAlertLowChange = alertsViewModel::setExerciseAlertLow,
+                    onExerciseAlertHighChange = alertsViewModel::setExerciseAlertHigh,
+                    onExerciseAlertUrgentLowChange = alertsViewModel::setExerciseAlertUrgentLow,
+                    onExerciseAlertUrgentHighChange = alertsViewModel::setExerciseAlertUrgentHigh,
+                    onExerciseAlertStaleEnabledChange = alertsViewModel::setExerciseAlertStaleEnabled,
+                    onExerciseAlertLowSoonEnabledChange = alertsViewModel::setExerciseAlertLowSoonEnabled,
+                    onExerciseAlertHighSoonEnabledChange = alertsViewModel::setExerciseAlertHighSoonEnabled,
+                    validationError = alertsViewModel.validationError,
+                    onOpenAlertSound = alertsViewModel::openAlertChannelSettings,
+                    onBack = { navController.popBackStack() }
+                )
+            } else {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
         }
         composable("settings/general") {
             val startOnBoot by viewModel.settings.startOnBoot.collectAsState(initial = true)

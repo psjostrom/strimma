@@ -122,7 +122,15 @@ See [Notifications](notifications.md) for full details on the action button.
 
 ## Alerts
 
-Configure glucose alerts. Each alert has an enable toggle and a threshold value.
+Configure glucose alerts in three sections:
+
+- **Alerts** — the independent Regular protocol: Urgent Low, Low, High, Urgent High, Low Soon, High Soon, and Stale Data alerts. These rows also have Sound buttons for Android notification-channel customization.
+- **Exercise Alerts** — the independent protocol selected while Workout Mode is active, with its own alert enablement and threshold controls. Exercise Low and Exercise High also define the exercise graph range. These rows have no separate Sound buttons.
+- **Alert Behavior** — shared Alert Snooze Duration and Cooldown controls. Each appears once and applies to the active alert protocol.
+
+Regular and Exercise protocols use the same Android notification channel for each corresponding alert type. Changing one protocol does not change the other.
+
+The values below are Regular protocol defaults; Exercise Alerts stores a separate set of values.
 
 | Setting | Description | Default |
 |---------|-------------|---------|
@@ -135,8 +143,6 @@ Configure glucose alerts. Each alert has an enable toggle and a threshold value.
 | **Stale Data** | Alert when no reading for 10+ minutes | Enabled |
 | **Alert Snooze Duration** | How long the alert notification Snooze button silences that alert and less severe alerts in the same category — 15m, 30m, 1h, 2h, or 3h. Independent of Notifications → Action Button → Duration | 30m |
 | **Cooldown** | Suppresses repeats of the same alarm while out of range — Off, 5m, 10m, or 15m | Off |
-
-Each alert also has a **Sound** button that opens the Android notification channel settings for customization.
 
 See [Alerts](alerts.md) for full details.
 

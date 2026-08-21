@@ -14,6 +14,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -32,6 +33,7 @@ class AlertManagerTest {
     private lateinit var context: Context
     private lateinit var settings: SettingsRepository
     private lateinit var alertManager: AlertManager
+    private lateinit var workoutModeManager: WorkoutModeManager
     private lateinit var notificationManager: NotificationManager
     private lateinit var managerScope: CoroutineScope
 
@@ -47,7 +49,7 @@ class AlertManagerTest {
         val clock = MutableClock(System.currentTimeMillis())
         // Cancelled in @After so the eager ticker doesn't leak across tests.
         managerScope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
-        val workoutModeManager = WorkoutModeManager(settings, poller, clock, managerScope)
+        workoutModeManager = WorkoutModeManager(settings, poller, clock, managerScope)
         alertManager = AlertManager(context, settings, workoutModeManager, managerScope)
         alertManager.createChannels()
         notificationManager = context.getSystemService(NotificationManager::class.java)
@@ -195,6 +197,20 @@ class AlertManagerTest {
     fun `stale disabled does not fire`() = runTest {
         settings.setAlertStaleEnabled(false)
         alertManager.checkStale(null)
+        assertFalse(isNotificationActive(AlertManager.ALERT_STALE_ID))
+    }
+
+    @Test
+    fun `disabled selected stale alert cancels visible notification`() = runTest {
+        val staleTs = System.currentTimeMillis() - (AlertManager.STALE_THRESHOLD_MINUTES + 1) * 60_000L
+        alertManager.checkStale(staleTs)
+        assertTrue(isNotificationActive(AlertManager.ALERT_STALE_ID))
+
+        settings.setAlertStaleEnabled(false)
+        // Wait for WorkoutModeManager's selected protocol snapshot to include the change.
+        workoutModeManager.effectiveThresholds.first { !it.alertProtocol.staleEnabled }
+        alertManager.checkStale(staleTs)
+
         assertFalse(isNotificationActive(AlertManager.ALERT_STALE_ID))
     }
 
