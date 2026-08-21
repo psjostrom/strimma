@@ -195,7 +195,7 @@ class UpdateChecker @Inject constructor() {
             return null
         }
         val releases: List<GitHubRelease> = response.body()
-        return releases.firstOrNull { it.prerelease }
+        return releases.firstOrNull { it.prerelease && it.tagName != "nightly" }
     }
 
     private suspend fun fetchMinVersion(): String? {
