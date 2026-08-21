@@ -21,6 +21,7 @@ Strimma uses a three-stage release pipeline:
 | `.github/workflows/create-release-pr.yml` | `workflow_dispatch` — runs `release.sh --prepare`, creates verified commit + PR via GitHub API. Idempotent on re-run. |
 | `.github/workflows/tag-release.yml` | Triggers on PR merge to `main` — validates trust boundaries, extracts version, creates `v*` tag, dispatches Release APK (skips if the GitHub Release already exists). |
 | `.github/workflows/release.yml` | Triggers on `v*` tag push or `workflow_dispatch` against a `v*` tag — builds APK, creates GitHub Release with fenced markdown notes. Tag-scoped concurrency; skips create if the release already exists. |
+| `.github/workflows/nightly.yml` | Runs nightly or via `workflow_dispatch` against `main` — builds signed APK and replaces the rolling `nightly` GitHub prerelease. |
 
 ## Trust Boundaries
 
@@ -45,6 +46,8 @@ The PR title must start with `chore(release):` and contain a valid semver versio
 
 **Note:** Branch, PR title, and `versionName` use `X.Y.Z` with no `v` prefix. Git tags and GitHub Release names use `vX.Y.Z` (including prereleases: `vX.Y.Z-rc.N`).
 
+Nightly builds use fixed tag `nightly`, GitHub Release name `Nightly`, and asset `strimma-nightly.apk`. They use the checked-in `versionName` and do not become the latest stable release.
+
 ## Workflow DAG
 
 ```text
@@ -66,7 +69,17 @@ release.yml (tag push from a human, or dispatch from tag-release)
   → Concurrency: one run per tag ref
   → Build signed APK
   → Create GitHub Release (skip if release already exists; notes from PR body)
+
+schedule / workflow_dispatch
+  → nightly.yml
+    → Checkout main
+    → Build signed APK + run tests
+    → Replace rolling nightly tag and prerelease
 ```
+
+## Nightly Builds
+
+`nightly.yml` runs at 02:00 UTC every day and can also be started manually. It publishes one rolling `nightly` prerelease from the latest `main` commit, replacing the previous APK. The app's beta update scan skips this tag so release candidates remain discoverable.
 
 ## Release Script Usage
 
