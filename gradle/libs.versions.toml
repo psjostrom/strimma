@@ -1,11 +1,11 @@
 [versions]
 agp = "9.3.1"
 kotlin = "2.4.10"
-compose-bom = "2026.06.01"
+compose-bom = "2026.08.00"
 room = "2.8.4"
 hilt = "2.60.1"
 ktor = "3.5.2"
-ksp = "2.3.10"
+ksp = "2.3.11"
 datastore = "1.2.1"
 security-crypto = "1.1.0"
 activity-compose = "1.13.0"
@@ -60,7 +60,7 @@ kotlin-metadata-jvm = { module = "org.jetbrains.kotlin:kotlin-metadata-jvm", ver
 glance-appwidget = { module = "androidx.glance:glance-appwidget", version.ref = "glance" }
 glance-material3 = { module = "androidx.glance:glance-material3", version.ref = "glance" }
 
-androidx-appcompat = { module = "androidx.appcompat:appcompat", version = "1.7.1" }
+androidx-appcompat = { module = "androidx.appcompat:appcompat", version = "1.8.0" }
 appauth = { module = "net.openid:appauth", version = "0.11.1" }
 
 leakcanary = { module = "com.squareup.leakcanary:leakcanary-android", version.ref = "leakcanary" }
