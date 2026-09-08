@@ -957,6 +957,11 @@ fun GlucoseGraph(
                             break
                         }
 
+                        if (event.changes.count { it.pressed } > 1) {
+                            pastSlop = true
+                            doubleTapDetector.reset()
+                        }
+
                         if (isScrubbing && event.changes.count { it.pressed } == 1) {
                             // Single-finger scrub: track nearest reading by time
                             val pos = event.changes.firstOrNull()?.position

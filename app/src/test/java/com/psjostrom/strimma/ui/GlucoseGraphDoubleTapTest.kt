@@ -3,6 +3,7 @@ package com.psjostrom.strimma.ui
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
@@ -10,6 +11,7 @@ import androidx.compose.ui.test.doubleClick
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.ui.theme.StrimmaTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -127,5 +129,41 @@ class GlucoseGraphDoubleTapTest {
         }
 
         assertTrue("Double tap over reading dot must invoke onResetZoomAndViewport", resetInvoked)
+    }
+
+    @Test
+    fun `multi-touch gesture does not trigger onResetZoomAndViewport`() {
+        var resetInvoked = false
+
+        composeRule.setContent {
+            StrimmaTheme {
+                GlucoseGraph(
+                    readings = emptyList(),
+                    bgLow = 72.0,
+                    bgHigh = 180.0,
+                    windowMs = 4 * 3600_000L,
+                    viewportEnd = 1_000_000_000L,
+                    zoomScale = 2.5f,
+                    onViewportChange = {},
+                    onZoomChange = {},
+                    onResetZoomAndViewport = { resetInvoked = true },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .testTag("glucose_graph")
+                )
+            }
+        }
+
+        // Multi-touch two-finger tap
+        composeRule.onNodeWithTag("glucose_graph").performTouchInput {
+            val p1 = 0
+            val p2 = 1
+            down(p1, center)
+            down(p2, center + Offset(50f, 0f))
+            up(p1)
+            up(p2)
+        }
+
+        assertFalse("Multi-touch tap must not invoke onResetZoomAndViewport", resetInvoked)
     }
 }
