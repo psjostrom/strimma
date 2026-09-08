@@ -4,6 +4,7 @@ import androidx.compose.ui.geometry.Offset
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.graph.computeYRange
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -111,5 +112,75 @@ class GlucoseGraphGestureTest {
         assertTrue("Plot width must be positive", viewport.plotWidth > 0)
         assertTrue("Plot height must be positive", viewport.plotHeight > 0)
         assertTrue("Bottom margin should accommodate axis labels", GRAPH_MARGIN_BOTTOM >= GRAPH_MARGIN_TOP)
+    }
+
+    @Test
+    fun `double tap detector detects valid double tap`() {
+        val detector = DoubleTapDetector(
+            doubleTapTimeoutMillis = 300L,
+            doubleTapMinTimeMillis = 40L,
+            doubleTapSlop = 50f
+        )
+        assertFalse("First tap should not trigger double-tap", detector.onSingleTap(1000L, Offset(100f, 100f)))
+        assertTrue("Second tap within 150ms and 5px should trigger double-tap", detector.onSingleTap(1150L, Offset(104f, 103f)))
+        assertFalse("Third tap should start new sequence", detector.onSingleTap(1300L, Offset(104f, 103f)))
+    }
+
+    @Test
+    fun `double tap detector rejects taps that exceed timeout`() {
+        val detector = DoubleTapDetector(
+            doubleTapTimeoutMillis = 300L,
+            doubleTapMinTimeMillis = 40L,
+            doubleTapSlop = 50f
+        )
+        assertFalse(detector.onSingleTap(1000L, Offset(100f, 100f)))
+        assertFalse("Tap after 400ms is not double tap", detector.onSingleTap(1400L, Offset(100f, 100f)))
+    }
+
+    @Test
+    fun `double tap detector rejects taps that are too fast`() {
+        val detector = DoubleTapDetector(
+            doubleTapTimeoutMillis = 300L,
+            doubleTapMinTimeMillis = 40L,
+            doubleTapSlop = 50f
+        )
+        assertFalse(detector.onSingleTap(1000L, Offset(100f, 100f)))
+        assertFalse("Tap within 20ms is rejected as bounce", detector.onSingleTap(1020L, Offset(100f, 100f)))
+    }
+
+    @Test
+    fun `double tap detector rejects taps outside slop distance`() {
+        val detector = DoubleTapDetector(
+            doubleTapTimeoutMillis = 300L,
+            doubleTapMinTimeMillis = 40L,
+            doubleTapSlop = 50f
+        )
+        assertFalse(detector.onSingleTap(1000L, Offset(100f, 100f)))
+        assertFalse("Tap 100px away exceeds slop", detector.onSingleTap(1150L, Offset(200f, 100f)))
+    }
+
+    @Test
+    fun `double tap detector reset clears state`() {
+        val detector = DoubleTapDetector(
+            doubleTapTimeoutMillis = 300L,
+            doubleTapMinTimeMillis = 40L,
+            doubleTapSlop = 50f
+        )
+        assertFalse(detector.onSingleTap(1000L, Offset(100f, 100f)))
+        detector.reset()
+        assertFalse("After reset, next tap within 100ms should be treated as first tap", detector.onSingleTap(1100L, Offset(100f, 100f)))
+    }
+
+    @Test
+    fun `double tap detector does not trigger on first tap with low timestamp`() {
+        val detector = DoubleTapDetector(
+            doubleTapTimeoutMillis = 300L,
+            doubleTapMinTimeMillis = 40L,
+            doubleTapSlop = 50f
+        )
+        assertFalse(
+            "Initial tap with small timestamp near origin must not register as double-tap",
+            detector.onSingleTap(150L, Offset(10f, 10f))
+        )
     }
 }

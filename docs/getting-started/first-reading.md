@@ -28,7 +28,7 @@ Open Strimma to see the full display:
     - **Gray** — stale (no recent reading)
 - **Direction arrow** — next to the BG value
 - **Delta and time** — how much it changed and how long ago (e.g., "+0.3 · 2 min ago")
-- **Interactive graph** — 4 hours of history by default (pinch to zoom, drag to pan, tap a dot to inspect)
+- **Interactive graph** — 4 hours of history by default (pinch to zoom, drag to pan, tap a dot to inspect, double-tap to reset)
 - **Minimap** — 24-hour overview below the graph, tap to jump to any time
 
 ---
