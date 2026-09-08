@@ -927,11 +927,11 @@ fun GlucoseGraph(
                         val event = awaitPointerEvent()
                         if (!event.changes.any { it.pressed }) {
                             selectedReading = null
-                            if (!pastSlop && !isScrubbing) {
+                            if (!pastSlop) {
                                 val upTime = event.changes.firstOrNull()?.uptimeMillis ?: down.uptimeMillis
                                 if (doubleTapDetector.onSingleTap(upTime, down.position)) {
                                     currentOnResetZoomAndViewport()
-                                } else {
+                                } else if (!isScrubbing) {
                                     // Tap detection: check if the tap landed on an exercise band
                                     val tapX = down.position.x
                                     val plotW = size.width - mLeft - mRight

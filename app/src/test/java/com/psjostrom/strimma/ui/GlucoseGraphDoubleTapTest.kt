@@ -7,6 +7,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.doubleClick
+import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.ui.theme.StrimmaTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -88,5 +89,43 @@ class GlucoseGraphDoubleTapTest {
             "Viewport must advance near current time + 15 min prediction",
             newViewport >= before + 15 * 60_000L && newViewport <= after + 15 * 60_000L
         )
+    }
+
+    @Test
+    fun `double tap directly over reading dot triggers onResetZoomAndViewport`() {
+        var resetInvoked = false
+        val windowMs = 4 * 3600_000L
+        val viewportEnd = 1_000_000_000L
+        val reading = GlucoseReading(
+            ts = viewportEnd - windowMs / 2,
+            sgv = 120,
+            direction = "Flat",
+            delta = 0.0
+        )
+
+        composeRule.setContent {
+            StrimmaTheme {
+                GlucoseGraph(
+                    readings = listOf(reading),
+                    bgLow = 72.0,
+                    bgHigh = 180.0,
+                    windowMs = windowMs,
+                    viewportEnd = viewportEnd,
+                    zoomScale = 1.0f,
+                    onViewportChange = {},
+                    onZoomChange = {},
+                    onResetZoomAndViewport = { resetInvoked = true },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .testTag("glucose_graph")
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("glucose_graph").performTouchInput {
+            doubleClick()
+        }
+
+        assertTrue("Double tap over reading dot must invoke onResetZoomAndViewport", resetInvoked)
     }
 }
