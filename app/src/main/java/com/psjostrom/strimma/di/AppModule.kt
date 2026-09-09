@@ -3,7 +3,6 @@ package com.psjostrom.strimma.di
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
-import androidx.room.Room
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.StrimmaDatabase
 import com.psjostrom.strimma.data.TreatmentDao
