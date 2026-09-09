@@ -226,6 +226,39 @@ class NightscoutFollowerIntegrationTest {
         job.cancel()
     }
 
+    @Test
+    fun `processNightscoutEntries batches inserts and computes direction without future pollution`() = runTest {
+        val env = createEnv()
+        val t0 = baseTs - 15 * 60_000L
+        val t1 = baseTs - 10 * 60_000L
+        val t2 = baseTs - 5 * 60_000L
+        val t3 = baseTs
+
+        // Pre-insert an existing reading in DB at t0 and a future reading at t3
+        env.dao.insert(GlucoseReading(ts = t0, sgv = 100, direction = "Flat", delta = null, pushed = 1))
+        env.dao.insert(GlucoseReading(ts = t3, sgv = 200, direction = "SingleUp", delta = 20.0, pushed = 1))
+
+        // Batch contains duplicate of t0, and new readings at t2 (130) and t1 (110) (unsorted)
+        val batch = listOf(
+            entry(100, t0),
+            entry(130, t2),
+            entry(110, t1)
+        )
+
+        val inserted = processNightscoutEntries(batch, env.dao, env.directionComputer)
+        assertEquals(2, inserted.size)
+        assertEquals(t1, inserted[0].ts)
+        assertEquals(t2, inserted[1].ts)
+
+        // Reading at t2 has history t0 (100) and t1 (110). Rising to 130 computes FortyFiveUp.
+        // If future reading t3 (200) were included, 3-point average would produce DoubleUp.
+        assertEquals("FortyFiveUp", inserted[1].direction)
+        assertNotNull(inserted[1].delta)
+
+        // All readings in DB should now be 4 (t0, t1, t2, t3)
+        assertEquals(4, env.dao.lastN(10).size)
+    }
+
     private class FakeClient : NightscoutClient() {
         var entries: List<NightscoutEntryResponse> = emptyList()
         var entriesPages: MutableList<List<NightscoutEntryResponse>>? = null

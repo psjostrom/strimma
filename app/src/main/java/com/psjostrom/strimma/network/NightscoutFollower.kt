@@ -70,7 +70,8 @@ suspend fun processNightscoutEntries(
         val windowStart = ts - LOOKBACK_MINUTES * MS_PER_MINUTE
         recentReadings.removeAll { it.ts < windowStart }
 
-        val (computedDirection, deltaMgdl) = directionComputer.compute(recentReadings, tempReading)
+        val pastReadings = recentReadings.filter { it.ts <= ts }
+        val (computedDirection, deltaMgdl) = directionComputer.compute(pastReadings, tempReading)
 
         val reading = tempReading.copy(
             direction = computedDirection.name,
