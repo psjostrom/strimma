@@ -10,7 +10,6 @@ import com.psjostrom.strimma.testutil.workout.FakeCalendarPoller
 import com.psjostrom.strimma.testutil.workout.MutableClock
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
