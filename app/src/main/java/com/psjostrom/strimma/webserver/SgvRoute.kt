@@ -1,7 +1,6 @@
 package com.psjostrom.strimma.webserver
 
 import com.psjostrom.strimma.data.GlucoseReading
-import com.psjostrom.strimma.data.GlucoseUnit
 import org.json.JSONArray
 import org.json.JSONObject
 import java.time.Instant
