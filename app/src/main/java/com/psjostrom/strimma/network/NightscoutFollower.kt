@@ -33,32 +33,68 @@ private const val DELTA_ROUNDING_FACTOR = 10.0
  * `StrimmaService.onNewReading` via `cameFromNightscout=true`, so the follower path is
  * unified at the side-effects level even though storage is direct.
  */
+suspend fun processNightscoutEntries(
+    entries: List<NightscoutEntryResponse>,
+    dao: ReadingDao,
+    directionComputer: DirectionComputer,
+    pushed: Int = 1
+): List<GlucoseReading> {
+    if (entries.isEmpty()) return emptyList()
+
+    val sortedEntries = entries
+        .filter { it.sgv != null && it.date != null }
+        .sortedBy { it.date }
+    if (sortedEntries.isEmpty()) return emptyList()
+
+    val earliestTs = sortedEntries.first().date!!
+
+    // We load existing recent readings once for the entire batch.
+    // As we process and create new valid readings in this batch, we add them to this
+    // mutable list so that subsequent readings in the same batch can correctly compute
+    // their direction based on the freshly created preceding readings.
+    val recentReadings = dao.since(earliestTs - LOOKBACK_MINUTES * MS_PER_MINUTE).toMutableList()
+
+    val newReadings = mutableListOf<GlucoseReading>()
+
+    for (entry in sortedEntries) {
+        val sgv = entry.sgv!!
+        val ts = entry.date!!
+
+        val existing = recentReadings.find { kotlin.math.abs(it.ts - ts) < DUPLICATE_THRESHOLD_MS }
+        if (existing != null) continue
+
+        val tempReading = GlucoseReading(
+            ts = ts, sgv = sgv,
+            direction = "NONE", delta = null, pushed = pushed
+        )
+        val windowStart = ts - LOOKBACK_MINUTES * MS_PER_MINUTE
+        recentReadings.removeAll { it.ts < windowStart }
+
+        val (computedDirection, deltaMgdl) = directionComputer.compute(recentReadings, tempReading)
+
+        val reading = tempReading.copy(
+            direction = computedDirection.name,
+            delta = deltaMgdl?.let { Math.round(it * DELTA_ROUNDING_FACTOR) / DELTA_ROUNDING_FACTOR }
+        )
+
+        newReadings.add(reading)
+        recentReadings.add(reading)
+    }
+
+    if (newReadings.isNotEmpty()) {
+        dao.insertBatch(newReadings)
+    }
+
+    return newReadings
+}
+
 suspend fun processNightscoutEntry(
     entry: NightscoutEntryResponse,
     dao: ReadingDao,
     directionComputer: DirectionComputer,
     pushed: Int = 1
 ): GlucoseReading? {
-    val sgv = entry.sgv ?: return null
-    val ts = entry.date ?: return null
-
-    val recentReadings = dao.since(ts - LOOKBACK_MINUTES * MS_PER_MINUTE)
-    val existing = recentReadings.find { kotlin.math.abs(it.ts - ts) < DUPLICATE_THRESHOLD_MS }
-    if (existing != null) return null
-
-    val tempReading = GlucoseReading(
-        ts = ts, sgv = sgv,
-        direction = "NONE", delta = null, pushed = pushed
-    )
-    val (computedDirection, deltaMgdl) = directionComputer.compute(recentReadings, tempReading)
-
-    val reading = tempReading.copy(
-        direction = computedDirection.name,
-        delta = deltaMgdl?.let { Math.round(it * DELTA_ROUNDING_FACTOR) / DELTA_ROUNDING_FACTOR }
-    )
-
-    dao.insert(reading)
-    return reading
+    return processNightscoutEntries(listOf(entry), dao, directionComputer, pushed).firstOrNull()
 }
 
 @Singleton
@@ -118,15 +154,13 @@ class NightscoutFollower @Inject constructor(
                     continue
                 }
 
-                for (entry in valid) {
-                    val reading = processNightscoutEntry(entry, dao, directionComputer)
-                    if (reading != null) {
-                        onNewReading(reading)
-                    }
+                val newReadings = processNightscoutEntries(valid, dao, directionComputer)
+                for (reading in newReadings) {
+                    onNewReading(reading)
                 }
 
                 _status.value = IntegrationStatus.Connected(lastActivityTs = System.currentTimeMillis())
-                DebugLog.log(message = "Follower: ${valid.size} new readings")
+                DebugLog.log(message = "Follower: ${valid.size} valid entries, ${newReadings.size} new readings")
             }
         }
     }
@@ -177,18 +211,13 @@ class NightscoutFollower @Inject constructor(
     }
 
     private suspend fun processBackfillEntries(entries: List<NightscoutEntryResponse>): BackfillPageResult {
-        var insertedCount = 0
-        var lastReading: GlucoseReading? = null
+        val valid = filterValidEntries(entries)
+        val newReadings = processNightscoutEntries(valid, dao, directionComputer)
 
-        for (entry in filterValidEntries(entries)) {
-            val reading = processNightscoutEntry(entry, dao, directionComputer)
-            if (reading != null) {
-                lastReading = reading
-                insertedCount += 1
-            }
-        }
-
-        return BackfillPageResult(insertedCount = insertedCount, lastReading = lastReading)
+        return BackfillPageResult(
+            insertedCount = newReadings.size,
+            lastReading = newReadings.lastOrNull()
+        )
     }
 
     private fun nextBackfillSince(entries: List<NightscoutEntryResponse>): Long? {
