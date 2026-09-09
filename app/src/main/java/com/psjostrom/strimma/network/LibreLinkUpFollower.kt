@@ -105,37 +105,36 @@ class LibreLinkUpFollower @Inject constructor(
         graphData: LluGraphData,
         onNewReading: suspend (GlucoseReading) -> Unit
     ): Int {
-        var newCount = 0
+        val entries = mutableListOf<NightscoutEntryResponse>()
 
         for (item in graphData.graphData) {
-            val reading = processLluItem(item, onNewReading)
-            if (reading) newCount++
+            parseLluItemToEntry(item)?.let { entries.add(it) }
         }
 
         graphData.connection.glucoseMeasurement?.let { current ->
-            if (processLluItem(current, onNewReading)) newCount++
+            parseLluItemToEntry(current)?.let { entries.add(it) }
         }
 
-        return newCount
+        val newReadings = processNightscoutEntries(entries, dao, directionComputer, pushed = 0)
+
+        for (reading in newReadings) {
+            onNewReading(reading)
+        }
+
+        return newReadings.size
     }
 
-    private suspend fun processLluItem(
-        item: LluGlucoseItem,
-        onNewReading: suspend (GlucoseReading) -> Unit
-    ): Boolean {
+    private fun parseLluItemToEntry(item: LluGlucoseItem): NightscoutEntryResponse? {
         val sgv = item.valueInMgPerDl
         if (!GlucoseReading.isValidSgv(sgv)) {
             DebugLog.log(
                 message = "LLU: rejected SGV $sgv " +
                     "(outside ${GlucoseReading.MIN_VALID_SGV}–${GlucoseReading.MAX_VALID_SGV})",
             )
-            return false
+            return null
         }
-        val ts = parseLluTimestamp(item.factoryTimestamp) ?: return false
-        val entry = NightscoutEntryResponse(sgv = sgv, date = ts, type = "sgv")
-        val reading = processNightscoutEntry(entry, dao, directionComputer, pushed = 0) ?: return false
-        onNewReading(reading)
-        return true
+        val ts = parseLluTimestamp(item.factoryTimestamp) ?: return null
+        return NightscoutEntryResponse(sgv = sgv, date = ts, type = "sgv")
     }
 
     fun stop() {

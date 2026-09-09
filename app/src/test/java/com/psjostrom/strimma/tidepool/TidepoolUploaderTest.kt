@@ -20,7 +20,6 @@ import io.ktor.http.headersOf
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
