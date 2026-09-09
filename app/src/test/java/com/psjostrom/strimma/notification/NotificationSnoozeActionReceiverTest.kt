@@ -12,7 +12,6 @@ import com.psjostrom.strimma.testutil.workout.FakeCalendarPoller
 import com.psjostrom.strimma.testutil.workout.MutableClock
 import com.psjostrom.strimma.widget.WidgetSettingsRepository
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
