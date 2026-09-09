@@ -314,8 +314,14 @@ class MainViewModel @Inject constructor(
         return buildString {
             appendLine("timestamp,datetime,sgv,direction,delta_mgdl")
             val sdf = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault())
+            val date = java.util.Date()
             for (r in readings) {
-                appendLine("${r.ts},${sdf.format(java.util.Date(r.ts))},${r.sgv},${r.direction},${r.delta ?: ""}")
+                date.time = r.ts
+                append(r.ts).append(',')
+                append(sdf.format(date)).append(',')
+                append(r.sgv).append(',')
+                append(r.direction).append(',')
+                append(r.delta ?: "").append('\n')
             }
         }
     }
