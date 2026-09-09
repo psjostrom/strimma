@@ -13,8 +13,6 @@ import com.psjostrom.strimma.createTestDataStore
 import com.psjostrom.strimma.widget.WidgetSettingsRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.*
