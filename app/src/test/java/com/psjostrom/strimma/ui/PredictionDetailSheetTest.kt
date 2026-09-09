@@ -2,7 +2,6 @@ package com.psjostrom.strimma.ui
 
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.psjostrom.strimma.graph.CrossingType
 import com.psjostrom.strimma.graph.Prediction
