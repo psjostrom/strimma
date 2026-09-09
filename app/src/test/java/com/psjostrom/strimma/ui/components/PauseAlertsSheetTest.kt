@@ -1,7 +1,6 @@
 package com.psjostrom.strimma.ui.components
 
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -261,14 +260,14 @@ class PauseAlertsSheetTest {
         // The "what produces the unified-vs-split flip" rule belongs in AlertsViewModelTest;
         // this test only verifies the sheet honors whatever props it receives.
         val sharedExpiry = System.currentTimeMillis() + 1_800_000L
-        var lowExpiry by mutableStateOf<Long?>(sharedExpiry)
-        var unifiedExpiry by mutableStateOf<Long?>(sharedExpiry)
+        val lowExpiry = mutableStateOf<Long?>(sharedExpiry)
+        val unifiedExpiry = mutableStateOf<Long?>(sharedExpiry)
         composeRule.setContent {
             StrimmaTheme {
                 PauseAlertsSheetContent(
-                    pauseLowExpiryMs = lowExpiry,
+                    pauseLowExpiryMs = lowExpiry.value,
                     pauseHighExpiryMs = sharedExpiry,
-                    unifiedExpiryMs = unifiedExpiry,
+                    unifiedExpiryMs = unifiedExpiry.value,
                     onPause = { _, _ -> },
                     onPauseAll = {},
                     onCancel = {},
@@ -280,8 +279,8 @@ class PauseAlertsSheetTest {
         composeRule.onNodeWithText("All high alerts").assertDoesNotExist()
 
         composeRule.runOnIdle {
-            lowExpiry = null
-            unifiedExpiry = null
+            lowExpiry.value = null
+            unifiedExpiry.value = null
         }
         composeRule.waitForIdle()
         composeRule.onNodeWithText("All low alerts").assertExists()
