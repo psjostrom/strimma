@@ -185,14 +185,9 @@ class MealAnalyzer @Inject constructor() {
         readings: List<GlucoseReading>,
         baseline: Double
     ): Double {
-        if (readings.size < 2) return 0.0
-
         var auc = 0.0
 
-        for (i in 0 until readings.size - 1) {
-            val r1 = readings[i]
-            val r2 = readings[i + 1]
-
+        readings.zipWithNext { r1, r2 ->
             val deltaMinutes = (r2.ts - r1.ts).toDouble() / MS_PER_MINUTE
 
             // Height above baseline for each point (clamped to >= 0)
