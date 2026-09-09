@@ -70,6 +70,10 @@ After zooming in, drag with one finger to move the viewport left (earlier) or ri
 
 When the graph is showing the current time (right edge near "now"), it automatically advances to keep the latest reading visible. If you pan or zoom away from the current time, auto-tracking pauses. When you pan back to the current time, it resumes.
 
+### Double-Tap to Reset
+
+Double-tap anywhere on the graph to reset zoom to 1x and jump the viewport to the current time, resuming auto-tracking.
+
 ---
 
 ## Minimap

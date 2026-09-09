@@ -289,6 +289,10 @@ fun MainScreen(
                     onExerciseTap = { selectedExercise = it },
                     onViewportChange = { viewportEnd = it },
                     onZoomChange = { zoomScale = it },
+                    onResetZoomAndViewport = {
+                        zoomScale = 1f
+                        viewportEnd = System.currentTimeMillis() + predictionMs
+                    },
                     modifier = Modifier.fillMaxSize(),
                     prediction = prediction
                 )
@@ -827,8 +831,15 @@ fun GlucoseGraph(
     exerciseSessions: List<StoredExerciseSession> = emptyList(),
     onExerciseTap: (StoredExerciseSession) -> Unit = {},
     prediction: Prediction? = null,
+    onResetZoomAndViewport: (() -> Unit)? = null,
 ) {
     val predictionMs = predictionMinutes * 60_000L
+    val currentOnResetZoomAndViewport by rememberUpdatedState(
+        onResetZoomAndViewport ?: {
+            onZoomChange(1f)
+            onViewportChange(System.currentTimeMillis() + predictionMs)
+        }
+    )
     var selectedReading by remember { mutableStateOf<GlucoseReading?>(null) }
     // Capture theme colors for use inside Canvas
     val axisColor = MaterialTheme.colorScheme.onSurfaceVariant
@@ -887,6 +898,11 @@ fun GlucoseGraph(
             .pointerInput(Unit) {
                 val mRight = GRAPH_MARGIN_RIGHT
                 val touchSlop = viewConfiguration.touchSlop
+                val doubleTapDetector = DoubleTapDetector(
+                    doubleTapTimeoutMillis = viewConfiguration.doubleTapTimeoutMillis,
+                    doubleTapMinTimeMillis = viewConfiguration.doubleTapMinTimeMillis,
+                    doubleTapSlop = touchSlop * 2.5f
+                )
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
                     val mLeft = if (currentGlucoseUnit == GlucoseUnit.MGDL) 70f else 50f
@@ -911,24 +927,39 @@ fun GlucoseGraph(
                         val event = awaitPointerEvent()
                         if (!event.changes.any { it.pressed }) {
                             selectedReading = null
-                            // Tap detection: if we never moved past touch slop and weren't scrubbing,
-                            // check if the tap landed on an exercise band
-                            if (!pastSlop && !isScrubbing) {
-                                val tapX = down.position.x
-                                val plotW = size.width - mLeft - mRight
-                                for (session in currentExerciseSessions) {
-                                    if (session.endTime < currentVisibleStart || session.startTime > currentViewportEnd) continue
-                                    val xStart = (mLeft + ((session.startTime - currentVisibleStart).toFloat() / currentVisibleMs) * plotW)
-                                        .coerceIn(mLeft, size.width - mRight)
-                                    val xEnd = (mLeft + ((session.endTime - currentVisibleStart).toFloat() / currentVisibleMs) * plotW)
-                                        .coerceIn(mLeft, size.width - mRight)
-                                    if (xEnd > xStart && tapX in xStart..xEnd) {
-                                        currentOnExerciseTap(session)
-                                        break
+                            if (!pastSlop) {
+                                val upTime = event.changes.firstOrNull()?.uptimeMillis ?: down.uptimeMillis
+                                if (doubleTapDetector.onSingleTap(upTime, down.position)) {
+                                    currentOnResetZoomAndViewport()
+                                } else if (!isScrubbing) {
+                                    // Tap detection: check if the tap landed on an exercise band
+                                    val tapX = down.position.x
+                                    val plotW = size.width - mLeft - mRight
+                                    for (session in currentExerciseSessions) {
+                                        if (session.endTime < currentVisibleStart || session.startTime > currentViewportEnd) continue
+                                        val sessionStartRatio =
+                                            (session.startTime - currentVisibleStart).toFloat() / currentVisibleMs
+                                        val xStart = (mLeft + sessionStartRatio * plotW)
+                                            .coerceIn(mLeft, size.width - mRight)
+                                        val sessionEndRatio =
+                                            (session.endTime - currentVisibleStart).toFloat() / currentVisibleMs
+                                        val xEnd = (mLeft + sessionEndRatio * plotW)
+                                            .coerceIn(mLeft, size.width - mRight)
+                                        if (xEnd > xStart && tapX in xStart..xEnd) {
+                                            currentOnExerciseTap(session)
+                                            break
+                                        }
                                     }
                                 }
+                            } else {
+                                doubleTapDetector.reset()
                             }
                             break
+                        }
+
+                        if (event.changes.count { it.pressed } > 1) {
+                            pastSlop = true
+                            doubleTapDetector.reset()
                         }
 
                         if (isScrubbing && event.changes.count { it.pressed } == 1) {
@@ -939,6 +970,10 @@ fun GlucoseGraph(
                                     pos.x, currentSorted, currentVisibleStart, currentVisibleMs,
                                     size.width.toFloat(), mLeft
                                 )
+                                if (!pastSlop && (pos - down.position).getDistance() > touchSlop) {
+                                    pastSlop = true
+                                    doubleTapDetector.reset()
+                                }
                             }
                             event.changes.forEach { it.consume() }
                         } else {
