@@ -141,6 +141,7 @@ The values below are Regular protocol defaults; Exercise Alerts stores a separat
 | **Low Soon** | Alert when predicted to go low | Enabled |
 | **High Soon** | Alert when predicted to go high | Enabled |
 | **Stale Data** | Alert when no reading for 10+ minutes | Enabled |
+| **Pattern Insights** | Alert when recurring out-of-range patterns are detected at the same time of day | Enabled |
 | **Alert Snooze Duration** | How long the alert notification Snooze button silences that alert and less severe alerts in the same category — 15m, 30m, 1h, 2h, or 3h. Independent of Notifications → Action Button → Duration | 30m |
 | **Cooldown** | Suppresses repeats of the same alarm while out of range — Off, 5m, 10m, or 15m | Off |
 

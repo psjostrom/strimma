@@ -300,6 +300,11 @@ class SettingsRepository @Inject constructor(
         private val KEY_START_ON_BOOT = booleanPreferencesKey("start_on_boot")
         private const val KEY_START_ON_BOOT_SYNC = "start_on_boot"
 
+        private val KEY_PATTERN_ALERTS_ENABLED = booleanPreferencesKey("pattern_alerts_enabled")
+        private val KEY_PATTERN_LAST_HASH = stringPreferencesKey("pattern_last_hash")
+        private val KEY_PATTERN_LAST_NOTIFIED_TS = longPreferencesKey("pattern_last_notified_ts")
+        private val KEY_PATTERN_CARD_DISMISSED_DATE = stringPreferencesKey("pattern_card_dismissed_date")
+
 
         private val KEY_HC_WRITE_ENABLED = booleanPreferencesKey("hc_write_enabled")
         private val KEY_HC_LAST_SYNC = longPreferencesKey("hc_last_sync")
@@ -435,6 +440,18 @@ class SettingsRepository @Inject constructor(
     suspend fun setAlertSnoozeDuration(duration: SnoozeDuration) {
         dataStore.edit { it[KEY_ALERT_SNOOZE_DURATION] = duration.name }
     }
+
+    val patternAlertsEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_PATTERN_ALERTS_ENABLED] ?: true }
+    suspend fun setPatternAlertsEnabled(enabled: Boolean) { dataStore.edit { it[KEY_PATTERN_ALERTS_ENABLED] = enabled } }
+
+    val patternLastHash: Flow<String> = dataStore.data.map { it[KEY_PATTERN_LAST_HASH] ?: "" }
+    suspend fun setPatternLastHash(hash: String) { dataStore.edit { it[KEY_PATTERN_LAST_HASH] = hash } }
+
+    val patternLastNotifiedTs: Flow<Long> = dataStore.data.map { it[KEY_PATTERN_LAST_NOTIFIED_TS] ?: 0L }
+    suspend fun setPatternLastNotifiedTs(ts: Long) { dataStore.edit { it[KEY_PATTERN_LAST_NOTIFIED_TS] = ts } }
+
+    val patternCardDismissedDate: Flow<String> = dataStore.data.map { it[KEY_PATTERN_CARD_DISMISSED_DATE] ?: "" }
+    suspend fun setPatternCardDismissedDate(date: String) { dataStore.edit { it[KEY_PATTERN_CARD_DISMISSED_DATE] = date } }
 
     // --- Exercise alerts ---
     val exerciseAlertLowEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_EXERCISE_ALERT_LOW_ENABLED] ?: true }
@@ -890,6 +907,7 @@ class SettingsRepository @Inject constructor(
             put("alert_stale_enabled", prefs[KEY_ALERT_STALE_ENABLED] ?: true)
             put("alert_low_soon_enabled", prefs[KEY_ALERT_LOW_SOON_ENABLED] ?: true)
             put("alert_high_soon_enabled", prefs[KEY_ALERT_HIGH_SOON_ENABLED] ?: true)
+            put("pattern_alerts_enabled", prefs[KEY_PATTERN_ALERTS_ENABLED] ?: true)
             putExerciseAlertSettings(prefs)
             put("alert_cooldown_minutes", prefs[KEY_ALERT_COOLDOWN_MINUTES] ?: DEFAULT_ALERT_COOLDOWN_MINUTES)
             put("alert_snooze_duration", normalizedAlertSnoozeDurationName(prefs[KEY_ALERT_SNOOZE_DURATION]))
@@ -955,6 +973,7 @@ class SettingsRepository @Inject constructor(
             if (settings.has("alert_stale_enabled")) prefs[KEY_ALERT_STALE_ENABLED] = settings.getBoolean("alert_stale_enabled")
             if (settings.has("alert_low_soon_enabled")) prefs[KEY_ALERT_LOW_SOON_ENABLED] = settings.getBoolean("alert_low_soon_enabled")
             if (settings.has("alert_high_soon_enabled")) prefs[KEY_ALERT_HIGH_SOON_ENABLED] = settings.getBoolean("alert_high_soon_enabled")
+            if (settings.has("pattern_alerts_enabled")) prefs[KEY_PATTERN_ALERTS_ENABLED] = settings.getBoolean("pattern_alerts_enabled")
             prefs.importExerciseAlerts(
                 settings,
                 isV1,

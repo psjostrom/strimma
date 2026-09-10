@@ -6,7 +6,7 @@ Strimma can alert you with sound and vibration when your glucose crosses configu
 
 ## Alert Types
 
-Strimma has **eight** alert types, each with its own Android notification channel so you can customize the sound and vibration for each one independently. Regular and Exercise protocols share the corresponding channels.
+Strimma has **nine** alert types, each with its own Android notification channel so you can customize the sound and vibration for each one independently. Regular and Exercise protocols share the corresponding channels.
 
 ### Glucose Threshold Alerts
 
@@ -23,6 +23,12 @@ Strimma has **eight** alert types, each with its own Android notification channe
 |-------|---------|-------------|-----------|
 | **Low Soon** | Predicted to cross low threshold within prediction window | No | Gentle |
 | **High Soon** | Predicted to cross high threshold within prediction window | No | Gentle |
+
+### Pattern Alerts
+
+| Alert | Trigger | Bypasses DND | Vibration |
+|-------|---------|-------------|-----------|
+| **Pattern Insights** | Recurring out-of-range glucose at the same time of day (4+ of last 7 days) | No | Gentle |
 
 ### System Alerts
 
@@ -181,3 +187,19 @@ Each alarm type (Urgent Low, Low, High, Urgent High) has its **own independent c
 ### Cooldown reset
 
 When glucose returns to range, all cooldown timers **reset immediately**. The next episode alerts right away regardless of remaining cooldown.
+
+---
+
+## Pattern Alerts
+
+![Pattern Insight Card](../screenshots/pattern-insight-card.png){ width="300" }
+
+Strimma analyzes your glucose history over the last 7 days to identify recurring patterns at specific times of day (for example, recurring highs between 14:00–16:00, or recurring lows around 06:00).
+
+- **Threshold**: Requires at least 4 out of 7 days to be out of range during the same 1-hour window (with at least 5 evaluated days).
+- **Workout exclusion**: Glucose readings during recorded workouts or manual workout mode are excluded from pattern detection to avoid false positives.
+- **Timing**: Checked daily at 21:00 local time.
+- **Deduplication**: If the same pattern persists without changes, notifications are limited to at most once every 72 hours.
+- **In-App Card**: Active patterns appear in an insight card at the top of the main screen with a dismiss button. Dismissing hides the card for the rest of the day.
+- **Configuration**: Can be toggled on/off in **Settings > Alerts → Pattern Insights**.
+

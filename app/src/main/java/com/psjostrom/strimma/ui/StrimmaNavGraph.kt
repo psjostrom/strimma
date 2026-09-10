@@ -231,6 +231,7 @@ fun StrimmaNavGraph(
             val pauseLowExpiryMs by alertsViewModel.pauseLowExpiryMs.collectAsState()
             val pauseHighExpiryMs by alertsViewModel.pauseHighExpiryMs.collectAsState()
             val unifiedPauseExpiryMs by alertsViewModel.unifiedPauseExpiryMs.collectAsState()
+            val activePatterns by viewModel.activePatterns.collectAsState()
             val storyReady by viewModel.storyReady.collectAsState()
             val lastMonth = java.time.YearMonth.now().minusMonths(1)
             val storyMonthName = lastMonth.month.getDisplayName(
@@ -266,7 +267,14 @@ fun StrimmaNavGraph(
                     }
                 },
                 workoutMode = viewModel.workoutMode.collectAsState().value,
-                onToggleWorkoutMode = viewModel::toggleWorkoutMode
+                onToggleWorkoutMode = viewModel::toggleWorkoutMode,
+                activePatterns = activePatterns,
+                onDismissPatternCard = viewModel::dismissPatternCard,
+                onNavigateToStats = {
+                    navController.navigate("stats") {
+                        launchSingleTop = true
+                    }
+                }
             )
         }
         composable("exercise") {
@@ -425,6 +433,7 @@ fun StrimmaNavGraph(
             val exerciseAlertProtocol by alertsViewModel.exerciseAlertProtocol.collectAsState()
             val alertCooldownMinutes by alertsViewModel.alertCooldownMinutes.collectAsState()
             val alertSnoozeDuration by alertsViewModel.alertSnoozeDuration.collectAsState()
+            val patternAlertsEnabled by alertsViewModel.patternAlertsEnabled.collectAsState()
             val regularProtocol = regularAlertProtocol
             val exerciseProtocol = exerciseAlertProtocol
             if (regularProtocol != null && exerciseProtocol != null) {
@@ -458,6 +467,8 @@ fun StrimmaNavGraph(
                     onExerciseAlertStaleEnabledChange = alertsViewModel::setExerciseAlertStaleEnabled,
                     onExerciseAlertLowSoonEnabledChange = alertsViewModel::setExerciseAlertLowSoonEnabled,
                     onExerciseAlertHighSoonEnabledChange = alertsViewModel::setExerciseAlertHighSoonEnabled,
+                    patternAlertsEnabled = patternAlertsEnabled,
+                    onPatternAlertsEnabledChange = alertsViewModel::setPatternAlertsEnabled,
                     validationError = alertsViewModel.validationError,
                     onOpenAlertSound = alertsViewModel::openAlertChannelSettings,
                     onBack = { navController.popBackStack() }

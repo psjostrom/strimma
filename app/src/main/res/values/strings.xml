@@ -9,6 +9,7 @@
     <string name="common_export">Export</string>
     <string name="common_sound">Sound</string>
     <string name="common_no_data">No data</string>
+    <string name="common_dismiss">Dismiss</string>
 
     <string name="common_content_desc_back">Back</string>
     <string name="common_content_desc_export">Export</string>
@@ -355,6 +356,26 @@
     <string name="alert_channel_push_fail">Upload Failure Alert</string>
     <string name="alert_channel_push_fail_desc">Glucose uploads failing for extended period</string>
     <string name="alert_snooze">Snooze %1$s</string>
+
+    <!-- Pattern Alerts -->
+    <string name="alert_channel_pattern">Pattern Insights</string>
+    <string name="alert_channel_pattern_desc">Recurring time-of-day glucose patterns</string>
+    <string name="pattern_notif_title_high">Recurring high: %1$s</string>
+    <string name="pattern_notif_title_low">Recurring low: %1$s</string>
+    <string name="pattern_notif_body_high">High on %1$d of the last %2$d days · Avg %3$s</string>
+    <string name="pattern_notif_body_low">Low on %1$d of the last %2$d days · Avg %3$s</string>
+    <string name="pattern_notif_title_multiple">%1$d recurring patterns detected</string>
+    <string name="pattern_notif_summary_multiple">%1$d recurring glucose patterns detected</string>
+    <string name="pattern_notif_item_high">⬆ High %1$s · %2$d of %3$d days</string>
+    <string name="pattern_notif_item_low">⬇ Low %1$s · %2$d of %3$d days</string>
+    <string name="settings_alerts_pattern_section">Pattern Insights</string>
+    <string name="settings_alerts_pattern_title">Recurring patterns</string>
+    <string name="settings_alerts_pattern_desc">Get notified when glucose is consistently out of range at the same time of day</string>
+    <string name="insight_pattern_badge">PATTERN</string>
+    <string name="insight_pattern_header">%1$s · %2$d of %3$d days</string>
+    <string name="insight_pattern_detail_high">High between %1$s on recent days (Avg %2$s)</string>
+    <string name="insight_pattern_detail_low">Low between %1$s on recent days (Avg %2$s)</string>
+    <string name="insight_pattern_detail_multiple">%1$d recurring patterns detected · Tap to view stats</string>
 
     <!-- Alert pause -->
     <string name="pause_alerts">Pause alerts</string>

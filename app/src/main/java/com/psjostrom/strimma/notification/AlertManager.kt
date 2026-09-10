@@ -75,6 +75,7 @@ class AlertManager @Inject constructor(
         const val CHANNEL_PUSH_FAIL = "strimma_alert_push_fail"
         const val CHANNEL_LOW_SOON = "strimma_alert_low_soon"
         const val CHANNEL_HIGH_SOON = "strimma_alert_high_soon"
+        const val CHANNEL_PATTERN = "strimma_alert_pattern"
 
         // Legacy channel — delete if it exists from previous version
         private const val LEGACY_CHANNEL = "strimma_alerts"
@@ -294,6 +295,14 @@ class AlertManager @Inject constructor(
             RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
             notifAudioAttrs, bypassDnd = false,
             vibration = longArrayOf(0, VIBRATE_BRIEF, VIBRATE_BRIEF, VIBRATE_BRIEF)
+        )
+        createChannel(
+            CHANNEL_PATTERN, context.getString(R.string.alert_channel_pattern),
+            context.getString(R.string.alert_channel_pattern_desc),
+            NotificationManager.IMPORTANCE_DEFAULT,
+            RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
+            notifAudioAttrs, bypassDnd = false,
+            vibration = longArrayOf(0, VIBRATE_BRIEF)
         )
     }
 

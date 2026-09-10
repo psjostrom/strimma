@@ -55,6 +55,7 @@ class SyncOrchestrator @Inject constructor(
     private val exerciseSyncer: ExerciseSyncer,
     private val nightscoutPuller: NightscoutPuller,
     private val updateChecker: UpdateChecker,
+    private val patternChecker: com.psjostrom.strimma.data.pattern.PatternChecker,
     @IoDispatcher private val dispatcher: CoroutineDispatcher,
 ) {
     companion object {
@@ -100,6 +101,7 @@ class SyncOrchestrator @Inject constructor(
         startWebServerLifecycle()
         exerciseSyncJob = exerciseSyncer.start(scope)
         updateChecker.start(scope)
+        patternChecker.start(scope)
 
         pusher.pushPending()
         tidepoolUploader.uploadPending()
@@ -114,6 +116,7 @@ class SyncOrchestrator @Inject constructor(
         // reference live (just cancelled). The next `start()` would then early-return
         // on its `if (checkJob != null) return` guard.
         updateChecker.stop()
+        patternChecker.stop()
         pusher.stop()
         tidepoolUploader.stop()
         localWebServer.stop()

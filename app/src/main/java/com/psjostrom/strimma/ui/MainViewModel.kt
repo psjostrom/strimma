@@ -70,6 +70,7 @@ class MainViewModel @Inject constructor(
     private val updateChecker: UpdateChecker,
     private val updateInstaller: UpdateInstaller,
     private val workoutModeManager: WorkoutModeManager,
+    private val patternChecker: com.psjostrom.strimma.data.pattern.PatternChecker,
 ) : ViewModel() {
 
     companion object {
@@ -291,6 +292,21 @@ class MainViewModel @Inject constructor(
             unit
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), GuidanceState.NoWorkout)
+
+    val activePatterns: StateFlow<List<com.psjostrom.strimma.data.pattern.GlucosePattern>> = combine(
+        patternChecker.activePatterns,
+        settings.patternCardDismissedDate,
+        settings.patternAlertsEnabled
+    ) { patterns, dismissedDate, enabled ->
+        val todayStr = java.time.LocalDate.now().toString()
+        if (enabled && dismissedDate != todayStr) patterns else emptyList()
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun dismissPatternCard() {
+        viewModelScope.launch {
+            settings.setPatternCardDismissedDate(java.time.LocalDate.now().toString())
+        }
+    }
 
     suspend fun computeExerciseBGContext(session: StoredExerciseSession): ExerciseBGContext? {
         val preStart = session.startTime - PRE_WINDOW_MINUTES * MS_PER_MINUTE

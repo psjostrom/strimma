@@ -50,6 +50,12 @@ class AlertsViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
     val alertHighSoonEnabled: StateFlow<Boolean> = settings.alertHighSoonEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    val patternAlertsEnabled: StateFlow<Boolean> = settings.patternAlertsEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    fun setPatternAlertsEnabled(enabled: Boolean) {
+        viewModelScope.launch { settings.setPatternAlertsEnabled(enabled) }
+    }
 
     val regularAlertProtocol: StateFlow<AlertProtocol?> = settings.regularAlertProtocol
         .stateIn(
