@@ -7,6 +7,7 @@ import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.health.ExerciseDao
 import com.psjostrom.strimma.notification.PatternNotifier
 import com.psjostrom.strimma.receiver.DebugLog
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -58,7 +59,9 @@ class PatternChecker @Inject constructor(
         loopJob?.cancel()
         val job = scope.launch {
             try {
-                checkNow()
+                checkNow(notify = false)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 DebugLog.log("Initial pattern check failed: ${e.message}")
             }
@@ -68,6 +71,8 @@ class PatternChecker @Inject constructor(
                 delay(delayMs)
                 try {
                     checkNow()
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     DebugLog.log("Periodic pattern check failed: ${e.message}")
                 }
@@ -85,27 +90,41 @@ class PatternChecker @Inject constructor(
     /**
      * Executes pattern detection for the last 7 days.
      * Can be invoked directly from tests or on-demand.
+     *
+     * @param notify when false, updates [activePatterns] state but skips notification dispatch.
+     *               Startup uses false to populate the UI card without alerting at arbitrary hours.
      */
     suspend fun checkNow(
         now: Instant = Instant.now(),
-        zone: ZoneId = ZoneId.systemDefault()
+        zone: ZoneId = ZoneId.systemDefault(),
+        notify: Boolean = true
     ): PatternResult? {
         val enabled = settings.patternAlertsEnabled.first()
         if (!enabled) {
             _activePatterns.value = emptyList()
+            notifier.cancel()
+            settings.setPatternLastHash("")
             return null
         }
 
         val nowMs = now.toEpochMilli()
         val earliest = readingDao.earliestTs()
         if (earliest == null || (nowMs - earliest) < MIN_DATA_DAYS * MS_PER_DAY) {
+            _activePatterns.value = emptyList()
+            notifier.cancel()
+            settings.setPatternLastHash("")
             return null
         }
 
         val today = now.atZone(zone).toLocalDate()
         val startMs = today.minusDays(LOOKBACK_DAYS.toLong()).atStartOfDay(zone).toInstant().toEpochMilli()
         val readings = readingDao.since(startMs)
-        if (readings.isEmpty()) return null
+        if (readings.isEmpty()) {
+            _activePatterns.value = emptyList()
+            notifier.cancel()
+            settings.setPatternLastHash("")
+            return null
+        }
 
         val exercises = exerciseDao.getSessionsInRange(startMs, nowMs)
         val workoutPeriods = exercises.map { it.startTime..it.endTime }
@@ -138,14 +157,16 @@ class PatternChecker @Inject constructor(
 
         _activePatterns.value = result.patterns
 
-        val cooldownMs = DEDUP_COOLDOWN_HOURS * MS_PER_HOUR
-        val inCooldown = (newHash == lastHash) && ((nowMs - lastNotifiedTs) < cooldownMs)
+        if (notify) {
+            val cooldownMs = DEDUP_COOLDOWN_HOURS * MS_PER_HOUR
+            val inCooldown = (newHash == lastHash) && ((nowMs - lastNotifiedTs) < cooldownMs)
 
-        if (!inCooldown) {
-            val unit = settings.glucoseUnit.first()
-            notifier.notifyPatterns(result, unit)
-            settings.setPatternLastHash(newHash)
-            settings.setPatternLastNotifiedTs(nowMs)
+            if (!inCooldown) {
+                val unit = settings.glucoseUnit.first()
+                notifier.notifyPatterns(result, unit)
+                settings.setPatternLastHash(newHash)
+                settings.setPatternLastNotifiedTs(nowMs)
+            }
         }
 
         return result

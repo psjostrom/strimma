@@ -12,7 +12,6 @@ import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.StrimmaDatabase
 import com.psjostrom.strimma.data.health.ExerciseDao
-import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.notification.PatternNotifier
 import com.psjostrom.strimma.widget.WidgetSettingsRepository
 import kotlinx.coroutines.flow.first
@@ -117,7 +116,7 @@ class PatternCheckerTest {
 
         val hash = settings.patternLastHash.first()
         assertTrue(hash.isNotEmpty())
-        assertTrue(hash.contains("HIGH:15-16:5/7"))
+        assertTrue(hash.contains("HIGH:15-16"))
 
         val lastNotified = settings.patternLastNotifiedTs.first()
         assertEquals(baseInstant.toEpochMilli(), lastNotified)
@@ -158,7 +157,7 @@ class PatternCheckerTest {
     fun `checkNow clears hash and cancels notification when pattern resolves`() = runTest {
         val today = baseInstant.atZone(zone).toLocalDate()
         // Simulate pre-existing notified state
-        settings.setPatternLastHash("HIGH:15-16:5/7")
+        settings.setPatternLastHash("HIGH:15-16")
         settings.setPatternLastNotifiedTs(baseInstant.toEpochMilli())
 
         // Seed 7 days with all in-range readings

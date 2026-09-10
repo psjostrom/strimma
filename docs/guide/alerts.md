@@ -99,7 +99,7 @@ You can pause entire alert categories for a custom duration — useful during ex
 
 ## Configuring Alerts
 
-Go to **Settings > Alerts**. The screen has three sections, with independent Regular and Exercise protocols and one shared behavior section.
+Go to **Settings > Alerts**. The screen has four sections, with independent Regular and Exercise protocols, one shared behavior section, and a Pattern Insights toggle.
 
 ### Alerts
 
@@ -197,9 +197,12 @@ When glucose returns to range, all cooldown timers **reset immediately**. The ne
 Strimma analyzes your glucose history over the last 7 days to identify recurring patterns at specific times of day (for example, recurring highs between 14:00–16:00, or recurring lows around 06:00).
 
 - **Threshold**: Requires at least 4 out of 7 days to be out of range during the same 1-hour window (with at least 5 evaluated days).
-- **Workout exclusion**: Glucose readings during recorded workouts or manual workout mode are excluded from pattern detection to avoid false positives.
+- **Workout exclusion**: Glucose readings during recorded workouts are excluded from pattern detection to avoid false positives.
 - **Timing**: Checked daily at 21:00 local time.
 - **Deduplication**: If the same pattern persists without changes, notifications are limited to at most once every 72 hours.
 - **In-App Card**: Active patterns appear in an insight card at the top of the main screen with a dismiss button. Dismissing hides the card for the rest of the day.
 - **Configuration**: Can be toggled on/off in **Settings > Alerts → Pattern Insights**.
 
+| Notification | Settings |
+|---|---|
+| ![Pattern Notification](../screenshots/pattern-notification.png){ width="300" } | ![Pattern Settings](../screenshots/pattern-settings.png){ width="300" } |

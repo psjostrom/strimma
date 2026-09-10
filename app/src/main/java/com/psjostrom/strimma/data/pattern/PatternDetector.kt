@@ -27,7 +27,6 @@ object PatternDetector {
     private const val MIN_EVALUATED_DAYS = 5
 
     private const val HOURS_PER_DAY = 24
-    private const val PERCENT = 100.0
 
     fun detect(
         readings: List<GlucoseReading>,
@@ -166,8 +165,8 @@ data class GlucosePattern(
     val avgBgMgdl: Double,
     val worstBgMgdl: Int
 ) {
-    /** Stable identity for dedup hashing — ignores volatile stats like avgBg. */
-    fun stableKey(): String = "$type:$startHour-$endHour:$daysDetected/$daysEvaluated"
+    /** Stable identity for dedup hashing — type and time window only. */
+    fun stableKey(): String = "$type:$startHour-$endHour"
 }
 
 data class PatternResult(

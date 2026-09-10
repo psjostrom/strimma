@@ -239,13 +239,13 @@ class PatternDetectorTest {
             avgBgMgdl = 220.5,
             worstBgMgdl = 250
         )
-        assertEquals("HIGH:14-16:5/7", p1.stableKey())
+        assertEquals("HIGH:14-16", p1.stableKey())
 
         val result = PatternResult(
             patterns = listOf(p1),
             analysisDate = baseDate,
             lookbackDays = 7
         )
-        assertEquals("HIGH:14-16:5/7", result.stableHash())
+        assertEquals("HIGH:14-16", result.stableHash())
     }
 }
