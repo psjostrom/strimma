@@ -58,14 +58,6 @@ class PatternChecker @Inject constructor(
     fun start(scope: CoroutineScope): Job {
         loopJob?.cancel()
         val job = scope.launch {
-            try {
-                checkNow(notify = false)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) { // DAO/DataStore — multiple types
-                DebugLog.log("Initial pattern check failed: ${e.message}")
-            }
-
             while (isActive) {
                 val delayMs = millisUntilNextTargetHour()
                 delay(delayMs)

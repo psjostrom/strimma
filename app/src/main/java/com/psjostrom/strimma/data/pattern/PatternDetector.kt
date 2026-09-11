@@ -91,11 +91,11 @@ object PatternDetector {
 
             if (belowCount.toDouble() / bucket.size >= OUT_OF_RANGE_FRACTION) {
                 lowDays++
-                lowBgValues.addAll(bucket.map { it.sgv })
+                lowBgValues.addAll(bucket.filter { it.sgv < bgLowMgdl }.map { it.sgv })
             }
             if (aboveCount.toDouble() / bucket.size >= OUT_OF_RANGE_FRACTION) {
                 highDays++
-                highBgValues.addAll(bucket.map { it.sgv })
+                highBgValues.addAll(bucket.filter { it.sgv > bgHighMgdl }.map { it.sgv })
             }
         }
 

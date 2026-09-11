@@ -198,7 +198,7 @@ Strimma analyzes your glucose history over the last 7 days to identify recurring
 
 - **Threshold**: Requires at least 4 evaluated days out of range during the same 1-hour window, with at least 5 sufficiently covered days within the 7-day lookback.
 - **Workout exclusion**: Glucose readings during recorded workouts are excluded from pattern detection to avoid false positives.
-- **Timing**: Checked daily at 21:00 local time.
+- **Timing**: Scheduled checks run daily at 21:00 local time. App startup performs a non-notifying pattern check to populate the in-app card.
 - **Deduplication**: If the same pattern persists without changes, notifications are limited to at most once every 72 hours.
 - **In-App Card**: Active patterns appear in an insight card at the top of the main screen with a dismiss button. Dismissing hides the card for the rest of the day.
 - **Configuration**: Can be toggled on/off in **Settings > Alerts → Pattern Insights**.

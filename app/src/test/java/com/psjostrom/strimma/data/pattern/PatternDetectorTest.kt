@@ -275,4 +275,42 @@ class PatternDetectorTest {
         )
         assertEquals("HIGH:14-16", result.stableHash())
     }
+
+    @Test
+    fun `detect averages only out-of-range readings in flagged buckets`() {
+        val readings = mutableListOf<GlucoseReading>()
+        for (dayOffset in 1..7) {
+            val date = baseDate.minusDays(dayOffset.toLong())
+            if (dayOffset <= 5) {
+                // High bucket with mixed values: 150 (in-range), 200 (high), 220 (high)
+                readings.addAll(generateHourReadings(date, 15, listOf(150, 200, 220)))
+            }
+            if (dayOffset <= 4) {
+                // Low bucket with mixed values: 50 (low), 60 (low), 100 (in-range)
+                readings.addAll(generateHourReadings(date, 6, listOf(50, 60, 100)))
+            } else {
+                readings.addAll(generateHourReadings(date, 6, listOf(100, 110, 120)))
+            }
+        }
+
+        val result = PatternDetector.detect(
+            readings = readings,
+            bgLowMgdl = 72.0,
+            bgHighMgdl = 180.0,
+            zone = zone,
+            now = now
+        )
+
+        assertEquals(2, result.patterns.size)
+        val lowPattern = result.patterns.first { it.type == PatternType.LOW }
+        val highPattern = result.patterns.first { it.type == PatternType.HIGH }
+
+        // Only 50 and 60 averaged across 4 days -> average = 55.0
+        assertEquals(55.0, lowPattern.avgBgMgdl, 0.001)
+        assertEquals(8, lowPattern.sampleCount)
+
+        // Only 200 and 220 averaged across 5 days -> average = 210.0
+        assertEquals(210.0, highPattern.avgBgMgdl, 0.001)
+        assertEquals(10, highPattern.sampleCount)
+    }
 }
