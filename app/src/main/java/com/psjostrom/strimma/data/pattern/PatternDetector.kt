@@ -55,57 +55,8 @@ object PatternDetector {
 
         // For each hour bucket, evaluate across days
         val rawPatterns = mutableListOf<GlucosePattern>()
-
         for (hour in 0 until HOURS_PER_DAY) {
-            var lowDays = 0
-            var highDays = 0
-            var evaluatedDays = 0
-            val lowBgValues = mutableListOf<Int>()
-            val highBgValues = mutableListOf<Int>()
-
-            for (dayOffset in 0 until lookbackDays) {
-                val day = startDate.plusDays(dayOffset.toLong())
-                val bucket = byDayHour[day to hour] ?: continue
-                if (bucket.size < MIN_READINGS_PER_BUCKET) continue
-
-                evaluatedDays++
-                val belowCount = bucket.count { it.sgv < bgLowMgdl }
-                val aboveCount = bucket.count { it.sgv > bgHighMgdl }
-
-                if (belowCount.toDouble() / bucket.size >= OUT_OF_RANGE_FRACTION) {
-                    lowDays++
-                    lowBgValues.addAll(bucket.map { it.sgv })
-                }
-                if (aboveCount.toDouble() / bucket.size >= OUT_OF_RANGE_FRACTION) {
-                    highDays++
-                    highBgValues.addAll(bucket.map { it.sgv })
-                }
-            }
-
-            if (evaluatedDays >= MIN_EVALUATED_DAYS) {
-                if (lowDays >= MIN_FLAGGED_DAYS) {
-                    rawPatterns.add(GlucosePattern(
-                        startHour = hour,
-                        endHour = hour + 1,
-                        type = PatternType.LOW,
-                        daysDetected = lowDays,
-                        daysEvaluated = evaluatedDays,
-                        avgBgMgdl = lowBgValues.average(),
-                        worstBgMgdl = lowBgValues.min()
-                    ))
-                }
-                if (highDays >= MIN_FLAGGED_DAYS) {
-                    rawPatterns.add(GlucosePattern(
-                        startHour = hour,
-                        endHour = hour + 1,
-                        type = PatternType.HIGH,
-                        daysDetected = highDays,
-                        daysEvaluated = evaluatedDays,
-                        avgBgMgdl = highBgValues.average(),
-                        worstBgMgdl = highBgValues.max()
-                    ))
-                }
-            }
+            evaluateHour(hour, startDate, lookbackDays, byDayHour, bgLowMgdl, bgHighMgdl, rawPatterns)
         }
 
         return PatternResult(
@@ -113,6 +64,59 @@ object PatternDetector {
             analysisDate = today,
             lookbackDays = lookbackDays
         )
+    }
+
+    @Suppress("LongParameterList") // Private helper extracted from detect — all params domain-essential
+    private fun evaluateHour(
+        hour: Int,
+        startDate: LocalDate,
+        lookbackDays: Int,
+        byDayHour: Map<Pair<LocalDate, Int>, List<GlucoseReading>>,
+        bgLowMgdl: Double,
+        bgHighMgdl: Double,
+        out: MutableList<GlucosePattern>
+    ) {
+        var lowDays = 0
+        var highDays = 0
+        var evaluatedDays = 0
+        val lowBgValues = mutableListOf<Int>()
+        val highBgValues = mutableListOf<Int>()
+
+        for (dayOffset in 0 until lookbackDays) {
+            val day = startDate.plusDays(dayOffset.toLong())
+            val bucket = byDayHour[day to hour] ?: continue
+            if (bucket.size < MIN_READINGS_PER_BUCKET) continue
+
+            evaluatedDays++
+            val belowCount = bucket.count { it.sgv < bgLowMgdl }
+            val aboveCount = bucket.count { it.sgv > bgHighMgdl }
+
+            if (belowCount.toDouble() / bucket.size >= OUT_OF_RANGE_FRACTION) {
+                lowDays++
+                lowBgValues.addAll(bucket.map { it.sgv })
+            }
+            if (aboveCount.toDouble() / bucket.size >= OUT_OF_RANGE_FRACTION) {
+                highDays++
+                highBgValues.addAll(bucket.map { it.sgv })
+            }
+        }
+
+        if (evaluatedDays >= MIN_EVALUATED_DAYS) {
+            if (lowDays >= MIN_FLAGGED_DAYS) {
+                out.add(GlucosePattern(
+                    startHour = hour, endHour = hour + 1, type = PatternType.LOW,
+                    daysDetected = lowDays, daysEvaluated = evaluatedDays,
+                    avgBgMgdl = lowBgValues.average(), worstBgMgdl = lowBgValues.min()
+                ))
+            }
+            if (highDays >= MIN_FLAGGED_DAYS) {
+                out.add(GlucosePattern(
+                    startHour = hour, endHour = hour + 1, type = PatternType.HIGH,
+                    daysDetected = highDays, daysEvaluated = evaluatedDays,
+                    avgBgMgdl = highBgValues.average(), worstBgMgdl = highBgValues.max()
+                ))
+            }
+        }
     }
 
     /**

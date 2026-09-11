@@ -62,7 +62,7 @@ class PatternChecker @Inject constructor(
                 checkNow(notify = false)
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
+            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) { // DAO/DataStore — multiple types
                 DebugLog.log("Initial pattern check failed: ${e.message}")
             }
 
@@ -73,7 +73,7 @@ class PatternChecker @Inject constructor(
                     checkNow()
                 } catch (e: CancellationException) {
                     throw e
-                } catch (e: Exception) {
+                } catch (@Suppress("TooGenericExceptionCaught") e: Exception) { // DAO/DataStore — multiple types
                     DebugLog.log("Periodic pattern check failed: ${e.message}")
                 }
             }
@@ -85,6 +85,12 @@ class PatternChecker @Inject constructor(
     fun stop() {
         loopJob?.cancel()
         loopJob = null
+    }
+
+    private suspend fun resetState() {
+        _activePatterns.value = emptyList()
+        notifier.cancel()
+        settings.setPatternLastHash("")
     }
 
     /**
@@ -99,52 +105,50 @@ class PatternChecker @Inject constructor(
         zone: ZoneId = ZoneId.systemDefault(),
         notify: Boolean = true
     ): PatternResult? {
-        val enabled = settings.patternAlertsEnabled.first()
-        if (!enabled) {
-            _activePatterns.value = emptyList()
-            notifier.cancel()
-            settings.setPatternLastHash("")
+        if (!settings.patternAlertsEnabled.first()) {
+            resetState()
+            return null
+        }
+
+        val readings = loadReadings(now, zone)
+        if (readings == null) {
+            resetState()
             return null
         }
 
         val nowMs = now.toEpochMilli()
-        val earliest = readingDao.earliestTs()
-        if (earliest == null || (nowMs - earliest) < MIN_DATA_DAYS * MS_PER_DAY) {
-            _activePatterns.value = emptyList()
-            notifier.cancel()
-            settings.setPatternLastHash("")
-            return null
-        }
-
-        val today = now.atZone(zone).toLocalDate()
-        val startMs = today.minusDays(LOOKBACK_DAYS.toLong()).atStartOfDay(zone).toInstant().toEpochMilli()
-        val readings = readingDao.since(startMs)
-        if (readings.isEmpty()) {
-            _activePatterns.value = emptyList()
-            notifier.cancel()
-            settings.setPatternLastHash("")
-            return null
-        }
-
+        val startMs = now.atZone(zone).toLocalDate()
+            .minusDays(LOOKBACK_DAYS.toLong()).atStartOfDay(zone).toInstant().toEpochMilli()
         val exercises = exerciseDao.getSessionsInRange(startMs, nowMs)
         val workoutPeriods = exercises.map { it.startTime..it.endTime }
 
-        val bgLow = settings.bgLow.first().toDouble()
-        val bgHigh = settings.bgHigh.first().toDouble()
-
         val result = PatternDetector.detect(
             readings = readings,
-            bgLowMgdl = bgLow,
-            bgHighMgdl = bgHigh,
+            bgLowMgdl = settings.bgLow.first().toDouble(),
+            bgHighMgdl = settings.bgHigh.first().toDouble(),
             lookbackDays = LOOKBACK_DAYS,
             zone = zone,
             now = now,
             workoutPeriods = workoutPeriods
         )
 
+        return applyResult(result, nowMs, notify)
+    }
+
+    private suspend fun loadReadings(now: Instant, zone: ZoneId): List<com.psjostrom.strimma.data.GlucoseReading>? {
+        val nowMs = now.toEpochMilli()
+        val earliest = readingDao.earliestTs() ?: return null
+        if ((nowMs - earliest) < MIN_DATA_DAYS * MS_PER_DAY) return null
+
+        val startMs = now.atZone(zone).toLocalDate()
+            .minusDays(LOOKBACK_DAYS.toLong()).atStartOfDay(zone).toInstant().toEpochMilli()
+        val readings = readingDao.since(startMs)
+        return readings.ifEmpty { null }
+    }
+
+    private suspend fun applyResult(result: PatternResult, nowMs: Long, notify: Boolean): PatternResult {
         val newHash = result.stableHash()
         val lastHash = settings.patternLastHash.first()
-        val lastNotifiedTs = settings.patternLastNotifiedTs.first()
 
         if (newHash.isEmpty()) {
             _activePatterns.value = emptyList()
@@ -159,6 +163,7 @@ class PatternChecker @Inject constructor(
 
         if (notify) {
             val cooldownMs = DEDUP_COOLDOWN_HOURS * MS_PER_HOUR
+            val lastNotifiedTs = settings.patternLastNotifiedTs.first()
             val inCooldown = (newHash == lastHash) && ((nowMs - lastNotifiedTs) < cooldownMs)
 
             if (!inCooldown) {

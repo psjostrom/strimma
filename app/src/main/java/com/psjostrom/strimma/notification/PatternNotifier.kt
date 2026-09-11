@@ -51,56 +51,42 @@ class PatternNotifier @Inject constructor(
             .setContentIntent(contentIntent)
 
         if (patterns.size == 1) {
-            val p = patterns.first()
-            val timeSpan = formatHourRange(p.startHour, p.endHour)
-            val title = when (p.type) {
-                PatternType.HIGH -> context.getString(R.string.pattern_notif_title_high, timeSpan)
-                PatternType.LOW -> context.getString(R.string.pattern_notif_title_low, timeSpan)
-            }
-            val avgFormatted = unit.formatWithUnit(p.avgBgMgdl)
-            val text = when (p.type) {
-                PatternType.HIGH -> context.getString(
-                    R.string.pattern_notif_body_high,
-                    p.daysDetected,
-                    p.daysEvaluated,
-                    avgFormatted
-                )
-                PatternType.LOW -> context.getString(
-                    R.string.pattern_notif_body_low,
-                    p.daysDetected,
-                    p.daysEvaluated,
-                    avgFormatted
-                )
-            }
-            builder.setContentTitle(title)
-                .setContentText(text)
+            buildSinglePattern(builder, patterns.first(), unit)
         } else {
-            val title = context.getString(R.string.pattern_notif_title_multiple, patterns.size)
-            val inboxStyle = NotificationCompat.InboxStyle().setBigContentTitle(title)
-            for (p in patterns) {
-                val timeSpan = formatHourRange(p.startHour, p.endHour)
-                val line = when (p.type) {
-                    PatternType.HIGH -> context.getString(
-                        R.string.pattern_notif_item_high,
-                        timeSpan,
-                        p.daysDetected,
-                        p.daysEvaluated
-                    )
-                    PatternType.LOW -> context.getString(
-                        R.string.pattern_notif_item_low,
-                        timeSpan,
-                        p.daysDetected,
-                        p.daysEvaluated
-                    )
-                }
-                inboxStyle.addLine(line)
-            }
-            builder.setContentTitle(title)
-                .setContentText(context.getString(R.string.pattern_notif_summary_multiple, patterns.size))
-                .setStyle(inboxStyle)
+            buildMultiPattern(builder, patterns)
         }
 
         notificationManager.notify(NOTIFICATION_ID_PATTERN, builder.build())
+    }
+
+    private fun buildSinglePattern(builder: NotificationCompat.Builder, p: GlucosePattern, unit: GlucoseUnit) {
+        val timeSpan = formatHourRange(p.startHour, p.endHour)
+        val title = when (p.type) {
+            PatternType.HIGH -> context.getString(R.string.pattern_notif_title_high, timeSpan)
+            PatternType.LOW -> context.getString(R.string.pattern_notif_title_low, timeSpan)
+        }
+        val avgFormatted = unit.formatWithUnit(p.avgBgMgdl)
+        val text = when (p.type) {
+            PatternType.HIGH -> context.getString(R.string.pattern_notif_body_high, p.daysDetected, p.daysEvaluated, avgFormatted)
+            PatternType.LOW -> context.getString(R.string.pattern_notif_body_low, p.daysDetected, p.daysEvaluated, avgFormatted)
+        }
+        builder.setContentTitle(title).setContentText(text)
+    }
+
+    private fun buildMultiPattern(builder: NotificationCompat.Builder, patterns: List<GlucosePattern>) {
+        val title = context.getString(R.string.pattern_notif_title_multiple, patterns.size)
+        val inboxStyle = NotificationCompat.InboxStyle().setBigContentTitle(title)
+        for (p in patterns) {
+            val timeSpan = formatHourRange(p.startHour, p.endHour)
+            val line = when (p.type) {
+                PatternType.HIGH -> context.getString(R.string.pattern_notif_item_high, timeSpan, p.daysDetected, p.daysEvaluated)
+                PatternType.LOW -> context.getString(R.string.pattern_notif_item_low, timeSpan, p.daysDetected, p.daysEvaluated)
+            }
+            inboxStyle.addLine(line)
+        }
+        builder.setContentTitle(title)
+            .setContentText(context.getString(R.string.pattern_notif_summary_multiple, patterns.size))
+            .setStyle(inboxStyle)
     }
 
     fun cancel() {
