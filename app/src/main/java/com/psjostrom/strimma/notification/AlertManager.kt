@@ -129,11 +129,6 @@ class AlertManager @Inject constructor(
         }
 
 
-        val ALL_CHANNELS = listOf(
-            CHANNEL_URGENT_LOW, CHANNEL_LOW, CHANNEL_HIGH, CHANNEL_URGENT_HIGH,
-            CHANNEL_STALE, CHANNEL_PUSH_FAIL, CHANNEL_LOW_SOON, CHANNEL_HIGH_SOON
-        )
-
         // --- Category-level pause (static methods for testability) ---
 
         fun pauseCategoryAt(

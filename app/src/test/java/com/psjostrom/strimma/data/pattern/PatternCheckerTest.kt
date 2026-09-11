@@ -86,7 +86,7 @@ class PatternCheckerTest {
             val result = fix.checker.checkNow(now = baseInstant, zone = zone)
             assertNull(result)
             assertTrue(fix.checker.activePatterns.value.isEmpty())
-            assertEquals("", fix.settings.patternLastHash.first())
+            assertEquals("HIGH:15-16", fix.settings.patternLastHash.first())
             assertTrue(fix.notifManager.activeNotifications.none { it.id == PatternNotifier.NOTIFICATION_ID_PATTERN })
         } finally {
             fix.db.close()
@@ -200,7 +200,7 @@ class PatternCheckerTest {
     }
 
     @Test
-    fun `reset clears active patterns, cancels notification and clears hash`() = runTest {
+    fun `reset clears active patterns and cancels notification while preserving hash`() = runTest {
         val fix = createFixture()
         try {
             fix.settings.setPatternLastHash("HIGH:15-16")
@@ -213,8 +213,35 @@ class PatternCheckerTest {
             fix.checker.reset()
 
             assertTrue(fix.checker.activePatterns.value.isEmpty())
-            assertEquals("", fix.settings.patternLastHash.first())
+            assertEquals("HIGH:15-16", fix.settings.patternLastHash.first())
             assertTrue(fix.notifManager.activeNotifications.none { it.id == PatternNotifier.NOTIFICATION_ID_PATTERN })
+        } finally {
+            fix.db.close()
+        }
+    }
+
+    @Test
+    fun `checkNow with notify false populates activePatterns without notification or cooldown update`() = runTest {
+        val fix = createFixture()
+        try {
+            val today = baseInstant.atZone(zone).toLocalDate()
+            for (d in 1..7) {
+                val date = today.minusDays(d.toLong())
+                val sgvs = if (d <= 5) listOf(220, 230, 240) else listOf(110, 115, 120)
+                insertHour(fix.readingDao, date, 15, sgvs)
+                insertHour(fix.readingDao, date, 8, listOf(100, 100, 100))
+            }
+
+            val result = fix.checker.checkNow(now = baseInstant, zone = zone, notify = false)
+            assertNotNull(result)
+            assertEquals(1, result!!.patterns.size)
+            assertEquals(1, fix.checker.activePatterns.value.size)
+
+            val activeNotifs = fix.notifManager.activeNotifications
+            assertTrue(activeNotifs.none { it.id == PatternNotifier.NOTIFICATION_ID_PATTERN })
+
+            assertEquals("", fix.settings.patternLastHash.first())
+            assertEquals(0L, fix.settings.patternLastNotifiedTs.first())
         } finally {
             fix.db.close()
         }

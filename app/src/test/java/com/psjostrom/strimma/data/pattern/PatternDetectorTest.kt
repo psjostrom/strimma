@@ -94,7 +94,6 @@ class PatternDetectorTest {
         assertEquals(16, pattern.endHour)
         assertEquals(5, pattern.daysDetected)
         assertEquals(7, pattern.daysEvaluated)
-        assertEquals(220, pattern.worstBgMgdl)
         assertTrue(pattern.avgBgMgdl > 200.0)
     }
 
@@ -162,7 +161,6 @@ class PatternDetectorTest {
         assertEquals(7, pattern.endHour)
         assertEquals(4, pattern.daysDetected)
         assertEquals(6, pattern.daysEvaluated)
-        assertEquals(55, pattern.worstBgMgdl)
     }
 
     @Test
@@ -196,24 +194,23 @@ class PatternDetectorTest {
         assertEquals(14, merged.startHour)
         assertEquals(17, merged.endHour)
         assertEquals(5, merged.daysDetected)
-        assertEquals(240, merged.worstBgMgdl)
     }
 
     @Test
     fun `mergeAdjacent preserves sample counts and calculates accurate average for three adjacent hours`() {
         val p1 = GlucosePattern(
             startHour = 14, endHour = 15, type = PatternType.HIGH,
-            daysDetected = 5, daysEvaluated = 7, avgBgMgdl = 200.0, worstBgMgdl = 210,
+            daysDetected = 5, daysEvaluated = 7, avgBgMgdl = 200.0,
             sampleCount = 10, bgSum = 2000.0
         )
         val p2 = GlucosePattern(
             startHour = 15, endHour = 16, type = PatternType.HIGH,
-            daysDetected = 4, daysEvaluated = 7, avgBgMgdl = 240.0, worstBgMgdl = 260,
+            daysDetected = 4, daysEvaluated = 7, avgBgMgdl = 240.0,
             sampleCount = 20, bgSum = 4800.0
         )
         val p3 = GlucosePattern(
             startHour = 16, endHour = 17, type = PatternType.HIGH,
-            daysDetected = 6, daysEvaluated = 7, avgBgMgdl = 210.0, worstBgMgdl = 230,
+            daysDetected = 6, daysEvaluated = 7, avgBgMgdl = 210.0,
             sampleCount = 10, bgSum = 2100.0
         )
 
@@ -224,7 +221,6 @@ class PatternDetectorTest {
         assertEquals(14, mergedForward.startHour)
         assertEquals(17, mergedForward.endHour)
         assertEquals(222.5, mergedForward.avgBgMgdl, 0.001)
-        assertEquals(260, mergedForward.worstBgMgdl)
         assertEquals(40, mergedForward.sampleCount)
         assertEquals(8900.0, mergedForward.bgSum, 0.001)
 
@@ -270,15 +266,12 @@ class PatternDetectorTest {
             type = PatternType.HIGH,
             daysDetected = 5,
             daysEvaluated = 7,
-            avgBgMgdl = 220.5,
-            worstBgMgdl = 250
+            avgBgMgdl = 220.5
         )
         assertEquals("HIGH:14-16", p1.stableKey())
 
         val result = PatternResult(
-            patterns = listOf(p1),
-            analysisDate = baseDate,
-            lookbackDays = 7
+            patterns = listOf(p1)
         )
         assertEquals("HIGH:14-16", result.stableHash())
     }

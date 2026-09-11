@@ -28,7 +28,6 @@ import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.pattern.GlucosePattern
 import com.psjostrom.strimma.data.pattern.PatternType
-import com.psjostrom.strimma.notification.PatternNotifier
 import com.psjostrom.strimma.ui.theme.Danger
 import com.psjostrom.strimma.ui.theme.LightTintDanger
 import com.psjostrom.strimma.ui.theme.LightTintWarning
@@ -54,7 +53,7 @@ fun InsightCard(
         PatternType.LOW -> (if (isDark) TintDanger else LightTintDanger) to Danger
     }
 
-    val timeSpan = PatternNotifier.formatHourRange(primary.startHour, primary.endHour)
+    val timeSpan = primary.formattedTimeSpan
 
     Surface(
         modifier = modifier

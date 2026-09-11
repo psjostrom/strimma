@@ -60,9 +60,7 @@ object PatternDetector {
         }
 
         return PatternResult(
-            patterns = mergeAdjacent(rawPatterns),
-            analysisDate = today,
-            lookbackDays = lookbackDays
+            patterns = mergeAdjacent(rawPatterns)
         )
     }
 
@@ -108,8 +106,7 @@ object PatternDetector {
                 out.add(GlucosePattern(
                     startHour = hour, endHour = hour + 1, type = PatternType.LOW,
                     daysDetected = lowDays, daysEvaluated = evaluatedDays,
-                    avgBgMgdl = sum / count, worstBgMgdl = lowBgValues.min(),
-                    sampleCount = count, bgSum = sum
+                    avgBgMgdl = sum / count, sampleCount = count, bgSum = sum
                 ))
             }
             if (highDays >= MIN_FLAGGED_DAYS) {
@@ -118,8 +115,7 @@ object PatternDetector {
                 out.add(GlucosePattern(
                     startHour = hour, endHour = hour + 1, type = PatternType.HIGH,
                     daysDetected = highDays, daysEvaluated = evaluatedDays,
-                    avgBgMgdl = sum / count, worstBgMgdl = highBgValues.max(),
-                    sampleCount = count, bgSum = sum
+                    avgBgMgdl = sum / count, sampleCount = count, bgSum = sum
                 ))
             }
         }
@@ -148,16 +144,11 @@ object PatternDetector {
 
                 val combinedDaysDetected = maxOf(current.daysDetected, next.daysDetected)
                 val combinedDaysEvaluated = maxOf(current.daysEvaluated, next.daysEvaluated)
-                val combinedWorst = when (current.type) {
-                    PatternType.LOW -> minOf(current.worstBgMgdl, next.worstBgMgdl)
-                    PatternType.HIGH -> maxOf(current.worstBgMgdl, next.worstBgMgdl)
-                }
                 current = current.copy(
                     endHour = next.endHour,
                     daysDetected = combinedDaysDetected,
                     daysEvaluated = combinedDaysEvaluated,
                     avgBgMgdl = combinedSum / combinedCount,
-                    worstBgMgdl = combinedWorst,
                     sampleCount = combinedCount,
                     bgSum = combinedSum
                 )
@@ -180,18 +171,22 @@ data class GlucosePattern(
     val daysDetected: Int,
     val daysEvaluated: Int,
     val avgBgMgdl: Double,
-    val worstBgMgdl: Int,
     val sampleCount: Int = 0,
     val bgSum: Double = 0.0
 ) {
+    val formattedTimeSpan: String get() = formatHourRange(startHour, endHour)
+
     /** Stable identity for dedup hashing — type and time window only. */
     fun stableKey(): String = "$type:$startHour-$endHour"
+
+    companion object {
+        fun formatHourRange(startHour: Int, endHour: Int): String =
+            "%02d:00–%02d:00".format(startHour, endHour)
+    }
 }
 
 data class PatternResult(
-    val patterns: List<GlucosePattern>,
-    val analysisDate: LocalDate,
-    val lookbackDays: Int
+    val patterns: List<GlucosePattern>
 ) {
     /** Hash of the pattern set for deduplication. Empty string when no patterns. */
     fun stableHash(): String {

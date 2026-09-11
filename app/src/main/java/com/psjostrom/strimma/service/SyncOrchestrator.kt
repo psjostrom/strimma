@@ -34,14 +34,14 @@ import javax.inject.Singleton
 
 /**
  * Manages periodic background jobs: push/upload retry, treatment sync,
- * web server lifecycle, exercise sync, update checker, retention prune,
- * and initial push/pull.
+ * web server lifecycle, exercise sync, update checker, pattern checking,
+ * retention prune, and initial push/pull.
  *
  * Owns its own IO-backed scope so the orchestrated jobs run off the main thread.
  * `CalendarPoller` is owned by `StrimmaService` and stays on Main — its blocking
  * work uses `withContext(IO)` internally — and so is not covered by this scope.
  */
-@Suppress("LongParameterList") // 11 distinct collaborators + 1 dispatcher for scope ownership
+@Suppress("LongParameterList") // 12 distinct collaborators + 1 dispatcher for scope ownership
 @Singleton
 class SyncOrchestrator @Inject constructor(
     private val pusher: NightscoutPusher,
@@ -105,7 +105,10 @@ class SyncOrchestrator @Inject constructor(
 
         pusher.pushPending()
         tidepoolUploader.uploadPending()
-        scope.launch { nightscoutPuller.pullIfEmpty() }
+        scope.launch {
+            nightscoutPuller.pullIfEmpty()
+            patternChecker.checkNow(notify = false)
+        }
     }
 
     fun stop() {

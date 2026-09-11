@@ -90,7 +90,6 @@ class PatternChecker @Inject constructor(
     suspend fun reset() {
         _activePatterns.value = emptyList()
         notifier.cancel()
-        settings.setPatternLastHash("")
     }
 
     /**

@@ -1,12 +1,16 @@
 package com.psjostrom.strimma.ui.settings
 
 import android.content.Context
+import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.psjostrom.strimma.createTestDataStore
 import com.psjostrom.strimma.data.SettingsRepository
+import com.psjostrom.strimma.data.StrimmaDatabase
+import com.psjostrom.strimma.data.pattern.PatternChecker
 import com.psjostrom.strimma.data.workout.WorkoutModeManager
 import com.psjostrom.strimma.notification.AlertCategory
 import com.psjostrom.strimma.notification.AlertManager
+import com.psjostrom.strimma.notification.PatternNotifier
 import com.psjostrom.strimma.testutil.workout.FakeCalendarPoller
 import com.psjostrom.strimma.testutil.workout.MutableClock
 import com.psjostrom.strimma.widget.WidgetSettingsRepository
@@ -44,13 +48,17 @@ class AlertsViewModelTest {
 
     private data class Fixture(
         val settings: SettingsRepository,
+        val patternChecker: PatternChecker,
         val viewModel: AlertsViewModel,
     )
 
     private fun runFixtureTest(block: suspend TestScope.(Fixture) -> Unit) = runTest {
         Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val db = Room.inMemoryDatabaseBuilder(context, StrimmaDatabase::class.java)
+            .allowMainThreadQueries()
+            .build()
         try {
-            val context = ApplicationProvider.getApplicationContext<Context>()
             context.getSharedPreferences("strimma_snooze", Context.MODE_PRIVATE)
                 .edit().clear().apply()
             val settings = SettingsRepository(
@@ -65,8 +73,11 @@ class AlertsViewModelTest {
                 backgroundScope,
             )
             val alertManager = AlertManager(context, settings, workoutModeManager, backgroundScope)
-            block(Fixture(settings, AlertsViewModel(settings, alertManager)))
+            val notifier = PatternNotifier(context)
+            val patternChecker = PatternChecker(db.readingDao(), db.exerciseDao(), settings, notifier)
+            block(Fixture(settings, patternChecker, AlertsViewModel(settings, alertManager, patternChecker)))
         } finally {
+            db.close()
             Dispatchers.resetMain()
         }
     }
@@ -164,5 +175,22 @@ class AlertsViewModelTest {
         assertTrue(protocol.urgentLowMgdl <= protocol.lowMgdl)
         assertTrue(protocol.lowMgdl <= protocol.highMgdl)
         assertTrue(protocol.highMgdl <= protocol.urgentHighMgdl)
+    }
+
+    @Test
+    fun `disabling pattern alerts resets pattern checker and persists setting`() = runFixtureTest { rig ->
+        rig.settings.setPatternAlertsEnabled(true)
+        rig.viewModel.setPatternAlertsEnabled(false).join()
+
+        assertEquals(false, rig.settings.patternAlertsEnabled.first())
+        assertTrue(rig.patternChecker.activePatterns.value.isEmpty())
+    }
+
+    @Test
+    fun `enabling pattern alerts triggers checkNow and persists setting`() = runFixtureTest { rig ->
+        rig.settings.setPatternAlertsEnabled(false)
+        rig.viewModel.setPatternAlertsEnabled(true).join()
+
+        assertEquals(true, rig.settings.patternAlertsEnabled.first())
     }
 }

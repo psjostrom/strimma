@@ -27,7 +27,7 @@ import javax.inject.Inject
 class AlertsViewModel @Inject constructor(
     private val settings: SettingsRepository,
     private val alertManager: AlertManager,
-    private val patternChecker: PatternChecker? = null
+    private val patternChecker: PatternChecker
 ) : ViewModel() {
 
     val alertLowEnabled: StateFlow<Boolean> = settings.alertLowEnabled
@@ -55,12 +55,12 @@ class AlertsViewModel @Inject constructor(
     val patternAlertsEnabled: StateFlow<Boolean> = settings.patternAlertsEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
-    fun setPatternAlertsEnabled(enabled: Boolean) {
-        viewModelScope.launch {
-            settings.setPatternAlertsEnabled(enabled)
-            if (!enabled) {
-                patternChecker?.reset()
-            }
+    fun setPatternAlertsEnabled(enabled: Boolean) = viewModelScope.launch {
+        settings.setPatternAlertsEnabled(enabled)
+        if (enabled) {
+            patternChecker.checkNow(notify = false)
+        } else {
+            patternChecker.reset()
         }
     }
 
