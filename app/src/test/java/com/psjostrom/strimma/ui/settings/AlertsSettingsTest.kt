@@ -1,5 +1,6 @@
 package com.psjostrom.strimma.ui.settings
 
+import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onLast
@@ -270,6 +271,8 @@ class AlertsSettingsTest {
 
         composeRule.onNodeWithText("PATTERN INSIGHTS", useUnmergedTree = true).performScrollTo().assertExists()
         composeRule.onNodeWithText("Recurring patterns", useUnmergedTree = true).performScrollTo().assertExists()
+        composeRule.onAllNodes(isToggleable(), useUnmergedTree = true).onLast().performScrollTo().performClick()
+        assertEquals(false, toggledValue)
         composeRule.onAllNodesWithText("Sound", useUnmergedTree = true).onLast().performScrollTo().performClick()
         assertEquals(AlertManager.CHANNEL_PATTERN, soundOpened)
     }

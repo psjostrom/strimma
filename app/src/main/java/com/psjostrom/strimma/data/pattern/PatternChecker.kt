@@ -87,7 +87,7 @@ class PatternChecker @Inject constructor(
         loopJob = null
     }
 
-    private suspend fun resetState() {
+    suspend fun reset() {
         _activePatterns.value = emptyList()
         notifier.cancel()
         settings.setPatternLastHash("")
@@ -106,13 +106,13 @@ class PatternChecker @Inject constructor(
         notify: Boolean = true
     ): PatternResult? {
         if (!settings.patternAlertsEnabled.first()) {
-            resetState()
+            reset()
             return null
         }
 
         val readings = loadReadings(now, zone)
         if (readings == null) {
-            resetState()
+            reset()
             return null
         }
 

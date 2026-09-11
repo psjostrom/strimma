@@ -12,16 +12,15 @@ import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.StrimmaDatabase
 import com.psjostrom.strimma.data.health.ExerciseDao
+import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.notification.PatternNotifier
 import com.psjostrom.strimma.widget.WidgetSettingsRepository
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -33,41 +32,35 @@ import java.time.ZoneId
 @RunWith(RobolectricTestRunner::class)
 class PatternCheckerTest {
 
-    private lateinit var context: Context
-    private lateinit var db: StrimmaDatabase
-    private lateinit var readingDao: ReadingDao
-    private lateinit var exerciseDao: ExerciseDao
-    private lateinit var settings: SettingsRepository
-    private lateinit var notifier: PatternNotifier
-    private lateinit var checker: PatternChecker
-    private lateinit var notifManager: NotificationManager
+    private data class Fixture(
+        val db: StrimmaDatabase,
+        val readingDao: ReadingDao,
+        val exerciseDao: ExerciseDao,
+        val settings: SettingsRepository,
+        val notifier: PatternNotifier,
+        val checker: PatternChecker,
+        val notifManager: NotificationManager
+    )
 
     private val zone = ZoneId.of("Europe/Stockholm")
     private val baseInstant = LocalDateTime.of(2026, 3, 15, 21, 0)
         .atZone(zone).toInstant()
 
-    @Before
-    fun setUp() {
-        context = ApplicationProvider.getApplicationContext()
-        notifManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-        db = Room.inMemoryDatabaseBuilder(context, StrimmaDatabase::class.java)
+    private fun createFixture(): Fixture {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val notifManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val db = Room.inMemoryDatabaseBuilder(context, StrimmaDatabase::class.java)
             .allowMainThreadQueries()
             .build()
-        readingDao = db.readingDao()
-        exerciseDao = db.exerciseDao()
-
-        settings = SettingsRepository(context, WidgetSettingsRepository(context), createTestDataStore())
-        notifier = PatternNotifier(context)
-        checker = PatternChecker(readingDao, exerciseDao, settings, notifier)
+        val readingDao = db.readingDao()
+        val exerciseDao = db.exerciseDao()
+        val settings = SettingsRepository(context, WidgetSettingsRepository(context), createTestDataStore())
+        val notifier = PatternNotifier(context)
+        val checker = PatternChecker(readingDao, exerciseDao, settings, notifier)
+        return Fixture(db, readingDao, exerciseDao, settings, notifier, checker, notifManager)
     }
 
-    @After
-    fun tearDown() {
-        db.close()
-    }
-
-    private suspend fun insertHour(date: LocalDate, hour: Int, sgvs: List<Int>) {
+    private suspend fun insertHour(readingDao: ReadingDao, date: LocalDate, hour: Int, sgvs: List<Int>) {
         val step = 60 / sgvs.size
         sgvs.forEachIndexed { idx, sgv ->
             val dt = LocalDateTime.of(date.year, date.monthValue, date.dayOfMonth, hour, idx * step)
@@ -78,102 +71,153 @@ class PatternCheckerTest {
 
     @Test
     fun `checkNow returns null when pattern alerts disabled`() = runTest {
-        settings.setPatternAlertsEnabled(false)
+        val fix = createFixture()
+        try {
+            fix.settings.setPatternLastHash("HIGH:15-16")
+            fix.settings.setPatternLastNotifiedTs(baseInstant.toEpochMilli())
+            val builder = android.app.Notification.Builder(ApplicationProvider.getApplicationContext(), AlertManager.CHANNEL_PATTERN)
+                .setContentTitle("Test Pattern")
+                .setSmallIcon(android.R.drawable.ic_dialog_alert)
+            fix.notifManager.notify(PatternNotifier.NOTIFICATION_ID_PATTERN, builder.build())
+            assertTrue(fix.notifManager.activeNotifications.any { it.id == PatternNotifier.NOTIFICATION_ID_PATTERN })
 
-        val result = checker.checkNow(now = baseInstant, zone = zone)
-        assertNull(result)
-        assertTrue(checker.activePatterns.value.isEmpty())
+            fix.settings.setPatternAlertsEnabled(false)
+
+            val result = fix.checker.checkNow(now = baseInstant, zone = zone)
+            assertNull(result)
+            assertTrue(fix.checker.activePatterns.value.isEmpty())
+            assertEquals("", fix.settings.patternLastHash.first())
+            assertTrue(fix.notifManager.activeNotifications.none { it.id == PatternNotifier.NOTIFICATION_ID_PATTERN })
+        } finally {
+            fix.db.close()
+        }
     }
 
     @Test
     fun `checkNow returns null when less than 5 days of data`() = runTest {
-        // Only 2 days of readings
-        val today = baseInstant.atZone(zone).toLocalDate()
-        insertHour(today.minusDays(1), 12, listOf(120, 120, 120))
-        insertHour(today, 12, listOf(120, 120, 120))
+        val fix = createFixture()
+        try {
+            val today = baseInstant.atZone(zone).toLocalDate()
+            insertHour(fix.readingDao, today.minusDays(1), 12, listOf(120, 120, 120))
+            insertHour(fix.readingDao, today, 12, listOf(120, 120, 120))
 
-        val result = checker.checkNow(now = baseInstant, zone = zone)
-        assertNull(result)
+            val result = fix.checker.checkNow(now = baseInstant, zone = zone)
+            assertNull(result)
+        } finally {
+            fix.db.close()
+        }
     }
 
     @Test
     fun `checkNow detects pattern, posts notification and records hash`() = runTest {
-        val today = baseInstant.atZone(zone).toLocalDate()
+        val fix = createFixture()
+        try {
+            val today = baseInstant.atZone(zone).toLocalDate()
 
-        // Seed 7 days with day 7 having high readings at 15:00
-        for (d in 1..7) {
-            val date = today.minusDays(d.toLong())
-            val sgvs = if (d <= 5) listOf(220, 230, 240) else listOf(110, 115, 120)
-            insertHour(date, 15, sgvs)
-            // also add morning reading to establish historical range
-            insertHour(date, 8, listOf(100, 100, 100))
+            for (d in 1..7) {
+                val date = today.minusDays(d.toLong())
+                val sgvs = if (d <= 5) listOf(220, 230, 240) else listOf(110, 115, 120)
+                insertHour(fix.readingDao, date, 15, sgvs)
+                insertHour(fix.readingDao, date, 8, listOf(100, 100, 100))
+            }
+
+            val result = fix.checker.checkNow(now = baseInstant, zone = zone)
+            assertNotNull(result)
+            assertEquals(1, result!!.patterns.size)
+            assertEquals(1, fix.checker.activePatterns.value.size)
+
+            val hash = fix.settings.patternLastHash.first()
+            assertTrue(hash.isNotEmpty())
+            assertTrue(hash.contains("HIGH:15-16"))
+
+            val lastNotified = fix.settings.patternLastNotifiedTs.first()
+            assertEquals(baseInstant.toEpochMilli(), lastNotified)
+
+            val activeNotifs = fix.notifManager.activeNotifications
+            assertTrue(activeNotifs.any { it.id == PatternNotifier.NOTIFICATION_ID_PATTERN })
+        } finally {
+            fix.db.close()
         }
-
-        val result = checker.checkNow(now = baseInstant, zone = zone)
-        assertNotNull(result)
-        assertEquals(1, result!!.patterns.size)
-        assertEquals(1, checker.activePatterns.value.size)
-
-        val hash = settings.patternLastHash.first()
-        assertTrue(hash.isNotEmpty())
-        assertTrue(hash.contains("HIGH:15-16"))
-
-        val lastNotified = settings.patternLastNotifiedTs.first()
-        assertEquals(baseInstant.toEpochMilli(), lastNotified)
-
-        // Notification was posted with ID 200
-        val activeNotifs = notifManager.activeNotifications
-        assertTrue(activeNotifs.any { it.id == PatternNotifier.NOTIFICATION_ID_PATTERN })
     }
 
     @Test
     fun `checkNow suppresses notification if unchanged within 72h cooldown`() = runTest {
-        val today = baseInstant.atZone(zone).toLocalDate()
-        for (d in 0..7) {
-            val date = today.minusDays(d.toLong())
-            val sgvs = if (d in 1..5) listOf(220, 230, 240) else listOf(110, 115, 120)
-            insertHour(date, 15, sgvs)
-            insertHour(date, 8, listOf(100, 100, 100))
+        val fix = createFixture()
+        try {
+            val today = baseInstant.atZone(zone).toLocalDate()
+            for (d in 0..7) {
+                val date = today.minusDays(d.toLong())
+                val sgvs = if (d in 1..5) listOf(220, 230, 240) else listOf(110, 115, 120)
+                insertHour(fix.readingDao, date, 15, sgvs)
+                insertHour(fix.readingDao, date, 8, listOf(100, 100, 100))
+            }
+
+            fix.checker.checkNow(now = baseInstant, zone = zone)
+            val firstNotifiedTs = fix.settings.patternLastNotifiedTs.first()
+
+            fix.notifier.cancel()
+
+            val nextDayInstant = baseInstant.plusMillis(24 * MS_PER_HOUR)
+            fix.checker.checkNow(now = nextDayInstant, zone = zone)
+
+            assertEquals(firstNotifiedTs, fix.settings.patternLastNotifiedTs.first())
+            val activeNotifs = fix.notifManager.activeNotifications
+            assertTrue(activeNotifs.none { it.id == PatternNotifier.NOTIFICATION_ID_PATTERN })
+        } finally {
+            fix.db.close()
         }
-
-        // First run -> notifies
-        checker.checkNow(now = baseInstant, zone = zone)
-        val firstNotifiedTs = settings.patternLastNotifiedTs.first()
-
-        // Clear notification to verify it is NOT re-posted on second run
-        notifier.cancel()
-
-        // Run 24 hours later (within 72h) with identical pattern
-        val nextDayInstant = baseInstant.plusMillis(24 * MS_PER_HOUR)
-        checker.checkNow(now = nextDayInstant, zone = zone)
-
-        // Timestamp did not advance because notification was not re-sent
-        assertEquals(firstNotifiedTs, settings.patternLastNotifiedTs.first())
-        val activeNotifs = notifManager.activeNotifications
-        assertTrue(activeNotifs.none { it.id == PatternNotifier.NOTIFICATION_ID_PATTERN })
     }
 
     @Test
     fun `checkNow clears hash and cancels notification when pattern resolves`() = runTest {
-        val today = baseInstant.atZone(zone).toLocalDate()
-        // Simulate pre-existing notified state
-        settings.setPatternLastHash("HIGH:15-16")
-        settings.setPatternLastNotifiedTs(baseInstant.toEpochMilli())
+        val fix = createFixture()
+        try {
+            val today = baseInstant.atZone(zone).toLocalDate()
+            fix.settings.setPatternLastHash("HIGH:15-16")
+            fix.settings.setPatternLastNotifiedTs(baseInstant.toEpochMilli())
+            val builder = android.app.Notification.Builder(ApplicationProvider.getApplicationContext(), AlertManager.CHANNEL_PATTERN)
+                .setContentTitle("Test Pattern")
+                .setSmallIcon(android.R.drawable.ic_dialog_alert)
+            fix.notifManager.notify(PatternNotifier.NOTIFICATION_ID_PATTERN, builder.build())
+            assertTrue(fix.notifManager.activeNotifications.any { it.id == PatternNotifier.NOTIFICATION_ID_PATTERN })
 
-        // Seed 7 days with all in-range readings
-        for (d in 1..7) {
-            val date = today.minusDays(d.toLong())
-            insertHour(date, 15, listOf(110, 120, 115))
-            insertHour(date, 8, listOf(100, 100, 100))
+            for (d in 1..7) {
+                val date = today.minusDays(d.toLong())
+                insertHour(fix.readingDao, date, 15, listOf(110, 120, 115))
+                insertHour(fix.readingDao, date, 8, listOf(100, 100, 100))
+            }
+
+            val result = fix.checker.checkNow(now = baseInstant, zone = zone)
+            assertNotNull(result)
+            assertTrue(result!!.patterns.isEmpty())
+            assertTrue(fix.checker.activePatterns.value.isEmpty())
+
+            assertEquals("", fix.settings.patternLastHash.first())
+            assertTrue(fix.notifManager.activeNotifications.none { it.id == PatternNotifier.NOTIFICATION_ID_PATTERN })
+        } finally {
+            fix.db.close()
         }
+    }
 
-        val result = checker.checkNow(now = baseInstant, zone = zone)
-        assertNotNull(result)
-        assertTrue(result!!.patterns.isEmpty())
-        assertTrue(checker.activePatterns.value.isEmpty())
+    @Test
+    fun `reset clears active patterns, cancels notification and clears hash`() = runTest {
+        val fix = createFixture()
+        try {
+            fix.settings.setPatternLastHash("HIGH:15-16")
+            val builder = android.app.Notification.Builder(ApplicationProvider.getApplicationContext(), AlertManager.CHANNEL_PATTERN)
+                .setContentTitle("Test Pattern")
+                .setSmallIcon(android.R.drawable.ic_dialog_alert)
+            fix.notifManager.notify(PatternNotifier.NOTIFICATION_ID_PATTERN, builder.build())
+            assertTrue(fix.notifManager.activeNotifications.any { it.id == PatternNotifier.NOTIFICATION_ID_PATTERN })
 
-        // Hash cleared
-        assertEquals("", settings.patternLastHash.first())
+            fix.checker.reset()
+
+            assertTrue(fix.checker.activePatterns.value.isEmpty())
+            assertEquals("", fix.settings.patternLastHash.first())
+            assertTrue(fix.notifManager.activeNotifications.none { it.id == PatternNotifier.NOTIFICATION_ID_PATTERN })
+        } finally {
+            fix.db.close()
+        }
     }
 
     @Test
@@ -184,7 +228,6 @@ class PatternCheckerTest {
             zone = zone,
             now = testNow
         )
-        // 18:00 to 21:00 is exactly 3 hours
         assertEquals(3 * 3600_000L, millis)
 
         val testPast = LocalDateTime.of(2026, 3, 15, 22, 0).atZone(zone).toInstant()
@@ -193,7 +236,6 @@ class PatternCheckerTest {
             zone = zone,
             now = testPast
         )
-        // 22:00 to next day 21:00 is 23 hours
         assertEquals(23 * 3600_000L, millisPast)
     }
 }

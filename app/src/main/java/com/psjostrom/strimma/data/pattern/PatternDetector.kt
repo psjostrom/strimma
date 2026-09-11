@@ -103,17 +103,23 @@ object PatternDetector {
 
         if (evaluatedDays >= MIN_EVALUATED_DAYS) {
             if (lowDays >= MIN_FLAGGED_DAYS) {
+                val sum = lowBgValues.sumOf { it.toDouble() }
+                val count = lowBgValues.size
                 out.add(GlucosePattern(
                     startHour = hour, endHour = hour + 1, type = PatternType.LOW,
                     daysDetected = lowDays, daysEvaluated = evaluatedDays,
-                    avgBgMgdl = lowBgValues.average(), worstBgMgdl = lowBgValues.min()
+                    avgBgMgdl = sum / count, worstBgMgdl = lowBgValues.min(),
+                    sampleCount = count, bgSum = sum
                 ))
             }
             if (highDays >= MIN_FLAGGED_DAYS) {
+                val sum = highBgValues.sumOf { it.toDouble() }
+                val count = highBgValues.size
                 out.add(GlucosePattern(
                     startHour = hour, endHour = hour + 1, type = PatternType.HIGH,
                     daysDetected = highDays, daysEvaluated = evaluatedDays,
-                    avgBgMgdl = highBgValues.average(), worstBgMgdl = highBgValues.max()
+                    avgBgMgdl = sum / count, worstBgMgdl = highBgValues.max(),
+                    sampleCount = count, bgSum = sum
                 ))
             }
         }
@@ -133,10 +139,15 @@ object PatternDetector {
         for (i in 1 until sorted.size) {
             val next = sorted[i]
             if (next.type == current.type && next.startHour == current.endHour) {
-                // Extend: merge stats
+                val currentCount = if (current.sampleCount > 0) current.sampleCount else 1
+                val currentSum = if (current.sampleCount > 0) current.bgSum else current.avgBgMgdl * currentCount
+                val nextCount = if (next.sampleCount > 0) next.sampleCount else 1
+                val nextSum = if (next.sampleCount > 0) next.bgSum else next.avgBgMgdl * nextCount
+                val combinedCount = currentCount + nextCount
+                val combinedSum = currentSum + nextSum
+
                 val combinedDaysDetected = maxOf(current.daysDetected, next.daysDetected)
                 val combinedDaysEvaluated = maxOf(current.daysEvaluated, next.daysEvaluated)
-                val combinedAvg = (current.avgBgMgdl + next.avgBgMgdl) / 2.0
                 val combinedWorst = when (current.type) {
                     PatternType.LOW -> minOf(current.worstBgMgdl, next.worstBgMgdl)
                     PatternType.HIGH -> maxOf(current.worstBgMgdl, next.worstBgMgdl)
@@ -145,8 +156,10 @@ object PatternDetector {
                     endHour = next.endHour,
                     daysDetected = combinedDaysDetected,
                     daysEvaluated = combinedDaysEvaluated,
-                    avgBgMgdl = combinedAvg,
-                    worstBgMgdl = combinedWorst
+                    avgBgMgdl = combinedSum / combinedCount,
+                    worstBgMgdl = combinedWorst,
+                    sampleCount = combinedCount,
+                    bgSum = combinedSum
                 )
             } else {
                 merged.add(current)
@@ -167,7 +180,9 @@ data class GlucosePattern(
     val daysDetected: Int,
     val daysEvaluated: Int,
     val avgBgMgdl: Double,
-    val worstBgMgdl: Int
+    val worstBgMgdl: Int,
+    val sampleCount: Int = 0,
+    val bgSum: Double = 0.0
 ) {
     /** Stable identity for dedup hashing — type and time window only. */
     fun stableKey(): String = "$type:$startHour-$endHour"

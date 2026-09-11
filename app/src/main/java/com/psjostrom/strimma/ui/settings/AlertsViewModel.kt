@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.notification.SnoozeDuration
+import com.psjostrom.strimma.data.pattern.PatternChecker
 import com.psjostrom.strimma.data.workout.AlertProtocol
 import com.psjostrom.strimma.notification.AlertCategory
 import com.psjostrom.strimma.notification.AlertManager
@@ -25,7 +26,8 @@ import javax.inject.Inject
 @HiltViewModel
 class AlertsViewModel @Inject constructor(
     private val settings: SettingsRepository,
-    private val alertManager: AlertManager
+    private val alertManager: AlertManager,
+    private val patternChecker: PatternChecker? = null
 ) : ViewModel() {
 
     val alertLowEnabled: StateFlow<Boolean> = settings.alertLowEnabled
@@ -54,7 +56,12 @@ class AlertsViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
     fun setPatternAlertsEnabled(enabled: Boolean) {
-        viewModelScope.launch { settings.setPatternAlertsEnabled(enabled) }
+        viewModelScope.launch {
+            settings.setPatternAlertsEnabled(enabled)
+            if (!enabled) {
+                patternChecker?.reset()
+            }
+        }
     }
 
     val regularAlertProtocol: StateFlow<AlertProtocol?> = settings.regularAlertProtocol

@@ -200,6 +200,40 @@ class PatternDetectorTest {
     }
 
     @Test
+    fun `mergeAdjacent preserves sample counts and calculates accurate average for three adjacent hours`() {
+        val p1 = GlucosePattern(
+            startHour = 14, endHour = 15, type = PatternType.HIGH,
+            daysDetected = 5, daysEvaluated = 7, avgBgMgdl = 200.0, worstBgMgdl = 210,
+            sampleCount = 10, bgSum = 2000.0
+        )
+        val p2 = GlucosePattern(
+            startHour = 15, endHour = 16, type = PatternType.HIGH,
+            daysDetected = 4, daysEvaluated = 7, avgBgMgdl = 240.0, worstBgMgdl = 260,
+            sampleCount = 20, bgSum = 4800.0
+        )
+        val p3 = GlucosePattern(
+            startHour = 16, endHour = 17, type = PatternType.HIGH,
+            daysDetected = 6, daysEvaluated = 7, avgBgMgdl = 210.0, worstBgMgdl = 230,
+            sampleCount = 10, bgSum = 2100.0
+        )
+
+        // Total sum = 2000 + 4800 + 2100 = 8900, count = 40, avg = 222.5
+        val forward = PatternDetector.mergeAdjacent(listOf(p1, p2, p3))
+        assertEquals(1, forward.size)
+        val mergedForward = forward.first()
+        assertEquals(14, mergedForward.startHour)
+        assertEquals(17, mergedForward.endHour)
+        assertEquals(222.5, mergedForward.avgBgMgdl, 0.001)
+        assertEquals(260, mergedForward.worstBgMgdl)
+        assertEquals(40, mergedForward.sampleCount)
+        assertEquals(8900.0, mergedForward.bgSum, 0.001)
+
+        val reverse = PatternDetector.mergeAdjacent(listOf(p3, p1, p2))
+        assertEquals(1, reverse.size)
+        assertEquals(mergedForward, reverse.first())
+    }
+
+    @Test
     fun `detect excludes readings inside workout periods`() {
         val readings = mutableListOf<GlucoseReading>()
         val workouts = mutableListOf<LongRange>()

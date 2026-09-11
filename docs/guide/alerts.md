@@ -28,7 +28,7 @@ Strimma has **nine** alert types, each with its own Android notification channel
 
 | Alert | Trigger | Bypasses DND | Vibration |
 |-------|---------|-------------|-----------|
-| **Pattern Insights** | Recurring out-of-range glucose at the same time of day (4+ of last 7 days) | No | Gentle |
+| **Pattern Insights** | Recurring out-of-range glucose at the same time of day (requires at least 4 evaluated days out of range, with at least 5 sufficiently covered days within the 7-day lookback) | No | Gentle |
 
 ### System Alerts
 
@@ -196,7 +196,7 @@ When glucose returns to range, all cooldown timers **reset immediately**. The ne
 
 Strimma analyzes your glucose history over the last 7 days to identify recurring patterns at specific times of day (for example, recurring highs between 14:00–16:00, or recurring lows around 06:00).
 
-- **Threshold**: Requires at least 4 out of 7 days to be out of range during the same 1-hour window (with at least 5 evaluated days).
+- **Threshold**: Requires at least 4 evaluated days out of range during the same 1-hour window, with at least 5 sufficiently covered days within the 7-day lookback.
 - **Workout exclusion**: Glucose readings during recorded workouts are excluded from pattern detection to avoid false positives.
 - **Timing**: Checked daily at 21:00 local time.
 - **Deduplication**: If the same pattern persists without changes, notifications are limited to at most once every 72 hours.
