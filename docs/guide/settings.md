@@ -122,11 +122,12 @@ See [Notifications](notifications.md) for full details on the action button.
 
 ## Alerts
 
-Configure glucose alerts in three sections:
+Configure glucose alerts in four sections:
 
 - **Alerts** — the independent Regular protocol: Urgent Low, Low, High, Urgent High, Low Soon, High Soon, and Stale Data alerts. These rows also have Sound buttons for Android notification-channel customization.
 - **Exercise Alerts** — the independent protocol selected while Workout Mode is active, with its own alert enablement and threshold controls. Exercise Low and Exercise High also define the exercise graph range. These rows have no separate Sound buttons.
 - **Alert Behavior** — shared Alert Snooze Duration and Cooldown controls. Each appears once and applies to the active alert protocol.
+- **Pattern Insights** — toggle for recurring pattern detection alerts. See [Pattern Alerts](alerts.md#pattern-alerts) for details.
 
 Regular and Exercise protocols use the same Android notification channel for each corresponding alert type. Changing one protocol does not change the other.
 

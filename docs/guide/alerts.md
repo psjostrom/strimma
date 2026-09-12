@@ -6,7 +6,7 @@ Strimma can alert you with sound and vibration when your glucose crosses configu
 
 ## Alert Types
 
-Strimma has **eight** alert types, each with its own Android notification channel so you can customize the sound and vibration for each one independently. Regular and Exercise protocols share the corresponding channels.
+Strimma has **nine** alert types, each with its own Android notification channel so you can customize the sound and vibration for each one independently. Regular and Exercise protocols share the corresponding channels.
 
 ### Glucose Threshold Alerts
 
@@ -23,6 +23,12 @@ Strimma has **eight** alert types, each with its own Android notification channe
 |-------|---------|-------------|-----------|
 | **Low Soon** | Predicted to cross low threshold within prediction window | No | Gentle |
 | **High Soon** | Predicted to cross high threshold within prediction window | No | Gentle |
+
+### Pattern Alerts
+
+| Alert | Trigger | Bypasses DND | Vibration |
+|-------|---------|-------------|-----------|
+| **Pattern Insights** | Recurring out-of-range glucose at the same time of day (requires at least 4 evaluated days out of range, with at least 5 sufficiently covered days within the 7-day lookback) | No | Gentle |
 
 ### System Alerts
 
@@ -93,7 +99,7 @@ You can pause entire alert categories for a custom duration — useful during ex
 
 ## Configuring Alerts
 
-Go to **Settings > Alerts**. The screen has three sections, with independent Regular and Exercise protocols and one shared behavior section.
+Go to **Settings > Alerts**. The screen has four sections, with independent Regular and Exercise protocols, one shared behavior section, and a Pattern Insights toggle.
 
 ### Alerts
 
@@ -181,3 +187,22 @@ Each alarm type (Urgent Low, Low, High, Urgent High) has its **own independent c
 ### Cooldown reset
 
 When glucose returns to range, all cooldown timers **reset immediately**. The next episode alerts right away regardless of remaining cooldown.
+
+---
+
+## Pattern Alerts
+
+![Pattern Insight Card](../screenshots/pattern-insight-card.png){ width="300" }
+
+Strimma analyzes your glucose history over the last 7 days to identify recurring patterns at specific times of day (for example, recurring highs between 14:00–16:00, or recurring lows around 06:00).
+
+- **Threshold**: Requires at least 4 evaluated days out of range during the same 1-hour window, with at least 5 sufficiently covered days within the 7-day lookback.
+- **Workout exclusion**: Glucose readings during recorded workouts are excluded from pattern detection to avoid false positives.
+- **Timing**: Scheduled checks run daily at 21:00 local time. App startup performs a non-notifying pattern check to populate the in-app card.
+- **Deduplication**: If the same pattern persists without changes, notifications are limited to at most once every 72 hours.
+- **In-App Card**: Active patterns appear in an insight card at the top of the main screen with a dismiss button. Dismissing hides the card for the rest of the day.
+- **Configuration**: Can be toggled on/off in **Settings > Alerts → Pattern Insights**.
+
+| Notification | Settings |
+|---|---|
+| ![Pattern Notification](../screenshots/pattern-notification.png){ width="300" } | ![Pattern Settings](../screenshots/pattern-settings.png){ width="300" } |

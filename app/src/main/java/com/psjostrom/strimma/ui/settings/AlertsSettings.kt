@@ -52,6 +52,8 @@ fun AlertsSettings(
     onExerciseAlertStaleEnabledChange: (Boolean) -> Unit,
     onExerciseAlertLowSoonEnabledChange: (Boolean) -> Unit,
     onExerciseAlertHighSoonEnabledChange: (Boolean) -> Unit,
+    patternAlertsEnabled: Boolean = true,
+    onPatternAlertsEnabledChange: (Boolean) -> Unit = {},
     validationError: Flow<AlertsViewModel.ValidationError>,
     onOpenAlertSound: (String) -> Unit,
     onBack: () -> Unit
@@ -181,6 +183,22 @@ fun AlertsSettings(
                         }
                         Text(stringResource(labelResId))
                     }
+                }
+            }
+        }
+
+        SettingsSection(stringResource(R.string.settings_alerts_pattern_section)) {
+            AlertToggleRow(
+                label = stringResource(R.string.settings_alerts_pattern_title),
+                description = stringResource(R.string.settings_alerts_pattern_desc),
+                enabled = patternAlertsEnabled,
+                onToggle = onPatternAlertsEnabledChange,
+                textColor = onBg,
+                outlineColor = outline,
+            )
+            if (patternAlertsEnabled) {
+                TextButton(onClick = { onOpenAlertSound(AlertManager.CHANNEL_PATTERN) }) {
+                    Text(stringResource(R.string.common_sound), color = InRange, fontSize = 13.sp)
                 }
             }
         }

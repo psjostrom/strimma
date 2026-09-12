@@ -7,6 +7,7 @@
     <string name="common_export">Exporter</string>
     <string name="common_sound">Son</string>
     <string name="common_no_data">Pas de donn\u00E9es</string>
+    <string name="common_dismiss">Ignorer</string>
 
     <string name="common_content_desc_back">Retour</string>
     <string name="common_content_desc_export">Exporter</string>
@@ -259,9 +260,29 @@
     <string name="alert_stale_body">Aucune lecture de glyc\u00E9mie depuis 10+ minutes</string>
     <string name="alert_push_fail_title">\u00C9chec d\u0027envoi</string>
     <string name="alert_push_fail_body">L\u0027envoi de glyc\u00E9mie \u00E9choue depuis 15+ minutes. V\u00E9rifiez les param\u00E8tres Nightscout.</string>
-    <string name="alert_channel_push_fail">Erreur d\u0027envoi</string>
-    <string name="alert_channel_push_fail_desc">L\u0027envoi de glyc\u00E9mie \u00E9choue pendant une p\u00E9riode prolong\u00E9e</string>
+    <string name="alert_channel_push_fail">\u00C9chec de t\u00E9l\u00E9versement</string>
+    <string name="alert_channel_push_fail_desc">Les t\u00E9l\u00E9versements de glyc\u00E9mie \u00E9chouent depuis un certain temps</string>
     <string name="alert_snooze">Snooze %1$s</string>
+
+    <!-- Pattern Alerts -->
+    <string name="alert_channel_pattern">Tendances r\u00E9currentes</string>
+    <string name="alert_channel_pattern_desc">Tendances glyc\u00E9miques r\u00E9currentes \u00E0 la m\u00EAme heure</string>
+    <string name="pattern_notif_title_high">Hyperglyc\u00E9mie r\u00E9currente : %1$s</string>
+    <string name="pattern_notif_title_low">Hypoglyc\u00E9mie r\u00E9currente : %1$s</string>
+    <string name="pattern_notif_body_high">\u00C9lev\u00E9 sur %1$d des %2$d derniers jours \u00B7 Moy. %3$s</string>
+    <string name="pattern_notif_body_low">Bas sur %1$d des %2$d derniers jours \u00B7 Moy. %3$s</string>
+    <string name="pattern_notif_title_multiple">%1$d tendances r\u00E9currentes d\u00E9tect\u00E9es</string>
+    <string name="pattern_notif_summary_multiple">%1$d tendances glyc\u00E9miques r\u00E9currentes d\u00E9tect\u00E9es</string>
+    <string name="pattern_notif_item_high">\u2B06 Haut %1$s \u00B7 %2$d sur %3$d jours</string>
+    <string name="pattern_notif_item_low">\u2B07 Bas %1$s \u00B7 %2$d sur %3$d jours</string>
+    <string name="settings_alerts_pattern_section">Tendances r\u00E9currentes</string>
+    <string name="settings_alerts_pattern_title">Tendances r\u00E9currentes</string>
+    <string name="settings_alerts_pattern_desc">Recevez une notification lorsque la glyc\u00E9mie est r\u00E9guli\u00E8rement hors cible \u00E0 la m\u00EAme heure</string>
+    <string name="insight_pattern_badge">TENDANCE</string>
+    <string name="insight_pattern_header">%1$s \u00B7 %2$d sur %3$d jours</string>
+    <string name="insight_pattern_detail_high">Haut entre %1$s ces derniers jours (Moy. %2$s)</string>
+    <string name="insight_pattern_detail_low">Bas entre %1$s ces derniers jours (Moy. %2$s)</string>
+    <string name="insight_pattern_detail_multiple">%1$d tendances r\u00E9currentes d\u00E9tect\u00E9es \u00B7 Appuyer pour afficher les statistiques</string>
 
     <!-- Foreground Notification -->
     <string name="notif_channel_name">Lectures de glyc\u00E9mie</string>

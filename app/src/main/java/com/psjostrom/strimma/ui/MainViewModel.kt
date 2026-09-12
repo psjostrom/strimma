@@ -39,9 +39,12 @@ import com.psjostrom.strimma.data.story.toMillisRange
 import com.psjostrom.strimma.data.workout.WorkoutMode
 import com.psjostrom.strimma.data.workout.WorkoutModeManager
 import com.psjostrom.strimma.network.TreatmentSyncer
+import java.time.Duration
 import java.time.Instant
+import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
+import java.time.ZonedDateTime
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -70,6 +73,7 @@ class MainViewModel @Inject constructor(
     private val updateChecker: UpdateChecker,
     private val updateInstaller: UpdateInstaller,
     private val workoutModeManager: WorkoutModeManager,
+    private val patternChecker: com.psjostrom.strimma.data.pattern.PatternChecker,
 ) : ViewModel() {
 
     companion object {
@@ -291,6 +295,32 @@ class MainViewModel @Inject constructor(
             unit
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), GuidanceState.NoWorkout)
+
+    private val localDateFlow: Flow<LocalDate> = flow {
+        while (true) {
+            val today = LocalDate.now()
+            emit(today)
+            val tomorrowStart = today.plusDays(1).atStartOfDay(ZoneId.systemDefault())
+            val delayMs = Duration.between(ZonedDateTime.now(), tomorrowStart).toMillis()
+            delay(delayMs.coerceAtLeast(1000L))
+        }
+    }
+
+    val activePatterns: StateFlow<List<com.psjostrom.strimma.data.pattern.GlucosePattern>> = combine(
+        patternChecker.activePatterns,
+        settings.patternCardDismissedDate,
+        settings.patternAlertsEnabled,
+        localDateFlow
+    ) { patterns, dismissedDate, enabled, today ->
+        val todayStr = today.toString()
+        if (enabled && dismissedDate != todayStr) patterns else emptyList()
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun dismissPatternCard() {
+        viewModelScope.launch {
+            settings.setPatternCardDismissedDate(LocalDate.now().toString())
+        }
+    }
 
     suspend fun computeExerciseBGContext(session: StoredExerciseSession): ExerciseBGContext? {
         val preStart = session.startTime - PRE_WINDOW_MINUTES * MS_PER_MINUTE

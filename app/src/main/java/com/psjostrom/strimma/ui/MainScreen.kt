@@ -59,6 +59,8 @@ import com.psjostrom.strimma.graph.computeYRange
 import com.psjostrom.strimma.data.workout.WorkoutMode
 import com.psjostrom.strimma.notification.AlertCategory
 import com.psjostrom.strimma.notification.AlertManager
+import com.psjostrom.strimma.data.pattern.GlucosePattern
+import com.psjostrom.strimma.ui.components.InsightCard
 import com.psjostrom.strimma.ui.components.PauseAlertsSheet
 import com.psjostrom.strimma.ui.components.rememberCountdownText
 import com.psjostrom.strimma.ui.components.rememberTickingNowMs
@@ -108,7 +110,10 @@ fun MainScreen(
     storyMonthName: String = "",
     onNavigateToStory: (() -> Unit)? = null,
     workoutMode: WorkoutMode = WorkoutMode.Off,
-    onToggleWorkoutMode: () -> Unit = {}
+    onToggleWorkoutMode: () -> Unit = {},
+    activePatterns: List<GlucosePattern> = emptyList(),
+    onDismissPatternCard: () -> Unit = {},
+    onNavigateToStats: (() -> Unit)? = null,
 ) {
     val mainWindowMs = graphWindowHours * 3600_000L
 
@@ -245,6 +250,17 @@ fun MainScreen(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+
+            val patterns = activePatterns
+            if (patterns.isNotEmpty()) {
+                InsightCard(
+                    patterns = patterns,
+                    glucoseUnit = glucoseUnit,
+                    onClick = { onNavigateToStats?.invoke() },
+                    onDismiss = onDismissPatternCard
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
 
             val guidance = guidanceState
             if (guidance is GuidanceState.WorkoutApproaching) {
