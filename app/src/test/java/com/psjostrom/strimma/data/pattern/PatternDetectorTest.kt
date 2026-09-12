@@ -47,7 +47,6 @@ class PatternDetectorTest {
             now = now
         )
         assertTrue(result.patterns.isEmpty())
-        assertEquals("", result.stableHash())
     }
 
     @Test
@@ -256,24 +255,6 @@ class PatternDetectorTest {
 
         // All 15:00 readings were during workouts -> excluded -> empty result
         assertTrue(result.patterns.isEmpty())
-    }
-
-    @Test
-    fun `stableKey and stableHash are deterministic`() {
-        val p1 = GlucosePattern(
-            startHour = 14,
-            endHour = 16,
-            type = PatternType.HIGH,
-            daysDetected = 5,
-            daysEvaluated = 7,
-            avgBgMgdl = 220.5
-        )
-        assertEquals("HIGH:14-16", p1.stableKey())
-
-        val result = PatternResult(
-            patterns = listOf(p1)
-        )
-        assertEquals("HIGH:14-16", result.stableHash())
     }
 
     @Test

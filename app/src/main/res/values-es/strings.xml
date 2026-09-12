@@ -264,20 +264,10 @@
     <string name="alert_channel_push_fail_desc">Las subidas de glucosa fallan durante un per\u00EDodo prolongado</string>
     <string name="alert_snooze">Snooze %1$s</string>
 
-    <!-- Pattern Alerts -->
-    <string name="alert_channel_pattern">Patrones recurrentes</string>
-    <string name="alert_channel_pattern_desc">Patrones de glucosa recurrentes a la misma hora del d\u00EDa</string>
-    <string name="pattern_notif_title_high">Alto recurrente: %1$s</string>
-    <string name="pattern_notif_title_low">Bajo recurrente: %1$s</string>
-    <string name="pattern_notif_body_high">Alto en %1$d de los \u00FAltimos %2$d d\u00EDas \u00B7 Promedio %3$s</string>
-    <string name="pattern_notif_body_low">Bajo en %1$d de los \u00FAltimos %2$d d\u00EDas \u00B7 Promedio %3$s</string>
-    <string name="pattern_notif_title_multiple">%1$d patrones recurrentes detectados</string>
-    <string name="pattern_notif_summary_multiple">%1$d patrones de glucosa recurrentes detectados</string>
-    <string name="pattern_notif_item_high">\u2B06 Alto %1$s \u00B7 %2$d de %3$d d\u00EDas</string>
-    <string name="pattern_notif_item_low">\u2B07 Bajo %1$s \u00B7 %2$d de %3$d d\u00EDas</string>
+    <!-- Pattern Insights -->
     <string name="settings_alerts_pattern_section">Patrones recurrentes</string>
     <string name="settings_alerts_pattern_title">Patrones recurrentes</string>
-    <string name="settings_alerts_pattern_desc">Recibe notificaciones cuando la glucosa est\u00E9 repetidamente fuera de rango a la misma hora del d\u00EDa</string>
+    <string name="settings_alerts_pattern_desc">Mostrar patrones de glucosa recurrentes en la pantalla principal</string>
     <string name="insight_pattern_badge">PATR\u00D3N</string>
     <string name="insight_pattern_header">%1$s \u00B7 %2$d de %3$d d\u00EDas</string>
     <string name="insight_pattern_detail_high">Alto entre %1$s en d\u00EDas recientes (Promedio %2$s)</string>

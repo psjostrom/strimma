@@ -176,9 +176,6 @@ data class GlucosePattern(
 ) {
     val formattedTimeSpan: String get() = formatHourRange(startHour, endHour)
 
-    /** Stable identity for dedup hashing — type and time window only. */
-    fun stableKey(): String = "$type:$startHour-$endHour"
-
     companion object {
         fun formatHourRange(startHour: Int, endHour: Int): String =
             "%02d:00–%02d:00".format(startHour, endHour)
@@ -187,10 +184,4 @@ data class GlucosePattern(
 
 data class PatternResult(
     val patterns: List<GlucosePattern>
-) {
-    /** Hash of the pattern set for deduplication. Empty string when no patterns. */
-    fun stableHash(): String {
-        if (patterns.isEmpty()) return ""
-        return patterns.joinToString("|") { it.stableKey() }
-    }
-}
+)

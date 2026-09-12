@@ -2,18 +2,12 @@ package com.psjostrom.strimma.ui.settings
 
 import android.app.NotificationManager
 import android.content.Context
-import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.psjostrom.strimma.createTestDataStore
-import com.psjostrom.strimma.data.GlucoseReading
-import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
-import com.psjostrom.strimma.data.StrimmaDatabase
-import com.psjostrom.strimma.data.pattern.PatternChecker
 import com.psjostrom.strimma.data.workout.WorkoutModeManager
 import com.psjostrom.strimma.notification.AlertCategory
 import com.psjostrom.strimma.notification.AlertManager
-import com.psjostrom.strimma.notification.PatternNotifier
 import com.psjostrom.strimma.testutil.workout.FakeCalendarPoller
 import com.psjostrom.strimma.testutil.workout.MutableClock
 import com.psjostrom.strimma.widget.WidgetSettingsRepository
@@ -36,9 +30,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.ZoneId
 
 /**
  * Pins [AlertsViewModel.unifiedPauseExpiryMs] — the single owner of the "is the
@@ -53,32 +44,17 @@ import java.time.ZoneId
 class AlertsViewModelTest {
 
     private data class Fixture(
-        val db: StrimmaDatabase,
         val context: Context,
         val notifManager: NotificationManager,
         val settings: SettingsRepository,
-        val patternChecker: PatternChecker,
         val viewModel: AlertsViewModel,
     )
-
-    private suspend fun insertHour(readingDao: ReadingDao, date: LocalDate, hour: Int, sgvs: List<Int>) {
-        val zone = ZoneId.systemDefault()
-        val step = 60 / sgvs.size
-        sgvs.forEachIndexed { idx, sgv ->
-            val dt = LocalDateTime.of(date.year, date.monthValue, date.dayOfMonth, hour, idx * step)
-            val ts = dt.atZone(zone).toInstant().toEpochMilli()
-            readingDao.insert(GlucoseReading(ts = ts, sgv = sgv, direction = "Flat", delta = null))
-        }
-    }
 
     private fun runFixtureTest(block: suspend TestScope.(Fixture) -> Unit) = runTest {
         Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
         val context = ApplicationProvider.getApplicationContext<Context>()
         val notifManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notifManager.cancelAll()
-        val db = Room.inMemoryDatabaseBuilder(context, StrimmaDatabase::class.java)
-            .allowMainThreadQueries()
-            .build()
         try {
             context.getSharedPreferences("strimma_snooze", Context.MODE_PRIVATE)
                 .edit().clear().apply()
@@ -94,11 +70,8 @@ class AlertsViewModelTest {
                 backgroundScope,
             )
             val alertManager = AlertManager(context, settings, workoutModeManager, backgroundScope)
-            val notifier = PatternNotifier(context)
-            val patternChecker = PatternChecker(db.readingDao(), db.exerciseDao(), settings, notifier)
-            block(Fixture(db, context, notifManager, settings, patternChecker, AlertsViewModel(settings, alertManager, patternChecker)))
+            block(Fixture(context, notifManager, settings, AlertsViewModel(settings, alertManager)))
         } finally {
-            db.close()
             Dispatchers.resetMain()
         }
     }
@@ -199,46 +172,11 @@ class AlertsViewModelTest {
     }
 
     @Test
-    fun `disabling pattern alerts resets pattern checker and persists setting`() = runFixtureTest { rig ->
-        val today = LocalDate.now()
-        for (d in 1..7) {
-            val date = today.minusDays(d.toLong())
-            val sgvs = if (d <= 5) listOf(220, 230, 240) else listOf(110, 115, 120)
-            insertHour(rig.db.readingDao(), date, 15, sgvs)
-        }
-
-        rig.viewModel.setPatternAlertsEnabled(true).join()
-        assertEquals(1, rig.patternChecker.activePatterns.value.size)
-
-        val builder = android.app.Notification.Builder(rig.context, AlertManager.CHANNEL_PATTERN)
-            .setContentTitle("Test Pattern")
-            .setSmallIcon(android.R.drawable.ic_dialog_alert)
-        rig.notifManager.notify(PatternNotifier.NOTIFICATION_ID_PATTERN, builder.build())
-        assertTrue(rig.notifManager.activeNotifications.any { it.id == PatternNotifier.NOTIFICATION_ID_PATTERN })
-
+    fun `setPatternAlertsEnabled persists setting`() = runFixtureTest { rig ->
         rig.viewModel.setPatternAlertsEnabled(false).join()
-
         assertEquals(false, rig.settings.patternAlertsEnabled.first())
-        assertTrue(rig.patternChecker.activePatterns.value.isEmpty())
-        assertTrue(rig.notifManager.activeNotifications.none { it.id == PatternNotifier.NOTIFICATION_ID_PATTERN })
-    }
-
-    @Test
-    fun `enabling pattern alerts triggers checkNow and persists setting`() = runFixtureTest { rig ->
-        val today = LocalDate.now()
-        for (d in 1..7) {
-            val date = today.minusDays(d.toLong())
-            val sgvs = if (d <= 5) listOf(220, 230, 240) else listOf(110, 115, 120)
-            insertHour(rig.db.readingDao(), date, 15, sgvs)
-        }
-
-        rig.settings.setPatternAlertsEnabled(false)
-        assertEquals(0, rig.patternChecker.activePatterns.value.size)
 
         rig.viewModel.setPatternAlertsEnabled(true).join()
-
         assertEquals(true, rig.settings.patternAlertsEnabled.first())
-        assertEquals(1, rig.patternChecker.activePatterns.value.size)
-        assertTrue(rig.notifManager.activeNotifications.none { it.id == PatternNotifier.NOTIFICATION_ID_PATTERN })
     }
 }
