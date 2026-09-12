@@ -2,6 +2,7 @@ package com.psjostrom.strimma.ui.story
 
 import android.content.Context
 import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.viewModelScope
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.psjostrom.strimma.createTestDataStore
@@ -12,6 +13,8 @@ import com.psjostrom.strimma.data.meal.MealAnalyzer
 import com.psjostrom.strimma.widget.WidgetSettingsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -42,6 +45,7 @@ class StoryViewModelTest {
 
     private lateinit var db: StrimmaDatabase
     private lateinit var settings: SettingsRepository
+    private val viewModels = mutableListOf<StoryViewModel>()
 
     @Before
     fun setUp() {
@@ -54,9 +58,18 @@ class StoryViewModelTest {
     }
 
     @After
-    fun tearDown() {
-        db.close()
+    fun tearDown() = runBlocking {
+        viewModels.forEach { it.viewModelScope.coroutineContext[Job]?.cancelAndJoin() }
+        viewModels.clear()
+        if (::db.isInitialized && db.isOpen) {
+            db.close()
+        }
         Dispatchers.resetMain()
+    }
+
+    private fun track(vm: StoryViewModel): StoryViewModel {
+        viewModels.add(vm)
+        return vm
     }
 
     private fun readingAt(sgv: Int, year: Int, month: Int, day: Int, hour: Int): GlucoseReading {
@@ -70,7 +83,7 @@ class StoryViewModelTest {
 
     private fun createViewModel(year: Int, month: Int): StoryViewModel {
         val handle = SavedStateHandle(mapOf("year" to year, "month" to month))
-        return StoryViewModel(handle, db.readingDao(), db.treatmentDao(), settings, MealAnalyzer())
+        return track(StoryViewModel(handle, db.readingDao(), db.treatmentDao(), settings, MealAnalyzer()))
     }
 
     private suspend fun awaitLoaded(vm: StoryViewModel) {
@@ -113,7 +126,7 @@ class StoryViewModelTest {
     @Test
     fun `defaults to previous month when no SavedStateHandle args`() = runBlocking {
         val handle = SavedStateHandle()
-        val vm = StoryViewModel(handle, db.readingDao(), db.treatmentDao(), settings, MealAnalyzer())
+        val vm = track(StoryViewModel(handle, db.readingDao(), db.treatmentDao(), settings, MealAnalyzer()))
         awaitLoaded(vm)
 
         assertNull(vm.error.value)
@@ -307,7 +320,7 @@ class StoryViewModelTest {
         db.readingDao().insertBatch(feb + mar)
 
         val handle = SavedStateHandle(mapOf("year" to 2020, "month" to 3))
-        val vm = StoryViewModel(handle, db.readingDao(), db.treatmentDao(), settings, MealAnalyzer())
+        val vm = track(StoryViewModel(handle, db.readingDao(), db.treatmentDao(), settings, MealAnalyzer()))
         awaitLoaded(vm)
 
         vm.goToPreviousMonth()
@@ -329,7 +342,7 @@ class StoryViewModelTest {
         closedDb.close()
 
         val handle = SavedStateHandle(mapOf("year" to 2026, "month" to 3))
-        val vm = StoryViewModel(handle, closedDb.readingDao(), closedDb.treatmentDao(), settings, MealAnalyzer())
+        val vm = track(StoryViewModel(handle, closedDb.readingDao(), closedDb.treatmentDao(), settings, MealAnalyzer()))
         awaitLoaded(vm)
 
         assertNotNull(vm.error.value)

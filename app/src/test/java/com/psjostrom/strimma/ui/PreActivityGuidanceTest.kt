@@ -84,6 +84,8 @@ class PreActivityGuidanceTest {
     @Inject lateinit var workoutModeManager: com.psjostrom.strimma.data.workout.WorkoutModeManager
     @Inject lateinit var patternChecker: com.psjostrom.strimma.data.pattern.PatternChecker
 
+    private val viewModels = mutableListOf<MainViewModel>()
+
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
@@ -101,6 +103,8 @@ class PreActivityGuidanceTest {
 
     @After
     fun tearDown() {
+        viewModels.forEach { it.viewModelScope.cancel() }
+        viewModels.clear()
         Dispatchers.resetMain()
     }
 
@@ -122,7 +126,7 @@ class PreActivityGuidanceTest {
         treatmentSyncer, calendarPoller, mealAnalyzer, tidepoolAuthManager,
         tidepoolUploader, updateChecker, updateInstaller, workoutModeManager,
         patternChecker
-    )
+    ).also { viewModels.add(it) }
 
     // --- CalendarReader delegation ---
 

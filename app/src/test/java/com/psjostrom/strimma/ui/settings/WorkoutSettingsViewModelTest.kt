@@ -1,12 +1,14 @@
 package com.psjostrom.strimma.ui.settings
 
 import android.content.Context
+import androidx.lifecycle.viewModelScope
 import androidx.test.core.app.ApplicationProvider
 import com.psjostrom.strimma.createTestDataStore
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.widget.WidgetSettingsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -33,6 +35,7 @@ import org.robolectric.RobolectricTestRunner
 class WorkoutSettingsViewModelTest {
 
     private val testDispatcher = UnconfinedTestDispatcher()
+    private val viewModels = mutableListOf<WorkoutSettingsViewModel>()
 
     @Before
     fun setUp() {
@@ -41,7 +44,14 @@ class WorkoutSettingsViewModelTest {
 
     @After
     fun tearDown() {
+        viewModels.forEach { it.viewModelScope.cancel() }
+        viewModels.clear()
         Dispatchers.resetMain()
+    }
+
+    private fun track(vm: WorkoutSettingsViewModel): WorkoutSettingsViewModel {
+        viewModels.add(vm)
+        return vm
     }
 
     private fun TestScope.makeFixture(): Fixture {
@@ -50,7 +60,7 @@ class WorkoutSettingsViewModelTest {
         // and `runTest`'s virtual-time advancement actually drains them.
         val ds = createTestDataStore(this)
         val settings = SettingsRepository(context, WidgetSettingsRepository(context), ds)
-        val vm = WorkoutSettingsViewModel(settings)
+        val vm = track(WorkoutSettingsViewModel(settings))
         return Fixture(settings, vm)
     }
 
@@ -69,7 +79,7 @@ class WorkoutSettingsViewModelTest {
         vm.setMaxHours(7)
         assertEquals(7, settings.workoutModeMaxHours.first { it == 7 })
 
-        val vm2 = WorkoutSettingsViewModel(settings)
+        val vm2 = track(WorkoutSettingsViewModel(settings))
         assertEquals(7, vm2.maxHours.first { it == 7 })
     }
 }
