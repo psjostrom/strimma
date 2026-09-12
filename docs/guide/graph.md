@@ -49,11 +49,11 @@ Tap on or near a data point to select it. A crosshair appears with a tooltip sho
 - The exact glucose value and direction arrow
 - The timestamp and delta
 
-Tap elsewhere or wait to dismiss.
+Release your finger to dismiss.
 
 ### Scrub
 
-Press and drag your finger horizontally across the graph. The selection follows your finger, snapping to the nearest data point. This lets you quickly scan through your history and see exact values.
+Press and drag your finger horizontally across the graph. The selection follows your finger, snapping to the nearest data point with subtle haptic feedback as you move between readings. This lets you quickly scan through your history and see exact values.
 
 !!! note
     If you start scrubbing and then add a second finger, scrub mode cancels to allow pinch-to-zoom.
