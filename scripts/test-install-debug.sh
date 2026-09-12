@@ -5,6 +5,7 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "$0")/.." && pwd)"
 install_debug="$repo_root/scripts/install-debug.sh"
+install_common="$repo_root/scripts/install.sh"
 
 fail() {
   echo "FAIL: $*" >&2
@@ -26,6 +27,7 @@ assert_not_contains() {
 }
 
 [[ -x "$install_debug" ]] || fail "install-debug.sh is missing or not executable"
+[[ -x "$install_common" ]] || fail "install.sh is missing or not executable"
 
 tmp_repo="$(mktemp -d)"
 fake_bin="$(mktemp -d)"
@@ -34,6 +36,8 @@ target_repo="$(mktemp -d)"
 trap 'rm -rf "$tmp_repo" "$fake_bin" "$script_repo" "$target_repo"' EXIT
 
 mkdir -p "$tmp_repo/scripts" "$tmp_repo/app/build/outputs/apk/debug"
+cp "$install_common" "$tmp_repo/scripts/install.sh"
+chmod +x "$tmp_repo/scripts/install.sh"
 cp "$install_debug" "$tmp_repo/scripts/install-debug.sh"
 chmod +x "$tmp_repo/scripts/install-debug.sh"
 
@@ -52,7 +56,9 @@ set -euo pipefail
 
 if [[ "$1" == "devices" ]]; then
   printf 'List of devices attached\n'
-  if [[ "${ADB_MODE:-two}" != "empty" ]]; then
+  if [[ "${ADB_MODE:-two}" == "single" ]]; then
+    printf 'phone-123\tdevice product:caiman model:Pixel_9_Pro device:caiman\n'
+  elif [[ "${ADB_MODE:-two}" != "empty" ]]; then
     printf 'phone-123\tdevice product:caiman model:Pixel_9_Pro device:caiman\n'
     printf 'emulator-5554\tdevice product:sdk model:sdk_gphone device:emu64\n'
   fi
@@ -83,6 +89,14 @@ empty_output="$({
 assert_contains "$empty_output" "No authorized Android devices found." "no-device error"
 assert_contains "$empty_output" "__STATUS__=1" "no-device exit status"
 
+single_adb_log="$tmp_repo/adb-single.log"
+single_gradle_log="$tmp_repo/gradle-single.log"
+single_output="$( (cd "$tmp_repo" && env ADB_MODE=single ADB_LOG="$single_adb_log" GRADLE_LOG="$single_gradle_log" FAKE_REPO="$tmp_repo" PATH="$fake_bin:$PATH" "$tmp_repo/scripts/install-debug.sh") 2>&1)"
+assert_contains "$single_output" "Using phone-123 (Pixel_9_Pro)" "single-device label"
+assert_not_contains "$single_output" "Select Android device:" "no interactive prompt on single device"
+assert_contains "$(cat "$single_adb_log")" "install:phone-123" "single-device install"
+assert_contains "$(cat "$single_adb_log")" "launch:phone-123" "single-device launch"
+
 adb_log="$tmp_repo/adb.log"
 gradle_log="$tmp_repo/gradle.log"
 picker_output="$(printf '1\n' | (cd "$tmp_repo" && env ADB_LOG="$adb_log" GRADLE_LOG="$gradle_log" FAKE_REPO="$tmp_repo" PATH="$fake_bin:$PATH" "$tmp_repo/scripts/install-debug.sh") 2>&1)"
@@ -94,6 +108,8 @@ assert_not_contains "$(cat "$adb_log")" "emulator-5554" "unselected device"
 assert_contains "$(cat "$gradle_log")" ":app:assembleDebug" "debug build"
 
 mkdir -p "$script_repo/scripts" "$target_repo/app/build/outputs/apk/debug"
+cp "$install_common" "$script_repo/scripts/install.sh"
+chmod +x "$script_repo/scripts/install.sh"
 cp "$install_debug" "$script_repo/scripts/install-debug.sh"
 chmod +x "$script_repo/scripts/install-debug.sh"
 cp "$tmp_repo/gradlew" "$target_repo/gradlew"

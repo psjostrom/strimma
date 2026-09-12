@@ -94,6 +94,7 @@ cd strimma
 ./gradlew assembleDebug          # build
 ./gradlew installDebug           # build + install on connected device
 ./scripts/install-debug.sh       # choose device, build + install + launch debug app
+./scripts/install-release.sh     # choose device, build + install + launch release app
 ./gradlew testDebugUnitTest      # run tests
 ```
 
