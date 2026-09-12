@@ -2,6 +2,7 @@ package com.psjostrom.strimma.ui.settings
 
 import android.app.NotificationManager
 import android.content.Context
+import androidx.lifecycle.viewModelScope
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.psjostrom.strimma.createTestDataStore
@@ -21,6 +22,7 @@ import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.joinAll
@@ -79,6 +81,7 @@ class AlertsViewModelTest {
         val db = Room.inMemoryDatabaseBuilder(context, StrimmaDatabase::class.java)
             .allowMainThreadQueries()
             .build()
+        var vm: AlertsViewModel? = null
         try {
             context.getSharedPreferences("strimma_snooze", Context.MODE_PRIVATE)
                 .edit().clear().apply()
@@ -96,8 +99,10 @@ class AlertsViewModelTest {
             val alertManager = AlertManager(context, settings, workoutModeManager, backgroundScope)
             val notifier = PatternNotifier(context)
             val patternChecker = PatternChecker(db.readingDao(), db.exerciseDao(), settings, notifier)
-            block(Fixture(db, context, notifManager, settings, patternChecker, AlertsViewModel(settings, alertManager, patternChecker)))
+            vm = AlertsViewModel(settings, alertManager, patternChecker)
+            block(Fixture(db, context, notifManager, settings, patternChecker, vm))
         } finally {
+            vm?.viewModelScope?.cancel()
             db.close()
             Dispatchers.resetMain()
         }
