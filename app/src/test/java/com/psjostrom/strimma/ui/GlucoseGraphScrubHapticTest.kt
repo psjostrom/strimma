@@ -13,7 +13,6 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import com.psjostrom.strimma.data.GlucoseReading
-import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.graph.computeYRange
 import com.psjostrom.strimma.ui.theme.StrimmaTheme
 import org.junit.Assert.assertEquals
@@ -45,33 +44,6 @@ class GlucoseGraphScrubHapticTest {
         delta = 0.0
     )
 
-    private fun setGraph(
-        readings: List<GlucoseReading>,
-        haptic: FakeHapticFeedback,
-        windowMs: Long,
-        viewportEnd: Long,
-        unit: GlucoseUnit = GlucoseUnit.MMOL
-    ) {
-        composeRule.setContent {
-            CompositionLocalProvider(LocalHapticFeedback provides haptic) {
-                StrimmaTheme {
-                    GlucoseGraph(
-                        readings = readings,
-                        bgLow = 72.0,
-                        bgHigh = 180.0,
-                        windowMs = windowMs,
-                        viewportEnd = viewportEnd,
-                        zoomScale = 1.0f,
-                        glucoseUnit = unit,
-                        onViewportChange = {},
-                        onZoomChange = {},
-                        modifier = Modifier.size(400.dp, 300.dp).testTag("glucose_graph")
-                    )
-                }
-            }
-        }
-    }
-
     @Test
     fun `triggers haptic feedback on scrub down and when reading changes`() {
         val fakeHaptic = FakeHapticFeedback()
@@ -82,7 +54,24 @@ class GlucoseGraphScrubHapticTest {
         val r1 = reading(visibleStart + windowMs / 4)
         val r2 = reading(visibleStart + 3 * windowMs / 4)
         val readings = listOf(r1, r2)
-        setGraph(readings, fakeHaptic, windowMs, viewportEnd)
+
+        composeRule.setContent {
+            CompositionLocalProvider(LocalHapticFeedback provides fakeHaptic) {
+                StrimmaTheme {
+                    GlucoseGraph(
+                        readings = readings,
+                        bgLow = 72.0,
+                        bgHigh = 180.0,
+                        windowMs = windowMs,
+                        viewportEnd = viewportEnd,
+                        zoomScale = 1.0f,
+                        onViewportChange = {},
+                        onZoomChange = {},
+                        modifier = Modifier.size(400.dp, 300.dp).testTag("glucose_graph")
+                    )
+                }
+            }
+        }
 
         composeRule.onNodeWithTag("glucose_graph").performTouchInput {
             val plotW = width.toFloat() - 50f - GRAPH_MARGIN_RIGHT
@@ -115,7 +104,24 @@ class GlucoseGraphScrubHapticTest {
 
         val r1 = reading(visibleStart + windowMs / 4)
         val r2 = reading(visibleStart + 3 * windowMs / 4)
-        setGraph(listOf(r1, r2), fakeHaptic, windowMs, viewportEnd)
+
+        composeRule.setContent {
+            CompositionLocalProvider(LocalHapticFeedback provides fakeHaptic) {
+                StrimmaTheme {
+                    GlucoseGraph(
+                        readings = listOf(r1, r2),
+                        bgLow = 72.0,
+                        bgHigh = 180.0,
+                        windowMs = windowMs,
+                        viewportEnd = viewportEnd,
+                        zoomScale = 1.0f,
+                        onViewportChange = {},
+                        onZoomChange = {},
+                        modifier = Modifier.size(400.dp, 300.dp).testTag("glucose_graph")
+                    )
+                }
+            }
+        }
 
         composeRule.onNodeWithTag("glucose_graph").performTouchInput {
             val plotW = width.toFloat() - 50f - GRAPH_MARGIN_RIGHT
@@ -147,7 +153,23 @@ class GlucoseGraphScrubHapticTest {
         val viewportEnd = 1_000_000_000L
         val visibleStart = viewportEnd - windowMs
 
-        setGraph(listOf(reading(visibleStart + windowMs / 2)), fakeHaptic, windowMs, viewportEnd)
+        composeRule.setContent {
+            CompositionLocalProvider(LocalHapticFeedback provides fakeHaptic) {
+                StrimmaTheme {
+                    GlucoseGraph(
+                        readings = listOf(reading(visibleStart + windowMs / 2)),
+                        bgLow = 72.0,
+                        bgHigh = 180.0,
+                        windowMs = windowMs,
+                        viewportEnd = viewportEnd,
+                        zoomScale = 1.0f,
+                        onViewportChange = {},
+                        onZoomChange = {},
+                        modifier = Modifier.size(400.dp, 300.dp).testTag("glucose_graph")
+                    )
+                }
+            }
+        }
 
         composeRule.onNodeWithTag("glucose_graph").performTouchInput {
             down(Offset(10f, 10f))
