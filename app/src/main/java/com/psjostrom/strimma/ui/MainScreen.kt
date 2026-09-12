@@ -24,9 +24,11 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
@@ -885,6 +887,7 @@ fun GlucoseGraph(
     val currentPredictionMs by rememberUpdatedState(predictionMs)
     val currentExerciseSessions by rememberUpdatedState(exerciseSessions)
     val currentOnExerciseTap by rememberUpdatedState(onExerciseTap)
+    val currentHaptic by rememberUpdatedState(LocalHapticFeedback.current)
     // Resolve format strings in Composable scope for use inside Canvas drawText
     val bolusLabelFmt = stringResource(R.string.main_bolus_label)
     val carbLabelFmt = stringResource(R.string.main_carb_label)
@@ -932,6 +935,7 @@ fun GlucoseGraph(
                     var isScrubbing = hit != null
                     if (isScrubbing) {
                         selectedReading = hit
+                        currentHaptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         down.consume()
                     }
 
@@ -980,12 +984,13 @@ fun GlucoseGraph(
 
                         if (isScrubbing && event.changes.count { it.pressed } == 1) {
                             // Single-finger scrub: track nearest reading by time
-                            val pos = event.changes.firstOrNull()?.position
+                            val pos = event.changes.firstOrNull { it.pressed }?.position
                             if (pos != null) {
-                                selectedReading = findNearestByX(
-                                    pos.x, currentSorted, currentVisibleStart, currentVisibleMs,
-                                    size.width.toFloat(), mLeft
-                                )
+                                val newReading = findNearestByX(pos.x, currentSorted, viewport)
+                                if (newReading != null && newReading.ts != selectedReading?.ts) {
+                                    selectedReading = newReading
+                                    currentHaptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                }
                                 if (!pastSlop && (pos - down.position).getDistance() > touchSlop) {
                                     pastSlop = true
                                     doubleTapDetector.reset()
@@ -1485,20 +1490,15 @@ internal fun findNearestDot(
 }
 
 
-private fun findNearestByX(
+internal fun findNearestByX(
     fingerX: Float,
     sorted: List<GlucoseReading>,
-    visibleStart: Long,
-    visibleMs: Long,
-    canvasWidth: Float,
-    marginLeft: Float = 50f
+    viewport: GraphViewport
 ): GlucoseReading? {
     if (sorted.isEmpty()) return null
-    val marginRight = GRAPH_MARGIN_RIGHT
-    val plotWidth = canvasWidth - marginLeft - marginRight
 
     fun xFor(ts: Long): Float =
-        marginLeft + ((ts - visibleStart).toFloat() / visibleMs) * plotWidth
+        viewport.marginLeft + ((ts - viewport.visibleStart).toFloat() / viewport.visibleMs) * viewport.plotWidth
 
     var closest: GlucoseReading? = null
     var closestDist = Float.MAX_VALUE
@@ -1507,6 +1507,8 @@ private fun findNearestByX(
         if (dist < closestDist) {
             closestDist = dist
             closest = r
+        } else if (xFor(r.ts) > fingerX) {
+            break
         }
     }
     return closest

@@ -183,4 +183,50 @@ class GlucoseGraphGestureTest {
             detector.onSingleTap(150L, Offset(10f, 10f))
         )
     }
+
+    @Test
+    fun `findNearestByX returns null for empty readings`() {
+        val result = findNearestByX(
+            fingerX = 100f,
+            sorted = emptyList(),
+            viewport = viewport
+        )
+        assertNull(result)
+    }
+
+    @Test
+    fun `findNearestByX finds reading closest to finger X`() {
+        val target = readings[2]
+        val targetX = xFor(target.ts)
+        val result = findNearestByX(
+            fingerX = targetX + 2f,
+            sorted = readings,
+            viewport = viewport
+        )
+        assertNotNull(result)
+        assertEquals(target.ts, result!!.ts)
+    }
+
+    @Test
+    fun `findNearestByX snaps to different reading as finger moves across midpoint`() {
+        val r1 = readings[3] // 20 min ago
+        val r2 = readings[4] // 10 min ago
+        val x1 = xFor(r1.ts)
+        val x2 = xFor(r2.ts)
+        val midX = (x1 + x2) / 2f
+
+        val beforeMid = findNearestByX(
+            fingerX = midX - 1f,
+            sorted = readings,
+            viewport = viewport
+        )
+        val afterMid = findNearestByX(
+            fingerX = midX + 1f,
+            sorted = readings,
+            viewport = viewport
+        )
+
+        assertEquals(r1.ts, beforeMid!!.ts)
+        assertEquals(r2.ts, afterMid!!.ts)
+    }
 }
