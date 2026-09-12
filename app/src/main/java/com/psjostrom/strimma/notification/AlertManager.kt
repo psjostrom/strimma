@@ -75,10 +75,9 @@ class AlertManager @Inject constructor(
         const val CHANNEL_PUSH_FAIL = "strimma_alert_push_fail"
         const val CHANNEL_LOW_SOON = "strimma_alert_low_soon"
         const val CHANNEL_HIGH_SOON = "strimma_alert_high_soon"
-        const val CHANNEL_PATTERN = "strimma_alert_pattern"
-
-        // Legacy channel — delete if it exists from previous version
+        // Retired channels — delete if they exist from previous versions
         private const val LEGACY_CHANNEL = "strimma_alerts"
+        const val RETIRED_CHANNEL_PATTERN = "strimma_alert_pattern"
 
         // Category-related notification IDs — single source of truth is AlertCategory.
         // The companion exposes them as named properties for backward compatibility with
@@ -224,8 +223,9 @@ class AlertManager @Inject constructor(
 
     @Suppress("LongMethod") // Sequential channel registrations — splitting would hurt readability
     fun createChannels() {
-        // Remove legacy single channel
+        // Remove retired channels
         notificationManager.deleteNotificationChannel(LEGACY_CHANNEL)
+        notificationManager.deleteNotificationChannel(RETIRED_CHANNEL_PATTERN)
 
         createChannel(
             CHANNEL_URGENT_LOW, context.getString(R.string.alert_channel_urgent_low),
@@ -290,14 +290,6 @@ class AlertManager @Inject constructor(
             RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
             notifAudioAttrs, bypassDnd = false,
             vibration = longArrayOf(0, VIBRATE_BRIEF, VIBRATE_BRIEF, VIBRATE_BRIEF)
-        )
-        createChannel(
-            CHANNEL_PATTERN, context.getString(R.string.alert_channel_pattern),
-            context.getString(R.string.alert_channel_pattern_desc),
-            NotificationManager.IMPORTANCE_DEFAULT,
-            RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
-            notifAudioAttrs, bypassDnd = false,
-            vibration = longArrayOf(0, VIBRATE_BRIEF)
         )
     }
 

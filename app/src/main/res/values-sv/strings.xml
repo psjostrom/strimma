@@ -267,20 +267,10 @@
     <string name="alert_channel_push_fail_desc">Glukosuppladdning misslyckas under l\u00E4ngre tid</string>
     <string name="alert_snooze">Snooze %1$s</string>
 
-    <!-- Pattern Alerts -->
-    <string name="alert_channel_pattern">M\u00F6nsterinsikter</string>
-    <string name="alert_channel_pattern_desc">\u00C5terkommande glukosm\u00F6nster vid samma tid p\u00E5 dygnet</string>
-    <string name="pattern_notif_title_high">\u00C5terkommande h\u00F6gt: %1$s</string>
-    <string name="pattern_notif_title_low">\u00C5terkommande l\u00E5gt: %1$s</string>
-    <string name="pattern_notif_body_high">H\u00F6gt p\u00E5 %1$d av de senaste %2$d dagarna \u00B7 Snitt %3$s</string>
-    <string name="pattern_notif_body_low">L\u00E5gt p\u00E5 %1$d av de senaste %2$d dagarna \u00B7 Snitt %3$s</string>
-    <string name="pattern_notif_title_multiple">%1$d \u00E5terkommande m\u00F6nster uppt\u00E4ckta</string>
-    <string name="pattern_notif_summary_multiple">%1$d \u00E5terkommande glukosm\u00F6nster uppt\u00E4ckta</string>
-    <string name="pattern_notif_item_high">\u2B06 H\u00F6gt %1$s \u00B7 %2$d av %3$d dagar</string>
-    <string name="pattern_notif_item_low">\u2B07 L\u00E5gt %1$s \u00B7 %2$d av %3$d dagar</string>
-    <string name="settings_alerts_pattern_section">M\u00F6nsterinsikter</string>
-    <string name="settings_alerts_pattern_title">\u00C5terkommande m\u00F6nster</string>
-    <string name="settings_alerts_pattern_desc">F\u00E5 en notis n\u00E4r blodsockret konsekvent \u00E4r utanf\u00F6r m\u00E5lomr\u00E5det vid samma tidpunkt</string>
+    <!-- Pattern Insights -->
+    <string name="settings_alerts_pattern_section">Mönsterinsikter</string>
+    <string name="settings_alerts_pattern_title">Återkommande mönster</string>
+    <string name="settings_alerts_pattern_desc">Visa återkommande glukosmönster på hemskärmen</string>
     <string name="insight_pattern_badge">M\u00D6NSTER</string>
     <string name="insight_pattern_header">%1$s \u00B7 %2$d av %3$d dagar</string>
     <string name="insight_pattern_detail_high">H\u00F6gt mellan %1$s de senaste dagarna (Snitt %2$s)</string>

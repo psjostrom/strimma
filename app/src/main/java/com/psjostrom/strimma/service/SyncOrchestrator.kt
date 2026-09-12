@@ -107,7 +107,7 @@ class SyncOrchestrator @Inject constructor(
         tidepoolUploader.uploadPending()
         scope.launch {
             nightscoutPuller.pullIfEmpty()
-            patternChecker.checkNow(notify = false)
+            patternChecker.checkNow()
         }
     }
 

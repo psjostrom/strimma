@@ -5,7 +5,6 @@ import com.psjostrom.strimma.data.MS_PER_HOUR
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.health.ExerciseDao
-import com.psjostrom.strimma.notification.PatternNotifier
 import com.psjostrom.strimma.receiver.DebugLog
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -17,7 +16,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 import javax.inject.Inject
@@ -27,27 +25,12 @@ import javax.inject.Singleton
 class PatternChecker @Inject constructor(
     private val readingDao: ReadingDao,
     private val exerciseDao: ExerciseDao,
-    private val settings: SettingsRepository,
-    private val notifier: PatternNotifier
+    private val settings: SettingsRepository
 ) {
     companion object {
         const val LOOKBACK_DAYS = 7
         const val MIN_DATA_DAYS = 5
-        const val TARGET_CHECK_HOUR = 21 // 21:00 local time
-        const val DEDUP_COOLDOWN_HOURS = 72L
-
-        internal fun millisUntilNextTargetHour(
-            targetHour: Int = TARGET_CHECK_HOUR,
-            zone: ZoneId = ZoneId.systemDefault(),
-            now: Instant = Instant.now()
-        ): Long {
-            val zdt = now.atZone(zone)
-            var nextTarget = zdt.withHour(targetHour).withMinute(0).withSecond(0).withNano(0)
-            if (!nextTarget.isAfter(zdt)) {
-                nextTarget = nextTarget.plusDays(1)
-            }
-            return Duration.between(zdt, nextTarget).toMillis()
-        }
+        const val CHECK_INTERVAL_MS = 6 * MS_PER_HOUR
     }
 
     private val _activePatterns = MutableStateFlow<List<GlucosePattern>>(emptyList())
@@ -59,15 +42,14 @@ class PatternChecker @Inject constructor(
         loopJob?.cancel()
         val job = scope.launch {
             while (isActive) {
-                val delayMs = millisUntilNextTargetHour()
-                delay(delayMs)
                 try {
                     checkNow()
                 } catch (e: CancellationException) {
                     throw e
-                } catch (@Suppress("TooGenericExceptionCaught") e: Exception) { // DAO/DataStore — multiple types
+                } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                     DebugLog.log("Periodic pattern check failed: ${e.message}")
                 }
+                delay(CHECK_INTERVAL_MS)
             }
         }
         loopJob = job
@@ -81,20 +63,14 @@ class PatternChecker @Inject constructor(
 
     suspend fun reset() {
         _activePatterns.value = emptyList()
-        notifier.cancel()
     }
 
     /**
-     * Executes pattern detection for the last 7 days.
-     * Can be invoked directly from tests or on-demand.
-     *
-     * @param notify when false, updates [activePatterns] state but skips notification dispatch.
-     *               Startup uses false to populate the UI card without alerting at arbitrary hours.
+     * Executes pattern detection for the last 7 days and updates [activePatterns].
      */
     suspend fun checkNow(
         now: Instant = Instant.now(),
-        zone: ZoneId = ZoneId.systemDefault(),
-        notify: Boolean = true
+        zone: ZoneId = ZoneId.systemDefault()
     ): PatternResult? {
         if (!settings.patternAlertsEnabled.first()) {
             reset()
@@ -123,7 +99,8 @@ class PatternChecker @Inject constructor(
             workoutPeriods = workoutPeriods
         )
 
-        return applyResult(result, nowMs, notify)
+        _activePatterns.value = result.patterns
+        return result
     }
 
     private suspend fun loadReadings(now: Instant, zone: ZoneId): List<com.psjostrom.strimma.data.GlucoseReading>? {
@@ -135,36 +112,5 @@ class PatternChecker @Inject constructor(
             .minusDays(LOOKBACK_DAYS.toLong()).atStartOfDay(zone).toInstant().toEpochMilli()
         val readings = readingDao.since(startMs)
         return readings.ifEmpty { null }
-    }
-
-    private suspend fun applyResult(result: PatternResult, nowMs: Long, notify: Boolean): PatternResult {
-        val newHash = result.stableHash()
-        val lastHash = settings.patternLastHash.first()
-
-        if (newHash.isEmpty()) {
-            _activePatterns.value = emptyList()
-            if (lastHash.isNotEmpty()) {
-                settings.setPatternLastHash("")
-                notifier.cancel()
-            }
-            return result
-        }
-
-        _activePatterns.value = result.patterns
-
-        if (notify) {
-            val cooldownMs = DEDUP_COOLDOWN_HOURS * MS_PER_HOUR
-            val lastNotifiedTs = settings.patternLastNotifiedTs.first()
-            val inCooldown = (newHash == lastHash) && ((nowMs - lastNotifiedTs) < cooldownMs)
-
-            if (!inCooldown) {
-                val unit = settings.glucoseUnit.first()
-                notifier.notifyPatterns(result, unit)
-                settings.setPatternLastHash(newHash)
-                settings.setPatternLastNotifiedTs(nowMs)
-            }
-        }
-
-        return result
     }
 }

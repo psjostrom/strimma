@@ -42,7 +42,7 @@ Strimma stands on the shoulders of the incredible [xDrip+](https://github.com/Ni
 
 - **Receives glucose four ways** — reads notifications from dozens of CGM app variants (Dexcom, Libre, CamAPS FX, etc.), receives xDrip-compatible broadcasts (from xDrip+, Juggluco, AAPS), follows a remote Nightscout server, or reads from Abbott's LibreLinkUp cloud. See [Data Sources](data-sources/overview.md).
 - **Shows your BG at a glance** — large, color-coded number with direction arrow, delta, and trend graph in your notification bar.
-- **Configurable alerts** — nine alert types (urgent low, low, high, urgent high, low soon, high soon, stale data, push failed, pattern insights), each with its own notification channel. Urgent alerts bypass Do Not Disturb by default; any alert can be configured to bypass DND via Android's notification settings. Alerts can be paused by category (Low or High) for a custom duration.
+- **Configurable alerts** — eight alert types (urgent low, low, high, urgent high, low soon, high soon, stale data, push failed), each with its own notification channel. Urgent alerts bypass Do Not Disturb by default; any alert can be configured to bypass DND via Android's notification settings. Alerts can be paused by category (Low or High) for a custom duration.
 - **Predicts where you're heading** — shows "Low in X min" or "High in X min" warnings before you cross your thresholds.
 - **Pushes to Nightscout and Tidepool** — automatic, immediate upload to any Nightscout-compatible server or your Tidepool account. Offline-resilient — readings queue and retry.
 - **Tracks treatments and IOB** — fetches bolus and carb data from Nightscout, computes insulin on board with your insulin type's curve.

@@ -99,9 +99,8 @@ class SyncOrchestratorTest {
         val exerciseSyncer = ExerciseSyncer(healthConnect, db.exerciseDao(), settings)
         val nightscoutPuller = NightscoutPuller(nsClient, db.readingDao(), settings)
         val updateChecker = UpdateChecker()
-        val patternNotifier = com.psjostrom.strimma.notification.PatternNotifier(context)
         val patternChecker = com.psjostrom.strimma.data.pattern.PatternChecker(
-            db.readingDao(), db.exerciseDao(), settings, patternNotifier
+            db.readingDao(), db.exerciseDao(), settings
         )
 
         val orchestrator = SyncOrchestrator(
