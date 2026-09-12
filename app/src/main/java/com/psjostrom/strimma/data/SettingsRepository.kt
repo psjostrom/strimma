@@ -301,8 +301,6 @@ class SettingsRepository @Inject constructor(
         private const val KEY_START_ON_BOOT_SYNC = "start_on_boot"
 
         private val KEY_PATTERN_ALERTS_ENABLED = booleanPreferencesKey("pattern_alerts_enabled")
-        private val KEY_PATTERN_LAST_HASH = stringPreferencesKey("pattern_last_hash")
-        private val KEY_PATTERN_LAST_NOTIFIED_TS = longPreferencesKey("pattern_last_notified_ts")
         private val KEY_PATTERN_CARD_DISMISSED_DATE = stringPreferencesKey("pattern_card_dismissed_date")
 
 
@@ -443,12 +441,6 @@ class SettingsRepository @Inject constructor(
 
     val patternAlertsEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_PATTERN_ALERTS_ENABLED] ?: true }
     suspend fun setPatternAlertsEnabled(enabled: Boolean) { dataStore.edit { it[KEY_PATTERN_ALERTS_ENABLED] = enabled } }
-
-    val patternLastHash: Flow<String> = dataStore.data.map { it[KEY_PATTERN_LAST_HASH] ?: "" }
-    suspend fun setPatternLastHash(hash: String) { dataStore.edit { it[KEY_PATTERN_LAST_HASH] = hash } }
-
-    val patternLastNotifiedTs: Flow<Long> = dataStore.data.map { it[KEY_PATTERN_LAST_NOTIFIED_TS] ?: 0L }
-    suspend fun setPatternLastNotifiedTs(ts: Long) { dataStore.edit { it[KEY_PATTERN_LAST_NOTIFIED_TS] = ts } }
 
     val patternCardDismissedDate: Flow<String> = dataStore.data.map { it[KEY_PATTERN_CARD_DISMISSED_DATE] ?: "" }
     suspend fun setPatternCardDismissedDate(date: String) { dataStore.edit { it[KEY_PATTERN_CARD_DISMISSED_DATE] = date } }

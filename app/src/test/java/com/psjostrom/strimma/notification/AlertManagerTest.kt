@@ -1,5 +1,6 @@
 package com.psjostrom.strimma.notification
 
+import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
@@ -19,6 +20,8 @@ import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -591,5 +594,20 @@ class AlertManagerTest {
 
         alertManager.checkReading(reading(60), emptyList(), 0)
         assertTrue(isNotificationActive(AlertManager.ALERT_LOW_ID))
+    }
+
+    @Test
+    fun `createChannels deletes retired pattern notification channel`() {
+        val channel = NotificationChannel(
+            AlertManager.RETIRED_CHANNEL_PATTERN,
+            "Pattern Alerts",
+            NotificationManager.IMPORTANCE_DEFAULT
+        )
+        notificationManager.createNotificationChannel(channel)
+        assertNotNull(notificationManager.getNotificationChannel(AlertManager.RETIRED_CHANNEL_PATTERN))
+
+        alertManager.createChannels()
+
+        assertNull(notificationManager.getNotificationChannel(AlertManager.RETIRED_CHANNEL_PATTERN))
     }
 }

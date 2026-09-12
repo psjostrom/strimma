@@ -10,7 +10,6 @@ import androidx.compose.ui.test.performScrollTo
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.notification.SnoozeDuration
 import com.psjostrom.strimma.data.workout.AlertProtocol
-import com.psjostrom.strimma.notification.AlertManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import org.junit.Assert.assertEquals
@@ -260,20 +259,16 @@ class AlertsSettingsTest {
     }
 
     @Test
-    fun `pattern insights section renders toggle and sound button`() {
+    fun `pattern insights section renders toggle and toggles state`() {
         var toggledValue: Boolean? = null
-        var soundOpened: String? = null
         render(
             patternAlertsEnabled = true,
             onPatternAlertsEnabledChange = { toggledValue = it },
-            onOpenAlertSound = { soundOpened = it }
         )
 
         composeRule.onNodeWithText("PATTERN INSIGHTS", useUnmergedTree = true).performScrollTo().assertExists()
         composeRule.onNodeWithText("Recurring patterns", useUnmergedTree = true).performScrollTo().assertExists()
         composeRule.onAllNodes(isToggleable(), useUnmergedTree = true).onLast().performScrollTo().performClick()
         assertEquals(false, toggledValue)
-        composeRule.onAllNodesWithText("Sound", useUnmergedTree = true).onLast().performScrollTo().performClick()
-        assertEquals(AlertManager.CHANNEL_PATTERN, soundOpened)
     }
 }

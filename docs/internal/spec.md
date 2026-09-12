@@ -652,7 +652,7 @@ When Strimma is validated, flip the default. When Strimma is the sole data sourc
 | Graph         | Custom Compose Canvas + shared GraphColors     | Dot+line+prediction graphs, shared color/range logic                 |
 | Widget        | Jetpack Glance                                 | Compose-based widget API with AppWidgetManager updates               |
 | Notifications | NotificationCompat + RemoteViews               | Custom layouts with bitmap graphs                                    |
-| Alerts        | 9 notification channels                        | Per-alarm sound/vibration/DND via Android channel settings           |
+| Alerts        | 8 notification channels                        | Per-alarm sound/vibration/DND via Android channel settings           |
 | Testing       | JUnit 4 + Robolectric 4.16 + Room in-memory    | Unit + integration on JVM, SDK 37, no emulator                       |
 | Java          | 21 (Zulu)                                      | Repo-specific via `gradle.properties`, needed for Robolectric SDK 37 |
 | Build         | Gradle 9.x + AGP 9.x                           | Current                                                              |
@@ -678,7 +678,7 @@ For generic Nightscout setups, no backend changes are needed — Strimma uses th
 
 | Feature                 | Description                                                                                                                                                                                                                                                                                         |
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Alerts**              | 9 alert types (urgent low, low, high, urgent high, low soon, high soon, stale, push failed, pattern insights) with independent Regular and Exercise protocols, shared per-alarm notification channels, configurable thresholds, persistent snooze, DND bypass for urgent alerts |
+| **Alerts**              | 8 alert types (urgent low, low, high, urgent high, low soon, high soon, stale, push failed) with independent Regular and Exercise protocols, shared per-alarm notification channels, configurable thresholds, persistent snooze, DND bypass for urgent alerts; in-app pattern insights card |
 | **Prediction**          | Dampened velocity extrapolation on last 12 min of readings with exponential time decay (DECAY=0.35). Weighted linear regression slope, dampened forward projection. Renders prediction line on main graph and notification. "Low in X min" / "High in X min" warning shown in BG header and as dedicated alerts when prediction crosses thresholds. |
 | **Home screen widget**  | Jetpack Glance widget with BG, arrow, delta, mini graph, configurable opacity                                                                                                                                                                                                                       |
 | **Statistics**          | TIR, GMI, average glucose, CV%, coverage — with period selector (24h/7d/14d/30d) and CSV export                                                                                                                                                                                                     |
