@@ -269,10 +269,18 @@
     <string name="settings_alerts_pattern_title">Wiederkehrende Muster</string>
     <string name="settings_alerts_pattern_desc">Wiederkehrende Glukosemuster auf dem Startbildschirm anzeigen</string>
     <string name="insight_pattern_badge">MUSTER</string>
-    <string name="insight_pattern_header">%1$s \u00B7 %2$d von %3$d Tagen</string>
-    <string name="insight_pattern_detail_high">Hoch zwischen %1$s an den letzten Tagen (\u00D8 %2$s)</string>
-    <string name="insight_pattern_detail_low">Niedrig zwischen %1$s an den letzten Tagen (\u00D8 %2$s)</string>
-    <string name="insight_pattern_detail_multiple">%1$d wiederkehrende Muster erkannt \u00B7 Tippen f\u00FCr Statistik</string>
+    <string name="insight_patterns_badge">MUSTER</string>
+    <string name="insight_pattern_multiple_header">%1$d wiederkehrende Muster</string>
+    <string name="insight_pattern_item_summary">%1$s · %2$d von %3$d Tagen · Ø %4$s</string>
+    <string name="insight_pattern_type_high">Hoch</string>
+    <string name="insight_pattern_type_low">Niedrig</string>
+    <string name="insight_pattern_tap_stats">Tippen für Statistik</string>
+    <string name="insight_pattern_header">%1$s · %2$d von %3$d Tagen</string>
+    <string name="insight_pattern_detail_high">Hoch zwischen %1$s an den letzten Tagen (Ø %2$s)</string>
+    <string name="insight_pattern_detail_low">Niedrig zwischen %1$s an den letzten Tagen (Ø %2$s)</string>
+    <string name="stats_recurring_patterns">Wiederkehrende Muster</string>
+    <string name="stats_recurring_patterns_subtitle">In den letzten 7 Tagen erkannt</string>
+    <string name="stats_pattern_days_count">%1$d von %2$d Tagen</string>
 
     <!-- Foreground Notification -->
     <string name="notif_channel_name">Glukosemesswerte</string>

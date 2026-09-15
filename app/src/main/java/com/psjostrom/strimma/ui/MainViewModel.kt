@@ -316,6 +316,13 @@ class MainViewModel @Inject constructor(
         if (enabled && dismissedDate != todayStr) patterns else emptyList()
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val detectedPatterns: StateFlow<List<com.psjostrom.strimma.data.pattern.GlucosePattern>> = combine(
+        patternChecker.activePatterns,
+        settings.patternAlertsEnabled
+    ) { patterns, enabled ->
+        if (enabled) patterns else emptyList()
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     fun dismissPatternCard() {
         viewModelScope.launch {
             settings.setPatternCardDismissedDate(LocalDate.now().toString())

@@ -269,10 +269,18 @@
     <string name="settings_alerts_pattern_title">Tendances récurrentes</string>
     <string name="settings_alerts_pattern_desc">Afficher les tendances glycémiques récurrentes sur l\'écran d\'accueil</string>
     <string name="insight_pattern_badge">TENDANCE</string>
-    <string name="insight_pattern_header">%1$s \u00B7 %2$d sur %3$d jours</string>
+    <string name="insight_patterns_badge">TENDANCES</string>
+    <string name="insight_pattern_multiple_header">%1$d tendances récurrentes</string>
+    <string name="insight_pattern_item_summary">%1$s · %2$d sur %3$d jours · moy. %4$s</string>
+    <string name="insight_pattern_type_high">Haut</string>
+    <string name="insight_pattern_type_low">Bas</string>
+    <string name="insight_pattern_tap_stats">Appuyer pour afficher les statistiques</string>
+    <string name="insight_pattern_header">%1$s · %2$d sur %3$d jours</string>
     <string name="insight_pattern_detail_high">Haut entre %1$s ces derniers jours (Moy. %2$s)</string>
     <string name="insight_pattern_detail_low">Bas entre %1$s ces derniers jours (Moy. %2$s)</string>
-    <string name="insight_pattern_detail_multiple">%1$d tendances r\u00E9currentes d\u00E9tect\u00E9es \u00B7 Appuyer pour afficher les statistiques</string>
+    <string name="stats_recurring_patterns">Tendances récurrentes</string>
+    <string name="stats_recurring_patterns_subtitle">Détectées sur les 7 derniers jours</string>
+    <string name="stats_pattern_days_count">%1$d sur %2$d jours</string>
 
     <!-- Foreground Notification -->
     <string name="notif_channel_name">Lectures de glyc\u00E9mie</string>

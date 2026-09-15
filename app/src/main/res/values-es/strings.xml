@@ -268,11 +268,19 @@
     <string name="settings_alerts_pattern_section">Patrones recurrentes</string>
     <string name="settings_alerts_pattern_title">Patrones recurrentes</string>
     <string name="settings_alerts_pattern_desc">Mostrar patrones de glucosa recurrentes en la pantalla principal</string>
-    <string name="insight_pattern_badge">PATR\u00D3N</string>
-    <string name="insight_pattern_header">%1$s \u00B7 %2$d de %3$d d\u00EDas</string>
-    <string name="insight_pattern_detail_high">Alto entre %1$s en d\u00EDas recientes (Promedio %2$s)</string>
-    <string name="insight_pattern_detail_low">Bajo entre %1$s en d\u00EDas recientes (Promedio %2$s)</string>
-    <string name="insight_pattern_detail_multiple">%1$d patrones recurrentes detectados \u00B7 Toca para ver estad\u00EDsticas</string>
+    <string name="insight_pattern_badge">PATRÓN</string>
+    <string name="insight_patterns_badge">PATRONES</string>
+    <string name="insight_pattern_multiple_header">%1$d patrones recurrentes</string>
+    <string name="insight_pattern_item_summary">%1$s · %2$d de %3$d días · prom. %4$s</string>
+    <string name="insight_pattern_type_high">Alto</string>
+    <string name="insight_pattern_type_low">Bajo</string>
+    <string name="insight_pattern_tap_stats">Toca para ver estadísticas</string>
+    <string name="insight_pattern_header">%1$s · %2$d de %3$d días</string>
+    <string name="insight_pattern_detail_high">Alto entre %1$s en días recientes (Promedio %2$s)</string>
+    <string name="insight_pattern_detail_low">Bajo entre %1$s en días recientes (Promedio %2$s)</string>
+    <string name="stats_recurring_patterns">Patrones recurrentes</string>
+    <string name="stats_recurring_patterns_subtitle">Detectados en los últimos 7 días</string>
+    <string name="stats_pattern_days_count">%1$d de %2$d días</string>
 
     <!-- Foreground Notification -->
     <string name="notif_channel_name">Lecturas de glucosa</string>

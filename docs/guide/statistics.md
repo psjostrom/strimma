@@ -31,6 +31,10 @@ Select the time period at the top:
 
 ## Metrics
 
+### Recurring Patterns
+
+When recurring time-of-day patterns are detected across the last 7 days (and Pattern Insights are enabled in Settings), a **Recurring patterns** card appears above Time in Range in the 7-day view. Each pattern lists its time range, type (High or Low badge), frequency across evaluated days, and average glucose.
+
 ### Time in Range (TIR)
 
 A horizontal bar chart showing the percentage of readings in each zone:

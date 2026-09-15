@@ -32,6 +32,8 @@ import com.psjostrom.strimma.data.StatsCalculator
 import com.psjostrom.strimma.data.Treatment
 import com.psjostrom.strimma.data.meal.MealAnalyzer
 import com.psjostrom.strimma.data.meal.MealTimeSlotConfig
+import com.psjostrom.strimma.data.pattern.GlucosePattern
+import com.psjostrom.strimma.data.pattern.PatternType
 import com.psjostrom.strimma.ui.theme.Danger
 import com.psjostrom.strimma.ui.theme.InRange
 import com.psjostrom.strimma.ui.theme.VeryHigh
@@ -74,6 +76,7 @@ fun StatsScreen(
     onExportCsv: suspend (Int) -> String,
     onNavigateToStory: ((Int, Int) -> Unit)? = null,
     storyViewedMonth: String? = null,
+    patterns: List<GlucosePattern> = emptyList(),
     onBack: (() -> Unit)? = null
 ) {
     val bg = MaterialTheme.colorScheme.background
@@ -191,7 +194,8 @@ fun StatsScreen(
                     bgLow = bgLow,
                     bgHigh = bgHigh,
                     glucoseUnit = glucoseUnit,
-                    hbA1cUnit = hbA1cUnit
+                    hbA1cUnit = hbA1cUnit,
+                    patterns = patterns
                 )
                 TAB_AGP -> AgpTab(
                     agpResult = agpResult,
@@ -232,7 +236,8 @@ private fun MetricsTab(
     bgLow: Float,
     bgHigh: Float,
     glucoseUnit: GlucoseUnit,
-    hbA1cUnit: HbA1cUnit
+    hbA1cUnit: HbA1cUnit,
+    patterns: List<GlucosePattern> = emptyList()
 ) {
     val onBg = MaterialTheme.colorScheme.onBackground
     val onSurfaceVar = MaterialTheme.colorScheme.onSurfaceVariant
@@ -267,6 +272,13 @@ private fun MetricsTab(
             }
         }
     } else {
+        if (selectedPeriod == 1 && patterns.isNotEmpty()) {
+            RecurringPatternsCard(
+                patterns = patterns,
+                glucoseUnit = glucoseUnit
+            )
+        }
+
         // TIR card
         Surface(
             shape = RoundedCornerShape(12.dp),
@@ -594,5 +606,112 @@ private fun StatRow(
     ) {
         Text(label, color = labelColor, fontSize = 14.sp)
         Text(value, color = valueColor, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+    }
+}
+
+@Composable
+private fun RecurringPatternsCard(
+    patterns: List<GlucosePattern>,
+    glucoseUnit: GlucoseUnit,
+    modifier: Modifier = Modifier
+) {
+    val surfVar = MaterialTheme.colorScheme.surfaceVariant
+    val onBg = MaterialTheme.colorScheme.onBackground
+    val outline = MaterialTheme.colorScheme.outline
+
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color = surfVar
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Column {
+                Text(
+                    text = stringResource(R.string.stats_recurring_patterns),
+                    color = onBg,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = stringResource(R.string.stats_recurring_patterns_subtitle),
+                    color = outline,
+                    fontSize = 12.sp
+                )
+            }
+
+            patterns.forEachIndexed { index, pattern ->
+                if (index > 0) {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val badgeColor = when (pattern.type) {
+                                PatternType.HIGH -> Warning
+                                PatternType.LOW -> Danger
+                            }
+                            val badgeText = when (pattern.type) {
+                                PatternType.HIGH -> stringResource(R.string.insight_pattern_type_high)
+                                PatternType.LOW -> stringResource(R.string.insight_pattern_type_low)
+                            }
+                            Text(
+                                text = badgeText.uppercase(),
+                                color = badgeColor,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.5.sp
+                            )
+                            Text(
+                                text = pattern.formattedTimeSpan,
+                                color = onBg,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                        val desc = when (pattern.type) {
+                            PatternType.HIGH -> stringResource(
+                                R.string.insight_pattern_detail_high,
+                                pattern.formattedTimeSpan,
+                                glucoseUnit.formatWithUnit(pattern.avgBgMgdl)
+                            )
+                            PatternType.LOW -> stringResource(
+                                R.string.insight_pattern_detail_low,
+                                pattern.formattedTimeSpan,
+                                glucoseUnit.formatWithUnit(pattern.avgBgMgdl)
+                            )
+                        }
+                        Text(
+                            text = desc,
+                            color = outline,
+                            fontSize = 12.sp
+                        )
+                    }
+
+                    Text(
+                        text = stringResource(
+                            R.string.stats_pattern_days_count,
+                            pattern.daysDetected,
+                            pattern.daysEvaluated
+                        ),
+                        color = outline,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
     }
 }

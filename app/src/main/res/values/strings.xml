@@ -362,10 +362,18 @@
     <string name="settings_alerts_pattern_title">Recurring patterns</string>
     <string name="settings_alerts_pattern_desc">Show recurring glucose patterns on the home screen</string>
     <string name="insight_pattern_badge">PATTERN</string>
+    <string name="insight_patterns_badge">PATTERNS</string>
+    <string name="insight_pattern_multiple_header" tools:ignore="PluralsCandidate">%1$d recurring patterns</string>
+    <string name="insight_pattern_item_summary" tools:ignore="PluralsCandidate">%1$s · %2$d of %3$d days · avg %4$s</string>
+    <string name="insight_pattern_type_high">High</string>
+    <string name="insight_pattern_type_low">Low</string>
+    <string name="insight_pattern_tap_stats">Tap to view stats</string>
     <string name="insight_pattern_header" tools:ignore="PluralsCandidate">%1$s · %2$d of %3$d days</string>
     <string name="insight_pattern_detail_high">High between %1$s on recent days (Avg %2$s)</string>
     <string name="insight_pattern_detail_low">Low between %1$s on recent days (Avg %2$s)</string>
-    <string name="insight_pattern_detail_multiple" tools:ignore="PluralsCandidate">%1$d recurring patterns detected · Tap to view stats</string>
+    <string name="stats_recurring_patterns">Recurring patterns</string>
+    <string name="stats_recurring_patterns_subtitle">Detected across the last 7 days</string>
+    <string name="stats_pattern_days_count" tools:ignore="PluralsCandidate">%1$d of %2$d days</string>
 
     <!-- Alert pause -->
     <string name="pause_alerts">Pause alerts</string>
