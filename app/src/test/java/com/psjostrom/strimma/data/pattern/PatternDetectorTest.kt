@@ -233,6 +233,35 @@ class PatternDetectorTest {
     }
 
     @Test
+    fun `mergeAdjacent unions evaluatedDates and computes accurate daysEvaluated`() {
+        val d1 = LocalDate.of(2026, 3, 10)
+        val d2 = LocalDate.of(2026, 3, 11)
+        val d3 = LocalDate.of(2026, 3, 12)
+        val d4 = LocalDate.of(2026, 3, 13)
+
+        val p1 = GlucosePattern(
+            startHour = 14, endHour = 15, type = PatternType.HIGH,
+            daysDetected = 2, daysEvaluated = 2, avgBgMgdl = 200.0,
+            flaggedDates = listOf(d1, d2),
+            evaluatedDates = listOf(d1, d2)
+        )
+        val p2 = GlucosePattern(
+            startHour = 15, endHour = 16, type = PatternType.HIGH,
+            daysDetected = 2, daysEvaluated = 2, avgBgMgdl = 220.0,
+            flaggedDates = listOf(d3, d4),
+            evaluatedDates = listOf(d2, d3, d4)
+        )
+
+        val merged = PatternDetector.mergeAdjacent(listOf(p1, p2))
+        assertEquals(1, merged.size)
+        val result = merged.first()
+        assertEquals(4, result.daysDetected)
+        assertEquals(4, result.daysEvaluated)
+        assertEquals(listOf(d1, d2, d3, d4), result.flaggedDates)
+        assertEquals(listOf(d1, d2, d3, d4), result.evaluatedDates)
+    }
+
+    @Test
     fun `detect excludes readings inside workout periods`() {
         val readings = mutableListOf<GlucoseReading>()
         val workouts = mutableListOf<LongRange>()

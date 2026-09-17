@@ -812,15 +812,14 @@ private fun getPatternGuidanceResId(pattern: GlucosePattern): Int {
     }
 }
 
-private fun resolveFirstDayOfWeek(appLocale: Locale): DayOfWeek {
-    val systemLocale = runCatching {
-        Resources.getSystem().configuration.locales.get(0)
-    }.getOrNull()?.takeIf { it.country.isNotEmpty() }
+internal fun resolveFirstDayOfWeek(appLocale: Locale): DayOfWeek {
+    val targetLocale = appLocale.takeIf { it.country.isNotEmpty() }
+        ?: runCatching { Resources.getSystem().configuration.locales.get(0) }.getOrNull()?.takeIf { it.country.isNotEmpty() }
         ?: runCatching { LocaleList.getDefault().get(0) }.getOrNull()?.takeIf { it.country.isNotEmpty() }
         ?: appLocale
 
     val regionalPref = runCatching {
-        LocalePreferences.getFirstDayOfWeek(systemLocale)
+        LocalePreferences.getFirstDayOfWeek(targetLocale)
     }.getOrNull()
 
     return when (regionalPref) {
@@ -831,6 +830,6 @@ private fun resolveFirstDayOfWeek(appLocale: Locale): DayOfWeek {
         LocalePreferences.FirstDayOfWeek.FRIDAY -> DayOfWeek.FRIDAY
         LocalePreferences.FirstDayOfWeek.SATURDAY -> DayOfWeek.SATURDAY
         LocalePreferences.FirstDayOfWeek.SUNDAY -> DayOfWeek.SUNDAY
-        else -> WeekFields.of(systemLocale).firstDayOfWeek
+        else -> WeekFields.of(targetLocale).firstDayOfWeek
     }
 }

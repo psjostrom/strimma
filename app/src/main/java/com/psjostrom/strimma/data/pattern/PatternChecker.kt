@@ -53,7 +53,13 @@ class PatternChecker @Inject constructor(
         settingsJob = scope.launch {
             settings.patternAlertsEnabled.drop(1).collect { enabled ->
                 if (enabled) {
-                    checkNow(zone = zone)
+                    try {
+                        checkNow(zone = zone)
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                        DebugLog.log("Pattern check on settings change failed: ${e.message}")
+                    }
                 } else {
                     reset()
                 }

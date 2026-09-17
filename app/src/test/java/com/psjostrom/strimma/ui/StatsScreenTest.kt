@@ -1,6 +1,9 @@
 package com.psjostrom.strimma.ui
 
+import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.psjostrom.strimma.data.GlucoseReading
@@ -10,7 +13,11 @@ import com.psjostrom.strimma.data.meal.MealTimeSlotConfig
 import com.psjostrom.strimma.data.pattern.GlucosePattern
 import com.psjostrom.strimma.data.pattern.PatternType
 import com.psjostrom.strimma.ui.theme.StrimmaTheme
+import java.time.DayOfWeek
 import java.time.LocalDate
+import java.util.Locale
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -198,5 +205,16 @@ class StatsScreenTest {
         composeRule.onNodeWithText("Recurring patterns").assertExists()
         composeRule.onNodeWithText("Detected across the last 7 days").assertExists()
         composeRule.onNodeWithText("W").assertExists()
+
+        val mLeft = composeRule.onAllNodesWithText("M").onFirst().getBoundsInRoot().left
+        val sLeft = composeRule.onAllNodesWithText("S").onFirst().getBoundsInRoot().left
+        assertTrue("Monday must appear before Saturday/Sunday", mLeft < sLeft)
+    }
+
+    @Test
+    fun `resolveFirstDayOfWeek resolves Monday for Sweden region regardless of language`() {
+        assertEquals(DayOfWeek.MONDAY, resolveFirstDayOfWeek(Locale("en", "SE")))
+        assertEquals(DayOfWeek.MONDAY, resolveFirstDayOfWeek(Locale("sv", "SE")))
+        assertEquals(DayOfWeek.SUNDAY, resolveFirstDayOfWeek(Locale("en", "US")))
     }
 }
