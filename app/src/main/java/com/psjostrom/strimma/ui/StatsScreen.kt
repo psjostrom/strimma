@@ -42,9 +42,13 @@ import com.psjostrom.strimma.ui.theme.InRange
 import com.psjostrom.strimma.ui.theme.VeryHigh
 import com.psjostrom.strimma.ui.theme.VeryLow
 import com.psjostrom.strimma.ui.theme.Warning
+import android.os.LocaleList
+import androidx.core.text.util.LocalePreferences
 import kotlinx.coroutines.launch
+import java.time.DayOfWeek
 import java.time.format.TextStyle
 import java.time.temporal.WeekFields
+import java.util.Locale
 
 private const val HOURS_24 = 24
 private const val HOURS_7_DAYS = 168
@@ -736,7 +740,7 @@ private fun RecurringPatternsCard(
 
                     if (pattern.flaggedDates.isNotEmpty()) {
                         val locale = LocalConfiguration.current.locales[0]
-                        val firstDayOfWeek = WeekFields.of(locale).firstDayOfWeek
+                        val firstDayOfWeek = resolveFirstDayOfWeek(locale)
                         val daysOfWeek = (0L until DAYS_IN_WEEK).map { firstDayOfWeek.plus(it) }
                         val flaggedDaysOfWeek = pattern.flaggedDates.map { it.dayOfWeek }.toSet()
 
@@ -803,6 +807,26 @@ private fun getPatternGuidanceResId(pattern: GlucosePattern): Int {
                 else ->
                     R.string.insight_pattern_guide_evening_high
             }
+        }
+    }
+}
+
+private fun resolveFirstDayOfWeek(appLocale: Locale): DayOfWeek {
+    val regionalPref = runCatching { LocalePreferences.getFirstDayOfWeek() }.getOrNull()
+    return when (regionalPref) {
+        LocalePreferences.FirstDayOfWeek.MONDAY -> DayOfWeek.MONDAY
+        LocalePreferences.FirstDayOfWeek.TUESDAY -> DayOfWeek.TUESDAY
+        LocalePreferences.FirstDayOfWeek.WEDNESDAY -> DayOfWeek.WEDNESDAY
+        LocalePreferences.FirstDayOfWeek.THURSDAY -> DayOfWeek.THURSDAY
+        LocalePreferences.FirstDayOfWeek.FRIDAY -> DayOfWeek.FRIDAY
+        LocalePreferences.FirstDayOfWeek.SATURDAY -> DayOfWeek.SATURDAY
+        LocalePreferences.FirstDayOfWeek.SUNDAY -> DayOfWeek.SUNDAY
+        else -> {
+            val systemLocale = runCatching {
+                LocaleList.getDefault().get(0)
+            }.getOrNull() ?: Locale.getDefault()
+            val candidate = if (systemLocale.country.isNotEmpty()) systemLocale else appLocale
+            WeekFields.of(candidate).firstDayOfWeek
         }
     }
 }
