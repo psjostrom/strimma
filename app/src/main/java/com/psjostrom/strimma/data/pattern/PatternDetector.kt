@@ -79,6 +79,9 @@ object PatternDetector {
         var evaluatedDays = 0
         val lowBgValues = mutableListOf<Int>()
         val highBgValues = mutableListOf<Int>()
+        val lowDates = mutableListOf<LocalDate>()
+        val highDates = mutableListOf<LocalDate>()
+        val evaluatedDates = mutableListOf<LocalDate>()
 
         for (dayOffset in 0 until lookbackDays) {
             val day = startDate.plusDays(dayOffset.toLong())
@@ -86,39 +89,58 @@ object PatternDetector {
             if (bucket.size < MIN_READINGS_PER_BUCKET) continue
 
             evaluatedDays++
+            evaluatedDates.add(day)
             val belowCount = bucket.count { it.sgv < bgLowMgdl }
             val aboveCount = bucket.count { it.sgv > bgHighMgdl }
 
             if (belowCount.toDouble() / bucket.size >= OUT_OF_RANGE_FRACTION) {
                 lowDays++
+                lowDates.add(day)
                 lowBgValues.addAll(bucket.filter { it.sgv < bgLowMgdl }.map { it.sgv })
             }
             if (aboveCount.toDouble() / bucket.size >= OUT_OF_RANGE_FRACTION) {
                 highDays++
+                highDates.add(day)
                 highBgValues.addAll(bucket.filter { it.sgv > bgHighMgdl }.map { it.sgv })
             }
         }
 
         if (evaluatedDays >= MIN_EVALUATED_DAYS) {
             if (lowDays >= MIN_FLAGGED_DAYS) {
-                val sum = lowBgValues.sumOf { it.toDouble() }
-                val count = lowBgValues.size
-                out.add(GlucosePattern(
-                    startHour = hour, endHour = hour + 1, type = PatternType.LOW,
-                    daysDetected = lowDays, daysEvaluated = evaluatedDays,
-                    avgBgMgdl = sum / count, sampleCount = count, bgSum = sum
-                ))
+                out.add(buildPattern(hour, PatternType.LOW, lowDays, evaluatedDays, lowBgValues, lowDates, evaluatedDates))
             }
             if (highDays >= MIN_FLAGGED_DAYS) {
-                val sum = highBgValues.sumOf { it.toDouble() }
-                val count = highBgValues.size
-                out.add(GlucosePattern(
-                    startHour = hour, endHour = hour + 1, type = PatternType.HIGH,
-                    daysDetected = highDays, daysEvaluated = evaluatedDays,
-                    avgBgMgdl = sum / count, sampleCount = count, bgSum = sum
-                ))
+                out.add(buildPattern(hour, PatternType.HIGH, highDays, evaluatedDays, highBgValues, highDates, evaluatedDates))
             }
         }
+    }
+
+    private fun buildPattern(
+        hour: Int,
+        type: PatternType,
+        daysDetected: Int,
+        daysEvaluated: Int,
+        bgValues: List<Int>,
+        flaggedDates: List<LocalDate>,
+        evaluatedDates: List<LocalDate> = emptyList()
+    ): GlucosePattern {
+        val sum = bgValues.sumOf { it.toDouble() }
+        val count = bgValues.size
+        val avg = sum / count
+        return GlucosePattern(
+            startHour = hour,
+            endHour = hour + 1,
+            type = type,
+            daysDetected = daysDetected,
+            daysEvaluated = daysEvaluated,
+            avgBgMgdl = avg,
+            minBgMgdl = bgValues.minOrNull()?.toDouble() ?: avg,
+            maxBgMgdl = bgValues.maxOrNull()?.toDouble() ?: avg,
+            flaggedDates = flaggedDates.toList(),
+            evaluatedDates = evaluatedDates.toList(),
+            sampleCount = count,
+            bgSum = sum
+        )
     }
 
     /**
@@ -142,13 +164,24 @@ object PatternDetector {
                 val combinedCount = currentCount + nextCount
                 val combinedSum = currentSum + nextSum
 
-                val combinedDaysDetected = maxOf(current.daysDetected, next.daysDetected)
-                val combinedDaysEvaluated = maxOf(current.daysEvaluated, next.daysEvaluated)
+                val combinedDates = (current.flaggedDates + next.flaggedDates).distinct().sorted()
+                val combinedEvaluated = (current.evaluatedDates + next.evaluatedDates).distinct().sorted()
+                val daysDetected = maxOf(maxOf(current.daysDetected, next.daysDetected), combinedDates.size)
+                val daysEvaluated = if (combinedEvaluated.isNotEmpty()) {
+                    maxOf(combinedEvaluated.size, daysDetected)
+                } else {
+                    maxOf(maxOf(current.daysEvaluated, next.daysEvaluated), daysDetected)
+                }
+
                 current = current.copy(
                     endHour = next.endHour,
-                    daysDetected = combinedDaysDetected,
-                    daysEvaluated = combinedDaysEvaluated,
+                    daysDetected = daysDetected,
+                    daysEvaluated = daysEvaluated,
                     avgBgMgdl = combinedSum / combinedCount,
+                    minBgMgdl = minOf(current.minBgMgdl, next.minBgMgdl),
+                    maxBgMgdl = maxOf(current.maxBgMgdl, next.maxBgMgdl),
+                    flaggedDates = combinedDates,
+                    evaluatedDates = combinedEvaluated,
                     sampleCount = combinedCount,
                     bgSum = combinedSum
                 )
@@ -171,13 +204,14 @@ data class GlucosePattern(
     val daysDetected: Int,
     val daysEvaluated: Int,
     val avgBgMgdl: Double,
+    val minBgMgdl: Double = avgBgMgdl,
+    val maxBgMgdl: Double = avgBgMgdl,
+    val flaggedDates: List<LocalDate> = emptyList(),
+    val evaluatedDates: List<LocalDate> = emptyList(),
     val sampleCount: Int = 0,
     val bgSum: Double = 0.0
 ) {
     val formattedTimeSpan: String get() = formatHourRange(startHour, endHour)
-
-    /** Stable identity for dedup hashing — type and time window only. */
-    fun stableKey(): String = "$type:$startHour-$endHour"
 
     companion object {
         fun formatHourRange(startHour: Int, endHour: Int): String =
@@ -187,10 +221,4 @@ data class GlucosePattern(
 
 data class PatternResult(
     val patterns: List<GlucosePattern>
-) {
-    /** Hash of the pattern set for deduplication. Empty string when no patterns. */
-    fun stableHash(): String {
-        if (patterns.isEmpty()) return ""
-        return patterns.joinToString("|") { it.stableKey() }
-    }
-}
+)

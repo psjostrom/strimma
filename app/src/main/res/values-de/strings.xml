@@ -264,25 +264,29 @@
     <string name="alert_channel_push_fail_desc">Glukose-Uploads schlagen l\u00E4ngere Zeit fehl</string>
     <string name="alert_snooze">Snooze %1$s</string>
 
-    <!-- Pattern Alerts -->
-    <string name="alert_channel_pattern">Muster-Erkenntnisse</string>
-    <string name="alert_channel_pattern_desc">Wiederkehrende Glukosemuster zur gleichen Tageszeit</string>
-    <string name="pattern_notif_title_high">Wiederkehrend hoch: %1$s</string>
-    <string name="pattern_notif_title_low">Wiederkehrend niedrig: %1$s</string>
-    <string name="pattern_notif_body_high">Hoch an %1$d der letzten %2$d Tage \u00B7 \u00D8 %3$s</string>
-    <string name="pattern_notif_body_low">Niedrig an %1$d der letzten %2$d Tage \u00B7 \u00D8 %3$s</string>
-    <string name="pattern_notif_title_multiple">%1$d wiederkehrende Muster erkannt</string>
-    <string name="pattern_notif_summary_multiple">%1$d wiederkehrende Glukosemuster erkannt</string>
-    <string name="pattern_notif_item_high">\u2B06 Hoch %1$s \u00B7 %2$d von %3$d Tagen</string>
-    <string name="pattern_notif_item_low">\u2B07 Niedrig %1$s \u00B7 %2$d von %3$d Tagen</string>
+    <!-- Pattern Insights -->
     <string name="settings_alerts_pattern_section">Muster-Erkenntnisse</string>
     <string name="settings_alerts_pattern_title">Wiederkehrende Muster</string>
-    <string name="settings_alerts_pattern_desc">Benachrichtigung erhalten, wenn der Glukosewert zur gleichen Tageszeit wiederholt au\u00DFerhalb des Zielbereichs liegt</string>
+    <string name="settings_alerts_pattern_desc">Wiederkehrende Glukosemuster auf dem Startbildschirm anzeigen</string>
     <string name="insight_pattern_badge">MUSTER</string>
-    <string name="insight_pattern_header">%1$s \u00B7 %2$d von %3$d Tagen</string>
-    <string name="insight_pattern_detail_high">Hoch zwischen %1$s an den letzten Tagen (\u00D8 %2$s)</string>
-    <string name="insight_pattern_detail_low">Niedrig zwischen %1$s an den letzten Tagen (\u00D8 %2$s)</string>
-    <string name="insight_pattern_detail_multiple">%1$d wiederkehrende Muster erkannt \u00B7 Tippen f\u00FCr Statistik</string>
+    <string name="insight_patterns_badge">MUSTER</string>
+    <string name="insight_pattern_multiple_header">%1$d wiederkehrende Muster</string>
+    <string name="insight_pattern_item_summary">%1$s · %2$d von %3$d Tagen · Ø %4$s</string>
+    <string name="insight_pattern_type_high">Hoch</string>
+    <string name="insight_pattern_type_low">Niedrig</string>
+    <string name="insight_pattern_tap_stats">Tippen für Statistik</string>
+    <string name="insight_pattern_header">%1$s · %2$d von %3$d Tagen</string>
+    <string name="insight_pattern_detail_high">Hoch zwischen %1$s an den letzten Tagen (Ø %2$s)</string>
+    <string name="insight_pattern_detail_low">Niedrig zwischen %1$s an den letzten Tagen (Ø %2$s)</string>
+    <string name="stats_recurring_patterns">Wiederkehrende Muster</string>
+    <string name="stats_recurring_patterns_subtitle">In den letzten 7 Tagen erkannt</string>
+    <string name="stats_pattern_days_count">%1$d von %2$d Tagen</string>
+    <string name="stats_pattern_range">Ø %1$s · Bereich %2$s – %3$s</string>
+    <string name="insight_pattern_guide_night_low">Nächtliche Tiefs — Abendbasal oder Bolus zum Abendessen prüfen</string>
+    <string name="insight_pattern_guide_day_low">Wiederkehrende Tiefs — Risiko von überschüssigem Insulin oder Aktivität</string>
+    <string name="insight_pattern_guide_morning_high">Morgenanstieg — mögliches Dawn-Phänomen oder Frühstücks-Timing</string>
+    <string name="insight_pattern_guide_afternoon_high">Nachmittagshochs — Kohlenhydratschätzung oder Mittagsbolus prüfen</string>
+    <string name="insight_pattern_guide_evening_high">Abend-/Nachtanstieg — Abendbolus oder Spätsnacks prüfen</string>
 
     <!-- Foreground Notification -->
     <string name="notif_channel_name">Glukosemesswerte</string>

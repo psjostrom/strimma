@@ -264,25 +264,29 @@
     <string name="alert_channel_push_fail_desc">Les t\u00E9l\u00E9versements de glyc\u00E9mie \u00E9chouent depuis un certain temps</string>
     <string name="alert_snooze">Snooze %1$s</string>
 
-    <!-- Pattern Alerts -->
-    <string name="alert_channel_pattern">Tendances r\u00E9currentes</string>
-    <string name="alert_channel_pattern_desc">Tendances glyc\u00E9miques r\u00E9currentes \u00E0 la m\u00EAme heure</string>
-    <string name="pattern_notif_title_high">Hyperglyc\u00E9mie r\u00E9currente : %1$s</string>
-    <string name="pattern_notif_title_low">Hypoglyc\u00E9mie r\u00E9currente : %1$s</string>
-    <string name="pattern_notif_body_high">\u00C9lev\u00E9 sur %1$d des %2$d derniers jours \u00B7 Moy. %3$s</string>
-    <string name="pattern_notif_body_low">Bas sur %1$d des %2$d derniers jours \u00B7 Moy. %3$s</string>
-    <string name="pattern_notif_title_multiple">%1$d tendances r\u00E9currentes d\u00E9tect\u00E9es</string>
-    <string name="pattern_notif_summary_multiple">%1$d tendances glyc\u00E9miques r\u00E9currentes d\u00E9tect\u00E9es</string>
-    <string name="pattern_notif_item_high">\u2B06 Haut %1$s \u00B7 %2$d sur %3$d jours</string>
-    <string name="pattern_notif_item_low">\u2B07 Bas %1$s \u00B7 %2$d sur %3$d jours</string>
-    <string name="settings_alerts_pattern_section">Tendances r\u00E9currentes</string>
-    <string name="settings_alerts_pattern_title">Tendances r\u00E9currentes</string>
-    <string name="settings_alerts_pattern_desc">Recevez une notification lorsque la glyc\u00E9mie est r\u00E9guli\u00E8rement hors cible \u00E0 la m\u00EAme heure</string>
+    <!-- Pattern Insights -->
+    <string name="settings_alerts_pattern_section">Tendances récurrentes</string>
+    <string name="settings_alerts_pattern_title">Tendances récurrentes</string>
+    <string name="settings_alerts_pattern_desc">Afficher les tendances glycémiques récurrentes sur l\'écran d\'accueil</string>
     <string name="insight_pattern_badge">TENDANCE</string>
-    <string name="insight_pattern_header">%1$s \u00B7 %2$d sur %3$d jours</string>
+    <string name="insight_patterns_badge">TENDANCES</string>
+    <string name="insight_pattern_multiple_header">%1$d tendances récurrentes</string>
+    <string name="insight_pattern_item_summary">%1$s · %2$d sur %3$d jours · moy. %4$s</string>
+    <string name="insight_pattern_type_high">Haut</string>
+    <string name="insight_pattern_type_low">Bas</string>
+    <string name="insight_pattern_tap_stats">Appuyer pour afficher les statistiques</string>
+    <string name="insight_pattern_header">%1$s · %2$d sur %3$d jours</string>
     <string name="insight_pattern_detail_high">Haut entre %1$s ces derniers jours (Moy. %2$s)</string>
     <string name="insight_pattern_detail_low">Bas entre %1$s ces derniers jours (Moy. %2$s)</string>
-    <string name="insight_pattern_detail_multiple">%1$d tendances r\u00E9currentes d\u00E9tect\u00E9es \u00B7 Appuyer pour afficher les statistiques</string>
+    <string name="stats_recurring_patterns">Tendances récurrentes</string>
+    <string name="stats_recurring_patterns_subtitle">Détectées sur les 7 derniers jours</string>
+    <string name="stats_pattern_days_count">%1$d sur %2$d jours</string>
+    <string name="stats_pattern_range">Moy. %1$s · Plage %2$s – %3$s</string>
+    <string name="insight_pattern_guide_night_low">Hypoglycémies nocturnes — envisager de vérifier le débit basal ou le bolus du soir</string>
+    <string name="insight_pattern_guide_day_low">Hypoglycémies récurrentes — risque d\'excès d\'insuline ou d\'activité non compensée</string>
+    <string name="insight_pattern_guide_morning_high">Élévation matinale — phénomène de l\'aube ou moment du petit-déjeuner</string>
+    <string name="insight_pattern_guide_afternoon_high">Pics d\'après-midi — vérifier le calcul des glucides ou l\'insuline du déjeuner</string>
+    <string name="insight_pattern_guide_evening_high">Élévation en soirée/nuit — vérifier le bolus du dîner ou collations tardives</string>
 
     <!-- Foreground Notification -->
     <string name="notif_channel_name">Lectures de glyc\u00E9mie</string>

@@ -357,25 +357,29 @@
     <string name="alert_channel_push_fail_desc">Glucose uploads failing for extended period</string>
     <string name="alert_snooze">Snooze %1$s</string>
 
-    <!-- Pattern Alerts -->
-    <string name="alert_channel_pattern">Pattern Insights</string>
-    <string name="alert_channel_pattern_desc">Recurring time-of-day glucose patterns</string>
-    <string name="pattern_notif_title_high">Recurring high: %1$s</string>
-    <string name="pattern_notif_title_low">Recurring low: %1$s</string>
-    <string name="pattern_notif_body_high" tools:ignore="PluralsCandidate">High on %1$d of the last %2$d days · Avg %3$s</string>
-    <string name="pattern_notif_body_low" tools:ignore="PluralsCandidate">Low on %1$d of the last %2$d days · Avg %3$s</string>
-    <string name="pattern_notif_title_multiple" tools:ignore="PluralsCandidate">%1$d recurring patterns detected</string>
-    <string name="pattern_notif_summary_multiple" tools:ignore="PluralsCandidate">%1$d recurring glucose patterns detected</string>
-    <string name="pattern_notif_item_high" tools:ignore="PluralsCandidate">⬆ High %1$s · %2$d of %3$d days</string>
-    <string name="pattern_notif_item_low" tools:ignore="PluralsCandidate">⬇ Low %1$s · %2$d of %3$d days</string>
+    <!-- Pattern Insights -->
     <string name="settings_alerts_pattern_section">Pattern Insights</string>
     <string name="settings_alerts_pattern_title">Recurring patterns</string>
-    <string name="settings_alerts_pattern_desc">Get notified when glucose is consistently out of range at the same time of day</string>
+    <string name="settings_alerts_pattern_desc">Show recurring glucose patterns on the home screen</string>
     <string name="insight_pattern_badge">PATTERN</string>
+    <string name="insight_patterns_badge">PATTERNS</string>
+    <string name="insight_pattern_multiple_header" tools:ignore="PluralsCandidate">%1$d recurring patterns</string>
+    <string name="insight_pattern_item_summary" tools:ignore="PluralsCandidate">%1$s · %2$d of %3$d days · avg %4$s</string>
+    <string name="insight_pattern_type_high">High</string>
+    <string name="insight_pattern_type_low">Low</string>
+    <string name="insight_pattern_tap_stats">Tap to view stats</string>
     <string name="insight_pattern_header" tools:ignore="PluralsCandidate">%1$s · %2$d of %3$d days</string>
     <string name="insight_pattern_detail_high">High between %1$s on recent days (Avg %2$s)</string>
     <string name="insight_pattern_detail_low">Low between %1$s on recent days (Avg %2$s)</string>
-    <string name="insight_pattern_detail_multiple" tools:ignore="PluralsCandidate">%1$d recurring patterns detected · Tap to view stats</string>
+    <string name="stats_recurring_patterns">Recurring patterns</string>
+    <string name="stats_recurring_patterns_subtitle">Detected across the last 7 days</string>
+    <string name="stats_pattern_days_count" tools:ignore="PluralsCandidate">%1$d of %2$d days</string>
+    <string name="stats_pattern_range" tools:ignore="PluralsCandidate">Avg %1$s · Range %2$s – %3$s</string>
+    <string name="insight_pattern_guide_night_low">Nighttime lows — consider reviewing evening basal or dinner bolus</string>
+    <string name="insight_pattern_guide_day_low">Recurring lows — risk of excess insulin or uncompensated activity</string>
+    <string name="insight_pattern_guide_morning_high">Morning rise — possible dawn phenomenon or breakfast timing</string>
+    <string name="insight_pattern_guide_afternoon_high">Afternoon highs — review lunch carb counting or meal bolus timing</string>
+    <string name="insight_pattern_guide_evening_high">Evening/night elevation — check dinner bolus or late evening snacks</string>
 
     <!-- Alert pause -->
     <string name="pause_alerts">Pause alerts</string>

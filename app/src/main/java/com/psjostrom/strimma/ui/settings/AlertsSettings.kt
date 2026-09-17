@@ -196,11 +196,6 @@ fun AlertsSettings(
                 textColor = onBg,
                 outlineColor = outline,
             )
-            if (patternAlertsEnabled) {
-                TextButton(onClick = { onOpenAlertSound(AlertManager.CHANNEL_PATTERN) }) {
-                    Text(stringResource(R.string.common_sound), color = InRange, fontSize = 13.sp)
-                }
-            }
         }
     }
 }

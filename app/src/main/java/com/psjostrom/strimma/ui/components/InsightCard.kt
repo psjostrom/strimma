@@ -45,15 +45,13 @@ fun InsightCard(
 ) {
     if (patterns.isEmpty()) return
 
-    val primary = patterns.first()
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
-
-    val (bgColor, badgeColor) = when (primary.type) {
-        PatternType.HIGH -> (if (isDark) TintWarning else LightTintWarning) to Warning
-        PatternType.LOW -> (if (isDark) TintDanger else LightTintDanger) to Danger
+    val hasLow = patterns.any { it.type == PatternType.LOW }
+    val (bgColor, badgeColor) = if (hasLow) {
+        (if (isDark) TintDanger else LightTintDanger) to Danger
+    } else {
+        (if (isDark) TintWarning else LightTintWarning) to Warning
     }
-
-    val timeSpan = primary.formattedTimeSpan
 
     Surface(
         modifier = modifier
@@ -64,51 +62,53 @@ fun InsightCard(
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Column(modifier = Modifier.padding(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 10.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            if (patterns.size == 1) {
+                val primary = patterns.first()
+                val timeSpan = primary.formattedTimeSpan
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = stringResource(R.string.insight_pattern_badge),
-                        color = badgeColor,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp
-                    )
-                    Text(
-                        text = stringResource(
-                            R.string.insight_pattern_header,
-                            timeSpan,
-                            primary.daysDetected,
-                            primary.daysEvaluated
-                        ),
-                        color = MaterialTheme.colorScheme.onBackground,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium
-                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.insight_pattern_badge),
+                            color = badgeColor,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        )
+                        Text(
+                            text = stringResource(
+                                R.string.insight_pattern_header,
+                                timeSpan,
+                                primary.daysDetected,
+                                primary.daysEvaluated
+                            ),
+                            color = MaterialTheme.colorScheme.onBackground,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = stringResource(R.string.common_dismiss),
+                            tint = MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
                 }
 
-                IconButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.size(28.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = stringResource(R.string.common_dismiss),
-                        tint = MaterialTheme.colorScheme.outline,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-            }
-
-            val detailText = if (patterns.size == 1) {
                 val avgFormatted = glucoseUnit.formatWithUnit(primary.avgBgMgdl)
-                when (primary.type) {
+                val detailText = when (primary.type) {
                     PatternType.HIGH -> stringResource(
                         R.string.insight_pattern_detail_high,
                         timeSpan,
@@ -120,16 +120,100 @@ fun InsightCard(
                         avgFormatted
                     )
                 }
-            } else {
-                stringResource(R.string.insight_pattern_detail_multiple, patterns.size)
-            }
 
-            Text(
-                text = detailText,
-                color = MaterialTheme.colorScheme.outline,
-                fontSize = 12.sp,
-                modifier = Modifier.padding(end = 8.dp)
-            )
+                Text(
+                    text = detailText,
+                    color = MaterialTheme.colorScheme.outline,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(end = 8.dp)
+                )
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.insight_patterns_badge),
+                            color = badgeColor,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        )
+                        Text(
+                            text = stringResource(
+                                R.string.insight_pattern_multiple_header,
+                                patterns.size
+                            ),
+                            color = MaterialTheme.colorScheme.onBackground,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = stringResource(R.string.common_dismiss),
+                            tint = MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+
+                Column(
+                    modifier = Modifier.padding(end = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    patterns.forEach { pattern ->
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val itemColor = when (pattern.type) {
+                                PatternType.HIGH -> Warning
+                                PatternType.LOW -> Danger
+                            }
+                            val itemLabel = when (pattern.type) {
+                                PatternType.HIGH -> stringResource(R.string.insight_pattern_type_high)
+                                PatternType.LOW -> stringResource(R.string.insight_pattern_type_low)
+                            }
+                            Text(
+                                text = itemLabel.uppercase(),
+                                color = itemColor,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.5.sp
+                            )
+                            Text(
+                                text = stringResource(
+                                    R.string.insight_pattern_item_summary,
+                                    pattern.formattedTimeSpan,
+                                    pattern.daysDetected,
+                                    pattern.daysEvaluated,
+                                    glucoseUnit.formatWithUnit(pattern.avgBgMgdl)
+                                ),
+                                color = MaterialTheme.colorScheme.onBackground,
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
+
+                    Text(
+                        text = stringResource(R.string.insight_pattern_tap_stats),
+                        color = MaterialTheme.colorScheme.outline,
+                        fontSize = 11.sp,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
+            }
         }
     }
 }

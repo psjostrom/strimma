@@ -560,11 +560,13 @@ fun StrimmaNavGraph(
             )
             val tauMinutes by viewModel.tauMinutes.collectAsState()
             val storyViewedMonth by viewModel.settings.storyViewedMonth.collectAsState(initial = null)
+            val detectedPatterns by viewModel.detectedPatterns.collectAsState()
             StatsScreen(
                 bgLow = bgLow,
                 bgHigh = bgHigh,
                 glucoseUnit = glucoseUnit,
                 hbA1cUnit = hbA1cUnit,
+                patterns = detectedPatterns,
                 onLoadReadings = viewModel::readingsForPeriod,
                 onLoadCarbTreatments = viewModel::carbTreatmentsInRange,
                 onLoadAllTreatments = viewModel::allTreatmentsSince,

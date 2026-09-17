@@ -47,7 +47,6 @@ class PatternDetectorTest {
             now = now
         )
         assertTrue(result.patterns.isEmpty())
-        assertEquals("", result.stableHash())
     }
 
     @Test
@@ -95,6 +94,10 @@ class PatternDetectorTest {
         assertEquals(5, pattern.daysDetected)
         assertEquals(7, pattern.daysEvaluated)
         assertTrue(pattern.avgBgMgdl > 200.0)
+        assertEquals(205.0, pattern.minBgMgdl, 0.01)
+        assertEquals(220.0, pattern.maxBgMgdl, 0.01)
+        assertEquals(5, pattern.flaggedDates.size)
+        assertEquals((5 downTo 1).map { baseDate.minusDays(it.toLong()) }, pattern.flaggedDates)
     }
 
     @Test
@@ -230,6 +233,35 @@ class PatternDetectorTest {
     }
 
     @Test
+    fun `mergeAdjacent unions evaluatedDates and computes accurate daysEvaluated`() {
+        val d1 = LocalDate.of(2026, 3, 10)
+        val d2 = LocalDate.of(2026, 3, 11)
+        val d3 = LocalDate.of(2026, 3, 12)
+        val d4 = LocalDate.of(2026, 3, 13)
+
+        val p1 = GlucosePattern(
+            startHour = 14, endHour = 15, type = PatternType.HIGH,
+            daysDetected = 2, daysEvaluated = 2, avgBgMgdl = 200.0,
+            flaggedDates = listOf(d1, d2),
+            evaluatedDates = listOf(d1, d2)
+        )
+        val p2 = GlucosePattern(
+            startHour = 15, endHour = 16, type = PatternType.HIGH,
+            daysDetected = 2, daysEvaluated = 2, avgBgMgdl = 220.0,
+            flaggedDates = listOf(d3, d4),
+            evaluatedDates = listOf(d2, d3, d4)
+        )
+
+        val merged = PatternDetector.mergeAdjacent(listOf(p1, p2))
+        assertEquals(1, merged.size)
+        val result = merged.first()
+        assertEquals(4, result.daysDetected)
+        assertEquals(4, result.daysEvaluated)
+        assertEquals(listOf(d1, d2, d3, d4), result.flaggedDates)
+        assertEquals(listOf(d1, d2, d3, d4), result.evaluatedDates)
+    }
+
+    @Test
     fun `detect excludes readings inside workout periods`() {
         val readings = mutableListOf<GlucoseReading>()
         val workouts = mutableListOf<LongRange>()
@@ -256,24 +288,6 @@ class PatternDetectorTest {
 
         // All 15:00 readings were during workouts -> excluded -> empty result
         assertTrue(result.patterns.isEmpty())
-    }
-
-    @Test
-    fun `stableKey and stableHash are deterministic`() {
-        val p1 = GlucosePattern(
-            startHour = 14,
-            endHour = 16,
-            type = PatternType.HIGH,
-            daysDetected = 5,
-            daysEvaluated = 7,
-            avgBgMgdl = 220.5
-        )
-        assertEquals("HIGH:14-16", p1.stableKey())
-
-        val result = PatternResult(
-            patterns = listOf(p1)
-        )
-        assertEquals("HIGH:14-16", result.stableHash())
     }
 
     @Test
