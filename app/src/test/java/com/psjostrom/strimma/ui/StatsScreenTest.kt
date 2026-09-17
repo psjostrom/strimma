@@ -173,4 +173,30 @@ class StatsScreenTest {
         composeRule.onNodeWithText("F").assertExists()
         composeRule.onNodeWithText("L").assertExists()
     }
+
+    @Test
+    @Config(qualifiers = "en-rSE")
+    fun `shows recurring patterns with English language in Sweden region starting on Monday`() {
+        composeRule.setContent {
+            StrimmaTheme {
+                StatsScreen(
+                    bgLow = 72f,
+                    bgHigh = 180f,
+                    glucoseUnit = GlucoseUnit.MMOL,
+                    onLoadReadings = { sampleReadings },
+                    onLoadCarbTreatments = { _, _ -> emptyList() },
+                    onLoadAllTreatments = { emptyList() },
+                    tauMinutes = 45.0,
+                    mealAnalyzer = MealAnalyzer(),
+                    mealTimeSlotConfig = MealTimeSlotConfig(),
+                    onExportCsv = { "" },
+                    patterns = listOf(highPattern)
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Recurring patterns").assertExists()
+        composeRule.onNodeWithText("Detected across the last 7 days").assertExists()
+        composeRule.onNodeWithText("W").assertExists()
+    }
 }

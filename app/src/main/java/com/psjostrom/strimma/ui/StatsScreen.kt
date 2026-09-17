@@ -42,6 +42,7 @@ import com.psjostrom.strimma.ui.theme.InRange
 import com.psjostrom.strimma.ui.theme.VeryHigh
 import com.psjostrom.strimma.ui.theme.VeryLow
 import com.psjostrom.strimma.ui.theme.Warning
+import android.content.res.Resources
 import android.os.LocaleList
 import androidx.core.text.util.LocalePreferences
 import kotlinx.coroutines.launch
@@ -812,7 +813,16 @@ private fun getPatternGuidanceResId(pattern: GlucosePattern): Int {
 }
 
 private fun resolveFirstDayOfWeek(appLocale: Locale): DayOfWeek {
-    val regionalPref = runCatching { LocalePreferences.getFirstDayOfWeek() }.getOrNull()
+    val systemLocale = runCatching {
+        Resources.getSystem().configuration.locales.get(0)
+    }.getOrNull()?.takeIf { it.country.isNotEmpty() }
+        ?: runCatching { LocaleList.getDefault().get(0) }.getOrNull()?.takeIf { it.country.isNotEmpty() }
+        ?: appLocale
+
+    val regionalPref = runCatching {
+        LocalePreferences.getFirstDayOfWeek(systemLocale)
+    }.getOrNull()
+
     return when (regionalPref) {
         LocalePreferences.FirstDayOfWeek.MONDAY -> DayOfWeek.MONDAY
         LocalePreferences.FirstDayOfWeek.TUESDAY -> DayOfWeek.TUESDAY
@@ -821,12 +831,6 @@ private fun resolveFirstDayOfWeek(appLocale: Locale): DayOfWeek {
         LocalePreferences.FirstDayOfWeek.FRIDAY -> DayOfWeek.FRIDAY
         LocalePreferences.FirstDayOfWeek.SATURDAY -> DayOfWeek.SATURDAY
         LocalePreferences.FirstDayOfWeek.SUNDAY -> DayOfWeek.SUNDAY
-        else -> {
-            val systemLocale = runCatching {
-                LocaleList.getDefault().get(0)
-            }.getOrNull() ?: Locale.getDefault()
-            val candidate = if (systemLocale.country.isNotEmpty()) systemLocale else appLocale
-            WeekFields.of(candidate).firstDayOfWeek
-        }
+        else -> WeekFields.of(systemLocale).firstDayOfWeek
     }
 }
