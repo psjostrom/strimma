@@ -145,4 +145,32 @@ class StatsScreenTest {
 
         composeRule.onNodeWithText("Recurring patterns").assertDoesNotExist()
     }
+
+    @Test
+    @Config(qualifiers = "sv")
+    fun `shows recurring patterns with Swedish locale starting on Monday`() {
+        composeRule.setContent {
+            StrimmaTheme {
+                StatsScreen(
+                    bgLow = 72f,
+                    bgHigh = 180f,
+                    glucoseUnit = GlucoseUnit.MMOL,
+                    onLoadReadings = { sampleReadings },
+                    onLoadCarbTreatments = { _, _ -> emptyList() },
+                    onLoadAllTreatments = { emptyList() },
+                    tauMinutes = 45.0,
+                    mealAnalyzer = MealAnalyzer(),
+                    mealTimeSlotConfig = MealTimeSlotConfig(),
+                    onExportCsv = { "" },
+                    patterns = listOf(highPattern)
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Återkommande mönster").assertExists()
+        composeRule.onNodeWithText("Upptäckta under de senaste 7 dagarna").assertExists()
+        composeRule.onNodeWithText("O").assertExists()
+        composeRule.onNodeWithText("F").assertExists()
+        composeRule.onNodeWithText("L").assertExists()
+    }
 }

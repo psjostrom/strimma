@@ -43,13 +43,14 @@ import com.psjostrom.strimma.ui.theme.VeryHigh
 import com.psjostrom.strimma.ui.theme.VeryLow
 import com.psjostrom.strimma.ui.theme.Warning
 import kotlinx.coroutines.launch
-import java.time.LocalDate
 import java.time.format.TextStyle
+import java.time.temporal.WeekFields
 
 private const val HOURS_24 = 24
 private const val HOURS_7_DAYS = 168
 private const val HOURS_14_DAYS = AgpCalculator.AGP_DAYS * 24
 private const val HOURS_30_DAYS = 720
+private const val DAYS_IN_WEEK = 7L
 
 private const val TAB_METRICS = 0
 private const val TAB_AGP = 1
@@ -734,12 +735,10 @@ private fun RecurringPatternsCard(
                     )
 
                     if (pattern.flaggedDates.isNotEmpty()) {
-                        val today = LocalDate.now()
-                        val anchorDate = pattern.flaggedDates.maxOrNull()?.let { maxDate ->
-                            if (maxDate.isBefore(today.minusDays(7))) maxDate else today.minusDays(1)
-                        } ?: today.minusDays(1)
-                        val days = (6 downTo 0).map { anchorDate.minusDays(it.toLong()) }
                         val locale = LocalConfiguration.current.locales[0]
+                        val firstDayOfWeek = WeekFields.of(locale).firstDayOfWeek
+                        val daysOfWeek = (0L until DAYS_IN_WEEK).map { firstDayOfWeek.plus(it) }
+                        val flaggedDaysOfWeek = pattern.flaggedDates.map { it.dayOfWeek }.toSet()
 
                         Row(
                             modifier = Modifier
@@ -748,9 +747,9 @@ private fun RecurringPatternsCard(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            days.forEach { day ->
-                                val isFlagged = day in pattern.flaggedDates
-                                val dayLabel = day.dayOfWeek.getDisplayName(TextStyle.NARROW, locale)
+                            daysOfWeek.forEach { dayOfWeek ->
+                                val isFlagged = dayOfWeek in flaggedDaysOfWeek
+                                val dayLabel = dayOfWeek.getDisplayName(TextStyle.NARROW, locale)
                                 Column(
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                     verticalArrangement = Arrangement.spacedBy(3.dp)
