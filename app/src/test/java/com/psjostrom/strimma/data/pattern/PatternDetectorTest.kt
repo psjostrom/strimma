@@ -94,6 +94,10 @@ class PatternDetectorTest {
         assertEquals(5, pattern.daysDetected)
         assertEquals(7, pattern.daysEvaluated)
         assertTrue(pattern.avgBgMgdl > 200.0)
+        assertEquals(205.0, pattern.minBgMgdl, 0.01)
+        assertEquals(220.0, pattern.maxBgMgdl, 0.01)
+        assertEquals(5, pattern.flaggedDates.size)
+        assertEquals((5 downTo 1).map { baseDate.minusDays(it.toLong()) }, pattern.flaggedDates)
     }
 
     @Test

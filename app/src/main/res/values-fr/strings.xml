@@ -281,6 +281,12 @@
     <string name="stats_recurring_patterns">Tendances récurrentes</string>
     <string name="stats_recurring_patterns_subtitle">Détectées sur les 7 derniers jours</string>
     <string name="stats_pattern_days_count">%1$d sur %2$d jours</string>
+    <string name="stats_pattern_range">Moy. %1$s · Plage %2$s – %3$s</string>
+    <string name="insight_pattern_guide_night_low">Hypoglycémies nocturnes — envisager de vérifier le débit basal ou le bolus du soir</string>
+    <string name="insight_pattern_guide_day_low">Hypoglycémies récurrentes — risque d\'excès d\'insuline ou d\'activité non compensée</string>
+    <string name="insight_pattern_guide_morning_high">Élévation matinale — phénomène de l\'aube ou moment du petit-déjeuner</string>
+    <string name="insight_pattern_guide_afternoon_high">Pics d\'après-midi — vérifier le calcul des glucides ou l\'insuline du déjeuner</string>
+    <string name="insight_pattern_guide_evening_high">Élévation en soirée/nuit — vérifier le bolus du dîner ou collations tardives</string>
 
     <!-- Foreground Notification -->
     <string name="notif_channel_name">Lectures de glyc\u00E9mie</string>

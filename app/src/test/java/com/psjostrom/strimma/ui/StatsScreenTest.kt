@@ -10,6 +10,7 @@ import com.psjostrom.strimma.data.meal.MealTimeSlotConfig
 import com.psjostrom.strimma.data.pattern.GlucosePattern
 import com.psjostrom.strimma.data.pattern.PatternType
 import com.psjostrom.strimma.ui.theme.StrimmaTheme
+import java.time.LocalDate
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -35,7 +36,16 @@ class StatsScreenTest {
         type = PatternType.HIGH,
         daysDetected = 5,
         daysEvaluated = 7,
-        avgBgMgdl = 216.0
+        avgBgMgdl = 216.0,
+        minBgMgdl = 198.0,
+        maxBgMgdl = 234.0,
+        flaggedDates = listOf(
+            LocalDate.of(2026, 3, 10),
+            LocalDate.of(2026, 3, 11),
+            LocalDate.of(2026, 3, 12),
+            LocalDate.of(2026, 3, 13),
+            LocalDate.of(2026, 3, 14)
+        )
     )
 
     private val lowPattern = GlucosePattern(
@@ -44,7 +54,15 @@ class StatsScreenTest {
         type = PatternType.LOW,
         daysDetected = 4,
         daysEvaluated = 7,
-        avgBgMgdl = 63.0
+        avgBgMgdl = 63.0,
+        minBgMgdl = 54.0,
+        maxBgMgdl = 68.0,
+        flaggedDates = listOf(
+            LocalDate.of(2026, 3, 10),
+            LocalDate.of(2026, 3, 11),
+            LocalDate.of(2026, 3, 13),
+            LocalDate.of(2026, 3, 14)
+        )
     )
 
     @Test
@@ -71,8 +89,11 @@ class StatsScreenTest {
         composeRule.onNodeWithText("Detected across the last 7 days").assertExists()
         composeRule.onNodeWithText("14:00–16:00").assertExists()
         composeRule.onNodeWithText("5 of 7 days").assertExists()
+        composeRule.onNodeWithText("Avg 12.0 mmol/L · Range 11.0 – 13.0 mmol/L").assertExists()
+        composeRule.onNodeWithText("Afternoon highs — review lunch carb counting or meal bolus timing").assertExists()
         composeRule.onNodeWithText("03:00–05:00").assertExists()
         composeRule.onNodeWithText("4 of 7 days").assertExists()
+        composeRule.onNodeWithText("Nighttime lows — consider reviewing evening basal or dinner bolus").assertExists()
     }
 
     @Test

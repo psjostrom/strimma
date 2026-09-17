@@ -284,6 +284,12 @@
     <string name="stats_recurring_patterns">Återkommande mönster</string>
     <string name="stats_recurring_patterns_subtitle">Upptäckta under de senaste 7 dagarna</string>
     <string name="stats_pattern_days_count">%1$d av %2$d dagar</string>
+    <string name="stats_pattern_range">Snitt %1$s · Intervall %2$s – %3$s</string>
+    <string name="insight_pattern_guide_night_low">Nattliga låga värden — överväg att se över nattbasal eller middagsdos</string>
+    <string name="insight_pattern_guide_day_low">Återkommande låga värden — risk för för mycket insulin eller oplanerad aktivitet</string>
+    <string name="insight_pattern_guide_morning_high">Morgonstigning — möjlig gryningsreaktion eller frukostdosering</string>
+    <string name="insight_pattern_guide_afternoon_high">Eftermiddagshöjning — se över kolhydraträkning till lunch eller bolustajmning</string>
+    <string name="insight_pattern_guide_evening_high">Kvälls-/nattstigning — kontrollera middagsdos eller kvällsfika</string>
 
     <!-- Foreground Notification -->
     <string name="notif_channel_name">Glukosavl\u00E4sningar</string>

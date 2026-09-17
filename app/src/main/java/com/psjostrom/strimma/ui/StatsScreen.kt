@@ -1,8 +1,10 @@
 package com.psjostrom.strimma.ui
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -15,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -40,6 +43,8 @@ import com.psjostrom.strimma.ui.theme.VeryHigh
 import com.psjostrom.strimma.ui.theme.VeryLow
 import com.psjostrom.strimma.ui.theme.Warning
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.format.TextStyle
 
 private const val HOURS_24 = 24
 private const val HOURS_7_DAYS = 168
@@ -49,6 +54,12 @@ private const val HOURS_30_DAYS = 720
 private const val TAB_METRICS = 0
 private const val TAB_AGP = 1
 private const val TAB_MEALS = 2
+
+private const val HOUR_NIGHT_START = 22
+private const val HOUR_NIGHT_END = 6
+private const val HOUR_MORNING_START = 5
+private const val HOUR_AFTERNOON_START = 11
+private const val HOUR_EVENING_START = 17
 
 @Composable
 private fun getPeriods() = listOf(
@@ -646,27 +657,28 @@ private fun RecurringPatternsCard(
                 if (index > 0) {
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 }
-                Row(
+                val badgeColor = when (pattern.type) {
+                    PatternType.HIGH -> Warning
+                    PatternType.LOW -> Danger
+                }
+                val badgeText = when (pattern.type) {
+                    PatternType.HIGH -> stringResource(R.string.insight_pattern_type_high)
+                    PatternType.LOW -> stringResource(R.string.insight_pattern_type_low)
+                }
+
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            val badgeColor = when (pattern.type) {
-                                PatternType.HIGH -> Warning
-                                PatternType.LOW -> Danger
-                            }
-                            val badgeText = when (pattern.type) {
-                                PatternType.HIGH -> stringResource(R.string.insight_pattern_type_high)
-                                PatternType.LOW -> stringResource(R.string.insight_pattern_type_low)
-                            }
                             Text(
                                 text = badgeText.uppercase(),
                                 color = badgeColor,
@@ -681,7 +693,28 @@ private fun RecurringPatternsCard(
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
-                        val desc = when (pattern.type) {
+
+                        Text(
+                            text = stringResource(
+                                R.string.stats_pattern_days_count,
+                                pattern.daysDetected,
+                                pattern.daysEvaluated
+                            ),
+                            color = outline,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+
+                    val statsText = if (pattern.minBgMgdl > 0 && pattern.maxBgMgdl > 0) {
+                        stringResource(
+                            R.string.stats_pattern_range,
+                            glucoseUnit.formatWithUnit(pattern.avgBgMgdl),
+                            glucoseUnit.format(pattern.minBgMgdl),
+                            glucoseUnit.formatWithUnit(pattern.maxBgMgdl)
+                        )
+                    } else {
+                        when (pattern.type) {
                             PatternType.HIGH -> stringResource(
                                 R.string.insight_pattern_detail_high,
                                 pattern.formattedTimeSpan,
@@ -693,24 +726,83 @@ private fun RecurringPatternsCard(
                                 glucoseUnit.formatWithUnit(pattern.avgBgMgdl)
                             )
                         }
-                        Text(
-                            text = desc,
-                            color = outline,
-                            fontSize = 12.sp
-                        )
+                    }
+                    Text(
+                        text = statsText,
+                        color = outline,
+                        fontSize = 12.sp
+                    )
+
+                    if (pattern.flaggedDates.isNotEmpty()) {
+                        val today = LocalDate.now()
+                        val anchorDate = pattern.flaggedDates.maxOrNull()?.let { maxDate ->
+                            if (maxDate.isBefore(today.minusDays(7))) maxDate else today.minusDays(1)
+                        } ?: today.minusDays(1)
+                        val days = (6 downTo 0).map { anchorDate.minusDays(it.toLong()) }
+                        val locale = LocalConfiguration.current.locales[0]
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 2.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            days.forEach { day ->
+                                val isFlagged = day in pattern.flaggedDates
+                                val dayLabel = day.dayOfWeek.getDisplayName(TextStyle.NARROW, locale)
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(3.dp)
+                                ) {
+                                    Text(
+                                        text = dayLabel,
+                                        color = if (isFlagged) onBg else outline.copy(alpha = 0.6f),
+                                        fontSize = 11.sp,
+                                        fontWeight = if (isFlagged) FontWeight.SemiBold else FontWeight.Normal
+                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .size(8.dp)
+                                            .background(
+                                                color = if (isFlagged) badgeColor else outline.copy(alpha = 0.25f),
+                                                shape = CircleShape
+                                            )
+                                    )
+                                }
+                            }
+                        }
                     }
 
                     Text(
-                        text = stringResource(
-                            R.string.stats_pattern_days_count,
-                            pattern.daysDetected,
-                            pattern.daysEvaluated
-                        ),
-                        color = outline,
+                        text = stringResource(getPatternGuidanceResId(pattern)),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium
+                        lineHeight = 16.sp
                     )
                 }
+            }
+        }
+    }
+}
+
+private fun getPatternGuidanceResId(pattern: GlucosePattern): Int {
+    return when (pattern.type) {
+        PatternType.LOW -> {
+            if (pattern.startHour >= HOUR_NIGHT_START || pattern.startHour < HOUR_NIGHT_END) {
+                R.string.insight_pattern_guide_night_low
+            } else {
+                R.string.insight_pattern_guide_day_low
+            }
+        }
+        PatternType.HIGH -> {
+            when {
+                pattern.startHour in HOUR_MORNING_START until HOUR_AFTERNOON_START ->
+                    R.string.insight_pattern_guide_morning_high
+                pattern.startHour in HOUR_AFTERNOON_START until HOUR_EVENING_START ->
+                    R.string.insight_pattern_guide_afternoon_high
+                else ->
+                    R.string.insight_pattern_guide_evening_high
             }
         }
     }

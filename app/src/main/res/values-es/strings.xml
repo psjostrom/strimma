@@ -281,6 +281,12 @@
     <string name="stats_recurring_patterns">Patrones recurrentes</string>
     <string name="stats_recurring_patterns_subtitle">Detectados en los últimos 7 días</string>
     <string name="stats_pattern_days_count">%1$d de %2$d días</string>
+    <string name="stats_pattern_range">Prom. %1$s · Rango %2$s – %3$s</string>
+    <string name="insight_pattern_guide_night_low">Bajadas nocturnas: revisar la insulina basal o el bolo de la cena</string>
+    <string name="insight_pattern_guide_day_low">Bajadas recurrentes: riesgo de exceso de insulina o actividad no compensada</string>
+    <string name="insight_pattern_guide_morning_high">Subida matutina: posible fenómeno del alba o sincronización del desayuno</string>
+    <string name="insight_pattern_guide_afternoon_high">Subidas vespertinas: revisar cálculo de carbohidratos o bolo del almuerzo</string>
+    <string name="insight_pattern_guide_evening_high">Elevación al atardecer o de noche: revisar bolo de cena o colaciones tardías</string>
 
     <!-- Foreground Notification -->
     <string name="notif_channel_name">Lecturas de glucosa</string>

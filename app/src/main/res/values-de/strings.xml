@@ -281,6 +281,12 @@
     <string name="stats_recurring_patterns">Wiederkehrende Muster</string>
     <string name="stats_recurring_patterns_subtitle">In den letzten 7 Tagen erkannt</string>
     <string name="stats_pattern_days_count">%1$d von %2$d Tagen</string>
+    <string name="stats_pattern_range">Ø %1$s · Bereich %2$s – %3$s</string>
+    <string name="insight_pattern_guide_night_low">Nächtliche Tiefs — Abendbasal oder Bolus zum Abendessen prüfen</string>
+    <string name="insight_pattern_guide_day_low">Wiederkehrende Tiefs — Risiko von überschüssigem Insulin oder Aktivität</string>
+    <string name="insight_pattern_guide_morning_high">Morgenanstieg — mögliches Dawn-Phänomen oder Frühstücks-Timing</string>
+    <string name="insight_pattern_guide_afternoon_high">Nachmittagshochs — Kohlenhydratschätzung oder Mittagsbolus prüfen</string>
+    <string name="insight_pattern_guide_evening_high">Abend-/Nachtanstieg — Abendbolus oder Spätsnacks prüfen</string>
 
     <!-- Foreground Notification -->
     <string name="notif_channel_name">Glukosemesswerte</string>

@@ -374,6 +374,12 @@
     <string name="stats_recurring_patterns">Recurring patterns</string>
     <string name="stats_recurring_patterns_subtitle">Detected across the last 7 days</string>
     <string name="stats_pattern_days_count" tools:ignore="PluralsCandidate">%1$d of %2$d days</string>
+    <string name="stats_pattern_range" tools:ignore="PluralsCandidate">Avg %1$s · Range %2$s – %3$s</string>
+    <string name="insight_pattern_guide_night_low">Nighttime lows — consider reviewing evening basal or dinner bolus</string>
+    <string name="insight_pattern_guide_day_low">Recurring lows — risk of excess insulin or uncompensated activity</string>
+    <string name="insight_pattern_guide_morning_high">Morning rise — possible dawn phenomenon or breakfast timing</string>
+    <string name="insight_pattern_guide_afternoon_high">Afternoon highs — review lunch carb counting or meal bolus timing</string>
+    <string name="insight_pattern_guide_evening_high">Evening/night elevation — check dinner bolus or late evening snacks</string>
 
     <!-- Alert pause -->
     <string name="pause_alerts">Pause alerts</string>

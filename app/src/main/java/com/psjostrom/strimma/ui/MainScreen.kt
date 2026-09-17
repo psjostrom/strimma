@@ -258,7 +258,10 @@ fun MainScreen(
                 InsightCard(
                     patterns = patterns,
                     glucoseUnit = glucoseUnit,
-                    onClick = { onNavigateToStats?.invoke() },
+                    onClick = {
+                        onDismissPatternCard()
+                        onNavigateToStats?.invoke()
+                    },
                     onDismiss = onDismissPatternCard
                 )
                 Spacer(modifier = Modifier.height(8.dp))
