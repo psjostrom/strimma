@@ -5,6 +5,8 @@ import com.psjostrom.strimma.data.MS_PER_HOUR
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.health.ExerciseDao
+import com.psjostrom.strimma.data.workout.Clock
+import com.psjostrom.strimma.data.workout.SystemClock
 import com.psjostrom.strimma.receiver.DebugLog
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -13,9 +15,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.time.Instant
 import java.time.ZoneId
 import javax.inject.Inject
@@ -25,7 +30,8 @@ import javax.inject.Singleton
 class PatternChecker @Inject constructor(
     private val readingDao: ReadingDao,
     private val exerciseDao: ExerciseDao,
-    private val settings: SettingsRepository
+    private val settings: SettingsRepository,
+    private val clock: Clock = SystemClock()
 ) {
     companion object {
         const val LOOKBACK_DAYS = 7
@@ -36,14 +42,28 @@ class PatternChecker @Inject constructor(
     private val _activePatterns = MutableStateFlow<List<GlucosePattern>>(emptyList())
     val activePatterns: StateFlow<List<GlucosePattern>> = _activePatterns.asStateFlow()
 
+    private val mutex = Mutex()
     private var loopJob: Job? = null
+    private var settingsJob: Job? = null
 
-    fun start(scope: CoroutineScope): Job {
+    fun start(scope: CoroutineScope, zone: ZoneId = ZoneId.systemDefault()): Job {
         loopJob?.cancel()
+        settingsJob?.cancel()
+
+        settingsJob = scope.launch {
+            settings.patternAlertsEnabled.drop(1).collect { enabled ->
+                if (enabled) {
+                    checkNow(zone = zone)
+                } else {
+                    reset()
+                }
+            }
+        }
+
         val job = scope.launch {
             while (isActive) {
                 try {
-                    checkNow()
+                    checkNow(zone = zone)
                 } catch (e: CancellationException) {
                     throw e
                 } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
@@ -59,9 +79,11 @@ class PatternChecker @Inject constructor(
     fun stop() {
         loopJob?.cancel()
         loopJob = null
+        settingsJob?.cancel()
+        settingsJob = null
     }
 
-    suspend fun reset() {
+    suspend fun reset() = mutex.withLock {
         _activePatterns.value = emptyList()
     }
 
@@ -69,17 +91,17 @@ class PatternChecker @Inject constructor(
      * Executes pattern detection for the last 7 days and updates [activePatterns].
      */
     suspend fun checkNow(
-        now: Instant = Instant.now(),
+        now: Instant = Instant.ofEpochMilli(clock.nowMs()),
         zone: ZoneId = ZoneId.systemDefault()
-    ): PatternResult? {
+    ): PatternResult? = mutex.withLock {
         if (!settings.patternAlertsEnabled.first()) {
-            reset()
+            _activePatterns.value = emptyList()
             return null
         }
 
         val readings = loadReadings(now, zone)
         if (readings == null) {
-            reset()
+            _activePatterns.value = emptyList()
             return null
         }
 
@@ -99,8 +121,13 @@ class PatternChecker @Inject constructor(
             workoutPeriods = workoutPeriods
         )
 
+        if (!settings.patternAlertsEnabled.first()) {
+            _activePatterns.value = emptyList()
+            return null
+        }
+
         _activePatterns.value = result.patterns
-        return result
+        result
     }
 
     private suspend fun loadReadings(now: Instant, zone: ZoneId): List<com.psjostrom.strimma.data.GlucoseReading>? {
