@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
@@ -78,7 +79,8 @@ class StoryViewModel @Inject constructor(
     }
     val currentMonth: StateFlow<YearMonth> = _currentMonth
 
-    private val earliestMonth: StateFlow<YearMonth?> = readingDao.earliestTsFlow()
+    private val earliestMonth: StateFlow<YearMonth?> = runCatching { readingDao.earliestTsFlow() }
+        .getOrElse { emptyFlow() }
         .map { ts -> ts?.let { YearMonth.from(Instant.ofEpochMilli(it).atZone(zone)) } }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
