@@ -339,10 +339,10 @@ class StoryViewModelTest {
         val closedDb = Room.inMemoryDatabaseBuilder(context, StrimmaDatabase::class.java)
             .allowMainThreadQueries()
             .build()
-        closedDb.close()
 
         val handle = SavedStateHandle(mapOf("year" to 2026, "month" to 3))
         val vm = track(StoryViewModel(handle, closedDb.readingDao(), closedDb.treatmentDao(), settings, MealAnalyzer()))
+        closedDb.close()
         awaitLoaded(vm)
 
         assertNotNull(vm.error.value)
