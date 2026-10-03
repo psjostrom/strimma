@@ -97,6 +97,7 @@ class AlertManager @Inject constructor(
         const val ALERT_LEVEL_SOON = 0     // predictive ("low in X min")
         const val ALERT_LEVEL_REGULAR = 1  // threshold crossed
         const val ALERT_LEVEL_URGENT = 2   // critical threshold crossed
+        private const val ALERT_LEVEL_NONE = -1
 
         private const val MIN_CROSSING_MINUTES = 4
 
@@ -210,6 +211,13 @@ class AlertManager @Inject constructor(
     private var lastLowFireMs = 0L
     private var lastUrgentHighFireMs = 0L
     private var lastHighFireMs = 0L
+    private var lastLowSoonFireMs = 0L
+    private var lastHighSoonFireMs = 0L
+
+    // Highest-severity level shown on the previous reading, per category. Compared with
+    // the current level to tell escalation (always audible) from de-escalation (silent).
+    private var lastLowLevel = ALERT_LEVEL_NONE
+    private var lastHighLevel = ALERT_LEVEL_NONE
 
     private val alarmAudioAttrs = AudioAttributes.Builder()
         .setUsage(AudioAttributes.USAGE_ALARM)
@@ -363,26 +371,36 @@ class AlertManager @Inject constructor(
         val cooldownMs = settings.alertCooldownMinutes.first().toLong() * MS_PER_MINUTE
         val now = clock.nowMs()
 
+        val prevLevel = lastLowLevel
+
         if (urgentLowEnabled && mgdl <= urgentLowThreshold) {
-            if (!isCategoryPausedAtLevel(snoozePrefs, AlertCategory.LOW, ALERT_LEVEL_URGENT)
-                && !isInCooldown(lastUrgentLowFireMs, cooldownMs, now)
-            ) {
+            if (!isCategoryPausedAtLevel(snoozePrefs, AlertCategory.LOW, ALERT_LEVEL_URGENT)) {
                 val title = workoutPrefixedTitle(R.string.alert_urgent_low_title, workoutOn)
-                fireAlert(ALERT_URGENT_LOW_ID, CHANNEL_URGENT_LOW, title, unit.formatWithUnit(mgdl))
-                lastUrgentLowFireMs = now
+                if (deliver(
+                        ALERT_URGENT_LOW_ID, CHANNEL_URGENT_LOW, title, unit.formatWithUnit(mgdl),
+                        ALERT_LEVEL_URGENT, prevLevel, isInCooldown(lastUrgentLowFireMs, cooldownMs, now),
+                    )
+                ) {
+                    lastUrgentLowFireMs = now
+                }
             }
+            lastLowLevel = ALERT_LEVEL_URGENT
             notificationManager.cancel(ALERT_LOW_ID)
             return true
         }
 
         if (lowEnabled && mgdl < lowThreshold) {
-            if (!isCategoryPausedAtLevel(snoozePrefs, AlertCategory.LOW, ALERT_LEVEL_REGULAR)
-                && !isInCooldown(lastLowFireMs, cooldownMs, now)
-            ) {
+            if (!isCategoryPausedAtLevel(snoozePrefs, AlertCategory.LOW, ALERT_LEVEL_REGULAR)) {
                 val title = workoutPrefixedTitle(R.string.alert_low_title, workoutOn)
-                fireAlert(ALERT_LOW_ID, CHANNEL_LOW, title, unit.formatWithUnit(mgdl))
-                lastLowFireMs = now
+                if (deliver(
+                        ALERT_LOW_ID, CHANNEL_LOW, title, unit.formatWithUnit(mgdl),
+                        ALERT_LEVEL_REGULAR, prevLevel, isInCooldown(lastLowFireMs, cooldownMs, now),
+                    )
+                ) {
+                    lastLowFireMs = now
+                }
             }
+            lastLowLevel = ALERT_LEVEL_REGULAR
             notificationManager.cancel(ALERT_URGENT_LOW_ID)
             return true
         }
@@ -407,26 +425,36 @@ class AlertManager @Inject constructor(
         val cooldownMs = settings.alertCooldownMinutes.first().toLong() * MS_PER_MINUTE
         val now = clock.nowMs()
 
+        val prevLevel = lastHighLevel
+
         if (urgentHighEnabled && mgdl >= urgentHighThreshold) {
-            if (!isCategoryPausedAtLevel(snoozePrefs, AlertCategory.HIGH, ALERT_LEVEL_URGENT)
-                && !isInCooldown(lastUrgentHighFireMs, cooldownMs, now)
-            ) {
+            if (!isCategoryPausedAtLevel(snoozePrefs, AlertCategory.HIGH, ALERT_LEVEL_URGENT)) {
                 val title = workoutPrefixedTitle(R.string.alert_urgent_high_title, workoutOn)
-                fireAlert(ALERT_URGENT_HIGH_ID, CHANNEL_URGENT_HIGH, title, unit.formatWithUnit(mgdl))
-                lastUrgentHighFireMs = now
+                if (deliver(
+                        ALERT_URGENT_HIGH_ID, CHANNEL_URGENT_HIGH, title, unit.formatWithUnit(mgdl),
+                        ALERT_LEVEL_URGENT, prevLevel, isInCooldown(lastUrgentHighFireMs, cooldownMs, now),
+                    )
+                ) {
+                    lastUrgentHighFireMs = now
+                }
             }
+            lastHighLevel = ALERT_LEVEL_URGENT
             notificationManager.cancel(ALERT_HIGH_ID)
             return true
         }
 
         if (highEnabled && mgdl > highThreshold) {
-            if (!isCategoryPausedAtLevel(snoozePrefs, AlertCategory.HIGH, ALERT_LEVEL_REGULAR)
-                && !isInCooldown(lastHighFireMs, cooldownMs, now)
-            ) {
+            if (!isCategoryPausedAtLevel(snoozePrefs, AlertCategory.HIGH, ALERT_LEVEL_REGULAR)) {
                 val title = workoutPrefixedTitle(R.string.alert_high_title, workoutOn)
-                fireAlert(ALERT_HIGH_ID, CHANNEL_HIGH, title, unit.formatWithUnit(mgdl))
-                lastHighFireMs = now
+                if (deliver(
+                        ALERT_HIGH_ID, CHANNEL_HIGH, title, unit.formatWithUnit(mgdl),
+                        ALERT_LEVEL_REGULAR, prevLevel, isInCooldown(lastHighFireMs, cooldownMs, now),
+                    )
+                ) {
+                    lastHighFireMs = now
+                }
             }
+            lastHighLevel = ALERT_LEVEL_REGULAR
             notificationManager.cancel(ALERT_URGENT_HIGH_ID)
             return true
         }
@@ -466,6 +494,8 @@ class AlertManager @Inject constructor(
         if (predictionMinutes == 0 || (!lowSoonEnabled && !highSoonEnabled)) {
             notificationManager.cancel(ALERT_LOW_SOON_ID)
             notificationManager.cancel(ALERT_HIGH_SOON_ID)
+            if (!alreadyLow) lastLowLevel = ALERT_LEVEL_NONE
+            if (!alreadyHigh) lastHighLevel = ALERT_LEVEL_NONE
             return
         }
 
@@ -477,28 +507,81 @@ class AlertManager @Inject constructor(
         )
         val crossing = prediction?.crossing
 
+        val cooldownMs = settings.alertCooldownMinutes.first().toLong() * MS_PER_MINUTE
+        val now = clock.nowMs()
+
         // Low soon
-        val shouldFireLowSoon = lowSoonEnabled && !alreadyLow
-            && !isCategoryPausedAtLevel(snoozePrefs, AlertCategory.LOW, ALERT_LEVEL_SOON)
+        val lowSoonPredicted = lowSoonEnabled && !alreadyLow
             && crossing?.type == CrossingType.LOW && crossing.minutesUntil >= MIN_CROSSING_MINUTES
-        if (shouldFireLowSoon) {
-            fireAlert(ALERT_LOW_SOON_ID, CHANNEL_LOW_SOON,
-                context.getString(R.string.alert_low_in, crossing!!.minutesUntil),
-                context.getString(R.string.alert_predicted, unit.formatWithUnit(crossing.mgdlAtCrossing)))
+        if (lowSoonPredicted && !isCategoryPausedAtLevel(snoozePrefs, AlertCategory.LOW, ALERT_LEVEL_SOON)) {
+            if (deliver(ALERT_LOW_SOON_ID, CHANNEL_LOW_SOON,
+                    context.getString(R.string.alert_low_in, crossing!!.minutesUntil),
+                    context.getString(R.string.alert_predicted, unit.formatWithUnit(crossing.mgdlAtCrossing)),
+                    ALERT_LEVEL_SOON, lastLowLevel, isInCooldown(lastLowSoonFireMs, cooldownMs, now))
+            ) {
+                lastLowSoonFireMs = now
+            }
         } else {
             notificationManager.cancel(ALERT_LOW_SOON_ID)
         }
+        if (alreadyLow) {
+            // Threshold alarm takes over; the next episode may warn again immediately.
+            lastLowSoonFireMs = 0L
+        } else {
+            lastLowLevel = if (lowSoonPredicted) ALERT_LEVEL_SOON else ALERT_LEVEL_NONE
+        }
 
         // High soon
-        val shouldFireHighSoon = highSoonEnabled && !alreadyHigh
-            && !isCategoryPausedAtLevel(snoozePrefs, AlertCategory.HIGH, ALERT_LEVEL_SOON)
+        val highSoonPredicted = highSoonEnabled && !alreadyHigh
             && crossing?.type == CrossingType.HIGH && crossing.minutesUntil >= MIN_CROSSING_MINUTES
-        if (shouldFireHighSoon) {
-            fireAlert(ALERT_HIGH_SOON_ID, CHANNEL_HIGH_SOON,
-                context.getString(R.string.alert_high_in, crossing!!.minutesUntil),
-                context.getString(R.string.alert_predicted, unit.formatWithUnit(crossing.mgdlAtCrossing)))
+        if (highSoonPredicted && !isCategoryPausedAtLevel(snoozePrefs, AlertCategory.HIGH, ALERT_LEVEL_SOON)) {
+            if (deliver(ALERT_HIGH_SOON_ID, CHANNEL_HIGH_SOON,
+                    context.getString(R.string.alert_high_in, crossing!!.minutesUntil),
+                    context.getString(R.string.alert_predicted, unit.formatWithUnit(crossing.mgdlAtCrossing)),
+                    ALERT_LEVEL_SOON, lastHighLevel, isInCooldown(lastHighSoonFireMs, cooldownMs, now))
+            ) {
+                lastHighSoonFireMs = now
+            }
         } else {
             notificationManager.cancel(ALERT_HIGH_SOON_ID)
+        }
+        if (alreadyHigh) {
+            lastHighSoonFireMs = 0L
+        } else {
+            lastHighLevel = if (highSoonPredicted) ALERT_LEVEL_SOON else ALERT_LEVEL_NONE
+        }
+    }
+
+    /**
+     * Delivers one alert level. Returns true when the cooldown timer should restart.
+     * - Worse than the previous level (soon → low → urgent): always sound; cooldown
+     *   does not apply. Snooze/pause is checked by the caller and still wins.
+     * - Better than the previous level: posted silently, never sounds.
+     * - Same level: sound when out of cooldown; inside cooldown only the text of a
+     *   still-showing notification refreshes silently (`setOnlyAlertOnce` does not
+     *   suppress alerting for a dismissed one).
+     */
+    @Suppress("LongParameterList") // One alert's identity + level state; splitting hides the rules
+    private suspend fun deliver(
+        alertId: Int,
+        channelId: String,
+        title: String,
+        text: String,
+        level: Int,
+        prevLevel: Int,
+        inCooldown: Boolean,
+    ): Boolean {
+        val levelChanged = prevLevel != ALERT_LEVEL_NONE && level != prevLevel
+        return when {
+            levelChanged && level > prevLevel -> { fireAlert(alertId, channelId, title, text); true }
+            levelChanged -> { fireAlert(alertId, channelId, title, text, silent = true); true }
+            !inCooldown -> { fireAlert(alertId, channelId, title, text); true }
+            else -> {
+                if (notificationManager.activeNotifications.any { it.id == alertId }) {
+                    fireAlert(alertId, channelId, title, text, alertOnce = true)
+                }
+                false
+            }
         }
     }
 
@@ -668,7 +751,8 @@ class AlertManager @Inject constructor(
         channelId: String,
         title: String,
         text: String,
-        alertOnce: Boolean = false
+        alertOnce: Boolean = false,
+        silent: Boolean = false
     ) {
         DebugLog.log("ALERT: $title — $text")
 
@@ -708,6 +792,7 @@ class AlertManager @Inject constructor(
             .setContentIntent(contentIntent)
             .setAutoCancel(false)
             .setOnlyAlertOnce(alertOnce)
+            .setSilent(silent)
             .addAction(0, context.getString(R.string.alert_snooze, durationLabel), snoozeIntent)
             .build()
 

@@ -329,6 +329,133 @@ class AlertManagerTest {
         assertFalse(isNotificationActive(AlertManager.ALERT_HIGH_SOON_ID))
     }
 
+    private fun fallingReadings(now: Long, last: Int) = listOf(
+        reading(last + 12, now - 10 * 60_000L),
+        reading(last + 9, now - 8 * 60_000L),
+        reading(last + 6, now - 6 * 60_000L),
+        reading(last + 4, now - 4 * 60_000L),
+        reading(last + 2, now - 2 * 60_000L),
+        reading(last, now),
+    )
+
+    private fun lowSoonNotification() =
+        notificationManager.activeNotifications.first { it.id == AlertManager.ALERT_LOW_SOON_ID }.notification
+
+    @Test
+    fun `low soon repeat within cooldown refreshes text silently`() = runTest {
+        settings.setAlertCooldownMinutes(15)
+        val now = System.currentTimeMillis()
+
+        val first = fallingReadings(now, 78)
+        alertManager.checkReading(first.last(), first, 15)
+        val firstTitle = lowSoonNotification().extras.getCharSequence(android.app.Notification.EXTRA_TITLE)
+        assertEquals(0, lowSoonNotification().flags and android.app.Notification.FLAG_ONLY_ALERT_ONCE)
+
+        val second = fallingReadings(now, 76)
+        alertManager.checkReading(second.last(), second, 15)
+        val refreshed = lowSoonNotification()
+        assertTrue(refreshed.flags and android.app.Notification.FLAG_ONLY_ALERT_ONCE != 0)
+        assertTrue(firstTitle != refreshed.extras.getCharSequence(android.app.Notification.EXTRA_TITLE))
+    }
+
+    @Test
+    fun `low soon within cooldown does not reappear after dismissal`() = runTest {
+        settings.setAlertCooldownMinutes(15)
+        val now = System.currentTimeMillis()
+        val readings = fallingReadings(now, 78)
+
+        alertManager.checkReading(readings.last(), readings, 15)
+        notificationManager.cancel(AlertManager.ALERT_LOW_SOON_ID)
+        alertManager.checkReading(readings.last(), readings, 15)
+
+        assertFalse(isNotificationActive(AlertManager.ALERT_LOW_SOON_ID))
+    }
+
+    @Test
+    fun `urgent low within cooldown shows current value`() = runTest {
+        settings.setAlertCooldownMinutes(15)
+        val text = { notificationManager.activeNotifications.first { it.id == AlertManager.ALERT_URGENT_LOW_ID }
+            .notification.extras.getCharSequence(android.app.Notification.EXTRA_TEXT) }
+
+        alertManager.checkReading(reading(45), emptyList(), 0)
+        val first = text()
+        alertManager.checkReading(reading(52), emptyList(), 0)
+
+        assertTrue(first != text())
+    }
+
+    private fun notificationOf(id: Int) =
+        notificationManager.activeNotifications.first { it.id == id }.notification
+
+    private fun isSilent(n: android.app.Notification) = n.group == "silent"
+
+    @Test
+    fun `escalating back to urgent low sounds even inside its cooldown`() = runTest {
+        settings.setAlertCooldownMinutes(15)
+
+        alertManager.checkReading(reading(45), emptyList(), 0)
+        alertManager.checkReading(reading(60), emptyList(), 0)
+        alertManager.checkReading(reading(45), emptyList(), 0)
+
+        val urgent = notificationOf(AlertManager.ALERT_URGENT_LOW_ID)
+        assertFalse(isSilent(urgent))
+        assertEquals(0, urgent.flags and android.app.Notification.FLAG_ONLY_ALERT_ONCE)
+    }
+
+    @Test
+    fun `improving from urgent low to low is silent`() = runTest {
+        alertManager.checkReading(reading(45), emptyList(), 0)
+        alertManager.checkReading(reading(60), emptyList(), 0)
+
+        assertFalse(isNotificationActive(AlertManager.ALERT_URGENT_LOW_ID))
+        assertTrue(isSilent(notificationOf(AlertManager.ALERT_LOW_ID)))
+    }
+
+    @Test
+    fun `improving from high to in range then predicted high is silent`() = runTest {
+        val now = System.currentTimeMillis()
+        alertManager.checkReading(reading(190), emptyList(), 15)
+        val rising = listOf(
+            reading(160, now - 10 * 60_000L),
+            reading(163, now - 8 * 60_000L),
+            reading(166, now - 6 * 60_000L),
+            reading(168, now - 4 * 60_000L),
+            reading(171, now - 2 * 60_000L),
+            reading(174, now),
+        )
+        alertManager.checkReading(rising.last(), rising, 15)
+
+        assertTrue(isSilent(notificationOf(AlertManager.ALERT_HIGH_SOON_ID)))
+    }
+
+    @Test
+    fun `soon escalating to low sounds even inside low cooldown`() = runTest {
+        settings.setAlertCooldownMinutes(15)
+        val now = System.currentTimeMillis()
+
+        alertManager.checkReading(reading(60), emptyList(), 0)
+        alertManager.checkReading(reading(100), emptyList(), 0)
+        val falling = fallingReadings(now, 78)
+        alertManager.checkReading(falling.last(), falling, 15)
+        alertManager.checkReading(reading(60), emptyList(), 15)
+
+        val low = notificationOf(AlertManager.ALERT_LOW_ID)
+        assertFalse(isSilent(low))
+        assertEquals(0, low.flags and android.app.Notification.FLAG_ONLY_ALERT_ONCE)
+    }
+
+    @Test
+    fun `escalation does not bypass a blanket pause`() = runTest {
+        alertManager.pauseAllAlerts(60 * 60_000L)
+
+        alertManager.checkReading(reading(60), emptyList(), 0)
+        alertManager.checkReading(reading(45), emptyList(), 0)
+
+        assertFalse(isNotificationActive(AlertManager.ALERT_URGENT_LOW_ID))
+        assertFalse(isNotificationActive(AlertManager.ALERT_LOW_ID))
+    }
+
+
     @Test
     fun `predictive alerts respect pause`() = runTest {
         // Pause LOW category at SOON level
