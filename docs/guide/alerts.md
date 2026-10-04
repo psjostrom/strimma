@@ -172,15 +172,28 @@ By default (Cooldown set to **Off**), alerts fire on **every reading** while the
 
 ### Per-alarm cooldown
 
-Each alarm type (Urgent Low, Low, High, Urgent High) has its **own independent cooldown timer**. If you set a 15-minute cooldown:
+Each alarm type (Urgent Low, Low, High, Urgent High, Low Soon, High Soon) has its **own independent cooldown timer**. If you set a 15-minute cooldown:
 
 - Low fires at 10:00 → next Low suppressed until 10:15
 - Urgent Low at 10:05 → **fires immediately** (separate alarm, separate timer)
 - Low at 10:16 → fires (cooldown expired)
 
+### Silent updates during cooldown
+
+While an alarm is in cooldown and its notification is still showing, Strimma updates the notification text with the latest reading (or predicted time) **without sound or vibration**. If you dismissed the notification, it stays dismissed until the cooldown ends.
+
+### Severity changes
+
+Cooldown only applies while the severity stays the same:
+
+- **Getting worse** (Low Soon → Low → Urgent Low, High Soon → High → Urgent High) always alerts with sound, even during cooldown.
+- **Getting better** (for example Urgent Low → Low) never alerts with sound. The lower-severity notification appears silently.
+
+Snoozing an alert silences it and anything milder, but not worse levels. Pausing alerts from the home screen silences everything it covers, including worse levels.
+
 ### Cooldown reset
 
-When glucose returns to range, all cooldown timers **reset immediately**. The next episode alerts right away regardless of remaining cooldown.
+When glucose returns to range, all cooldown timers **reset immediately**. The next episode alerts right away regardless of remaining cooldown. Low Soon and High Soon reset when the matching Low or High alarm takes over.
 
 ---
 
