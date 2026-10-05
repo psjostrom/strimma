@@ -355,6 +355,7 @@ class AlertManagerTest {
         alertManager.checkReading(second.last(), second, 15)
         val refreshed = lowSoonNotification()
         assertTrue(refreshed.flags and android.app.Notification.FLAG_ONLY_ALERT_ONCE != 0)
+        assertTrue(isSilent(refreshed))
         assertTrue(firstTitle != refreshed.extras.getCharSequence(android.app.Notification.EXTRA_TITLE))
     }
 
@@ -379,9 +380,11 @@ class AlertManagerTest {
 
         alertManager.checkReading(reading(45), emptyList(), 0)
         val first = text()
-        alertManager.checkReading(reading(52), emptyList(), 0)
+        assertFalse(isSilent(notificationOf(AlertManager.ALERT_URGENT_LOW_ID)))
 
+        alertManager.checkReading(reading(52), emptyList(), 0)
         assertTrue(first != text())
+        assertTrue(isSilent(notificationOf(AlertManager.ALERT_URGENT_LOW_ID)))
     }
 
     private fun notificationOf(id: Int) =

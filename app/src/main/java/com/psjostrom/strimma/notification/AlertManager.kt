@@ -578,7 +578,7 @@ class AlertManager @Inject constructor(
             !inCooldown -> { fireAlert(alertId, channelId, title, text); true }
             else -> {
                 if (notificationManager.activeNotifications.any { it.id == alertId }) {
-                    fireAlert(alertId, channelId, title, text, alertOnce = true)
+                    fireAlert(alertId, channelId, title, text, alertOnce = true, silent = true)
                 }
                 false
             }
