@@ -557,9 +557,7 @@ class AlertManager @Inject constructor(
      * - Worse than the previous level (soon → low → urgent): always sound; cooldown
      *   does not apply. Snooze/pause is checked by the caller and still wins.
      * - Better than the previous level: posted silently, never sounds.
-     * - Same level: sound when out of cooldown; inside cooldown only the text of a
-     *   still-showing notification refreshes silently (`setOnlyAlertOnce` does not
-     *   suppress alerting for a dismissed one).
+     * - Same level: sound when out of cooldown; inside cooldown suppressed entirely.
      */
     @Suppress("LongParameterList") // One alert's identity + level state; splitting hides the rules
     private suspend fun deliver(
@@ -576,12 +574,7 @@ class AlertManager @Inject constructor(
             levelChanged && level > prevLevel -> { fireAlert(alertId, channelId, title, text); true }
             levelChanged -> { fireAlert(alertId, channelId, title, text, silent = true); true }
             !inCooldown -> { fireAlert(alertId, channelId, title, text); true }
-            else -> {
-                if (notificationManager.activeNotifications.any { it.id == alertId }) {
-                    fireAlert(alertId, channelId, title, text, alertOnce = true)
-                }
-                false
-            }
+            else -> false
         }
     }
 
