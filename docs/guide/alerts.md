@@ -178,10 +178,6 @@ Each alarm type (Urgent Low, Low, High, Urgent High, Low Soon, High Soon) has it
 - Urgent Low at 10:05 → **fires immediately** (separate alarm, separate timer)
 - Low at 10:16 → fires (cooldown expired)
 
-### Silent updates during cooldown
-
-While an alarm is in cooldown and its notification is still showing, Strimma updates the notification text with the latest reading (or predicted time) **without sound or vibration**. If you dismissed the notification, it stays dismissed until the cooldown ends.
-
 ### Severity changes
 
 Cooldown only applies while the severity stays the same:

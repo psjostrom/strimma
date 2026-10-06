@@ -292,17 +292,11 @@ class AlertManagerWorkoutTest {
         rig.clock.nowMs = baseNowMs + 14 * 60_000L
         rig.alertManager.checkReading(reading(115), emptyList(), predictionMinutes = 0)
         val duringCooldown = notificationManager.getNotification(AlertManager.ALERT_LOW_ID)
-        assertNotEquals(firstText, duringCooldown.extras.getCharSequence(Notification.EXTRA_TEXT))
-        assertNotEquals(0, duringCooldown.flags and Notification.FLAG_ONLY_ALERT_ONCE)
-        assertEquals("silent", duringCooldown.group)
+        assertEquals(firstText, duringCooldown.extras.getCharSequence(Notification.EXTRA_TEXT))
 
         rig.clock.nowMs = baseNowMs + 16 * 60_000L
         rig.alertManager.checkReading(reading(115), emptyList(), predictionMinutes = 0)
         val afterCooldown = notificationManager.getNotification(AlertManager.ALERT_LOW_ID)
-        assertEquals(
-            0,
-            afterCooldown.flags and Notification.FLAG_ONLY_ALERT_ONCE,
-        )
-        assertNotEquals("silent", afterCooldown.group)
+        assertNotEquals(firstText, afterCooldown.extras.getCharSequence(Notification.EXTRA_TEXT))
     }
 }

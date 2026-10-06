@@ -342,7 +342,7 @@ class AlertManagerTest {
         notificationManager.activeNotifications.first { it.id == AlertManager.ALERT_LOW_SOON_ID }.notification
 
     @Test
-    fun `low soon repeat within cooldown refreshes text silently`() = runTest {
+    fun `low soon repeat within cooldown does not re-alert`() = runTest {
         settings.setAlertCooldownMinutes(15)
         val now = System.currentTimeMillis()
 
@@ -353,10 +353,8 @@ class AlertManagerTest {
 
         val second = fallingReadings(now, 76)
         alertManager.checkReading(second.last(), second, 15)
-        val refreshed = lowSoonNotification()
-        assertTrue(refreshed.flags and android.app.Notification.FLAG_ONLY_ALERT_ONCE != 0)
-        assertTrue(isSilent(refreshed))
-        assertTrue(firstTitle != refreshed.extras.getCharSequence(android.app.Notification.EXTRA_TITLE))
+        val afterSecond = lowSoonNotification()
+        assertEquals(firstTitle, afterSecond.extras.getCharSequence(android.app.Notification.EXTRA_TITLE))
     }
 
     @Test
@@ -373,18 +371,16 @@ class AlertManagerTest {
     }
 
     @Test
-    fun `urgent low within cooldown shows current value`() = runTest {
+    fun `urgent low within cooldown does not re-alert`() = runTest {
         settings.setAlertCooldownMinutes(15)
         val text = { notificationManager.activeNotifications.first { it.id == AlertManager.ALERT_URGENT_LOW_ID }
             .notification.extras.getCharSequence(android.app.Notification.EXTRA_TEXT) }
 
         alertManager.checkReading(reading(45), emptyList(), 0)
         val first = text()
-        assertFalse(isSilent(notificationOf(AlertManager.ALERT_URGENT_LOW_ID)))
 
         alertManager.checkReading(reading(52), emptyList(), 0)
-        assertTrue(first != text())
-        assertTrue(isSilent(notificationOf(AlertManager.ALERT_URGENT_LOW_ID)))
+        assertEquals(first, text())
     }
 
     private fun notificationOf(id: Int) =
