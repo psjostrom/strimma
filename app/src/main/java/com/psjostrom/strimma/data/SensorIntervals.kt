@@ -116,7 +116,7 @@ object SensorIntervals {
         // doesn't have to re-verify.
         "com.suswel.ai" to ONE_MIN_MS,
 
-        // Glucotech (com.glucotech.app.android) is intentionally absent — no public
+        // Glucotech (com.glucotech.app.android, com.glucotech.aidex.android) is intentionally absent — no public
         // spec, the Play Store listing 404s, and xDrip+ catalogues the package without
         // documenting cadence. Falls through to the 1-min default until verified.
     )

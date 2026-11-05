@@ -95,4 +95,4 @@ If your CGM app isn't supported in Companion mode, you may be able to use [xDrip
 
     **Sinocare:** `com.sinocare.cgm.ce`, `com.sinocare.ican.health.ce`, `.ican.health.ru`
 
-    **Other:** `com.suswel.ai`, `com.glucotech.app.android`, `com.ottai.seas`, `com.ottai.tag`
+    **Other:** `com.suswel.ai`, `com.glucotech.app.android`, `com.glucotech.aidex.android`, `com.ottai.seas`, `com.ottai.tag`
