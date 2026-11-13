@@ -93,6 +93,7 @@ class GlucoseNotificationListener : NotificationListenerService() {
             "com.sinocare.ican.health.ru",
             "com.suswel.ai",
             "com.glucotech.app.android",
+            "com.glucotech.aidex.android",
         )
 
         // Packages that post BG values in non-ongoing notifications.
