@@ -143,7 +143,7 @@ Strimma includes one field beyond the standard Nightscout entry schema:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `delta` | Double? | Smoothed SGV change in mg/dL over a ~5 minute window. Computed from 3-point averaged SGV values using EASD/ISPAD thresholds. Null when insufficient history is available (e.g., first reading after a sensor start). |
+| `delta` | Double? | SGV change in mg/dL from the reading closest to 5 minutes earlier, scaled to 5 minutes. Null when insufficient history is available (e.g., first reading after a sensor start). |
 
 Standard Nightscout servers ignore unknown fields, so this does not break compatibility. The `delta` field is included because direction and delta express the same underlying trend — direction as a categorical label, delta as the numeric value. Both are derived from the same computation, so shipping both avoids forcing consumers to reconstruct delta from raw SGV values.
 
