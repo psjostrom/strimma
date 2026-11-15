@@ -39,7 +39,7 @@ api-secret: <sha1-hash>
 - `date` is Unix timestamp in milliseconds
 - `dateString` is ISO 8601 UTC
 - `direction` uses Nightscout standard names: DoubleDown, SingleDown, FortyFiveDown, Flat, FortyFiveUp, SingleUp, DoubleUp, NONE
-- `delta` is the smoothed SGV change in mg/dL over a ~5 minute window (see [Extension Fields](#extension-fields))
+- `delta` is the SGV change in mg/dL from the reading closest to 5 minutes earlier, scaled to 5 minutes (see [Extension Fields](#extension-fields))
 - `device` is always "Strimma"
 
 ### Fetch Readings
