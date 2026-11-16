@@ -27,9 +27,9 @@ Integration over isolation. Tests wire real collaborators — mock only at the s
 
 ## Emulator end-to-end
 
-Every behaviour change is checked on an emulator before the PR opens. That includes alerts, which need a low. Never leave a check for Per's phone when the emulator can run it.
+Every behaviour change is checked on an emulator before the PR opens. That includes alerts, which need a low. Never leave a check for a real phone when the emulator can run it.
 
-- Use a `google_apis` emulator image, because the script below needs `adb root` to move the clock. Never use Per's phone, which is also attached over adb.
+- Use a `google_apis` emulator image, because the script below needs `adb root` to move the clock. The script refuses to run on a real phone.
 - Install the debug build. In the setup wizard, choose Data Source = **xDrip Broadcast**. Set any thresholds and cooldowns the check needs in Settings → Alerts.
 - `scripts/emulator-bg.sh <label> <mg/dL>...` sends one reading per value, with the emulator clock moved 60 seconds forward each time. It prints each alert that was posted and whether it made a sound (`notification_alert` buzz/beep). An alert that fires on the first value of a 15-minute cooldown can fire again on the 16th value.
 - The clock stays ahead after a run, and Strimma rejects a reading older than the newest stored one. Keep automatic time off for the whole session. If the clock falls back, run `adb shell pm clear com.psjostrom.strimma.debug` and set Strimma up again.
