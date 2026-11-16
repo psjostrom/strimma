@@ -60,7 +60,7 @@ For every user-visible change in the release, grep `docs/` for references to the
 
 ### 4. Run what the merged PRs left untested
 
-Every PR is tested end to end before it merges, so this step usually runs nothing. Read the Test plan of every PR merged since `${LAST_TAG}`. A PR needs a run here when its Test plan has an unchecked item. A PR also needs a run when it changes behaviour and has no checked end-to-end item. Run those checks on an emulator against `main`, as the "Emulator end-to-end" section of `CLAUDE.md` describes.
+Every PR is tested end to end before it merges, so this step usually runs nothing. Read the Test plan of every PR merged since `${LAST_TAG}`. A PR needs a run here when its Test plan has an unchecked item. A PR also needs a run when it changes behaviour and has no checked end-to-end item. Run those checks on an emulator against `main`, with the `emulator-e2e` skill.
 
 The release PR's Test plan lists only the checks this step ran, each as `[x]` with what was driven and what it showed. A check that an emulator cannot run stays `[ ]` and names what blocks it, such as a real third-party CGM app. When nothing needed a run, the Test plan lists no checks from this step.
 
@@ -79,8 +79,10 @@ git add app/build.gradle.kts
 
 Commit and push. Create a PR with two distinct sections:
 
-1. Inside a ` ```markdown ` fenced block: release notes only, for end users.
-2. Outside the fence: testing plan and release checklist.
+1. Inside a ` ```markdown ` fenced block: release notes only, for end users. CI extracts this block as the GitHub Release body. Without the block, CI falls back to notes generated from PR titles.
+2. Outside the fence: testing plan and release checklist. Checkboxes inside the fence render as code and cannot be ticked.
+
+For a prerelease (`-rc.*` or `-beta.*`), CI prepends `**Test plan & verification:** [#PR](url)` to the release notes. Do not add that line yourself.
 
 Example:
 
