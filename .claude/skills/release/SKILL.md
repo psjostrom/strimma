@@ -58,13 +58,19 @@ git diff --name-only ${LAST_TAG}..main -- docs/
 
 For every user-visible change in the release, grep `docs/` for references to the changed feature or behavior. Update affected docs, and flag screenshots that may be stale.
 
-### 4. Update versionName
+### 4. Run what the merged PRs left untested
+
+Every PR is tested end to end before it merges, so this step usually runs nothing. Read the Test plan of every PR merged since `${LAST_TAG}`. A PR needs a run here when its Test plan has an unchecked item. A PR also needs a run when it changes behaviour and has no checked end-to-end item. Run those checks on an emulator against `main`, with the `emulator-e2e` skill.
+
+The release PR's Test plan lists only the checks this step ran, each as `[x]` with what was driven and what it showed. A check that an emulator cannot run stays `[ ]` and names what blocks it, such as a real third-party CGM app. When nothing needed a run, the Test plan lists no checks from this step.
+
+### 5. Update versionName
 
 Edit `app/build.gradle.kts` line ~41:
 - Change `versionName = "X.Y.Z"` to the new version (no `v` prefix)
 - Do NOT touch `versionCode` (line ~40)
 
-### 5. Create release branch and PR
+### 6. Create release branch and PR
 
 ```bash
 git checkout -b release/X.Y.Z
@@ -73,8 +79,10 @@ git add app/build.gradle.kts
 
 Commit and push. Create a PR with two distinct sections:
 
-1. Inside a ` ```markdown ` fenced block: release notes only, for end users.
-2. Outside the fence: testing plan and release checklist.
+1. Inside a ` ```markdown ` fenced block: release notes only, for end users. CI extracts this block as the GitHub Release body. Without the block, CI falls back to notes generated from PR titles.
+2. Outside the fence: testing plan and release checklist. Checkboxes inside the fence render as code and cannot be ticked.
+
+For a prerelease (`-rc.*` or `-beta.*`), CI prepends `**Test plan & verification:** [#PR](url)` to the release notes. Do not add that line yourself.
 
 Example:
 
@@ -93,7 +101,7 @@ Example:
 - [ ] Tag from main: `git tag -a vX.Y.Z -m "vX.Y.Z" && git push origin vX.Y.Z`
 ````
 
-### 6. After merge
+### 7. After merge
 
 Remind the user to tag from main:
 ```bash

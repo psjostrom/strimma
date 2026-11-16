@@ -25,6 +25,10 @@ Integration over isolation. Tests wire real collaborators — mock only at the s
 - **Robolectric for Android services.** NotificationManager, SharedPreferences, Context — use Robolectric's real implementations, not mocks.
 - **Each test is self-contained.** Arrange-act-assert in one function. No shared mutable state via `@Before`. Setup helpers that return what you need are fine.
 
+## Emulator end-to-end
+
+Every behaviour change is checked on an emulator before the PR opens, alerts included. The `emulator-e2e` skill has the recipe.
+
 ## Architecture
 
 ```
@@ -58,12 +62,8 @@ Single-module app. Hilt DI. All async via Coroutines/Flow.
 
 ## Nightscout Compliance
 
-Strimma is a Nightscout-compatible client. All HTTP endpoints, URL formats, query parameters, and data shapes MUST follow the Nightscout API spec. This is non-negotiable — Strimma must work with any real Nightscout server, not just Springa.
+Strimma is a Nightscout-compatible client. All HTTP endpoints, URL formats, query parameters, and data shapes MUST follow the Nightscout API spec, so Strimma works with any real Nightscout server, not just Springa. The `nightscout-compliance` agent holds the endpoint, auth and data-shape rules. Run it on any change to Nightscout URLs or payloads.
 
-- **GET endpoints use `.json` suffix:** `/api/v1/entries.json`, `/api/v1/treatments.json`. POST endpoints do not use `.json`. This is the Nightscout convention.
-- **Query params use Nightscout's MongoDB-style syntax:** `find[date][$gt]=`, `find[created_at][$gte]=`, `count=`.
-- **Auth via `api-secret` header** with SHA-1 hashed secret.
-- **Data shapes match Nightscout spec:** `sgv`, `date`, `dateString`, `direction`, `type` for entries; `_id`, `eventType`, `created_at`, `insulin`, `carbs`, `absolute`, `duration`, `enteredBy` for treatments.
 - **If Springa (or any server) can't handle standard Nightscout URLs, fix the server.** Never weaken Strimma's NS compliance to work around a server bug.
 
 ## Conventions
@@ -103,16 +103,7 @@ When a merge or push fails, ALWAYS check CI status (`gh pr checks`) and read the
 
 ## Releasing
 
-1. Run `git log <last-tag>..main --oneline` to see ALL changes since the last release. Never assume the latest commit is all that changed.
-2. Create branch `release/vX.Y.Z` from main.
-3. Bump `versionName` in `app/build.gradle.kts`. Never bump `versionCode` (not on Google Play).
-4. Check docs for staleness against the changes (see Documentation Updates above).
-5. Create PR with two distinct sections in the body:
-   - **Inside a ` ```markdown ` fenced block: release notes only** (end-user audience). CI extracts this block as the GitHub Release body. If no fenced block is found, CI falls back to auto-generated notes from PR titles.
-   - **Outside the fence: testing plan as plain markdown** (developer audience, lives in the PR forever). Checkboxes inside the fence render as code (uninteractive); putting the plan outside makes them clickable for tracking.
-   - For prereleases (`-rc.*` / `-beta.*`) CI auto-prepends `**Test plan & verification:** [#PR](url)` to the extracted release notes — don't add this manually.
-6. Merge PR, then tag: `git tag -a vX.Y.Z -m "vX.Y.Z" && git push origin vX.Y.Z`. CI builds the APK and creates the GitHub Release.
-7. Always create releases by pushing a version tag. Never use `gh release create` manually.
+Release with the `release` skill. Always create releases by pushing a version tag. Never use `gh release create`.
 
 ## Spec
 
