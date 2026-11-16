@@ -48,13 +48,13 @@ The direction uses EASD/ISPAD standard thresholds, computed from the change sinc
 
 ## Deduplication
 
-Strimma automatically ignores duplicate readings. If your CGM app updates its notification multiple times for the same reading, only the first is processed.
+CGM apps often post their notification several times for the same reading. Strimma ignores a repeat of the same value when it comes within the same sensor interval as the reading it repeats (for example within the same 5 minutes for a Dexcom), or within 30 seconds of it.
 
 ---
 
 ## Reading Time
 
-Strimma uses the time your CGM app posts its notification as the reading time. If the app posts its notification again later without a new reading, for example to update insulin information, Strimma counts it as a new reading with the same value. The reading's age and the stale-data alert then start counting from that later post.
+Strimma uses the timestamp your CGM app puts on its notification as the reading time. Some apps, such as CamAPS FX, update that timestamp every time they post the notification again, also when there is no new reading. When such a repost comes later than the deduplication above allows, Strimma counts it as a new reading with the same value. The reading's age and the stale-data alert then count from that later post.
 
 ---
 
