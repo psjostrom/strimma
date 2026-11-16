@@ -25,6 +25,16 @@ Integration over isolation. Tests wire real collaborators — mock only at the s
 - **Robolectric for Android services.** NotificationManager, SharedPreferences, Context — use Robolectric's real implementations, not mocks.
 - **Each test is self-contained.** Arrange-act-assert in one function. No shared mutable state via `@Before`. Setup helpers that return what you need are fine.
 
+## Emulator end-to-end
+
+Every behaviour change is checked on an emulator before the PR opens. That includes alerts, which need a low. Never leave a check for Per's phone when the emulator can run it.
+
+- Use a `google_apis` emulator image, because the script below needs `adb root` to move the clock. Never use Per's phone, which is also attached over adb.
+- Install the debug build. In the setup wizard, choose Data Source = **xDrip Broadcast**. Set any thresholds and cooldowns the check needs in Settings → Alerts.
+- `scripts/emulator-bg.sh <label> <mg/dL>...` sends one reading per value, with the emulator clock moved 60 seconds forward each time. It prints the alert channels that were posted and whether each alert made a sound (`notification_alert` buzz/beep). A 15-minute cooldown therefore takes 15 values, not 15 minutes.
+- Low Soon and High Soon need a trend. Send a steady fall or rise of about 9 mg/dL per reading until the prediction fires.
+- Drive the UI with `adb shell uiautomator dump` and `adb shell input tap`. Argent `describe` returns a stale tree for Strimma's Compose screens.
+
 ## Architecture
 
 ```
