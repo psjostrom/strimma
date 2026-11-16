@@ -61,6 +61,16 @@ class DirectionComputerTest {
     }
 
     @Test
+    fun `one noisy 1-minute reading does not flip a flat arrow`() {
+        // A raw 5-minute delta would be +6 mg/dL (FortyFiveUp). Averaging the last 2.5 minutes
+        // of readings at each end gives (120 + 120 + 126) / 3 - 120 = +2 (Flat).
+        val history = (10 downTo 1).map { reading(it.toDouble(), 120) }
+        val (direction, delta) = computer.compute(history, reading(0.0, 126))
+        assertEquals(2.0, delta!!, 0.001)
+        assertEquals(Direction.Flat, direction)
+    }
+
+    @Test
     fun `delta is scaled to 5 minutes when readings are not exactly 5 minutes apart`() {
         val history = listOf(reading(4.0, 100))
         val (_, delta) = computer.compute(history, reading(0.0, 108))

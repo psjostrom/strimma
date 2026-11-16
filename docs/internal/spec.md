@@ -102,7 +102,7 @@ Strimma uses a `NotificationListenerService` to parse glucose values from CGM ap
 | Feature                      | Description                                                                 |
 | ---------------------------- | --------------------------------------------------------------------------- |
 | CamAPS notification listener | Receive glucose data from CamAPS FX (via NotificationListenerService)       |
-| Direction computation        | 5-minute delta scaled by real time, EASD/ISPAD thresholds                   |
+| Direction computation        | 5-minute delta from 2.5-minute averages, EASD/ISPAD thresholds              |
 | Local Room DB                | Store readings locally                                                      |
 | Nightscout push              | POST to `/api/v1/entries` (standard Nightscout API)                         |
 | Foreground service           | Persistent process with notification                                        |
@@ -188,7 +188,7 @@ Based on the EASD/ISPAD 2020 thresholds (Moser et al., Diabetologia 2020):
 
 1. For each new reading, find the stored reading closest to **5 minutes** before it, between 2.5 and 15 minutes old
 2. If no such reading exists, direction = `"NONE"`
-3. Calculate `delta = (sgvNow - sgvPast) × 5 / timeMinutes` (mg/dL per 5 minutes, independent of sensor interval)
+3. Average the SGVs and timestamps of the readings in the 2.5 minutes up to each end, then calculate `delta = (avgSgvNow - avgSgvPast) × 5 / minutesBetweenAvgTimestamps` (mg/dL per 5 minutes, independent of sensor interval)
 4. Calculate `deltaMgdlPerMin = delta / 5`
 5. Map delta to direction using **EASD/ISPAD 2020 thresholds** (Moser et al., Diabetologia 2020):
 
@@ -209,7 +209,7 @@ Based on the EASD/ISPAD 2020 thresholds (Moser et al., Diabetologia 2020):
 
 ### Delta Computation
 
-Delta (the "change" value shown in the UI, e.g., "-1.1 mmol/l") is the change from the reading closest to 5 minutes ago, scaled to 5 minutes and converted to the display unit. When no usable past reading exists, delta is null and omitted from the display.
+Delta (the "change" value shown in the UI, e.g., "-1.1 mmol/l") is the change between the 2.5-minute averages at now and ~5 minutes ago, scaled to 5 minutes and converted to the display unit. When no usable past reading exists, delta is null and omitted from the display.
 
 ---
 
