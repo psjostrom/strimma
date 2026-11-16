@@ -37,7 +37,7 @@ Strimma computes direction from your recent glucose readings rather than trustin
    ```
 4. **Map to direction** — divide the delta by 5 to get mg/dL per minute, and compare it against the EASD/ISPAD thresholds listed above
 
-With 1-minute readings (for example Libre 3), each end averages about 3 readings. A single noisy reading then can't flip the arrow on its own. With 5-minute readings (for example Dexcom G6), each end holds one reading, so the delta is simply the change since the previous reading. That is the same number Dexcom, xDrip+, Nightscout and AAPS show for 5-minute sensors.
+With 1-minute readings (for example Libre 3), each end averages about 3 readings, which reduces how much a single noisy reading moves the delta and the arrow. With 5-minute readings (for example Dexcom G6), each end holds one reading, so the delta is simply the change since the previous reading. That is the same number Dexcom, xDrip+, Nightscout and AAPS show for 5-minute sensors.
 
 The 2.5-minute window is the one Nightscout uses for its newest bucket. Nightscout doesn't divide by the real time between the averages, so on 1-minute data its delta comes out about 20% low. Strimma divides by it, so a Libre and a Dexcom show the same delta for the same rise.
 

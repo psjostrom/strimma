@@ -23,6 +23,9 @@ class DirectionComputer @Inject constructor() {
         private const val MIN_LOOKBACK_MINUTES = 2.5
         private const val MAX_LOOKBACK_MINUTES = 15.0
 
+        /** How far back callers must load readings: the oldest past end plus its averaging window. */
+        val HISTORY_MS = ((MAX_LOOKBACK_MINUTES + WINDOW_MINUTES) * MS_PER_MINUTE).toLong()
+
         // EASD/ISPAD direction thresholds (mg/dL per minute)
         private const val THRESHOLD_DOUBLE_DOWN = -3.0
         private const val THRESHOLD_SINGLE_DOWN = -2.0

@@ -24,20 +24,22 @@ class DirectionComputerTest {
         return history to reading(0.0, 120)
     }
 
-    private fun directionFor(mgdlPerMin: Double): Direction {
-        val (history, current) = trend(intervalMinutes = 5, mgdlPerMin = mgdlPerMin)
-        return computer.compute(history, current).first
-    }
-
     @Test
     fun `maps rate of change to EASD thresholds`() {
-        assertEquals(Direction.Flat, directionFor(0.0))
-        assertEquals(Direction.FortyFiveUp, directionFor(1.6))
-        assertEquals(Direction.SingleUp, directionFor(2.4))
-        assertEquals(Direction.DoubleUp, directionFor(4.0))
-        assertEquals(Direction.FortyFiveDown, directionFor(-1.6))
-        assertEquals(Direction.SingleDown, directionFor(-2.4))
-        assertEquals(Direction.DoubleDown, directionFor(-4.0))
+        val cases = listOf(
+            0.0 to Direction.Flat,
+            1.6 to Direction.FortyFiveUp,
+            2.4 to Direction.SingleUp,
+            4.0 to Direction.DoubleUp,
+            -1.6 to Direction.FortyFiveDown,
+            -2.4 to Direction.SingleDown,
+            -4.0 to Direction.DoubleDown,
+        )
+        for ((mgdlPerMin, expected) in cases) {
+            val (history, current) = trend(intervalMinutes = 5, mgdlPerMin = mgdlPerMin)
+            val (direction, _) = computer.compute(history, current)
+            assertEquals("$mgdlPerMin mg/dL/min", expected, direction)
+        }
     }
 
     @Test
@@ -74,6 +76,16 @@ class DirectionComputerTest {
     fun `delta is scaled to 5 minutes when readings are not exactly 5 minutes apart`() {
         val history = listOf(reading(4.0, 100))
         val (_, delta) = computer.compute(history, reading(0.0, 108))
+        assertEquals(10.0, delta!!, 0.001)
+    }
+
+    @Test
+    fun `delta divides by the time between the window averages, not the end readings`() {
+        // The past window holds readings 7, 6 and 5 minutes old (average 108 at 6 minutes ago).
+        // The current window holds only the current reading. 12 mg/dL over 6 minutes is +10 per
+        // 5 minutes; dividing by the 5 minutes between the end readings would give +12.
+        val history = listOf(reading(7.0, 106), reading(6.0, 108), reading(5.0, 110))
+        val (_, delta) = computer.compute(history, reading(0.0, 120))
         assertEquals(10.0, delta!!, 0.001)
     }
 
