@@ -102,7 +102,7 @@ Strimma uses a `NotificationListenerService` to parse glucose values from CGM ap
 | Feature                      | Description                                                                 |
 | ---------------------------- | --------------------------------------------------------------------------- |
 | CamAPS notification listener | Receive glucose data from CamAPS FX (via NotificationListenerService)       |
-| Direction computation        | 3-point averaged sgv, EASD/ISPAD thresholds                                 |
+| Direction computation        | 5-minute delta from 2.5-minute averages, EASD/ISPAD thresholds              |
 | Local Room DB                | Store readings locally                                                      |
 | Nightscout push              | POST to `/api/v1/entries` (standard Nightscout API)                         |
 | Foreground service           | Persistent process with notification                                        |
@@ -186,10 +186,10 @@ In companion mode, the direction field received from the CGM app can be outdated
 
 Based on the EASD/ISPAD 2020 thresholds (Moser et al., Diabetologia 2020):
 
-1. For each new reading, find the stored reading closest to **5 minutes** before it
-2. If no reading exists within 10 minutes, direction = `"NONE"`
-3. Compute 3-point averaged sgv for both readings: `avg(readings[i-1], readings[i], readings[i+1])`
-4. Calculate `deltaMgdlPerMin = (avgSgvNow - avgSgvPast) / timeMinutes`
+1. For each new reading, find the stored reading closest to **5 minutes** before it, between 2.5 and 15 minutes old
+2. If no such reading exists, direction = `"NONE"`
+3. Average the SGVs and timestamps of the readings in the 2.5 minutes up to each end, then calculate `delta = (avgSgvNow - avgSgvPast) × 5 / minutesBetweenAvgTimestamps` (mg/dL per 5 minutes, independent of sensor interval)
+4. Calculate `deltaMgdlPerMin = delta / 5`
 5. Map delta to direction using **EASD/ISPAD 2020 thresholds** (Moser et al., Diabetologia 2020):
 
 | Delta (mg/dL/min) | Direction     | Arrow |
@@ -204,13 +204,12 @@ Based on the EASD/ISPAD 2020 thresholds (Moser et al., Diabetologia 2020):
 
 ### Edge Cases
 
-- **Fewer than 3 readings (app just started):** The 3-point average degrades gracefully — clamp indices to array bounds. With 1 reading, the "average" is just that reading. With 2 readings, average 2 instead of 3.
-- **No reading within 10 minutes:** Direction = `"NONE"`, arrow = `"?"`. This handles sensor warmup, CamAPS FX restarts, or data gaps.
+- **No reading between 2.5 and 15 minutes old:** Direction = `"NONE"`, arrow = `"?"`. This handles sensor warmup, CamAPS FX restarts, or data gaps.
 - **First reading after a gap:** Delta is null, direction is `"NONE"`. The UI shows `"?"` for the arrow and omits the delta text.
 
 ### Delta Computation
 
-Delta (the "change" value shown in the UI, e.g., "-1.1 mmol/l") is the difference between the current 3-point averaged sgv and the 3-point averaged sgv from ~5 minutes ago, converted to mmol/L. When no 5-minute-ago reading exists, delta is null and omitted from the display.
+Delta (the "change" value shown in the UI, e.g., "-1.1 mmol/l") is the change between the 2.5-minute averages at now and ~5 minutes ago, scaled to 5 minutes and converted to the display unit. When no usable past reading exists, delta is null and omitted from the display.
 
 ---
 

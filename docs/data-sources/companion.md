@@ -42,7 +42,7 @@ See [Supported CGM Apps](supported-apps.md) for the complete list.
 
 Strimma computes the glucose direction (trend arrow) **locally** rather than trusting what your CGM app reports. This ensures consistent, clinically-validated trend information regardless of which CGM app you use.
 
-The direction uses EASD/ISPAD standard thresholds, computed from a 3-point average of recent readings. See [Direction Arrows](../reference/direction.md) for details.
+The direction uses EASD/ISPAD standard thresholds, computed from the change since the reading about 5 minutes earlier. See [Direction Arrows](../reference/direction.md) for details.
 
 ---
 

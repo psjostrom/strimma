@@ -1,7 +1,6 @@
 package com.psjostrom.strimma.network
 
 import com.psjostrom.strimma.data.DirectionComputer
-import com.psjostrom.strimma.data.MS_PER_MINUTE
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
@@ -17,7 +16,6 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
-private const val LOOKBACK_MINUTES = 15
 private const val DUPLICATE_THRESHOLD_MS = 3_000L
 private const val SECONDS_TO_MS = 1000L
 private const val DELTA_ROUNDING_FACTOR = 10.0
@@ -52,7 +50,7 @@ suspend fun processNightscoutEntries(
     // As we process and create new valid readings in this batch, we add them to this
     // mutable list so that subsequent readings in the same batch can correctly compute
     // their direction based on the freshly created preceding readings.
-    val recentReadings = dao.since(earliestTs - LOOKBACK_MINUTES * MS_PER_MINUTE).toMutableList()
+    val recentReadings = dao.since(earliestTs - DirectionComputer.HISTORY_MS).toMutableList()
 
     val newReadings = mutableListOf<GlucoseReading>()
 
@@ -67,7 +65,7 @@ suspend fun processNightscoutEntries(
             ts = ts, sgv = sgv,
             direction = "NONE", delta = null, pushed = pushed
         )
-        val windowStart = ts - LOOKBACK_MINUTES * MS_PER_MINUTE
+        val windowStart = ts - DirectionComputer.HISTORY_MS
         recentReadings.removeAll { it.ts < windowStart }
 
         val pastReadings = recentReadings.filter { it.ts <= ts }
