@@ -52,6 +52,12 @@ Strimma automatically ignores duplicate readings. If your CGM app updates its no
 
 ---
 
+## Reading Time
+
+Strimma uses the time your CGM app posts its notification as the reading time. If the app posts its notification again later without a new reading, for example to update insulin information, Strimma counts it as a new reading with the same value. The reading's age and the stale-data alert then start counting from that later post.
+
+---
+
 ## Does It Interfere with My CGM App?
 
 **No.** Strimma only reads notifications — it doesn't modify them, intercept them, or affect your CGM app in any way. Your CGM app continues to work normally, including closed-loop systems like CamAPS FX or AndroidAPS.

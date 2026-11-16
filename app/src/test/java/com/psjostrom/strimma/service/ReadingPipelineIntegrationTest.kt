@@ -315,6 +315,35 @@ class ReadingPipelineIntegrationTest {
     }
 
     @Test
+    fun `same value 20 s later in the next bucket is dropped as repost`() = runTest {
+        withPipeline { env ->
+            // baseTs is 20 s into its 1-min bucket, so +35 s and +55 s sit in adjacent buckets.
+            env.pipeline.processReading(108.0, baseTs + 35_000)
+            val result = env.pipeline.processReading(108.0, baseTs + 55_000)
+            assertNull(result)
+            assertEquals(listOf(baseTs + 35_000), env.dao.since(0).map { it.ts })
+        }
+    }
+
+    @Test
+    fun `same value 45 s later in the next bucket is stored`() = runTest {
+        withPipeline { env ->
+            env.pipeline.processReading(108.0, baseTs + 35_000)
+            env.pipeline.processReading(108.0, baseTs + 80_000)
+            assertEquals(2, env.dao.since(0).size)
+        }
+    }
+
+    @Test
+    fun `different value 20 s later in the next bucket is stored`() = runTest {
+        withPipeline { env ->
+            env.pipeline.processReading(108.0, baseTs + 35_000)
+            env.pipeline.processReading(110.0, baseTs + 55_000)
+            assertEquals(listOf(108, 110), env.dao.since(0).map { it.sgv })
+        }
+    }
+
+    @Test
     fun `unknown source defaults to 1-min bucketing`() = runTest {
         withPipeline { env ->
             env.pipeline.processReading(108.0, baseTs)
