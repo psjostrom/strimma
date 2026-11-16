@@ -17,7 +17,9 @@ package com.psjostrom.strimma.data
  * (two readings collapsed because they jittered into the same bucket) requires sub-period
  * jitter, which is rare. Both edge cases are acceptable; the alternative (sliding-window
  * dedup keyed on the previous reading) has its own boundary failure modes (see prior 5/6
- * sample-period attempt before bucketing was adopted).
+ * sample-period attempt before bucketing was adopted). ReadingPipeline also drops the same
+ * value within 30 s when its bucket is empty. That catches a repost just across a boundary,
+ * and 30 s is shorter than any sensor's sample period, so it can't drop a real reading.
  */
 object SensorIntervals {
     private const val ONE_MIN_MS = 60_000L
