@@ -230,6 +230,23 @@ class ReadingPipelineIntegrationTest {
         }
     }
 
+    // --- Direction history ---
+
+    @Test
+    fun `delta averages past readings older than 15 minutes`() = runTest {
+        withPipeline { env ->
+            // The only usable past reading is 15 minutes old, and its 2.5-minute window holds the
+            // readings 16 and 17 minutes old. Average 100 at 16 minutes ago to 140 now is
+            // 40 mg/dL over 16 minutes, +12.5 per 5 minutes. Loading only 15 minutes would give +10.
+            env.dao.insert(GlucoseReading(baseTs - 17 * 60_000, 90, "Flat", null, 1))
+            env.dao.insert(GlucoseReading(baseTs - 16 * 60_000, 100, "Flat", null, 1))
+            env.dao.insert(GlucoseReading(baseTs - 15 * 60_000, 110, "Flat", null, 1))
+            val reading = env.pipeline.processReading(140.0, baseTs)!!
+            assertEquals(12.5, reading.delta!!, 0.001)
+            assertEquals(Direction.SingleUp.name, reading.direction)
+        }
+    }
+
     // --- Same-value repost dedup (source-aware) ---
 
     @Test

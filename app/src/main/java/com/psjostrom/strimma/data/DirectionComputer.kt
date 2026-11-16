@@ -2,11 +2,29 @@ package com.psjostrom.strimma.data
 
 import javax.inject.Inject
 
+/**
+ * CGM apps report direction inconsistently, so Strimma computes delta and direction from stored
+ * readings. The delta is the change over 5 minutes, the convention every CGM app shares.
+ *
+ * Each end of the delta is the average of the readings in the 2.5 minutes up to it, the window
+ * Nightscout uses for its newest bucket. On 1-minute sensors this averages about 3 readings per end
+ * and calms the arrow. On 5-minute sensors each window holds one reading, so the delta is the raw
+ * change. The difference is divided by the real time between the two windows' average timestamps,
+ * so 1-minute and 5-minute data give the same delta for the same rise. Nightscout skips that
+ * division, which makes its delta about 20% low on 1-minute data.
+ */
 class DirectionComputer @Inject constructor() {
 
     companion object {
-        private const val LOOKBACK_MINUTES = 5
-        private const val MAX_TIME_GAP_MINUTES = 10
+        private const val TARGET_MINUTES = 5.0
+        private const val WINDOW_MINUTES = 2.5
+
+        // Ends closer than this would multiply sensor noise when scaled to 5 minutes.
+        private const val MIN_LOOKBACK_MINUTES = 2.5
+        private const val MAX_LOOKBACK_MINUTES = 15.0
+
+        /** How far back callers must load readings: the oldest past end plus its averaging window. */
+        val HISTORY_MS = ((MAX_LOOKBACK_MINUTES + WINDOW_MINUTES) * MS_PER_MINUTE).toLong()
 
         // EASD/ISPAD direction thresholds (mg/dL per minute)
         private const val THRESHOLD_DOUBLE_DOWN = -3.0
@@ -17,62 +35,41 @@ class DirectionComputer @Inject constructor() {
         private const val THRESHOLD_DOUBLE_UP = 3.0
     }
 
+    /** Returns the direction and the delta in mg/dL per 5 minutes, or NONE and null without a usable past reading. */
     fun compute(readings: List<GlucoseReading>, currentReading: GlucoseReading): Pair<Direction, Double?> {
-        // Build full list including current reading, sorted by timestamp ASC
-        val allReadings = (readings + currentReading).sortedBy { it.ts }
-        val currentIndex = allReadings.indexOfFirst { it.ts == currentReading.ts }
+        val history = readings.filter { it.ts < currentReading.ts }
+        val pastReading = history
+            .filter { minutesBetween(it, currentReading) in MIN_LOOKBACK_MINUTES..MAX_LOOKBACK_MINUTES }
+            .minByOrNull { kotlin.math.abs(minutesBetween(it, currentReading) - TARGET_MINUTES) }
+            ?: return Pair(Direction.NONE, null)
 
-        if (currentIndex == -1) return Pair(Direction.NONE, null)
+        val now = windowAverage(history + currentReading, currentReading)
+        val past = windowAverage(history, pastReading)
+        val minutes = (now.ts - past.ts) / MS_PER_MINUTE
+        if (minutes < MIN_LOOKBACK_MINUTES) return Pair(Direction.NONE, null)
 
-        // Find reading closest to 5 minutes before current
-        val targetTs = currentReading.ts - (LOOKBACK_MINUTES * MS_PER_MINUTE)
-        val pastReading = allReadings.take(currentIndex).minByOrNull {
-            kotlin.math.abs(it.ts - targetTs)
-        }
-
-        // If no reading within 10 minutes, return NONE
-        if (pastReading == null || kotlin.math.abs(pastReading.ts - targetTs) > MAX_TIME_GAP_MINUTES * MS_PER_MINUTE) {
-            return Pair(Direction.NONE, null)
-        }
-
-        val pastIndex = allReadings.indexOf(pastReading)
-
-        // Compute 3-point averaged SGV for both readings
-        val avgNow = avgSgv(allReadings, currentIndex)
-        val avgPast = avgSgv(allReadings, pastIndex)
-
-        // Calculate time difference in minutes
-        val timeMinutes = (currentReading.ts - pastReading.ts) / MS_PER_MINUTE.toDouble()
-        if (timeMinutes == 0.0) return Pair(Direction.NONE, null)
-
-        // Calculate delta in mg/dL per minute
-        val deltaMgdlPerMin = (avgNow - avgPast) / timeMinutes
-
-        // Map to Direction using thresholds
-        val direction = when {
-            deltaMgdlPerMin <= THRESHOLD_DOUBLE_DOWN -> Direction.DoubleDown
-            deltaMgdlPerMin <= THRESHOLD_SINGLE_DOWN -> Direction.SingleDown
-            deltaMgdlPerMin <= THRESHOLD_FORTY_FIVE_DOWN -> Direction.FortyFiveDown
-            deltaMgdlPerMin <= THRESHOLD_FORTY_FIVE_UP -> Direction.Flat
-            deltaMgdlPerMin <= THRESHOLD_SINGLE_UP -> Direction.FortyFiveUp
-            deltaMgdlPerMin <= THRESHOLD_DOUBLE_UP -> Direction.SingleUp
-            else -> Direction.DoubleUp
-        }
-
-        // Delta in mg/dL (total change over the lookback window)
-        val deltaMgdl = avgNow - avgPast
-
-        return Pair(direction, deltaMgdl)
+        val deltaMgdl = (now.sgv - past.sgv) * TARGET_MINUTES / minutes
+        return Pair(directionFor(deltaMgdl / TARGET_MINUTES), deltaMgdl)
     }
 
-    private fun avgSgv(readings: List<GlucoseReading>, index: Int): Double {
-        val prevIndex = (index - 1).coerceAtLeast(0)
-        val nextIndex = (index + 1).coerceAtMost(readings.lastIndex)
+    private class Average(val sgv: Double, val ts: Double)
 
-        val values = mutableListOf(readings[index].sgv)
-        if (prevIndex != index) values.add(readings[prevIndex].sgv)
-        if (nextIndex != index) values.add(readings[nextIndex].sgv)
-
-        return values.average()
+    /** Average SGV and timestamp of the readings in the [WINDOW_MINUTES] up to and including [end]. */
+    private fun windowAverage(readings: List<GlucoseReading>, end: GlucoseReading): Average {
+        val window = readings.filter { it.ts <= end.ts && minutesBetween(it, end) < WINDOW_MINUTES }
+        return Average(window.map { it.sgv }.average(), window.map { it.ts.toDouble() }.average())
     }
+
+    private fun directionFor(mgdlPerMin: Double): Direction = when {
+        mgdlPerMin <= THRESHOLD_DOUBLE_DOWN -> Direction.DoubleDown
+        mgdlPerMin <= THRESHOLD_SINGLE_DOWN -> Direction.SingleDown
+        mgdlPerMin <= THRESHOLD_FORTY_FIVE_DOWN -> Direction.FortyFiveDown
+        mgdlPerMin <= THRESHOLD_FORTY_FIVE_UP -> Direction.Flat
+        mgdlPerMin <= THRESHOLD_SINGLE_UP -> Direction.FortyFiveUp
+        mgdlPerMin <= THRESHOLD_DOUBLE_UP -> Direction.SingleUp
+        else -> Direction.DoubleUp
+    }
+
+    private fun minutesBetween(past: GlucoseReading, current: GlucoseReading): Double =
+        (current.ts - past.ts) / MS_PER_MINUTE.toDouble()
 }

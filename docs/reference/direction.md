@@ -29,21 +29,22 @@ Strimma computes direction from your recent glucose readings rather than trustin
 
 ### Algorithm
 
-1. **Collect recent readings** — the last few minutes of stored glucose values
-2. **Find a reference point** — locate the reading closest to 5 minutes before the current reading
-3. **Apply 3-point averaging** — for each timepoint, average the reading with its immediate neighbors. This smooths out single-reading noise.
-4. **Calculate velocity** — compute the rate of change in mg/dL per minute:
+1. **Find a reference point** — the stored reading closest to 5 minutes before the current one, at least 2.5 and at most 15 minutes old
+2. **Average each end** — average the readings in the 2.5 minutes up to the current reading, and the readings in the 2.5 minutes up to the reference point. Also average their timestamps.
+3. **Compute delta** — the change between the two averages, scaled to 5 minutes:
    ```
-   velocity = (averaged_now - averaged_past) / minutes_between
+   delta = (average_now - average_past) × 5 / minutes_between_average_timestamps
    ```
-5. **Map to direction** — compare the velocity against the EASD/ISPAD thresholds listed above
-6. **Compute delta** — the total change in mg/dL (not per-minute) is stored alongside the direction
+4. **Map to direction** — divide the delta by 5 to get mg/dL per minute, and compare it against the EASD/ISPAD thresholds listed above
+
+With 1-minute readings (for example Libre 3), each end averages about 3 readings, which reduces how much a single noisy reading moves the delta and the arrow. With 5-minute readings (for example Dexcom G6), each end holds one reading, so the delta is simply the change since the previous reading. That is the same number Dexcom, xDrip+, Nightscout and AAPS show for 5-minute sensors.
+
+The 2.5-minute window is the one Nightscout uses for its newest bucket. Nightscout doesn't divide by the real time between the averages, so on 1-minute data its delta comes out about 20% low. Strimma divides by it, so a Libre and a Dexcom show the same delta for the same rise.
 
 ### Edge Cases
 
-- **Insufficient data:** If no reading exists within 10 minutes before the current one, direction is set to "?" (NONE)
-- **Gap tolerance:** The algorithm looks for a reading within 10 minutes of the 5-minute lookback target
-- **3-point averaging:** At the edges of the reading list (first/last reading), the average uses fewer points (clamped to valid indices)
+- **Insufficient data:** If no reading is between 2.5 and 15 minutes old, direction is "?" (NONE) and the delta is hidden
+- **Missed reading:** If the reading 5 minutes ago is missing, the reading 10 minutes ago is used and the delta is still scaled to 5 minutes
 
 ---
 

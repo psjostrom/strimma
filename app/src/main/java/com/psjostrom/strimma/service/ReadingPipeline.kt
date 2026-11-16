@@ -2,7 +2,6 @@ package com.psjostrom.strimma.service
 
 import com.psjostrom.strimma.data.DirectionComputer
 import com.psjostrom.strimma.data.GlucoseReading
-import com.psjostrom.strimma.data.MS_PER_MINUTE
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SensorIntervals
 import com.psjostrom.strimma.receiver.DebugLog
@@ -102,11 +101,11 @@ class ReadingPipeline @Inject constructor(
         val isReplace = latestExisting != null
         val storeTs = timestamp
 
-        // Direction is computed over the prior LOOKBACK_MINUTES minutes. Exclude every
+        // Direction is computed over the prior DirectionComputer.HISTORY_MS. Exclude every
         // row in the current bucket — both the row we're about to delete (replace path)
         // and any pre-existing puller siblings — so the slope window matches the
         // bucketing invariant ("at most one logical reading per bucket").
-        val recentReadings = dao.since(storeTs - LOOKBACK_MINUTES * MS_PER_MINUTE)
+        val recentReadings = dao.since(storeTs - DirectionComputer.HISTORY_MS)
             .filter { it.ts < bucketStart || it.ts >= bucketStart + samplePeriod }
         val tempReading = GlucoseReading(
             ts = storeTs, sgv = sgv,

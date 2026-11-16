@@ -238,10 +238,10 @@ class NightscoutFollowerIntegrationTest {
         env.dao.insert(GlucoseReading(ts = t0, sgv = 100, direction = "Flat", delta = null, pushed = 1))
         env.dao.insert(GlucoseReading(ts = t3, sgv = 200, direction = "SingleUp", delta = 20.0, pushed = 1))
 
-        // Batch contains duplicate of t0, and new readings at t2 (130) and t1 (110) (unsorted)
+        // Batch contains duplicate of t0, and new readings at t2 (115) and t1 (110) (unsorted)
         val batch = listOf(
             entry(100, t0),
-            entry(130, t2),
+            entry(115, t2),
             entry(110, t1)
         )
 
@@ -250,10 +250,10 @@ class NightscoutFollowerIntegrationTest {
         assertEquals(t1, inserted[0].ts)
         assertEquals(t2, inserted[1].ts)
 
-        // Reading at t2 has history t0 (100) and t1 (110). Rising to 130 computes FortyFiveUp.
-        // If future reading t3 (200) were included, 3-point average would produce DoubleUp.
-        assertEquals("FortyFiveUp", inserted[1].direction)
-        assertNotNull(inserted[1].delta)
+        // Reading at t2 compares with t1 (110) five minutes earlier: +5 mg/dL is Flat.
+        // The reading at t3 (200) is newer than t2, so it must not change the result.
+        assertEquals("Flat", inserted[1].direction)
+        assertEquals(5.0, inserted[1].delta!!, 0.001)
 
         // All readings in DB should now be 4 (t0, t1, t2, t3)
         assertEquals(4, env.dao.lastN(10).size)

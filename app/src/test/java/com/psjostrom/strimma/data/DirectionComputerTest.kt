@@ -1,142 +1,122 @@
 package com.psjostrom.strimma.data
 
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
+import kotlin.math.roundToInt
 
 class DirectionComputerTest {
 
     private val computer = DirectionComputer()
     private val baseTs = 1_700_000_000_000L
 
-    private fun reading(minutesAgo: Int, mmol: Double): GlucoseReading {
-        val sgv = (mmol * 18.0182).toInt()
-        return GlucoseReading(
-            ts = baseTs - minutesAgo * 60_000L,
-            sgv = sgv,
-            direction = "NONE", delta = null, pushed = 1
+    private fun reading(minutesAgo: Double, sgv: Int) = GlucoseReading(
+        ts = baseTs - (minutesAgo * 60_000).toLong(),
+        sgv = sgv,
+        direction = "NONE", delta = null, pushed = 1
+    )
+
+    /** Readings every [intervalMinutes] for the last 20 minutes, rising [mgdlPerMin], ending at 120 mg/dL now. */
+    private fun trend(intervalMinutes: Int, mgdlPerMin: Double): Pair<List<GlucoseReading>, GlucoseReading> {
+        val history = (20 downTo intervalMinutes step intervalMinutes).map {
+            reading(it.toDouble(), (120 - it * mgdlPerMin).roundToInt())
+        }
+        return history to reading(0.0, 120)
+    }
+
+    @Test
+    fun `maps rate of change to EASD thresholds`() {
+        val cases = listOf(
+            0.0 to Direction.Flat,
+            1.6 to Direction.FortyFiveUp,
+            2.4 to Direction.SingleUp,
+            4.0 to Direction.DoubleUp,
+            -1.6 to Direction.FortyFiveDown,
+            -2.4 to Direction.SingleDown,
+            -4.0 to Direction.DoubleDown,
         )
-    }
-
-    private fun compute(history: List<GlucoseReading>, current: GlucoseReading) =
-        computer.compute(history, current)
-
-    // --- Threshold boundary tests (EASD/ISPAD 2020) ---
-
-    @Test
-    fun `flat when stable glucose`() {
-        val history = listOf(reading(10, 6.0), reading(9, 6.0), reading(8, 6.0),
-            reading(7, 6.0), reading(6, 6.0), reading(5, 6.0))
-        val current = reading(0, 6.0)
-        val (direction, _) = compute(history, current)
-        assertEquals(Direction.Flat, direction)
+        for ((mgdlPerMin, expected) in cases) {
+            val (history, current) = trend(intervalMinutes = 5, mgdlPerMin = mgdlPerMin)
+            val (direction, _) = computer.compute(history, current)
+            assertEquals("$mgdlPerMin mg/dL/min", expected, direction)
+        }
     }
 
     @Test
-    fun `fortyFiveUp when rising moderately`() {
-        // ~+1.5 mg/dL/min over 5 min = +7.5 mg/dL total
-        val history = (10 downTo 1).map { reading(it, 6.0 + (10 - it) * 0.08) }
-        val current = reading(0, 6.8)
-        val (direction, _) = compute(history, current)
+    fun `5-minute sensor delta is the full change since the previous reading`() {
+        val (history, current) = trend(intervalMinutes = 5, mgdlPerMin = 2.0)
+        val (direction, delta) = computer.compute(history, current)
+        assertEquals(10.0, delta!!, 0.001)
         assertEquals(Direction.FortyFiveUp, direction)
     }
 
     @Test
-    fun `singleUp when rising fast`() {
-        // ~+2.5 mg/dL/min over 5 min
-        val history = (10 downTo 1).map { reading(it, 6.0 + (10 - it) * 0.14) }
-        val current = reading(0, 7.4)
-        val (direction, _) = compute(history, current)
-        assertEquals(Direction.SingleUp, direction)
+    fun `1-minute and 5-minute sensors give the same delta for the same rise`() {
+        val (oneMinHistory, oneMinCurrent) = trend(intervalMinutes = 1, mgdlPerMin = -2.4)
+        val (fiveMinHistory, fiveMinCurrent) = trend(intervalMinutes = 5, mgdlPerMin = -2.4)
+        val oneMin = computer.compute(oneMinHistory, oneMinCurrent)
+        val fiveMin = computer.compute(fiveMinHistory, fiveMinCurrent)
+        assertEquals(-12.0, oneMin.second!!, 0.001)
+        assertEquals(-12.0, fiveMin.second!!, 0.001)
+        assertEquals(Direction.SingleDown, oneMin.first)
+        assertEquals(Direction.SingleDown, fiveMin.first)
     }
 
     @Test
-    fun `doubleUp when rising very fast`() {
-        // ~+4 mg/dL/min over 5 min
-        val history = (10 downTo 1).map { reading(it, 6.0 + (10 - it) * 0.22) }
-        val current = reading(0, 8.2)
-        val (direction, _) = compute(history, current)
-        assertEquals(Direction.DoubleUp, direction)
+    fun `one noisy 1-minute reading does not flip a flat arrow`() {
+        // A raw 5-minute delta would be +6 mg/dL (FortyFiveUp). Averaging the last 2.5 minutes
+        // of readings at each end gives (120 + 120 + 126) / 3 - 120 = +2 (Flat).
+        val history = (10 downTo 1).map { reading(it.toDouble(), 120) }
+        val (direction, delta) = computer.compute(history, reading(0.0, 126))
+        assertEquals(2.0, delta!!, 0.001)
+        assertEquals(Direction.Flat, direction)
     }
 
     @Test
-    fun `fortyFiveDown when falling moderately`() {
-        val history = (10 downTo 1).map { reading(it, 8.0 - (10 - it) * 0.08) }
-        val current = reading(0, 7.2)
-        val (direction, _) = compute(history, current)
-        assertEquals(Direction.FortyFiveDown, direction)
+    fun `delta is scaled to 5 minutes when readings are not exactly 5 minutes apart`() {
+        val history = listOf(reading(4.0, 100))
+        val (_, delta) = computer.compute(history, reading(0.0, 108))
+        assertEquals(10.0, delta!!, 0.001)
     }
 
     @Test
-    fun `singleDown when falling fast`() {
-        val history = (10 downTo 1).map { reading(it, 8.0 - (10 - it) * 0.14) }
-        val current = reading(0, 6.6)
-        val (direction, _) = compute(history, current)
-        assertEquals(Direction.SingleDown, direction)
+    fun `delta divides by the time between the window averages, not the end readings`() {
+        // The past window holds readings 7, 6 and 5 minutes old (average 108 at 6 minutes ago).
+        // The current window holds only the current reading. 12 mg/dL over 6 minutes is +10 per
+        // 5 minutes; dividing by the 5 minutes between the end readings would give +12.
+        val history = listOf(reading(7.0, 106), reading(6.0, 108), reading(5.0, 110))
+        val (_, delta) = computer.compute(history, reading(0.0, 120))
+        assertEquals(10.0, delta!!, 0.001)
     }
 
     @Test
-    fun `doubleDown when falling very fast`() {
-        val history = (10 downTo 1).map { reading(it, 10.0 - (10 - it) * 0.22) }
-        val current = reading(0, 7.8)
-        val (direction, _) = compute(history, current)
-        assertEquals(Direction.DoubleDown, direction)
+    fun `missed reading still gives a 5-minute delta from the reading 10 minutes ago`() {
+        val history = listOf(reading(15.0, 90), reading(10.0, 100))
+        val (direction, delta) = computer.compute(history, reading(0.0, 120))
+        assertEquals(10.0, delta!!, 0.001)
+        assertEquals(Direction.FortyFiveUp, direction)
     }
-
-    // --- Edge cases ---
 
     @Test
     fun `NONE with no history`() {
-        val current = reading(0, 6.0)
-        val (direction, delta) = compute(emptyList(), current)
+        val (direction, delta) = computer.compute(emptyList(), reading(0.0, 120))
         assertEquals(Direction.NONE, direction)
         assertNull(delta)
     }
 
     @Test
-    fun `computes from nearest reading when no exact 5-min match`() {
-        val history = listOf(reading(1, 6.0), reading(2, 6.0))
-        val current = reading(0, 6.0)
-        val (direction, _) = compute(history, current)
-        assertEquals(Direction.Flat, direction)
-    }
-
-    @Test
-    fun `computes with exactly one 5-minute-ago reading`() {
-        val history = listOf(reading(5, 6.0))
-        val current = reading(0, 6.0)
-        val (direction, _) = compute(history, current)
-        assertEquals(Direction.Flat, direction)
-    }
-
-    @Test
-    fun `NONE when gap exceeds 10 minutes`() {
-        val history = listOf(reading(20, 6.0))
-        val current = reading(0, 6.0)
-        val (direction, delta) = compute(history, current)
+    fun `NONE when only readings from the last 2 minutes exist`() {
+        val history = listOf(reading(2.0, 110), reading(1.0, 115))
+        val (direction, delta) = computer.compute(history, reading(0.0, 120))
         assertEquals(Direction.NONE, direction)
         assertNull(delta)
     }
 
     @Test
-    fun `delta is in mgdl`() {
-        val history = (10 downTo 1).map { reading(it, 6.0) }
-        val current = reading(0, 7.0)
-        val (_, delta) = compute(history, current)
-        assertNotNull(delta)
-        // Delta is computed from 3-point-averaged SGV values (mg/dL).
-        // 7.0 mmol - 6.0 mmol = 1.0 mmol = ~18 mg/dL.
-        // SGV rounding means it won't be exactly 18, but must be in mg/dL range.
-        assertTrue("delta should be in mg/dL range, was $delta", delta!! in 5.0..36.0)
-    }
-
-    @Test
-    fun `3-point averaging smooths spikes`() {
-        val history = listOf(
-            reading(10, 6.0), reading(8, 6.0), reading(6, 12.0),
-            reading(4, 6.0), reading(2, 6.0)
-        )
-        val current = reading(0, 6.0)
-        val (direction, _) = compute(history, current)
-        assertNotNull(direction)
+    fun `NONE when the newest past reading is more than 15 minutes old`() {
+        val history = listOf(reading(20.0, 100))
+        val (direction, delta) = computer.compute(history, reading(0.0, 120))
+        assertEquals(Direction.NONE, direction)
+        assertNull(delta)
     }
 }
