@@ -62,7 +62,7 @@ For every user-visible change in the release, grep `docs/` for references to the
 
 Every PR is tested end to end before it merges, so this step usually runs nothing. Read the Test plan of every PR merged since `${LAST_TAG}`. A PR needs a run here when its Test plan has an unchecked item. A PR also needs a run when it changes behaviour and has no checked end-to-end item. Run those checks on an emulator against `main`, as the "Emulator end-to-end" section of `CLAUDE.md` describes.
 
-The release PR's Test plan lists only the checks this step ran, each as `[x]` with what was driven and what it showed. A check that an emulator cannot run stays `[ ]` and names what blocks it, such as a real third-party CGM app. When nothing needed a run, the Test plan holds only the CI, merge and tag items.
+The release PR's Test plan lists only the checks this step ran, each as `[x]` with what was driven and what it showed. A check that an emulator cannot run stays `[ ]` and names what blocks it, such as a real third-party CGM app. When nothing needed a run, the Test plan lists no checks from this step.
 
 ### 5. Update versionName
 

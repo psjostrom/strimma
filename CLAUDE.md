@@ -31,7 +31,8 @@ Every behaviour change is checked on an emulator before the PR opens. That inclu
 
 - Use a `google_apis` emulator image, because the script below needs `adb root` to move the clock. Never use Per's phone, which is also attached over adb.
 - Install the debug build. In the setup wizard, choose Data Source = **xDrip Broadcast**. Set any thresholds and cooldowns the check needs in Settings → Alerts.
-- `scripts/emulator-bg.sh <label> <mg/dL>...` sends one reading per value, with the emulator clock moved 60 seconds forward each time. It prints the alert channels that were posted and whether each alert made a sound (`notification_alert` buzz/beep). A 15-minute cooldown therefore takes 15 values, not 15 minutes.
+- `scripts/emulator-bg.sh <label> <mg/dL>...` sends one reading per value, with the emulator clock moved 60 seconds forward each time. It prints each alert that was posted and whether it made a sound (`notification_alert` buzz/beep). An alert that fires on the first value of a 15-minute cooldown can fire again on the 16th value.
+- The clock stays ahead after a run, and Strimma rejects a reading older than the newest stored one. Keep automatic time off for the whole session. If the clock falls back, run `adb shell pm clear com.psjostrom.strimma.debug` and set Strimma up again.
 - Low Soon and High Soon need a trend. Send a steady fall or rise of about 9 mg/dL per reading until the prediction fires.
 - Drive the UI with `adb shell uiautomator dump` and `adb shell input tap`. Argent `describe` returns a stale tree for Strimma's Compose screens.
 
@@ -115,14 +116,15 @@ When a merge or push fails, ALWAYS check CI status (`gh pr checks`) and read the
 
 1. Run `git log <last-tag>..main --oneline` to see ALL changes since the last release. Never assume the latest commit is all that changed.
 2. Create branch `release/vX.Y.Z` from main.
-3. Bump `versionName` in `app/build.gradle.kts`. Never bump `versionCode` (not on Google Play).
-4. Check docs for staleness against the changes (see Documentation Updates above).
-5. Create PR with two distinct sections in the body:
+3. Run the checks that merged PRs left untested, as step 4 of the `release` skill describes.
+4. Bump `versionName` in `app/build.gradle.kts`. Never bump `versionCode` (not on Google Play).
+5. Check docs for staleness against the changes (see Documentation Updates above).
+6. Create PR with two distinct sections in the body:
    - **Inside a ` ```markdown ` fenced block: release notes only** (end-user audience). CI extracts this block as the GitHub Release body. If no fenced block is found, CI falls back to auto-generated notes from PR titles.
    - **Outside the fence: testing plan as plain markdown** (developer audience, lives in the PR forever). Checkboxes inside the fence render as code (uninteractive); putting the plan outside makes them clickable for tracking.
    - For prereleases (`-rc.*` / `-beta.*`) CI auto-prepends `**Test plan & verification:** [#PR](url)` to the extracted release notes — don't add this manually.
-6. Merge PR, then tag: `git tag -a vX.Y.Z -m "vX.Y.Z" && git push origin vX.Y.Z`. CI builds the APK and creates the GitHub Release.
-7. Always create releases by pushing a version tag. Never use `gh release create` manually.
+7. Merge PR, then tag: `git tag -a vX.Y.Z -m "vX.Y.Z" && git push origin vX.Y.Z`. CI builds the APK and creates the GitHub Release.
+8. Always create releases by pushing a version tag. Never use `gh release create` manually.
 
 ## Spec
 
