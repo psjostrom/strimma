@@ -315,6 +315,51 @@ class ReadingPipelineIntegrationTest {
     }
 
     @Test
+    fun `same value 20 s later in the next bucket is dropped as repost`() = runTest {
+        withPipeline { env ->
+            // baseTs is 20 s into its 1-min bucket, so +35 s and +55 s sit in adjacent buckets.
+            env.pipeline.processReading(108.0, baseTs + 35_000)
+            val result = env.pipeline.processReading(108.0, baseTs + 55_000)
+            assertNull(result)
+            assertEquals(listOf(baseTs + 35_000), env.dao.since(0).map { it.ts })
+        }
+    }
+
+    @Test
+    fun `same value 45 s later in the next bucket is stored`() = runTest {
+        withPipeline { env ->
+            env.pipeline.processReading(108.0, baseTs + 35_000)
+            env.pipeline.processReading(108.0, baseTs + 80_000)
+            assertEquals(2, env.dao.since(0).size)
+        }
+    }
+
+    @Test
+    fun `value repeated across the boundary still replaces a different value in its bucket`() = runTest {
+        withPipeline { env ->
+            // 108 at +35 s (bucket A). A glitch 150 at +42 s opens bucket B. The real 108 at
+            // +50 s is within 30 s of the first 108, but bucket B is not empty, so the bucket
+            // rule applies and 108 replaces the glitch.
+            env.pipeline.processReading(108.0, baseTs + 35_000)
+            env.pipeline.processReading(150.0, baseTs + 42_000)
+            env.pipeline.processReading(108.0, baseTs + 50_000)
+            assertEquals(
+                listOf(baseTs + 35_000 to 108, baseTs + 50_000 to 108),
+                env.dao.since(0).map { it.ts to it.sgv }
+            )
+        }
+    }
+
+    @Test
+    fun `different value 20 s later in the next bucket is stored`() = runTest {
+        withPipeline { env ->
+            env.pipeline.processReading(108.0, baseTs + 35_000)
+            env.pipeline.processReading(110.0, baseTs + 55_000)
+            assertEquals(listOf(108, 110), env.dao.since(0).map { it.sgv })
+        }
+    }
+
+    @Test
     fun `unknown source defaults to 1-min bucketing`() = runTest {
         withPipeline { env ->
             env.pipeline.processReading(108.0, baseTs)

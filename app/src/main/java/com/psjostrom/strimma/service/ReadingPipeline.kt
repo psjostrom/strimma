@@ -23,7 +23,10 @@ import javax.inject.Singleton
  * Dedup is wall-clock-bucketed by the source's sample period (see [SensorIntervals]). A new
  * reading is dropped if its value matches ANY existing reading in the bucket — same-value
  * notification reposts (Eversense's foreground-service tick) collapse, AND a value that
- * matches a backfilled puller row in the same bucket is also dropped. A different value
+ * matches a backfilled puller row in the same bucket is also dropped. When the bucket is
+ * empty, the same value within 30 s of an existing reading is dropped too, which catches
+ * reposts that cross a bucket boundary; no CGM reports more often than once a minute. A
+ * different value
  * triggers an in-bucket replacement: the prior latest row is removed and the new row stored
  * at its actual notification ts inside an atomic [ReadingDao.replaceInBucket] transaction.
  *
@@ -40,6 +43,7 @@ class ReadingPipeline @Inject constructor(
     companion object {
         internal const val LOOKBACK_MINUTES = 15
         private const val DELTA_ROUNDING_FACTOR = 10.0
+        private const val REPOST_WINDOW_MS = 30_000L
     }
 
     suspend fun processReading(
@@ -63,13 +67,15 @@ class ReadingPipeline @Inject constructor(
 
         val samplePeriod = SensorIntervals.samplePeriodMs(source)
         val bucketStart = (timestamp / samplePeriod) * samplePeriod
-        val bucketRows = dao.readingsInRange(bucketStart, bucketStart + samplePeriod - 1)
+        val bucketEnd = bucketStart + samplePeriod - 1
+        val rows = dao.readingsInRange(
+            minOf(bucketStart, timestamp - REPOST_WINDOW_MS),
+            maxOf(bucketEnd, timestamp + REPOST_WINDOW_MS)
+        )
+        val bucketRows = rows.filter { it.ts in bucketStart..bucketEnd }
         val latestExisting = bucketRows.maxByOrNull { it.ts }
 
-        // Dedup against ANY row in the bucket — not just the latest. Pre-existing puller
-        // backfill can leave multiple rows in one bucket; matching the second-newest must
-        // also drop, otherwise we'd add a same-value duplicate alongside the puller's row.
-        if (bucketRows.any { it.sgv == sgv }) {
+        if (isRepost(sgv, timestamp, rows, bucketRows)) {
             DebugLog.log(
                 "Dedup-rejected: sgv=$sgv bucketStart=$bucketStart " +
                     "samplePeriod=$samplePeriod source=$source"
@@ -129,5 +135,26 @@ class ReadingPipeline @Inject constructor(
             "$tag: ${reading.sgv} mg/dL ${direction.arrow} bucketStart=$bucketStart source=$source"
         )
         return reading
+    }
+
+    /**
+     * Dedup against ANY row in the bucket — not just the latest. Pre-existing puller backfill
+     * can leave multiple rows in one bucket; matching the second-newest must also drop,
+     * otherwise we'd add a same-value duplicate alongside the puller's row.
+     *
+     * An empty bucket can still receive a repost of the reading just across the bucket
+     * boundary. No CGM reports more often than once a minute, so the same value within
+     * [REPOST_WINDOW_MS] is that repost. A non-empty bucket keeps the bucket rules alone, so a
+     * neighbouring row never blocks an in-bucket replacement.
+     */
+    private fun isRepost(
+        sgv: Int,
+        timestamp: Long,
+        rows: List<GlucoseReading>,
+        bucketRows: List<GlucoseReading>,
+    ): Boolean = if (bucketRows.isEmpty()) {
+        rows.any { it.sgv == sgv && kotlin.math.abs(it.ts - timestamp) <= REPOST_WINDOW_MS }
+    } else {
+        bucketRows.any { it.sgv == sgv }
     }
 }
