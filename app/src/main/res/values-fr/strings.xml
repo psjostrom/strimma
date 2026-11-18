@@ -5,7 +5,6 @@
     <string name="common_cancel">Annuler</string>
     <string name="common_save">Enregistrer</string>
     <string name="common_export">Exporter</string>
-    <string name="common_sound">Son</string>
     <string name="common_no_data">Pas de donn\u00E9es</string>
     <string name="common_dismiss">Ignorer</string>
 
@@ -152,11 +151,20 @@
 
     <!-- Alerts Settings -->
     <string name="settings_alerts_title">Alertes</string>
-    <string name="settings_alerts_section">Alertes</string>
-    <string name="settings_alerts_exercise_section">Alertes d\'entra\u00EEnement</string>
     <string name="settings_alerts_exercise_desc">Utilis\u00E9es lorsque le mode entra\u00EEnement est actif. Les valeurs Bas et Haut d\u00E9finissent \u00E9galement la plage du graphique d\'entra\u00EEnement.</string>
     <string name="settings_alerts_behavior_section">Comportement des alertes</string>
-    <string name="settings_alerts_tap_sound">Appuyez sur \"Son\" pour choisir la sonnerie, la vibration et les param\u00E8tres de contournement par alarme.</string>
+    <string name="settings_alerts_tap_sound">Choisissez la sonnerie, la vibration et le contournement de Ne pas d\u00E9ranger pour chaque alerte. Les sons sont partag\u00E9s par Jour, Nuit et Exercice.</string>
+    <string name="settings_alerts_sounds_section">Sons</string>
+    <string name="settings_alerts_sets_section">Jeux d\'alertes</string>
+    <string name="alert_set_day">Jour</string>
+    <string name="alert_set_night">Nuit</string>
+    <string name="alert_set_exercise">Exercice</string>
+    <string name="settings_alerts_night_enabled">Utiliser les alertes de nuit</string>
+    <string name="settings_alerts_night_enabled_desc">Remplacent les alertes Jour pendant ces heures</string>
+    <string name="settings_alerts_night_from">De</string>
+    <string name="settings_alerts_night_to">\u00C0</string>
+    <string name="settings_alerts_active_now">Actif maintenant</string>
+    <string name="settings_alerts_night_empty_window">Les alertes de nuit n\u00E9cessitent une heure de d\u00E9but diff\u00E9rente de l\'heure de fin.</string>
     <string name="settings_alerts_urgent_low">Bas urgent</string>
     <string name="settings_alerts_urgent_low_threshold">Bas urgent (%1$s)</string>
     <string name="settings_alerts_low">Bas</string>
@@ -561,9 +569,10 @@
         <item quantity="many">Désactivation auto après %1$d heures</item>
         <item quantity="other">Désactivation auto après %1$d heures</item>
     </plurals>
-    <string name="workout_mode_settings_info">Les alertes d\'entra\u00EEnement se configurent dans Param\u00E8tres \u203A Alertes \u203A Alertes d\'entra\u00EEnement. Les valeurs Bas et Haut d\u00E9finissent \u00E9galement la plage du graphique d\'entra\u00EEnement.</string>
-    <string name="exercise_alert_threshold_order_error">Les seuils des alertes d\'entra\u00EEnement doivent respecter : bas critique ≤ bas ≤ haut ≤ haut critique.</string>
+    <string name="workout_mode_settings_info">Les alertes d\'entra\u00EEnement se configurent dans Param\u00E8tres \u203A Alertes \u203A Jeux d\'alertes \u203A Exercice. Les valeurs Bas et Haut d\u00E9finissent \u00E9galement la plage du graphique d\'entra\u00EEnement.</string>
+    <string name="alert_threshold_order_error">Les seuils des alertes doivent respecter : bas critique ≤ bas ≤ haut ≤ haut critique.</string>
     <string name="alert_workout_prefix">Entraînement · %1$s</string>
+    <string name="alert_night_prefix">Nuit · %1$s</string>
     <string name="widget_workout_indicator">ENTRAÎNEMENT</string>
 
     <!-- Notification Action Button -->

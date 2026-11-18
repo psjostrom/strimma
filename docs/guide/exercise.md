@@ -122,7 +122,7 @@ Intensity keywords ("interval", "tempo", "hiit", "sprint") in the title override
 
 The **Workout mode** subsection at the top of Exercise Settings configures the runtime mode's safety timeout. It contains only the auto-off timeout slider (1–12 h, default 3); manual sessions auto-end after this much elapsed time.
 
-Exercise-specific alert enablement and thresholds are configured under **Settings > Alerts > Exercise Alerts**, not in Exercise Settings. The Exercise Alerts section is an independent protocol selected by Workout Mode; Exercise Low and Exercise High also define the exercise graph range. The Alerts screen also contains the standard **Alerts** section and one shared **Alert Behavior** section for snooze duration and cooldown. Regular and Exercise alerts use the same notification channels, so Exercise alert rows do not have separate Sound buttons.
+Exercise-specific alert enablement and thresholds are configured under **Settings > Alerts > Alert sets > Exercise**, not in Exercise Settings. The Exercise set is selected by Workout Mode and takes precedence over the Night set; Exercise Low and Exercise High also define the exercise graph range. The Alerts screen also contains the **Day** and **Night** sets, and the shared **Sounds** and **Alert Behavior** sections. All three sets use the same notification channels, so sounds are set once in **Sounds**.
 
 ### Glucose Write
 

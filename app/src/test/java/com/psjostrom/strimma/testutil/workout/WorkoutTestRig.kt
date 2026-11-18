@@ -4,6 +4,7 @@ import com.psjostrom.strimma.data.calendar.WorkoutEvent
 import com.psjostrom.strimma.data.workout.CalendarPollerSource
 import com.psjostrom.strimma.data.workout.Clock
 import kotlinx.coroutines.flow.MutableStateFlow
+import java.time.ZoneId
 
 /**
  * Hand-written Clock test double — simply returns whatever timestamp the test
@@ -12,7 +13,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
  * elapsed-since-toggle, not about coroutine scheduling).
  */
 class MutableClock(var nowMs: Long) : Clock {
+    var zone: ZoneId = ZoneId.of("UTC")
     override fun nowMs(): Long = nowMs
+    override fun zone(): ZoneId = zone
 }
 
 /**

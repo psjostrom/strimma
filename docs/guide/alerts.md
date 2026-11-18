@@ -6,7 +6,7 @@ Strimma can alert you with sound and vibration when your glucose crosses configu
 
 ## Alert Types
 
-Strimma has **eight** alert types, each with its own Android notification channel so you can customize the sound and vibration for each one independently. Regular and Exercise protocols share the corresponding channels.
+Strimma has **eight** alert types, each with its own Android notification channel so you can customize the sound and vibration for each one independently. The Day, Night and Exercise alert sets share the same channels, so each alert has one sound in every set.
 
 ### Glucose Threshold Alerts
 
@@ -28,8 +28,49 @@ Strimma has **eight** alert types, each with its own Android notification channe
 
 | Alert | Trigger | Bypasses DND | Vibration |
 |-------|---------|-------------|-----------|
-| **Stale Data** | No reading received for 10+ minutes. Uses the selected protocol's toggle; suppressed during the first 30 minutes of Workout Mode. See [Workout Mode](workout-mode.md). | No | Gentle |
+| **Stale Data** | No reading received for 10+ minutes. Uses the active set's toggle; suppressed during the first 30 minutes of Workout Mode. See [Workout Mode](workout-mode.md). | No | Gentle |
 | **Push Failed** | Nightscout push failed after retries | No | Gentle |
+
+---
+
+## Alert Sets
+
+Strimma has three alert sets. Each set holds its own on/off switch for every alert and its own thresholds.
+
+| Set | When it is active |
+|-----|-------------------|
+| **Day** | The rest of the time |
+| **Night** | During the night window, when **Use night alerts** is on |
+| **Exercise** | While Workout Mode is on |
+
+Only one set is active at a time, chosen in this order:
+
+1. If Workout Mode is on, the **Exercise** set is active.
+2. Otherwise, if night alerts are on and the time is inside the night window, the **Night** set is active.
+3. Otherwise, the **Day** set is active.
+
+Workout Mode takes precedence over night alerts. A workout that starts during the night window uses the Exercise set.
+
+Strimma checks every new reading against the active set. The next reading is checked against the new set. An alert that the new set does not raise is cleared at that check.
+
+---
+
+## Night Alerts
+
+Night alerts replace the Day alerts during a daily time window. You choose, for each alert, whether it is on at night and at which threshold. For example, you can turn off High and High Soon at night if your closed loop corrects highs on its own.
+
+- **Off by default.** Turn on **Use night alerts** in **Settings > Alerts > Alert sets > Night**.
+- **Night window.** The window starts at **From** and ends at **To**. The defaults are **23:00** and **07:00**. The window can cross midnight. It includes the **From** minute and excludes the **To** minute. The same window applies every day.
+- **Times use your phone's clock.** The window follows your phone's local time, so a daylight-saving change needs no action.
+- **No daily action.** Night alerts switch on and off by themselves. Strimma checks each reading against the set for the current time.
+- **First enable copies the Day set.** The first time you turn on **Use night alerts**, Strimma copies your Day alerts into the Night set, so turning night alerts on changes no alert. After the copy, the Night set and the Day set are independent.
+- **From and To must differ.** Strimma rejects a window whose start equals its end.
+- **Shared settings.** Sounds, **Alert Snooze Duration** and **Cooldown** are the same for all three sets.
+- **Graph range.** The graph keeps your normal low and high range at night.
+
+While the Night set is active, the four glucose threshold alerts carry a `Night · ` prefix in the title (for example, `Night · Low Glucose`). The Low Soon, High Soon and Stale Data alerts have no prefix.
+
+Night alert settings are part of the settings export and import. An export file from an older version leaves your current night settings unchanged on import.
 
 ---
 
@@ -37,10 +78,10 @@ Strimma has **eight** alert types, each with its own Android notification channe
 
 When workout mode is on (see [Workout Mode](workout-mode.md)):
 
-- **The Exercise protocol is selected** instead of the Regular protocol. Its independent enablement toggles, thresholds, predictive toggles, and stale toggle apply (defaults: 5.0 / 6.0 / 14.0 / 16.0 mmol/L).
+- **The Exercise set is selected** instead of the Day or Night set. Its independent enablement toggles, thresholds, predictive toggles, and stale toggle apply (defaults: 5.0 / 6.0 / 14.0 / 16.0 mmol/L).
 - **Exercise Low and Exercise High** also become the in-range bounds for graphs and other live displays while Workout Mode is on.
 - **Alert titles are prefixed** with `Workout · ` (e.g., `Workout · Urgent Low`) so the severity label is unambiguous — without this, an "Urgent Low" at 5.0 mmol/L could be misread as a normal-life crisis.
-- **Stale-data alerts** use the selected protocol's toggle. They are suppressed for the first 30 minutes of Workout Mode, then use the normal 10+ minute rule.
+- **Stale-data alerts** use the Exercise set's toggle. They are suppressed for the first 30 minutes of Workout Mode, then use the normal 10+ minute rule.
 
 ---
 
@@ -93,29 +134,16 @@ You can pause entire alert categories for a custom duration — useful during ex
 
 ## Configuring Alerts
 
-Go to **Settings > Alerts**. The screen has four sections, with independent Regular and Exercise protocols, one shared behavior section, and a Pattern Insights toggle.
+Go to **Settings > Alerts**. The screen has four parts, from top to bottom:
 
-### Alerts
+1. **Sounds**, shared by all alert sets
+2. **Alert Behavior**, shared by all alert sets
+3. **Pattern Insights**, shared by all alert sets
+4. **Alert sets**, where you edit one set at a time
 
-This section configures the Regular protocol used outside Workout Mode:
+### Sounds
 
-- Each configurable alert has an independent toggle. Disabled alerts never fire, regardless of your glucose level.
-- The four glucose threshold alerts (Urgent Low, Low, High, Urgent High) each have an editable threshold in your configured unit (mmol/L or mg/dL).
-- Low Soon, High Soon, and Stale Data use the Regular protocol's enablement settings.
-
-### Exercise Alerts
-
-This section configures the independent Exercise protocol used while Workout Mode is active. It has its own enablement toggles and threshold values; changing it does not change the Regular protocol. Exercise Low and Exercise High also define the exercise graph range.
-
-Exercise alerts use the same notification channel as their corresponding Regular alert. Exercise rows intentionally have no Sound buttons or separate channel links.
-
-### Alert Behavior
-
-**Alert Snooze Duration** and **Cooldown** appear once in this shared section and apply to whichever protocol is active. They are not separate Regular and Exercise settings.
-
-### Customize Sound
-
-Regular alert rows have a **Sound** button that opens the Android notification channel settings for that alert. Exercise alert rows intentionally omit Sound buttons because both protocols use the same Android notification channels. From a Regular alert's Sound button you can:
+The **Sounds** section has one row for each alert: Urgent Low, Low, High, Urgent High, Low Soon, High Soon and Stale Data. Tap a row to open the Android notification channel settings for that alert. The Day, Night and Exercise sets share these sounds. From the channel settings you can:
 
 - Choose a different notification sound or alarm tone
 - Enable/disable vibration
@@ -124,6 +152,26 @@ Regular alert rows have a **Sound** button that opens the Android notification c
 
 !!! tip "Use distinct sounds"
     Pick clearly different sounds for Low vs High alerts so you know which one it is without looking at your phone. Many users set the urgent alerts to a loud alarm tone and the regular alerts to a gentler notification sound.
+
+### Alert Behavior
+
+**Alert Snooze Duration** and **Cooldown** appear once in this section and apply to whichever set is active. They are not separate Day, Night and Exercise settings.
+
+### Alert sets
+
+The **Alert sets** section has three tabs: **Day**, **Night** and **Exercise**. The card under the tabs shows the seven alerts of the selected tab. A small dot on a tab marks the set that is active now. The screen opens on the tab of the active set. Changing a setting under one tab never changes another tab's set.
+
+Each set has the same seven alert rows:
+
+- Each configurable alert has an independent toggle. Disabled alerts never fire, regardless of your glucose level.
+- The four glucose threshold alerts (Urgent Low, Low, High, Urgent High) each have an editable threshold in your configured unit (mmol/L or mg/dL).
+- Low Soon, High Soon, and Stale Data each have a toggle in every set.
+
+**Day** holds the alerts used outside the night window and outside Workout Mode.
+
+**Night** starts with the **Use night alerts** switch and the **From** and **To** times. Tap a time to change it in a time picker. The times use the 24-hour format (HH:mm). While the switch is off, the alert rows are hidden. See [Night Alerts](#night-alerts).
+
+**Exercise** holds the alerts used while Workout Mode is active. Exercise Low and Exercise High also define the exercise graph range.
 
 ---
 
@@ -134,7 +182,7 @@ Regular alert rows have a **Sound** button that opens the Android notification c
 The other alerts (Low, High, Low Soon, High Soon, Stale Data) respect Do Not Disturb by default. However, you can change **any** alert to bypass DND:
 
 1. Go to **Settings > Alerts**
-2. In the **Alerts** section, tap the **Sound** button next to the alert you want to change
+2. In the **Sounds** section, tap the row of the alert you want to change
 3. In the Android notification channel settings, enable **Override Do Not Disturb**
 
 This is an Android feature — once you change a channel's DND setting, Android remembers it.

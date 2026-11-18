@@ -214,7 +214,7 @@ private fun MealSlotRow(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun TimePickerDialog(
+internal fun TimePickerDialog(
     initialMinutes: Int,
     onConfirm: (Int) -> Unit,
     onDismiss: () -> Unit
@@ -243,7 +243,7 @@ private fun TimePickerDialog(
 
 private const val MINUTES_PER_HOUR = 60
 
-private fun formatMinutes(minutes: Int): String {
+internal fun formatMinutes(minutes: Int): String {
     val h = minutes / MINUTES_PER_HOUR
     val m = minutes % MINUTES_PER_HOUR
     return "%02d:%02d".format(h, m)

@@ -1,12 +1,21 @@
 package com.psjostrom.strimma.ui.settings
 
 import android.widget.Toast
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -14,125 +23,83 @@ import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.notification.SnoozeDuration
 import com.psjostrom.strimma.data.workout.AlertProtocol
+import com.psjostrom.strimma.data.workout.AlertSet
+import com.psjostrom.strimma.data.workout.NightWindow
 import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.ui.theme.InRange
 import kotlinx.coroutines.flow.Flow
 
 private val cooldownOptions = listOf(0, 5, 10, 15)
 
+private val soundChannels = listOf(
+    R.string.settings_alerts_urgent_low to AlertManager.CHANNEL_URGENT_LOW,
+    R.string.settings_alerts_low to AlertManager.CHANNEL_LOW,
+    R.string.settings_alerts_high to AlertManager.CHANNEL_HIGH,
+    R.string.settings_alerts_urgent_high to AlertManager.CHANNEL_URGENT_HIGH,
+    R.string.settings_alerts_low_soon to AlertManager.CHANNEL_LOW_SOON,
+    R.string.settings_alerts_high_soon to AlertManager.CHANNEL_HIGH_SOON,
+    R.string.settings_alerts_stale to AlertManager.CHANNEL_STALE,
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlertsSettings(
     glucoseUnit: GlucoseUnit,
-    regularAlertProtocol: AlertProtocol,
-    exerciseAlertProtocol: AlertProtocol,
+    activeSet: AlertSet,
+    dayProtocol: AlertProtocol,
+    nightProtocol: AlertProtocol,
+    exerciseProtocol: AlertProtocol,
+    nightAlertsEnabled: Boolean,
+    nightWindow: NightWindow,
+    dayCallbacks: AlertProtocolCallbacks,
+    nightCallbacks: AlertProtocolCallbacks,
+    exerciseCallbacks: AlertProtocolCallbacks,
+    onNightAlertsEnabledChange: (Boolean) -> Unit,
+    onNightWindowStartChange: (Int) -> Unit,
+    onNightWindowEndChange: (Int) -> Unit,
     alertCooldownMinutes: Int,
     alertSnoozeDuration: SnoozeDuration,
-    onAlertLowEnabledChange: (Boolean) -> Unit,
-    onAlertHighEnabledChange: (Boolean) -> Unit,
-    onAlertUrgentLowEnabledChange: (Boolean) -> Unit,
-    onAlertUrgentHighEnabledChange: (Boolean) -> Unit,
-    onAlertLowChange: (Float) -> Unit,
-    onAlertHighChange: (Float) -> Unit,
-    onAlertUrgentLowChange: (Float) -> Unit,
-    onAlertUrgentHighChange: (Float) -> Unit,
-    onAlertStaleEnabledChange: (Boolean) -> Unit,
-    onAlertLowSoonEnabledChange: (Boolean) -> Unit,
-    onAlertHighSoonEnabledChange: (Boolean) -> Unit,
     onAlertCooldownChange: (Int) -> Unit,
     onAlertSnoozeDurationChange: (SnoozeDuration) -> Unit,
-    onExerciseAlertLowEnabledChange: (Boolean) -> Unit,
-    onExerciseAlertHighEnabledChange: (Boolean) -> Unit,
-    onExerciseAlertUrgentLowEnabledChange: (Boolean) -> Unit,
-    onExerciseAlertUrgentHighEnabledChange: (Boolean) -> Unit,
-    onExerciseAlertLowChange: (Float) -> Unit,
-    onExerciseAlertHighChange: (Float) -> Unit,
-    onExerciseAlertUrgentLowChange: (Float) -> Unit,
-    onExerciseAlertUrgentHighChange: (Float) -> Unit,
-    onExerciseAlertStaleEnabledChange: (Boolean) -> Unit,
-    onExerciseAlertLowSoonEnabledChange: (Boolean) -> Unit,
-    onExerciseAlertHighSoonEnabledChange: (Boolean) -> Unit,
-    patternAlertsEnabled: Boolean = true,
-    onPatternAlertsEnabledChange: (Boolean) -> Unit = {},
+    patternAlertsEnabled: Boolean,
+    onPatternAlertsEnabledChange: (Boolean) -> Unit,
     validationError: Flow<AlertsViewModel.ValidationError>,
     onOpenAlertSound: (String) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
 ) {
     val onBg = MaterialTheme.colorScheme.onBackground
     val outline = MaterialTheme.colorScheme.outline
     val outlineVar = MaterialTheme.colorScheme.outlineVariant
     val context = LocalContext.current
-    val orderErrorMessage = stringResource(R.string.exercise_alert_threshold_order_error)
+    val orderErrorMessage = stringResource(R.string.alert_threshold_order_error)
+    val emptyWindowMessage = stringResource(R.string.settings_alerts_night_empty_window)
 
     LaunchedEffect(validationError) {
         validationError.collect { error ->
-            if (error == AlertsViewModel.ValidationError.Order) {
-                Toast.makeText(context, orderErrorMessage, Toast.LENGTH_LONG).show()
+            val message = when (error) {
+                AlertsViewModel.ValidationError.Order -> orderErrorMessage
+                AlertsViewModel.ValidationError.EmptyWindow -> emptyWindowMessage
             }
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
         }
     }
 
     SettingsScaffold(title = stringResource(R.string.settings_alerts_title), onBack = onBack) {
-        SettingsSection(stringResource(R.string.settings_alerts_section)) {
+        SettingsSection(stringResource(R.string.settings_alerts_sounds_section)) {
             Text(
                 stringResource(R.string.settings_alerts_tap_sound),
                 color = outline,
                 fontSize = 12.sp
             )
-
-            AlertProtocolRows(
-                protocol = regularAlertProtocol,
-                glucoseUnit = glucoseUnit,
-                showSound = true,
-                callbacks = AlertProtocolCallbacks(
-                    onUrgentLowEnabledChange = onAlertUrgentLowEnabledChange,
-                    onLowEnabledChange = onAlertLowEnabledChange,
-                    onHighEnabledChange = onAlertHighEnabledChange,
-                    onUrgentHighEnabledChange = onAlertUrgentHighEnabledChange,
-                    onUrgentLowChange = onAlertUrgentLowChange,
-                    onLowChange = onAlertLowChange,
-                    onHighChange = onAlertHighChange,
-                    onUrgentHighChange = onAlertUrgentHighChange,
-                    onLowSoonEnabledChange = onAlertLowSoonEnabledChange,
-                    onHighSoonEnabledChange = onAlertHighSoonEnabledChange,
-                    onStaleEnabledChange = onAlertStaleEnabledChange,
-                ),
-                onOpenSound = onOpenAlertSound,
-                textColor = onBg,
-                outlineColor = outline,
-                dividerColor = outlineVar,
-            )
-        }
-
-        SettingsSection(stringResource(R.string.settings_alerts_exercise_section)) {
-            Text(
-                stringResource(R.string.settings_alerts_exercise_desc),
-                color = outline,
-                fontSize = 12.sp
-            )
-
-            AlertProtocolRows(
-                protocol = exerciseAlertProtocol,
-                glucoseUnit = glucoseUnit,
-                showSound = false,
-                callbacks = AlertProtocolCallbacks(
-                    onUrgentLowEnabledChange = onExerciseAlertUrgentLowEnabledChange,
-                    onLowEnabledChange = onExerciseAlertLowEnabledChange,
-                    onHighEnabledChange = onExerciseAlertHighEnabledChange,
-                    onUrgentHighEnabledChange = onExerciseAlertUrgentHighEnabledChange,
-                    onUrgentLowChange = onExerciseAlertUrgentLowChange,
-                    onLowChange = onExerciseAlertLowChange,
-                    onHighChange = onExerciseAlertHighChange,
-                    onUrgentHighChange = onExerciseAlertUrgentHighChange,
-                    onLowSoonEnabledChange = onExerciseAlertLowSoonEnabledChange,
-                    onHighSoonEnabledChange = onExerciseAlertHighSoonEnabledChange,
-                    onStaleEnabledChange = onExerciseAlertStaleEnabledChange,
-                ),
-                onOpenSound = null,
-                textColor = onBg,
-                outlineColor = outline,
-                dividerColor = outlineVar,
-            )
+            soundChannels.forEachIndexed { index, (labelRes, channelId) ->
+                if (index > 0) HorizontalDivider(color = outlineVar)
+                SoundRow(
+                    label = stringResource(labelRes),
+                    onClick = { onOpenAlertSound(channelId) },
+                    textColor = onBg,
+                    chevronColor = outline,
+                )
+            }
         }
 
         SettingsSection(stringResource(R.string.settings_alerts_behavior_section)) {
@@ -197,33 +164,169 @@ fun AlertsSettings(
                 outlineColor = outline,
             )
         }
+
+        var selectedSet by rememberSaveable { mutableStateOf(activeSet) }
+        SettingsSection(
+            title = stringResource(R.string.settings_alerts_sets_section),
+            header = { AlertSetTabs(selected = selectedSet, activeSet = activeSet, onSelect = { selectedSet = it }) },
+        ) {
+            when (selectedSet) {
+                AlertSet.DAY -> AlertProtocolRows(
+                    protocol = dayProtocol,
+                    glucoseUnit = glucoseUnit,
+                    callbacks = dayCallbacks,
+                    textColor = onBg,
+                    outlineColor = outline,
+                    dividerColor = outlineVar,
+                )
+                AlertSet.NIGHT -> {
+                    AlertToggleRow(
+                        label = stringResource(R.string.settings_alerts_night_enabled),
+                        description = stringResource(R.string.settings_alerts_night_enabled_desc),
+                        enabled = nightAlertsEnabled,
+                        onToggle = onNightAlertsEnabledChange,
+                        textColor = onBg,
+                        outlineColor = outline,
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        TimeField(
+                            label = stringResource(R.string.settings_alerts_night_from),
+                            minutes = nightWindow.startMinute,
+                            onChange = onNightWindowStartChange,
+                            modifier = Modifier.weight(1f),
+                        )
+                        TimeField(
+                            label = stringResource(R.string.settings_alerts_night_to),
+                            minutes = nightWindow.endMinute,
+                            onChange = onNightWindowEndChange,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    if (nightAlertsEnabled) {
+                        HorizontalDivider(color = outlineVar)
+                        AlertProtocolRows(
+                            protocol = nightProtocol,
+                            glucoseUnit = glucoseUnit,
+                            callbacks = nightCallbacks,
+                            textColor = onBg,
+                            outlineColor = outline,
+                            dividerColor = outlineVar,
+                        )
+                    }
+                }
+                AlertSet.EXERCISE -> {
+                    Text(
+                        stringResource(R.string.settings_alerts_exercise_desc),
+                        color = outline,
+                        fontSize = 12.sp
+                    )
+                    AlertProtocolRows(
+                        protocol = exerciseProtocol,
+                        glucoseUnit = glucoseUnit,
+                        callbacks = exerciseCallbacks,
+                        textColor = onBg,
+                        outlineColor = outline,
+                        dividerColor = outlineVar,
+                    )
+                }
+            }
+        }
     }
 }
 
-private data class AlertProtocolCallbacks(
-    val onUrgentLowEnabledChange: (Boolean) -> Unit,
-    val onLowEnabledChange: (Boolean) -> Unit,
-    val onHighEnabledChange: (Boolean) -> Unit,
-    val onUrgentHighEnabledChange: (Boolean) -> Unit,
-    val onUrgentLowChange: (Float) -> Unit,
-    val onLowChange: (Float) -> Unit,
-    val onHighChange: (Float) -> Unit,
-    val onUrgentHighChange: (Float) -> Unit,
-    val onLowSoonEnabledChange: (Boolean) -> Unit,
-    val onHighSoonEnabledChange: (Boolean) -> Unit,
-    val onStaleEnabledChange: (Boolean) -> Unit,
-)
+@Composable
+private fun SoundRow(
+    label: String,
+    onClick: () -> Unit,
+    textColor: Color,
+    chevronColor: Color,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(label, color = textColor, fontSize = 14.sp, modifier = Modifier.weight(1f))
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = chevronColor,
+            modifier = Modifier.size(20.dp)
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AlertSetTabs(selected: AlertSet, activeSet: AlertSet, onSelect: (AlertSet) -> Unit) {
+    val tabs = listOf(
+        AlertSet.DAY to stringResource(R.string.alert_set_day),
+        AlertSet.NIGHT to stringResource(R.string.alert_set_night),
+        AlertSet.EXERCISE to stringResource(R.string.alert_set_exercise),
+    )
+    val activeNow = stringResource(R.string.settings_alerts_active_now)
+    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
+        tabs.forEachIndexed { index, (set, label) ->
+            SegmentedButton(
+                selected = selected == set,
+                onClick = { onSelect(set) },
+                shape = SegmentedButtonDefaults.itemShape(index, tabs.size),
+                icon = {},
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(label, maxLines = 1)
+                    if (set == activeSet) {
+                        Box(
+                            Modifier
+                                .padding(start = 6.dp)
+                                .size(6.dp)
+                                .background(InRange, CircleShape)
+                                .semantics { contentDescription = activeNow }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+// A read-only field cannot take clicks itself, so a transparent overlay opens the picker.
+@Composable
+private fun TimeField(label: String, minutes: Int, onChange: (Int) -> Unit, modifier: Modifier) {
+    var showPicker by remember { mutableStateOf(false) }
+    Box(modifier) {
+        OutlinedTextField(
+            value = formatMinutes(minutes),
+            onValueChange = {},
+            readOnly = true,
+            singleLine = true,
+            label = { Text(label) },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Box(Modifier.matchParentSize().clickable(onClickLabel = label) { showPicker = true })
+    }
+    if (showPicker) {
+        TimePickerDialog(
+            initialMinutes = minutes,
+            onConfirm = {
+                onChange(it)
+                showPicker = false
+            },
+            onDismiss = { showPicker = false },
+        )
+    }
+}
 
 @Composable
 private fun AlertProtocolRows(
     protocol: AlertProtocol,
     glucoseUnit: GlucoseUnit,
-    showSound: Boolean,
     callbacks: AlertProtocolCallbacks,
-    onOpenSound: ((String) -> Unit)?,
-    textColor: androidx.compose.ui.graphics.Color,
-    outlineColor: androidx.compose.ui.graphics.Color,
-    dividerColor: androidx.compose.ui.graphics.Color,
+    textColor: Color,
+    outlineColor: Color,
+    dividerColor: Color,
 ) {
     AlertBlock(
         label = stringResource(R.string.settings_alerts_urgent_low),
@@ -233,8 +336,6 @@ private fun AlertProtocolRows(
         onThresholdChange = callbacks.onUrgentLowChange,
         thresholdLabel = stringResource(R.string.settings_alerts_urgent_low_threshold, glucoseUnit.label),
         glucoseUnit = glucoseUnit,
-        channelId = if (showSound) AlertManager.CHANNEL_URGENT_LOW else null,
-        onOpenSound = onOpenSound,
         textColor = textColor,
     )
 
@@ -248,8 +349,6 @@ private fun AlertProtocolRows(
         onThresholdChange = callbacks.onLowChange,
         thresholdLabel = stringResource(R.string.settings_alerts_low_threshold, glucoseUnit.label),
         glucoseUnit = glucoseUnit,
-        channelId = if (showSound) AlertManager.CHANNEL_LOW else null,
-        onOpenSound = onOpenSound,
         textColor = textColor,
     )
 
@@ -263,8 +362,6 @@ private fun AlertProtocolRows(
         onThresholdChange = callbacks.onHighChange,
         thresholdLabel = stringResource(R.string.settings_alerts_high_threshold, glucoseUnit.label),
         glucoseUnit = glucoseUnit,
-        channelId = if (showSound) AlertManager.CHANNEL_HIGH else null,
-        onOpenSound = onOpenSound,
         textColor = textColor,
     )
 
@@ -278,8 +375,6 @@ private fun AlertProtocolRows(
         onThresholdChange = callbacks.onUrgentHighChange,
         thresholdLabel = stringResource(R.string.settings_alerts_urgent_high_threshold, glucoseUnit.label),
         glucoseUnit = glucoseUnit,
-        channelId = if (showSound) AlertManager.CHANNEL_URGENT_HIGH else null,
-        onOpenSound = onOpenSound,
         textColor = textColor,
     )
 
@@ -293,11 +388,6 @@ private fun AlertProtocolRows(
         textColor = textColor,
         outlineColor = outlineColor,
     )
-    if (showSound && protocol.lowSoonEnabled && onOpenSound != null) {
-        TextButton(onClick = { onOpenSound(AlertManager.CHANNEL_LOW_SOON) }) {
-            Text(stringResource(R.string.common_sound), color = InRange, fontSize = 13.sp)
-        }
-    }
 
     HorizontalDivider(color = dividerColor)
 
@@ -309,11 +399,6 @@ private fun AlertProtocolRows(
         textColor = textColor,
         outlineColor = outlineColor,
     )
-    if (showSound && protocol.highSoonEnabled && onOpenSound != null) {
-        TextButton(onClick = { onOpenSound(AlertManager.CHANNEL_HIGH_SOON) }) {
-            Text(stringResource(R.string.common_sound), color = InRange, fontSize = 13.sp)
-        }
-    }
 
     HorizontalDivider(color = dividerColor)
 
@@ -325,11 +410,6 @@ private fun AlertProtocolRows(
         textColor = textColor,
         outlineColor = outlineColor,
     )
-    if (showSound && protocol.staleEnabled && onOpenSound != null) {
-        TextButton(onClick = { onOpenSound(AlertManager.CHANNEL_STALE) }) {
-            Text(stringResource(R.string.common_sound), color = InRange, fontSize = 13.sp)
-        }
-    }
 }
 
 @Composable
@@ -338,8 +418,8 @@ private fun AlertToggleRow(
     description: String?,
     enabled: Boolean,
     onToggle: (Boolean) -> Unit,
-    textColor: androidx.compose.ui.graphics.Color,
-    outlineColor: androidx.compose.ui.graphics.Color,
+    textColor: Color,
+    outlineColor: Color,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -352,6 +432,10 @@ private fun AlertToggleRow(
                 Text(description, color = outlineColor, fontSize = 12.sp)
             }
         }
-        Switch(checked = enabled, onCheckedChange = onToggle)
+        Switch(
+            checked = enabled,
+            onCheckedChange = onToggle,
+            modifier = Modifier.semantics { contentDescription = label },
+        )
     }
 }

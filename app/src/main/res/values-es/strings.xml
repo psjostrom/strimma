@@ -5,7 +5,6 @@
     <string name="common_cancel">Cancelar</string>
     <string name="common_save">Guardar</string>
     <string name="common_export">Exportar</string>
-    <string name="common_sound">Sonido</string>
     <string name="common_no_data">Sin datos</string>
     <string name="common_dismiss">Descartar</string>
 
@@ -152,11 +151,20 @@
 
     <!-- Alerts Settings -->
     <string name="settings_alerts_title">Alertas</string>
-    <string name="settings_alerts_section">Alertas</string>
-    <string name="settings_alerts_exercise_section">Alertas de ejercicio</string>
     <string name="settings_alerts_exercise_desc">Se usan mientras el modo de entrenamiento est\u00E1 activo. Bajo y Alto tambi\u00E9n definen el rango del gr\u00E1fico de ejercicio.</string>
     <string name="settings_alerts_behavior_section">Comportamiento de las alertas</string>
-    <string name="settings_alerts_tap_sound">Toca \"Sonido\" para elegir tono, vibraci\u00F3n y ajustes de anulaci\u00F3n por alarma.</string>
+    <string name="settings_alerts_tap_sound">Elige tono, vibraci\u00F3n y anulaci\u00F3n de No molestar por alerta. Los sonidos se comparten entre D\u00EDa, Noche y Ejercicio.</string>
+    <string name="settings_alerts_sounds_section">Sonidos</string>
+    <string name="settings_alerts_sets_section">Conjuntos de alertas</string>
+    <string name="alert_set_day">D\u00EDa</string>
+    <string name="alert_set_night">Noche</string>
+    <string name="alert_set_exercise">Ejercicio</string>
+    <string name="settings_alerts_night_enabled">Usar alertas nocturnas</string>
+    <string name="settings_alerts_night_enabled_desc">Sustituyen a las alertas de D\u00EDa durante estas horas</string>
+    <string name="settings_alerts_night_from">Desde</string>
+    <string name="settings_alerts_night_to">Hasta</string>
+    <string name="settings_alerts_active_now">Activo ahora</string>
+    <string name="settings_alerts_night_empty_window">Las alertas nocturnas necesitan una hora de inicio distinta de la hora de fin.</string>
     <string name="settings_alerts_urgent_low">Bajo urgente</string>
     <string name="settings_alerts_urgent_low_threshold">Bajo urgente (%1$s)</string>
     <string name="settings_alerts_low">Bajo</string>
@@ -561,9 +569,10 @@
         <item quantity="many">Apagado automático tras %1$d horas</item>
         <item quantity="other">Apagado automático tras %1$d horas</item>
     </plurals>
-    <string name="workout_mode_settings_info">Las alertas de ejercicio se configuran en Ajustes \u203A Alertas \u203A Alertas de ejercicio. Bajo y Alto tambi\u00E9n definen el rango del gr\u00E1fico de ejercicio.</string>
-    <string name="exercise_alert_threshold_order_error">Los umbrales de las alertas de ejercicio deben cumplir: bajo crítico ≤ bajo ≤ alto ≤ alto crítico.</string>
+    <string name="workout_mode_settings_info">Las alertas de ejercicio se configuran en Ajustes \u203A Alertas \u203A Conjuntos de alertas \u203A Ejercicio. Bajo y Alto tambi\u00E9n definen el rango del gr\u00E1fico de ejercicio.</string>
+    <string name="alert_threshold_order_error">Los umbrales de las alertas deben cumplir: bajo crítico ≤ bajo ≤ alto ≤ alto crítico.</string>
     <string name="alert_workout_prefix">Entrenamiento · %1$s</string>
+    <string name="alert_night_prefix">Noche · %1$s</string>
     <string name="widget_workout_indicator">ENTRENAMIENTO</string>
 
     <!-- Notification Action Button -->

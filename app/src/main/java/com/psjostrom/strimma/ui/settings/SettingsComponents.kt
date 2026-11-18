@@ -15,11 +15,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.GlucoseUnit
-import com.psjostrom.strimma.ui.theme.InRange
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,6 +67,7 @@ fun SettingsScaffold(
 @Composable
 fun SettingsSection(
     title: String,
+    header: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val outline = MaterialTheme.colorScheme.outline
@@ -80,6 +82,7 @@ fun SettingsSection(
             letterSpacing = 1.5.sp,
             modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
         )
+        header?.invoke()
         Surface(
             shape = RoundedCornerShape(12.dp),
             color = surfVar
@@ -135,8 +138,6 @@ fun AlertBlock(
     onThresholdChange: (Float) -> Unit,
     thresholdLabel: String,
     glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
-    channelId: String? = null,
-    onOpenSound: ((String) -> Unit)? = null,
     textColor: Color
 ) {
     Row(
@@ -145,7 +146,11 @@ fun AlertBlock(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(label, color = textColor, fontSize = 14.sp)
-        Switch(checked = enabled, onCheckedChange = onToggle)
+        Switch(
+            checked = enabled,
+            onCheckedChange = onToggle,
+            modifier = Modifier.semantics { contentDescription = label },
+        )
     }
     if (enabled) {
         var text by remember(threshold, glucoseUnit) { mutableStateOf(glucoseUnit.formatThreshold(threshold)) }
@@ -160,10 +165,5 @@ fun AlertBlock(
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
         )
-        if (channelId != null && onOpenSound != null) {
-            TextButton(onClick = { onOpenSound(channelId) }) {
-                Text(stringResource(R.string.common_sound), color = InRange, fontSize = 13.sp)
-            }
-        }
     }
 }

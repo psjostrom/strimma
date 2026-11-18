@@ -41,6 +41,7 @@ import androidx.navigation.compose.composable
 import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.notification.NotificationActionConfig
 import com.psjostrom.strimma.receiver.GlucoseNotificationListener
+import com.psjostrom.strimma.ui.settings.AlertProtocolCallbacks
 import com.psjostrom.strimma.ui.settings.AlertsSettings
 import com.psjostrom.strimma.ui.settings.AlertsViewModel
 import com.psjostrom.strimma.ui.settings.DataSettings
@@ -429,44 +430,78 @@ fun StrimmaNavGraph(
         }
         composable("settings/alerts") {
             val alertsViewModel: AlertsViewModel = hiltViewModel()
+            val activeSet by alertsViewModel.activeSet.collectAsState()
             val regularAlertProtocol by alertsViewModel.regularAlertProtocol.collectAsState()
+            val nightAlertProtocol by alertsViewModel.nightAlertProtocol.collectAsState()
             val exerciseAlertProtocol by alertsViewModel.exerciseAlertProtocol.collectAsState()
+            val nightAlertsEnabled by alertsViewModel.nightAlertsEnabled.collectAsState()
+            val nightWindow by alertsViewModel.nightWindow.collectAsState()
             val alertCooldownMinutes by alertsViewModel.alertCooldownMinutes.collectAsState()
             val alertSnoozeDuration by alertsViewModel.alertSnoozeDuration.collectAsState()
             val patternAlertsEnabled by alertsViewModel.patternAlertsEnabled.collectAsState()
-            val regularProtocol = regularAlertProtocol
+            val set = activeSet
+            val dayProtocol = regularAlertProtocol
+            val nightProtocol = nightAlertProtocol
             val exerciseProtocol = exerciseAlertProtocol
-            if (regularProtocol != null && exerciseProtocol != null) {
+            val nightEnabled = nightAlertsEnabled
+            val window = nightWindow
+            val protocolsLoaded = dayProtocol != null && nightProtocol != null && exerciseProtocol != null
+            val nightLoaded = nightEnabled != null && window != null
+            if (set != null && protocolsLoaded && nightLoaded) {
                 AlertsSettings(
                     glucoseUnit = glucoseUnit,
-                    regularAlertProtocol = regularProtocol,
-                    exerciseAlertProtocol = exerciseProtocol,
+                    activeSet = set,
+                    dayProtocol = dayProtocol,
+                    nightProtocol = nightProtocol,
+                    exerciseProtocol = exerciseProtocol,
+                    nightAlertsEnabled = nightEnabled,
+                    nightWindow = window,
+                    dayCallbacks = AlertProtocolCallbacks(
+                        onUrgentLowEnabledChange = alertsViewModel::setAlertUrgentLowEnabled,
+                        onLowEnabledChange = alertsViewModel::setAlertLowEnabled,
+                        onHighEnabledChange = alertsViewModel::setAlertHighEnabled,
+                        onUrgentHighEnabledChange = alertsViewModel::setAlertUrgentHighEnabled,
+                        onUrgentLowChange = alertsViewModel::setAlertUrgentLow,
+                        onLowChange = alertsViewModel::setAlertLow,
+                        onHighChange = alertsViewModel::setAlertHigh,
+                        onUrgentHighChange = alertsViewModel::setAlertUrgentHigh,
+                        onLowSoonEnabledChange = alertsViewModel::setAlertLowSoonEnabled,
+                        onHighSoonEnabledChange = alertsViewModel::setAlertHighSoonEnabled,
+                        onStaleEnabledChange = alertsViewModel::setAlertStaleEnabled,
+                    ),
+                    nightCallbacks = AlertProtocolCallbacks(
+                        onUrgentLowEnabledChange = alertsViewModel::setNightAlertUrgentLowEnabled,
+                        onLowEnabledChange = alertsViewModel::setNightAlertLowEnabled,
+                        onHighEnabledChange = alertsViewModel::setNightAlertHighEnabled,
+                        onUrgentHighEnabledChange = alertsViewModel::setNightAlertUrgentHighEnabled,
+                        onUrgentLowChange = alertsViewModel::setNightAlertUrgentLow,
+                        onLowChange = alertsViewModel::setNightAlertLow,
+                        onHighChange = alertsViewModel::setNightAlertHigh,
+                        onUrgentHighChange = alertsViewModel::setNightAlertUrgentHigh,
+                        onLowSoonEnabledChange = alertsViewModel::setNightAlertLowSoonEnabled,
+                        onHighSoonEnabledChange = alertsViewModel::setNightAlertHighSoonEnabled,
+                        onStaleEnabledChange = alertsViewModel::setNightAlertStaleEnabled,
+                    ),
+                    exerciseCallbacks = AlertProtocolCallbacks(
+                        onUrgentLowEnabledChange = alertsViewModel::setExerciseAlertUrgentLowEnabled,
+                        onLowEnabledChange = alertsViewModel::setExerciseAlertLowEnabled,
+                        onHighEnabledChange = alertsViewModel::setExerciseAlertHighEnabled,
+                        onUrgentHighEnabledChange = alertsViewModel::setExerciseAlertUrgentHighEnabled,
+                        onUrgentLowChange = alertsViewModel::setExerciseAlertUrgentLow,
+                        onLowChange = alertsViewModel::setExerciseAlertLow,
+                        onHighChange = alertsViewModel::setExerciseAlertHigh,
+                        onUrgentHighChange = alertsViewModel::setExerciseAlertUrgentHigh,
+                        onLowSoonEnabledChange = alertsViewModel::setExerciseAlertLowSoonEnabled,
+                        onHighSoonEnabledChange = alertsViewModel::setExerciseAlertHighSoonEnabled,
+                        onStaleEnabledChange = alertsViewModel::setExerciseAlertStaleEnabled,
+                    ),
+                    onNightAlertsEnabledChange = alertsViewModel::setNightAlertsEnabled,
+                    onNightWindowStartChange = alertsViewModel::setNightWindowStart,
+                    onNightWindowEndChange = alertsViewModel::setNightWindowEnd,
                     alertCooldownMinutes = alertCooldownMinutes,
                     alertSnoozeDuration = alertSnoozeDuration,
-                    onAlertLowEnabledChange = alertsViewModel::setAlertLowEnabled,
-                    onAlertHighEnabledChange = alertsViewModel::setAlertHighEnabled,
-                    onAlertUrgentLowEnabledChange = alertsViewModel::setAlertUrgentLowEnabled,
-                    onAlertUrgentHighEnabledChange = alertsViewModel::setAlertUrgentHighEnabled,
-                    onAlertLowChange = alertsViewModel::setAlertLow,
-                    onAlertHighChange = alertsViewModel::setAlertHigh,
-                    onAlertUrgentLowChange = alertsViewModel::setAlertUrgentLow,
-                    onAlertUrgentHighChange = alertsViewModel::setAlertUrgentHigh,
-                    onAlertStaleEnabledChange = alertsViewModel::setAlertStaleEnabled,
-                    onAlertLowSoonEnabledChange = alertsViewModel::setAlertLowSoonEnabled,
-                    onAlertHighSoonEnabledChange = alertsViewModel::setAlertHighSoonEnabled,
                     onAlertCooldownChange = alertsViewModel::setAlertCooldownMinutes,
                     onAlertSnoozeDurationChange = alertsViewModel::setAlertSnoozeDuration,
-                    onExerciseAlertLowEnabledChange = alertsViewModel::setExerciseAlertLowEnabled,
-                    onExerciseAlertHighEnabledChange = alertsViewModel::setExerciseAlertHighEnabled,
-                    onExerciseAlertUrgentLowEnabledChange = alertsViewModel::setExerciseAlertUrgentLowEnabled,
-                    onExerciseAlertUrgentHighEnabledChange = alertsViewModel::setExerciseAlertUrgentHighEnabled,
-                    onExerciseAlertLowChange = alertsViewModel::setExerciseAlertLow,
-                    onExerciseAlertHighChange = alertsViewModel::setExerciseAlertHigh,
-                    onExerciseAlertUrgentLowChange = alertsViewModel::setExerciseAlertUrgentLow,
-                    onExerciseAlertUrgentHighChange = alertsViewModel::setExerciseAlertUrgentHigh,
-                    onExerciseAlertStaleEnabledChange = alertsViewModel::setExerciseAlertStaleEnabled,
-                    onExerciseAlertLowSoonEnabledChange = alertsViewModel::setExerciseAlertLowSoonEnabled,
-                    onExerciseAlertHighSoonEnabledChange = alertsViewModel::setExerciseAlertHighSoonEnabled,
                     patternAlertsEnabled = patternAlertsEnabled,
                     onPatternAlertsEnabledChange = alertsViewModel::setPatternAlertsEnabled,
                     validationError = alertsViewModel.validationError,

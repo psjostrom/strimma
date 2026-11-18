@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.ZoneId
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -23,7 +24,9 @@ private const val TICK_INTERVAL_MS = 30_000L
 
 /**
  * Single source of truth for workout-mode state and the threshold set every
- * downstream consumer should use.
+ * downstream consumer should use. The threshold set is one of three alert sets:
+ * EXERCISE while workout mode is On, NIGHT inside the enabled night window,
+ * otherwise DAY.
  *
  * State machine (rules in priority order, see spec for full table):
  *   R1. manualSince != null && now < manualExpiresAt           → On(MANUAL)
@@ -125,20 +128,29 @@ class WorkoutModeManager @Inject constructor(
         return WorkoutMode.Off
     }
 
-    /** Combined snapshot of display defaults and both alert protocols. */
+    /** Combined snapshot of display defaults and the three alert protocols. */
     private val thresholdSnapshot: Flow<ThresholdSnapshot> = combine(
         settings.bgLow,
         settings.bgHigh,
         settings.regularAlertProtocol,
         settings.exerciseAlertProtocol,
-    ) { bgLow, bgHigh, regularProtocol, exerciseProtocol ->
+        settings.nightAlertProtocol,
+        settings.nightAlertsEnabled,
+        settings.nightWindow,
+    ) { values ->
         ThresholdSnapshot(
-            bgLow = bgLow,
-            bgHigh = bgHigh,
-            regularProtocol = regularProtocol,
-            exerciseProtocol = exerciseProtocol,
+            bgLow = values[0] as Float,
+            bgHigh = values[1] as Float,
+            regularProtocol = values[2] as AlertProtocol,
+            exerciseProtocol = values[3] as AlertProtocol,
+            nightProtocol = values[4] as AlertProtocol,
+            nightEnabled = values[5] as Boolean,
+            nightWindow = values[6] as NightWindow,
         )
     }
+
+    private val selectionInputs: Flow<Pair<WorkoutMode, ThresholdSnapshot>> =
+        combine(loadedState, thresholdSnapshot, ::Pair).shareIn(scope, SharingStarted.Eagerly, replay = 1)
 
     /**
      * Sentinel-seeded so consumers can distinguish "manager hasn't loaded yet"
@@ -146,28 +158,43 @@ class WorkoutModeManager @Inject constructor(
      * for one-shot reads — it suspends until real data arrives instead of returning
      * the sentinel.
      */
-    val effectiveThresholds: StateFlow<EffectiveThresholds> = combine(
-        loadedState,
-        thresholdSnapshot
-    ) { mode, snap ->
-        val on = mode is WorkoutMode.On
-        val protocol = if (on) snap.exerciseProtocol else snap.regularProtocol
-        EffectiveThresholds(
-            displayLowMgdl = if (on) snap.exerciseProtocol.lowMgdl else snap.bgLow,
-            displayHighMgdl = if (on) snap.exerciseProtocol.highMgdl else snap.bgHigh,
-            alertProtocol = protocol,
-            workoutModeOn = on,
-        )
+    val effectiveThresholds: StateFlow<EffectiveThresholds> = selectionInputs.combine(ticker) { (mode, snap), _ ->
+        resolve(mode, snap, clock.nowMs(), clock.zone())
     }.stateIn(scope, SharingStarted.Eagerly, PLACEHOLDER_THRESHOLDS)
 
     /**
      * Suspending one-shot read of the current threshold set. Waits until the
-     * upstream combine has produced a real value — protects every consumer that
+     * upstream settings and mode have loaded — protects every consumer that
      * needs synchronous-feeling access (AlertManager, LocalWebServer, widget,
      * service) from cold-start race against the placeholder seed.
      */
-    suspend fun currentEffectiveThresholds(): EffectiveThresholds =
-        effectiveThresholds.first { it !== PLACEHOLDER_THRESHOLDS }
+    suspend fun currentEffectiveThresholds(): EffectiveThresholds {
+        // The ticker's delay stops in deep sleep, so the stored value can keep the
+        // previous set long after the night window opens or closes. Each read
+        // resolves the set for the clock's current time instead.
+        val (mode, snap) = selectionInputs.first()
+        return resolve(mode, snap, clock.nowMs(), clock.zone())
+    }
+
+    /** The one owner of the set-selection rule: EXERCISE, then NIGHT, then DAY. */
+    private fun resolve(mode: WorkoutMode, snap: ThresholdSnapshot, nowMs: Long, zone: ZoneId): EffectiveThresholds {
+        val set = when {
+            mode is WorkoutMode.On -> AlertSet.EXERCISE
+            snap.nightEnabled && snap.nightWindow.contains(nowMs, zone) -> AlertSet.NIGHT
+            else -> AlertSet.DAY
+        }
+        val exercise = set == AlertSet.EXERCISE
+        return EffectiveThresholds(
+            displayLowMgdl = if (exercise) snap.exerciseProtocol.lowMgdl else snap.bgLow,
+            displayHighMgdl = if (exercise) snap.exerciseProtocol.highMgdl else snap.bgHigh,
+            alertProtocol = when (set) {
+                AlertSet.EXERCISE -> snap.exerciseProtocol
+                AlertSet.NIGHT -> snap.nightProtocol
+                AlertSet.DAY -> snap.regularProtocol
+            },
+            activeSet = set,
+        )
+    }
 
     /**
      * Read current state directly from persistence — does NOT trust state.value,
@@ -275,6 +302,9 @@ class WorkoutModeManager @Inject constructor(
         val bgLow: Float, val bgHigh: Float,
         val regularProtocol: AlertProtocol,
         val exerciseProtocol: AlertProtocol,
+        val nightProtocol: AlertProtocol,
+        val nightEnabled: Boolean,
+        val nightWindow: NightWindow,
     )
 
     companion object {
@@ -301,7 +331,7 @@ class WorkoutModeManager @Inject constructor(
                 highSoonEnabled = false,
                 staleEnabled = false,
             ),
-            workoutModeOn = false,
+            activeSet = AlertSet.DAY,
         )
     }
 }

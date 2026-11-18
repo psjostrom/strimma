@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.test.core.app.ApplicationProvider
 import com.psjostrom.strimma.createTestDataStore
 import com.psjostrom.strimma.data.SettingsRepository
+import com.psjostrom.strimma.data.workout.AlertSet
+import com.psjostrom.strimma.data.workout.NightWindow
 import com.psjostrom.strimma.data.workout.WorkoutModeManager
 import com.psjostrom.strimma.notification.AlertCategory
 import com.psjostrom.strimma.notification.AlertManager
@@ -20,6 +22,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -32,6 +35,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.time.Instant
 
 /**
  * Pins [AlertsViewModel.unifiedPauseExpiryMs] — the single owner of the "is the
@@ -52,7 +56,11 @@ class AlertsViewModelTest {
         val viewModel: AlertsViewModel,
     )
 
-    private fun runFixtureTest(block: suspend TestScope.(Fixture) -> Unit) = runTest {
+    private fun runFixtureTest(
+        nowMs: Long = System.currentTimeMillis(),
+        setup: suspend (SettingsRepository) -> Unit = {},
+        block: suspend TestScope.(Fixture) -> Unit,
+    ) = runTest {
         Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
         val context = ApplicationProvider.getApplicationContext<Context>()
         val notifManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -66,14 +74,15 @@ class AlertsViewModelTest {
                 WidgetSettingsRepository(context),
                 createTestDataStore(backgroundScope),
             )
+            setup(settings)
             val workoutModeManager = WorkoutModeManager(
                 settings,
                 FakeCalendarPoller(),
-                MutableClock(System.currentTimeMillis()),
+                MutableClock(nowMs),
                 backgroundScope,
             )
             val alertManager = AlertManager(context, settings, workoutModeManager, backgroundScope)
-            val viewModel = AlertsViewModel(settings, alertManager)
+            val viewModel = AlertsViewModel(settings, alertManager, workoutModeManager)
             vm = viewModel
             block(Fixture(context, notifManager, settings, viewModel))
         } finally {
@@ -184,5 +193,55 @@ class AlertsViewModelTest {
 
         rig.viewModel.setPatternAlertsEnabled(true).join()
         assertEquals(true, rig.settings.patternAlertsEnabled.first())
+    }
+
+    @Test
+    fun `window edit making start equal end is rejected`() = runFixtureTest { rig ->
+        val validation = backgroundScope.async(start = CoroutineStart.UNDISPATCHED) {
+            rig.viewModel.validationError.first()
+        }
+        rig.viewModel.setNightWindowEnd(23 * 60).join()
+
+        assertEquals(AlertsViewModel.ValidationError.EmptyWindow, validation.await())
+        assertEquals(NightWindow.DEFAULT, rig.settings.nightWindow.first())
+    }
+
+    @Test
+    fun `valid window edits persist`() = runFixtureTest { rig ->
+        rig.viewModel.setNightWindowStart(22 * 60).join()
+        rig.viewModel.setNightWindowEnd(6 * 60).join()
+
+        assertEquals(NightWindow(22 * 60, 6 * 60), rig.settings.nightWindow.first())
+    }
+
+    @Test
+    fun `night threshold out of order is rejected`() = runFixtureTest { rig ->
+        rig.viewModel.setNightAlertsEnabled(true).join()
+        val validation = backgroundScope.async(start = CoroutineStart.UNDISPATCHED) {
+            rig.viewModel.validationError.first()
+        }
+        rig.viewModel.setNightAlertLow(300f).join()
+
+        assertEquals(AlertsViewModel.ValidationError.Order, validation.await())
+        assertEquals(rig.settings.alertLow.first(), rig.settings.nightAlertProtocol.first().lowMgdl)
+    }
+
+    @Test
+    fun `valid night threshold persists`() = runFixtureTest { rig ->
+        rig.viewModel.setNightAlertsEnabled(true).join()
+        rig.viewModel.setNightAlertLow(100f).join()
+
+        assertEquals(100f, rig.settings.nightAlertProtocol.first().lowMgdl)
+        assertEquals(true, rig.viewModel.nightAlertsEnabled.filterNotNull().first())
+    }
+
+    @Test
+    fun `active set reports Night inside the night window`() = runFixtureTest(
+        nowMs = Instant.parse("2026-01-15T02:00:00Z").toEpochMilli(),
+        setup = { it.setNightAlertsEnabled(true) },
+    ) { rig ->
+        val set = withTimeout(5_000) { rig.viewModel.activeSet.filterNotNull().first() }
+
+        assertEquals(AlertSet.NIGHT, set)
     }
 }

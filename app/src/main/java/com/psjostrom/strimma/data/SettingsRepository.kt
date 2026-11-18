@@ -12,6 +12,7 @@ import com.psjostrom.strimma.data.notification.NotificationActionType
 import com.psjostrom.strimma.data.notification.SnoozeCategory
 import com.psjostrom.strimma.data.notification.SnoozeDuration
 import com.psjostrom.strimma.data.workout.AlertProtocol
+import com.psjostrom.strimma.data.workout.NightWindow
 import com.psjostrom.strimma.receiver.DebugLog
 import com.psjostrom.strimma.ui.theme.ThemeMode
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -372,10 +373,10 @@ class SettingsRepository @Inject constructor(
         private const val DEFAULT_GRAPH_WINDOW_HOURS = 4
         const val DEFAULT_BG_LOW = 72f
         const val DEFAULT_BG_HIGH = 180f
-        private const val DEFAULT_ALERT_LOW = 72f
-        private const val DEFAULT_ALERT_HIGH = 180f
-        private const val DEFAULT_ALERT_URGENT_LOW = 54f
-        private const val DEFAULT_ALERT_URGENT_HIGH = 234f
+        const val DEFAULT_ALERT_LOW = 72f
+        const val DEFAULT_ALERT_HIGH = 180f
+        const val DEFAULT_ALERT_URGENT_LOW = 54f
+        const val DEFAULT_ALERT_URGENT_HIGH = 234f
         const val DEFAULT_NOTIF_GRAPH_MINUTES = 60
         const val DEFAULT_PREDICTION_MINUTES = 15
         private const val DEFAULT_FOLLOWER_POLL_SECONDS = 60
@@ -384,7 +385,7 @@ class SettingsRepository @Inject constructor(
         private const val SETTINGS_EXPORT_VERSION = 3
         const val COOLDOWN_MINUTES_MIN = 0
         const val COOLDOWN_MINUTES_MAX = 60
-        private const val MINUTES_PER_DAY = 1440
+        internal const val MINUTES_PER_DAY = 1440
     }
 
     val nightscoutUrl: Flow<String> = dataStore.data.map { it[KEY_NIGHTSCOUT_URL] ?: "" }
@@ -404,21 +405,21 @@ class SettingsRepository @Inject constructor(
     val alertLowSoonEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_LOW_SOON_ENABLED] ?: true }
     val alertHighSoonEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_HIGH_SOON_ENABLED] ?: true }
 
-    val regularAlertProtocol: Flow<AlertProtocol> = dataStore.data.map { prefs ->
-        AlertProtocol(
-            urgentLowEnabled = prefs[KEY_ALERT_URGENT_LOW_ENABLED] ?: true,
-            lowEnabled = prefs[KEY_ALERT_LOW_ENABLED] ?: true,
-            highEnabled = prefs[KEY_ALERT_HIGH_ENABLED] ?: true,
-            urgentHighEnabled = prefs[KEY_ALERT_URGENT_HIGH_ENABLED] ?: true,
-            urgentLowMgdl = prefs[KEY_ALERT_URGENT_LOW] ?: DEFAULT_ALERT_URGENT_LOW,
-            lowMgdl = prefs[KEY_ALERT_LOW] ?: DEFAULT_ALERT_LOW,
-            highMgdl = prefs[KEY_ALERT_HIGH] ?: DEFAULT_ALERT_HIGH,
-            urgentHighMgdl = prefs[KEY_ALERT_URGENT_HIGH] ?: DEFAULT_ALERT_URGENT_HIGH,
-            lowSoonEnabled = prefs[KEY_ALERT_LOW_SOON_ENABLED] ?: true,
-            highSoonEnabled = prefs[KEY_ALERT_HIGH_SOON_ENABLED] ?: true,
-            staleEnabled = prefs[KEY_ALERT_STALE_ENABLED] ?: true,
-        )
-    }
+    val regularAlertProtocol: Flow<AlertProtocol> = dataStore.data.map { it.regularAlertProtocol() }
+
+    private fun Preferences.regularAlertProtocol() = AlertProtocol(
+        urgentLowEnabled = this[KEY_ALERT_URGENT_LOW_ENABLED] ?: true,
+        lowEnabled = this[KEY_ALERT_LOW_ENABLED] ?: true,
+        highEnabled = this[KEY_ALERT_HIGH_ENABLED] ?: true,
+        urgentHighEnabled = this[KEY_ALERT_URGENT_HIGH_ENABLED] ?: true,
+        urgentLowMgdl = this[KEY_ALERT_URGENT_LOW] ?: DEFAULT_ALERT_URGENT_LOW,
+        lowMgdl = this[KEY_ALERT_LOW] ?: DEFAULT_ALERT_LOW,
+        highMgdl = this[KEY_ALERT_HIGH] ?: DEFAULT_ALERT_HIGH,
+        urgentHighMgdl = this[KEY_ALERT_URGENT_HIGH] ?: DEFAULT_ALERT_URGENT_HIGH,
+        lowSoonEnabled = this[KEY_ALERT_LOW_SOON_ENABLED] ?: true,
+        highSoonEnabled = this[KEY_ALERT_HIGH_SOON_ENABLED] ?: true,
+        staleEnabled = this[KEY_ALERT_STALE_ENABLED] ?: true,
+    )
 
     val alertCooldownMinutes: Flow<Int> = dataStore.data.map {
         (it[KEY_ALERT_COOLDOWN_MINUTES] ?: DEFAULT_ALERT_COOLDOWN_MINUTES)
@@ -462,6 +463,11 @@ class SettingsRepository @Inject constructor(
     }
 
     val exerciseAlertProtocol: Flow<AlertProtocol> = dataStore.data.map { it.exerciseAlertProtocol() }
+
+    // --- Night alerts ---
+    val nightAlertsEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_NIGHT_ALERTS_ENABLED] ?: false }
+    val nightWindow: Flow<NightWindow> = dataStore.data.map { it.nightWindow() }
+    val nightAlertProtocol: Flow<AlertProtocol> = dataStore.data.map { it.nightAlertProtocol() }
 
     // --- Workout safety timeout ---
     val workoutModeMaxHours: Flow<Int> = dataStore.data.map { it[KEY_WORKOUT_MODE_MAX_HOURS] ?: DEFAULT_WORKOUT_MODE_MAX_HOURS }
@@ -575,6 +581,48 @@ class SettingsRepository @Inject constructor(
     suspend fun setExerciseAlertHigh(mgdl: Float) { dataStore.edit { it[KEY_EXERCISE_ALERT_HIGH] = mgdl } }
     suspend fun setExerciseAlertUrgentLow(mgdl: Float) { dataStore.edit { it[KEY_EXERCISE_ALERT_URGENT_LOW] = mgdl } }
     suspend fun setExerciseAlertUrgentHigh(mgdl: Float) { dataStore.edit { it[KEY_EXERCISE_ALERT_URGENT_HIGH] = mgdl } }
+
+    // --- Night alert setters ---
+    suspend fun setNightAlertsEnabled(enabled: Boolean) {
+        dataStore.edit { prefs ->
+            if (enabled) prefs.copyDayAlertsToNightOnce()
+            prefs[KEY_NIGHT_ALERTS_ENABLED] = enabled
+        }
+    }
+
+    // Turning night alerts on must not change any alert, so the first night set is a copy of the Day set.
+    private fun MutablePreferences.copyDayAlertsToNightOnce() {
+        if (KEY_NIGHT_ALERTS_INITIALIZED in this) return
+        putNightAlertProtocol(regularAlertProtocol())
+        this[KEY_NIGHT_ALERTS_INITIALIZED] = true
+    }
+    suspend fun setNightWindow(window: NightWindow) {
+        dataStore.edit {
+            it[KEY_NIGHT_ALERTS_START_MINUTE] = window.startMinute
+            it[KEY_NIGHT_ALERTS_END_MINUTE] = window.endMinute
+        }
+    }
+    suspend fun setNightAlertLowEnabled(enabled: Boolean) { dataStore.edit { it[KEY_NIGHT_ALERT_LOW_ENABLED] = enabled } }
+    suspend fun setNightAlertHighEnabled(enabled: Boolean) { dataStore.edit { it[KEY_NIGHT_ALERT_HIGH_ENABLED] = enabled } }
+    suspend fun setNightAlertUrgentLowEnabled(enabled: Boolean) {
+        dataStore.edit { it[KEY_NIGHT_ALERT_URGENT_LOW_ENABLED] = enabled }
+    }
+    suspend fun setNightAlertUrgentHighEnabled(enabled: Boolean) {
+        dataStore.edit { it[KEY_NIGHT_ALERT_URGENT_HIGH_ENABLED] = enabled }
+    }
+    suspend fun setNightAlertLowSoonEnabled(enabled: Boolean) {
+        dataStore.edit { it[KEY_NIGHT_ALERT_LOW_SOON_ENABLED] = enabled }
+    }
+    suspend fun setNightAlertHighSoonEnabled(enabled: Boolean) {
+        dataStore.edit { it[KEY_NIGHT_ALERT_HIGH_SOON_ENABLED] = enabled }
+    }
+    suspend fun setNightAlertStaleEnabled(enabled: Boolean) {
+        dataStore.edit { it[KEY_NIGHT_ALERT_STALE_ENABLED] = enabled }
+    }
+    suspend fun setNightAlertLow(mgdl: Float) { dataStore.edit { it[KEY_NIGHT_ALERT_LOW] = mgdl } }
+    suspend fun setNightAlertHigh(mgdl: Float) { dataStore.edit { it[KEY_NIGHT_ALERT_HIGH] = mgdl } }
+    suspend fun setNightAlertUrgentLow(mgdl: Float) { dataStore.edit { it[KEY_NIGHT_ALERT_URGENT_LOW] = mgdl } }
+    suspend fun setNightAlertUrgentHigh(mgdl: Float) { dataStore.edit { it[KEY_NIGHT_ALERT_URGENT_HIGH] = mgdl } }
 
     val themeMode: Flow<ThemeMode> = dataStore.data.map {
         try { ThemeMode.valueOf(it[KEY_THEME_MODE] ?: "System") } catch (_: Exception) { ThemeMode.System }
@@ -901,6 +949,7 @@ class SettingsRepository @Inject constructor(
             put("alert_high_soon_enabled", prefs[KEY_ALERT_HIGH_SOON_ENABLED] ?: true)
             put("pattern_alerts_enabled", prefs[KEY_PATTERN_ALERTS_ENABLED] ?: true)
             putExerciseAlertSettings(prefs)
+            putNightAlertSettings(prefs)
             put("alert_cooldown_minutes", prefs[KEY_ALERT_COOLDOWN_MINUTES] ?: DEFAULT_ALERT_COOLDOWN_MINUTES)
             put("alert_snooze_duration", normalizedAlertSnoozeDurationName(prefs[KEY_ALERT_SNOOZE_DURATION]))
             put("theme_mode", prefs[KEY_THEME_MODE] ?: "System")
@@ -971,6 +1020,8 @@ class SettingsRepository @Inject constructor(
                 isV1,
                 inheritRegularEnablement = importVersion < SETTINGS_EXPORT_VERSION,
             )
+            prefs.importNightAlerts(settings) { prefs.copyDayAlertsToNightOnce() }
+            if (prefs[KEY_NIGHT_ALERTS_ENABLED] == true) prefs.copyDayAlertsToNightOnce()
             if (settings.has("alert_cooldown_minutes")) prefs[KEY_ALERT_COOLDOWN_MINUTES] = settings.getInt("alert_cooldown_minutes")
             if (settings.has("alert_snooze_duration")) {
                 prefs[KEY_ALERT_SNOOZE_DURATION] =

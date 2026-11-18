@@ -1,6 +1,6 @@
 # Workout Mode
 
-Workout Mode selects Strimma's independent Exercise alert protocol and Exercise Low/High graph bounds while you're exercising. It's designed for the way blood glucose moves during a run, ride, or workout: sharper drops at the low end, transient highs from adrenaline at the top.
+Workout Mode selects Strimma's independent Exercise alert set and Exercise Low/High graph bounds while you're exercising. It's designed for the way blood glucose moves during a run, ride, or workout: sharper drops at the low end, transient highs from adrenaline at the top.
 
 ## Defaults
 
@@ -11,14 +11,14 @@ Workout Mode selects Strimma's independent Exercise alert protocol and Exercise 
 | High | 10.0 mmol | 14.0 mmol |
 | Urgent high | 13.0 mmol | 16.0 mmol |
 
-You can change all four Exercise alert thresholds and their enablement in **Settings → Alerts → Exercise Alerts**. **Settings → Exercise → Workout mode** contains only the manual auto-off safety timeout. Regular and Exercise alert protocols are independent.
+You can change all four Exercise alert thresholds and their enablement in **Settings → Alerts → Alert sets → Exercise**. **Settings → Exercise → Workout mode** contains only the manual auto-off safety timeout. The Day, Night and Exercise alert sets are independent.
 
 ## What changes while Workout Mode is ON
 
-- **Alerts** use the complete Exercise protocol instead of the Regular protocol: its enablement toggles, threshold values, predictive toggles, and stale toggle. Alert titles are prefixed with `Workout · ` (e.g., `Workout · Urgent Low`) so the severity label stays unambiguous — see [Alerts](alerts.md).
+- **Alerts** use the complete Exercise set instead of the Day or Night set: its enablement toggles, threshold values, predictive toggles, and stale toggle. Alert titles are prefixed with `Workout · ` (e.g., `Workout · Urgent Low`) so the severity label stays unambiguous — see [Alerts](alerts.md).
 - **In-range band on graphs** (and the BG hero color, widget, web server) uses Exercise Low and Exercise High, so 12 mmol shows as in-range green during exercise instead of amber high.
-- **Predict-low / predict-high** alerts use the Exercise protocol's thresholds and enablement — fewer false alarms during the rapid swings of exercise.
-- **Stale-sensor alerts** use the selected protocol's stale toggle. They are suppressed for the first 30 minutes of Workout Mode, then use the normal 10+ minute rule.
+- **Predict-low / predict-high** alerts use the Exercise set's thresholds and enablement — fewer false alarms during the rapid swings of exercise.
+- **Stale-sensor alerts** use the active set's stale toggle. They are suppressed for the first 30 minutes of Workout Mode, then use the normal 10+ minute rule.
 - **Historical analysis is unaffected.** The Story screen (monthly TIR / AGP / meal stats) always uses your standard thresholds, never Exercise thresholds, so opening Stats during a workout doesn't corrupt last-month's report.
 
 ## How to turn it on
@@ -37,9 +37,13 @@ When you turn workout mode on manually, it auto-turns-off after a configurable n
 
 If you regularly do longer workouts (marathons, ultras, all-day rides), bump the safety timeout in settings before heading out.
 
+## Coexistence with night alerts
+
+Workout Mode takes precedence over night alerts. While Workout Mode is on, the Exercise set is active, even inside the night window. When Workout Mode turns off inside the night window, the Night set becomes active again. See [Night Alerts](alerts.md#night-alerts).
+
 ## Coexistence with Pause All
 
 Pause All and Workout Mode are independent.
 
-- For low / high alerts: Pause All wins (alerts off means the Exercise protocol is moot until pause expires).
+- For low / high alerts: Pause All wins (alerts off means the Exercise set is moot until pause expires).
 - For stale alerts: the selected mode's stale-alert toggle controls delivery — Pause All does NOT cover stale alerts.

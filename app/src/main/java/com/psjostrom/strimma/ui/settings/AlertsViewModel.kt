@@ -5,16 +5,21 @@ import androidx.lifecycle.viewModelScope
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.notification.SnoozeDuration
 import com.psjostrom.strimma.data.workout.AlertProtocol
+import com.psjostrom.strimma.data.workout.AlertSet
+import com.psjostrom.strimma.data.workout.NightWindow
+import com.psjostrom.strimma.data.workout.WorkoutModeManager
 import com.psjostrom.strimma.notification.AlertCategory
 import com.psjostrom.strimma.notification.AlertManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -25,7 +30,8 @@ import javax.inject.Inject
 @HiltViewModel
 class AlertsViewModel @Inject constructor(
     private val settings: SettingsRepository,
-    private val alertManager: AlertManager
+    private val alertManager: AlertManager,
+    workoutModeManager: WorkoutModeManager,
 ) : ViewModel() {
 
     val alertLowEnabled: StateFlow<Boolean> = settings.alertLowEnabled
@@ -71,6 +77,20 @@ class AlertsViewModel @Inject constructor(
             null
         )
 
+    val nightAlertProtocol: StateFlow<AlertProtocol?> = settings.nightAlertProtocol
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    val nightAlertsEnabled: StateFlow<Boolean?> = settings.nightAlertsEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    val nightWindow: StateFlow<NightWindow?> = settings.nightWindow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    /** The set in force right now, or null until [WorkoutModeManager] has loaded. */
+    val activeSet: StateFlow<AlertSet?> = workoutModeManager.effectiveThresholds
+        .map { if (it === WorkoutModeManager.PLACEHOLDER_THRESHOLDS) null else it.activeSet }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
     val alertCooldownMinutes: StateFlow<Int> = settings.alertCooldownMinutes
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
@@ -83,6 +103,8 @@ class AlertsViewModel @Inject constructor(
     private val _validationError = MutableSharedFlow<ValidationError>(extraBufferCapacity = 1)
     val validationError: SharedFlow<ValidationError> = _validationError
     private val exerciseThresholdMutex = Mutex()
+    private val nightThresholdMutex = Mutex()
+    private val nightWindowMutex = Mutex()
 
     /**
      * Single source of truth for "is the active pause unified?". Equal to the shared
@@ -141,38 +163,92 @@ class AlertsViewModel @Inject constructor(
     fun setExerciseAlertStaleEnabled(enabled: Boolean) =
         viewModelScope.launch { settings.setExerciseAlertStaleEnabled(enabled) }
 
-    fun setExerciseAlertLow(value: Float) = updateExerciseThreshold(low = value) {
-        settings.setExerciseAlertLow(value)
+    fun setExerciseAlertLow(value: Float) =
+        updateThreshold(settings.exerciseAlertProtocol, exerciseThresholdMutex, { it.copy(lowMgdl = value) }) {
+            settings.setExerciseAlertLow(value)
+        }
+
+    fun setExerciseAlertHigh(value: Float) =
+        updateThreshold(settings.exerciseAlertProtocol, exerciseThresholdMutex, { it.copy(highMgdl = value) }) {
+            settings.setExerciseAlertHigh(value)
+        }
+
+    fun setExerciseAlertUrgentLow(value: Float) =
+        updateThreshold(settings.exerciseAlertProtocol, exerciseThresholdMutex, { it.copy(urgentLowMgdl = value) }) {
+            settings.setExerciseAlertUrgentLow(value)
+        }
+
+    fun setExerciseAlertUrgentHigh(value: Float) =
+        updateThreshold(settings.exerciseAlertProtocol, exerciseThresholdMutex, { it.copy(urgentHighMgdl = value) }) {
+            settings.setExerciseAlertUrgentHigh(value)
+        }
+
+    fun setNightAlertsEnabled(enabled: Boolean) = viewModelScope.launch { settings.setNightAlertsEnabled(enabled) }
+
+    fun setNightWindowStart(minute: Int) = updateNightWindow { it.copy(startMinute = minute) }
+    fun setNightWindowEnd(minute: Int) = updateNightWindow { it.copy(endMinute = minute) }
+
+    // Reads the stored window under a mutex so two quick edits cannot overwrite each other's half.
+    private fun updateNightWindow(edit: (NightWindow) -> NightWindow): Job = viewModelScope.launch {
+        nightWindowMutex.withLock {
+            val next = edit(settings.nightWindow.first())
+            if (next.startMinute == next.endMinute) {
+                _validationError.tryEmit(ValidationError.EmptyWindow)
+            } else {
+                settings.setNightWindow(next)
+            }
+        }
     }
 
-    fun setExerciseAlertHigh(value: Float) = updateExerciseThreshold(high = value) {
-        settings.setExerciseAlertHigh(value)
-    }
+    fun setNightAlertLowEnabled(enabled: Boolean) =
+        viewModelScope.launch { settings.setNightAlertLowEnabled(enabled) }
 
-    fun setExerciseAlertUrgentLow(value: Float) = updateExerciseThreshold(urgentLow = value) {
-        settings.setExerciseAlertUrgentLow(value)
-    }
+    fun setNightAlertHighEnabled(enabled: Boolean) =
+        viewModelScope.launch { settings.setNightAlertHighEnabled(enabled) }
 
-    fun setExerciseAlertUrgentHigh(value: Float) = updateExerciseThreshold(urgentHigh = value) {
-        settings.setExerciseAlertUrgentHigh(value)
-    }
+    fun setNightAlertUrgentLowEnabled(enabled: Boolean) =
+        viewModelScope.launch { settings.setNightAlertUrgentLowEnabled(enabled) }
 
-    private fun updateExerciseThreshold(
-        urgentLow: Float? = null,
-        low: Float? = null,
-        high: Float? = null,
-        urgentHigh: Float? = null,
+    fun setNightAlertUrgentHighEnabled(enabled: Boolean) =
+        viewModelScope.launch { settings.setNightAlertUrgentHighEnabled(enabled) }
+
+    fun setNightAlertLowSoonEnabled(enabled: Boolean) =
+        viewModelScope.launch { settings.setNightAlertLowSoonEnabled(enabled) }
+
+    fun setNightAlertHighSoonEnabled(enabled: Boolean) =
+        viewModelScope.launch { settings.setNightAlertHighSoonEnabled(enabled) }
+
+    fun setNightAlertStaleEnabled(enabled: Boolean) =
+        viewModelScope.launch { settings.setNightAlertStaleEnabled(enabled) }
+
+    fun setNightAlertLow(value: Float) =
+        updateThreshold(settings.nightAlertProtocol, nightThresholdMutex, { it.copy(lowMgdl = value) }) {
+            settings.setNightAlertLow(value)
+        }
+
+    fun setNightAlertHigh(value: Float) =
+        updateThreshold(settings.nightAlertProtocol, nightThresholdMutex, { it.copy(highMgdl = value) }) {
+            settings.setNightAlertHigh(value)
+        }
+
+    fun setNightAlertUrgentLow(value: Float) =
+        updateThreshold(settings.nightAlertProtocol, nightThresholdMutex, { it.copy(urgentLowMgdl = value) }) {
+            settings.setNightAlertUrgentLow(value)
+        }
+
+    fun setNightAlertUrgentHigh(value: Float) =
+        updateThreshold(settings.nightAlertProtocol, nightThresholdMutex, { it.copy(urgentHighMgdl = value) }) {
+            settings.setNightAlertUrgentHigh(value)
+        }
+
+    private fun updateThreshold(
+        protocol: Flow<AlertProtocol>,
+        mutex: Mutex,
+        change: (AlertProtocol) -> AlertProtocol,
         onValid: suspend () -> Unit,
     ): Job = viewModelScope.launch {
-        exerciseThresholdMutex.withLock {
-            val current = settings.exerciseAlertProtocol.first()
-            val next = current.copy(
-                urgentLowMgdl = urgentLow ?: current.urgentLowMgdl,
-                lowMgdl = low ?: current.lowMgdl,
-                highMgdl = high ?: current.highMgdl,
-                urgentHighMgdl = urgentHigh ?: current.urgentHighMgdl,
-            )
-            if (next.hasOrderedThresholds()) {
+        mutex.withLock {
+            if (change(protocol.first()).hasOrderedThresholds()) {
                 onValid()
             } else {
                 _validationError.tryEmit(ValidationError.Order)
@@ -198,5 +274,5 @@ class AlertsViewModel @Inject constructor(
         alertManager.cancelAllAlerts()
     }
 
-    enum class ValidationError { Order }
+    enum class ValidationError { Order, EmptyWindow }
 }

@@ -17,6 +17,7 @@ import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.notification.SnoozeDuration
 import com.psjostrom.strimma.data.workout.AlertProtocol
+import com.psjostrom.strimma.data.workout.AlertSet
 import com.psjostrom.strimma.data.workout.Clock
 import com.psjostrom.strimma.data.workout.SystemClock
 import com.psjostrom.strimma.data.workout.WorkoutModeManager
@@ -342,10 +343,10 @@ class AlertManager @Inject constructor(
         // defaults for a customized user.
         val effective = workoutModeManager.currentEffectiveThresholds()
         val protocol = effective.alertProtocol
-        val workoutOn = effective.workoutModeOn
+        val activeSet = effective.activeSet
 
-        val alreadyLow = checkLowAlerts(mgdl, unit, protocol, workoutOn)
-        val alreadyHigh = checkHighAlerts(mgdl, unit, protocol, workoutOn)
+        val alreadyLow = checkLowAlerts(mgdl, unit, protocol, activeSet)
+        val alreadyHigh = checkHighAlerts(mgdl, unit, protocol, activeSet)
 
         checkPredictive(
             recentReadings,
@@ -362,7 +363,7 @@ class AlertManager @Inject constructor(
         mgdl: Double,
         unit: GlucoseUnit,
         protocol: AlertProtocol,
-        workoutOn: Boolean
+        activeSet: AlertSet
     ): Boolean {
         val urgentLowEnabled = protocol.urgentLowEnabled
         val urgentLowThreshold = protocol.urgentLowMgdl
@@ -375,7 +376,7 @@ class AlertManager @Inject constructor(
 
         if (urgentLowEnabled && mgdl <= urgentLowThreshold) {
             if (!isCategoryPausedAtLevel(snoozePrefs, AlertCategory.LOW, ALERT_LEVEL_URGENT)) {
-                val title = workoutPrefixedTitle(R.string.alert_urgent_low_title, workoutOn)
+                val title = setPrefixedTitle(R.string.alert_urgent_low_title, activeSet)
                 if (deliver(
                         ALERT_URGENT_LOW_ID, CHANNEL_URGENT_LOW, title, unit.formatWithUnit(mgdl),
                         ALERT_LEVEL_URGENT, prevLevel, isInCooldown(lastUrgentLowFireMs, cooldownMs, now),
@@ -391,7 +392,7 @@ class AlertManager @Inject constructor(
 
         if (lowEnabled && mgdl < lowThreshold) {
             if (!isCategoryPausedAtLevel(snoozePrefs, AlertCategory.LOW, ALERT_LEVEL_REGULAR)) {
-                val title = workoutPrefixedTitle(R.string.alert_low_title, workoutOn)
+                val title = setPrefixedTitle(R.string.alert_low_title, activeSet)
                 if (deliver(
                         ALERT_LOW_ID, CHANNEL_LOW, title, unit.formatWithUnit(mgdl),
                         ALERT_LEVEL_REGULAR, prevLevel, isInCooldown(lastLowFireMs, cooldownMs, now),
@@ -416,7 +417,7 @@ class AlertManager @Inject constructor(
         mgdl: Double,
         unit: GlucoseUnit,
         protocol: AlertProtocol,
-        workoutOn: Boolean
+        activeSet: AlertSet
     ): Boolean {
         val urgentHighEnabled = protocol.urgentHighEnabled
         val urgentHighThreshold = protocol.urgentHighMgdl
@@ -429,7 +430,7 @@ class AlertManager @Inject constructor(
 
         if (urgentHighEnabled && mgdl >= urgentHighThreshold) {
             if (!isCategoryPausedAtLevel(snoozePrefs, AlertCategory.HIGH, ALERT_LEVEL_URGENT)) {
-                val title = workoutPrefixedTitle(R.string.alert_urgent_high_title, workoutOn)
+                val title = setPrefixedTitle(R.string.alert_urgent_high_title, activeSet)
                 if (deliver(
                         ALERT_URGENT_HIGH_ID, CHANNEL_URGENT_HIGH, title, unit.formatWithUnit(mgdl),
                         ALERT_LEVEL_URGENT, prevLevel, isInCooldown(lastUrgentHighFireMs, cooldownMs, now),
@@ -445,7 +446,7 @@ class AlertManager @Inject constructor(
 
         if (highEnabled && mgdl > highThreshold) {
             if (!isCategoryPausedAtLevel(snoozePrefs, AlertCategory.HIGH, ALERT_LEVEL_REGULAR)) {
-                val title = workoutPrefixedTitle(R.string.alert_high_title, workoutOn)
+                val title = setPrefixedTitle(R.string.alert_high_title, activeSet)
                 if (deliver(
                         ALERT_HIGH_ID, CHANNEL_HIGH, title, unit.formatWithUnit(mgdl),
                         ALERT_LEVEL_REGULAR, prevLevel, isInCooldown(lastHighFireMs, cooldownMs, now),
@@ -467,15 +468,19 @@ class AlertManager @Inject constructor(
     }
 
     /**
-     * Workout mode replaces alert thresholds with a more conservative set, so a
-     * reading of e.g. 95 mg/dL fires URGENT LOW under workout mode (urgent_low=90)
-     * even though the same reading is in-range during normal life. Prefixing the
-     * title disambiguates the severity for the user — without this they may stop
-     * trusting the URGENT label.
+     * Workout mode and night alerts each replace the alert thresholds, so a reading of
+     * e.g. 95 mg/dL fires URGENT LOW under workout mode (urgent_low=90) even though the
+     * same reading is in-range during normal life. Prefixing the title with the active
+     * set disambiguates the severity for the user — without this they may stop trusting
+     * the URGENT label.
      */
-    private fun workoutPrefixedTitle(@androidx.annotation.StringRes baseTitleRes: Int, workoutOn: Boolean): String {
+    private fun setPrefixedTitle(@androidx.annotation.StringRes baseTitleRes: Int, activeSet: AlertSet): String {
         val base = context.getString(baseTitleRes)
-        return if (workoutOn) context.getString(R.string.alert_workout_prefix, base) else base
+        return when (activeSet) {
+            AlertSet.EXERCISE -> context.getString(R.string.alert_workout_prefix, base)
+            AlertSet.NIGHT -> context.getString(R.string.alert_night_prefix, base)
+            AlertSet.DAY -> base
+        }
     }
 
     @Suppress("CyclomaticComplexMethod", "LongParameterList") // Symmetric low/high blocks
