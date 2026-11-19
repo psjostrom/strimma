@@ -199,7 +199,8 @@ When glucose returns to range, all cooldown timers **reset immediately**. The ne
 
 Strimma analyzes your glucose history over the last 7 days to identify recurring patterns at specific times of day (for example, recurring highs between 14:00–16:00, or recurring lows around 06:00).
 
-- **Threshold**: Requires at least 4 evaluated days out of range during the same 1-hour window, with at least 5 sufficiently covered days within the 7-day lookback.
+- **Threshold**: A pattern needs at least 4 days out of range in the same 1-hour window. Strimma also needs data in that hour on at least 5 of the 7 days. A day counts as having data if it has at least 3 readings in that hour.
+- **Days without data**: A sensor change, warmup or signal gap can leave an hour without data on some days. Such a day never counts as out of range. The card still counts it among the 7 days, so "4 of 7 days" means 4 of the last 7 days. A day with a workout in that hour has data, but its workout readings are excluded, so that day does not count as out of range either.
 - **Workout exclusion**: Glucose readings during recorded workouts are excluded from pattern detection to avoid false positives.
 - **In-App Display**: Active patterns appear in an insight card at the top of the main screen with a dismiss button. When multiple patterns are detected, each pattern is listed with its time window, High/Low badge, and frequency. Tapping navigates directly to Stats, where the patterns are detailed above the Time in Range card in the 7-day view. Dismissing hides the card on the home screen for the rest of the day. Patterns do not send interruptive system notifications.
 - **Configuration**: Can be toggled on/off in **Settings > Alerts → Pattern Insights**.

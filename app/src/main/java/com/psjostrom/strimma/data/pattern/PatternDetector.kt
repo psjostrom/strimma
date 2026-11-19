@@ -43,20 +43,22 @@ object PatternDetector {
         // Filter to lookback window and exclude workout periods
         val startMs = startDate.atStartOfDay(zone).toInstant().toEpochMilli()
         val endMs = now.toEpochMilli()
-        val filtered = readings
-            .filter { it.ts in startMs..endMs }
-            .filter { r -> workoutPeriods.none { r.ts in it } }
+        val inWindow = readings.filter { it.ts in startMs..endMs }
+        val filtered = inWindow.filter { r -> workoutPeriods.none { r.ts in it } }
 
-        // Group by (calendar day, hour-of-day)
-        val byDayHour: Map<Pair<LocalDate, Int>, List<GlucoseReading>> = filtered.groupBy { r ->
+        // Group by (calendar day, hour-of-day). Days with data come from the readings before
+        // workout exclusion, so a workout day does not show as a day without data.
+        val dayHour = { r: GlucoseReading ->
             val zdt = Instant.ofEpochMilli(r.ts).atZone(zone)
             zdt.toLocalDate() to zdt.hour
         }
+        val byDayHour: Map<Pair<LocalDate, Int>, List<GlucoseReading>> = filtered.groupBy(dayHour)
+        val allByDayHour: Map<Pair<LocalDate, Int>, List<GlucoseReading>> = inWindow.groupBy(dayHour)
 
         // For each hour bucket, evaluate across days
         val rawPatterns = mutableListOf<GlucosePattern>()
         for (hour in 0 until HOURS_PER_DAY) {
-            evaluateHour(hour, startDate, lookbackDays, byDayHour, bgLowMgdl, bgHighMgdl, rawPatterns)
+            evaluateHour(hour, startDate, lookbackDays, byDayHour, allByDayHour, bgLowMgdl, bgHighMgdl, rawPatterns)
         }
 
         return PatternResult(
@@ -70,6 +72,7 @@ object PatternDetector {
         startDate: LocalDate,
         lookbackDays: Int,
         byDayHour: Map<Pair<LocalDate, Int>, List<GlucoseReading>>,
+        allByDayHour: Map<Pair<LocalDate, Int>, List<GlucoseReading>>,
         bgLowMgdl: Double,
         bgHighMgdl: Double,
         out: MutableList<GlucosePattern>
@@ -81,15 +84,15 @@ object PatternDetector {
         val highBgValues = mutableListOf<Int>()
         val lowDates = mutableListOf<LocalDate>()
         val highDates = mutableListOf<LocalDate>()
-        val evaluatedDates = mutableListOf<LocalDate>()
+        val datesWithData = mutableListOf<LocalDate>()
 
         for (dayOffset in 0 until lookbackDays) {
             val day = startDate.plusDays(dayOffset.toLong())
+            if ((allByDayHour[day to hour]?.size ?: 0) >= MIN_READINGS_PER_BUCKET) datesWithData.add(day)
             val bucket = byDayHour[day to hour] ?: continue
             if (bucket.size < MIN_READINGS_PER_BUCKET) continue
 
             evaluatedDays++
-            evaluatedDates.add(day)
             val belowCount = bucket.count { it.sgv < bgLowMgdl }
             val aboveCount = bucket.count { it.sgv > bgHighMgdl }
 
@@ -107,10 +110,10 @@ object PatternDetector {
 
         if (evaluatedDays >= MIN_EVALUATED_DAYS) {
             if (lowDays >= MIN_FLAGGED_DAYS) {
-                out.add(buildPattern(hour, PatternType.LOW, lowDays, evaluatedDays, lowBgValues, lowDates, evaluatedDates))
+                out.add(buildPattern(hour, PatternType.LOW, lowDays, lowBgValues, lowDates, datesWithData))
             }
             if (highDays >= MIN_FLAGGED_DAYS) {
-                out.add(buildPattern(hour, PatternType.HIGH, highDays, evaluatedDays, highBgValues, highDates, evaluatedDates))
+                out.add(buildPattern(hour, PatternType.HIGH, highDays, highBgValues, highDates, datesWithData))
             }
         }
     }
@@ -119,10 +122,9 @@ object PatternDetector {
         hour: Int,
         type: PatternType,
         daysDetected: Int,
-        daysEvaluated: Int,
         bgValues: List<Int>,
         flaggedDates: List<LocalDate>,
-        evaluatedDates: List<LocalDate> = emptyList()
+        datesWithData: List<LocalDate>
     ): GlucosePattern {
         val sum = bgValues.sumOf { it.toDouble() }
         val count = bgValues.size
@@ -132,12 +134,11 @@ object PatternDetector {
             endHour = hour + 1,
             type = type,
             daysDetected = daysDetected,
-            daysEvaluated = daysEvaluated,
             avgBgMgdl = avg,
             minBgMgdl = bgValues.minOrNull()?.toDouble() ?: avg,
             maxBgMgdl = bgValues.maxOrNull()?.toDouble() ?: avg,
             flaggedDates = flaggedDates.toList(),
-            evaluatedDates = evaluatedDates.toList(),
+            datesWithData = datesWithData.toList(),
             sampleCount = count,
             bgSum = sum
         )
@@ -165,23 +166,17 @@ object PatternDetector {
                 val combinedSum = currentSum + nextSum
 
                 val combinedDates = (current.flaggedDates + next.flaggedDates).distinct().sorted()
-                val combinedEvaluated = (current.evaluatedDates + next.evaluatedDates).distinct().sorted()
+                val combinedWithData = (current.datesWithData + next.datesWithData).distinct().sorted()
                 val daysDetected = maxOf(maxOf(current.daysDetected, next.daysDetected), combinedDates.size)
-                val daysEvaluated = if (combinedEvaluated.isNotEmpty()) {
-                    maxOf(combinedEvaluated.size, daysDetected)
-                } else {
-                    maxOf(maxOf(current.daysEvaluated, next.daysEvaluated), daysDetected)
-                }
 
                 current = current.copy(
                     endHour = next.endHour,
                     daysDetected = daysDetected,
-                    daysEvaluated = daysEvaluated,
                     avgBgMgdl = combinedSum / combinedCount,
                     minBgMgdl = minOf(current.minBgMgdl, next.minBgMgdl),
                     maxBgMgdl = maxOf(current.maxBgMgdl, next.maxBgMgdl),
                     flaggedDates = combinedDates,
-                    evaluatedDates = combinedEvaluated,
+                    datesWithData = combinedWithData,
                     sampleCount = combinedCount,
                     bgSum = combinedSum
                 )
@@ -202,12 +197,12 @@ data class GlucosePattern(
     val endHour: Int,
     val type: PatternType,
     val daysDetected: Int,
-    val daysEvaluated: Int,
     val avgBgMgdl: Double,
     val minBgMgdl: Double = avgBgMgdl,
     val maxBgMgdl: Double = avgBgMgdl,
     val flaggedDates: List<LocalDate> = emptyList(),
-    val evaluatedDates: List<LocalDate> = emptyList(),
+    /** Days with enough readings, workouts included, in at least one hour of the span. */
+    val datesWithData: List<LocalDate>,
     val sampleCount: Int = 0,
     val bgSum: Double = 0.0
 ) {

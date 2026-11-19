@@ -4,6 +4,7 @@ import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.psjostrom.strimma.data.GlucoseReading
@@ -42,7 +43,6 @@ class StatsScreenTest {
         endHour = 16,
         type = PatternType.HIGH,
         daysDetected = 5,
-        daysEvaluated = 7,
         avgBgMgdl = 216.0,
         minBgMgdl = 198.0,
         maxBgMgdl = 234.0,
@@ -52,7 +52,8 @@ class StatsScreenTest {
             LocalDate.of(2026, 3, 12),
             LocalDate.of(2026, 3, 13),
             LocalDate.of(2026, 3, 14)
-        )
+        ),
+        datesWithData = (9..15).map { LocalDate.of(2026, 3, it) }
     )
 
     private val lowPattern = GlucosePattern(
@@ -60,7 +61,6 @@ class StatsScreenTest {
         endHour = 5,
         type = PatternType.LOW,
         daysDetected = 4,
-        daysEvaluated = 7,
         avgBgMgdl = 63.0,
         minBgMgdl = 54.0,
         maxBgMgdl = 68.0,
@@ -69,7 +69,8 @@ class StatsScreenTest {
             LocalDate.of(2026, 3, 11),
             LocalDate.of(2026, 3, 13),
             LocalDate.of(2026, 3, 14)
-        )
+        ),
+        datesWithData = (9..15).map { LocalDate.of(2026, 3, it) }
     )
 
     @Test
@@ -101,6 +102,58 @@ class StatsScreenTest {
         composeRule.onNodeWithText("03:00–05:00").assertExists()
         composeRule.onNodeWithText("4 of 7 days").assertExists()
         composeRule.onNodeWithText("Nighttime lows — consider reviewing evening basal or dinner bolus").assertExists()
+    }
+
+    @Test
+    fun `marks a day without data in the pattern hours as no data`() {
+        val patternWithGap = highPattern.copy(datesWithData = (9..14).map { LocalDate.of(2026, 3, it) })
+        composeRule.setContent {
+            StrimmaTheme {
+                StatsScreen(
+                    bgLow = 72f,
+                    bgHigh = 180f,
+                    glucoseUnit = GlucoseUnit.MMOL,
+                    onLoadReadings = { sampleReadings },
+                    onLoadCarbTreatments = { _, _ -> emptyList() },
+                    onLoadAllTreatments = { emptyList() },
+                    tauMinutes = 45.0,
+                    mealAnalyzer = MealAnalyzer(),
+                    mealTimeSlotConfig = MealTimeSlotConfig(),
+                    onExportCsv = { "" },
+                    patterns = listOf(patternWithGap)
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("5 of 7 days").assertExists()
+        composeRule.onNodeWithContentDescription("Sunday, No data").assertExists()
+        composeRule.onNodeWithContentDescription("Tuesday, High").assertExists()
+        composeRule.onNodeWithContentDescription("Monday").assertExists()
+        composeRule.onNodeWithText("No data").assertExists()
+    }
+
+    @Test
+    fun `hides no data caption when every day has data`() {
+        composeRule.setContent {
+            StrimmaTheme {
+                StatsScreen(
+                    bgLow = 72f,
+                    bgHigh = 180f,
+                    glucoseUnit = GlucoseUnit.MMOL,
+                    onLoadReadings = { sampleReadings },
+                    onLoadCarbTreatments = { _, _ -> emptyList() },
+                    onLoadAllTreatments = { emptyList() },
+                    tauMinutes = 45.0,
+                    mealAnalyzer = MealAnalyzer(),
+                    mealTimeSlotConfig = MealTimeSlotConfig(),
+                    onExportCsv = { "" },
+                    patterns = listOf(highPattern)
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("5 of 7 days").assertExists()
+        composeRule.onNodeWithText("No data").assertDoesNotExist()
     }
 
     @Test

@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.pattern.GlucosePattern
+import com.psjostrom.strimma.data.pattern.PatternChecker
 import com.psjostrom.strimma.data.pattern.PatternType
 import com.psjostrom.strimma.ui.theme.Danger
 import com.psjostrom.strimma.ui.theme.LightTintDanger
@@ -86,7 +87,7 @@ fun InsightCard(
                                 R.string.insight_pattern_header,
                                 timeSpan,
                                 primary.daysDetected,
-                                primary.daysEvaluated
+                                PatternChecker.LOOKBACK_DAYS
                             ),
                             color = MaterialTheme.colorScheme.onBackground,
                             fontSize = 13.sp,
@@ -197,7 +198,7 @@ fun InsightCard(
                                     R.string.insight_pattern_item_summary,
                                     pattern.formattedTimeSpan,
                                     pattern.daysDetected,
-                                    pattern.daysEvaluated,
+                                    PatternChecker.LOOKBACK_DAYS,
                                     glucoseUnit.formatWithUnit(pattern.avgBgMgdl)
                                 ),
                                 color = MaterialTheme.colorScheme.onBackground,

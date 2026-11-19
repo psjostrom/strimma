@@ -92,7 +92,7 @@ class PatternDetectorTest {
         assertEquals(15, pattern.startHour)
         assertEquals(16, pattern.endHour)
         assertEquals(5, pattern.daysDetected)
-        assertEquals(7, pattern.daysEvaluated)
+        assertEquals((7L downTo 1L).map { baseDate.minusDays(it) }, pattern.datesWithData)
         assertTrue(pattern.avgBgMgdl > 200.0)
         assertEquals(205.0, pattern.minBgMgdl, 0.01)
         assertEquals(220.0, pattern.maxBgMgdl, 0.01)
@@ -163,7 +163,7 @@ class PatternDetectorTest {
         assertEquals(6, pattern.startHour)
         assertEquals(7, pattern.endHour)
         assertEquals(4, pattern.daysDetected)
-        assertEquals(6, pattern.daysEvaluated)
+        assertEquals((6L downTo 1L).map { baseDate.minusDays(it) }, pattern.datesWithData)
     }
 
     @Test
@@ -203,18 +203,18 @@ class PatternDetectorTest {
     fun `mergeAdjacent preserves sample counts and calculates accurate average for three adjacent hours`() {
         val p1 = GlucosePattern(
             startHour = 14, endHour = 15, type = PatternType.HIGH,
-            daysDetected = 5, daysEvaluated = 7, avgBgMgdl = 200.0,
-            sampleCount = 10, bgSum = 2000.0
+            daysDetected = 5, avgBgMgdl = 200.0,
+            sampleCount = 10, bgSum = 2000.0, datesWithData = emptyList()
         )
         val p2 = GlucosePattern(
             startHour = 15, endHour = 16, type = PatternType.HIGH,
-            daysDetected = 4, daysEvaluated = 7, avgBgMgdl = 240.0,
-            sampleCount = 20, bgSum = 4800.0
+            daysDetected = 4, avgBgMgdl = 240.0,
+            sampleCount = 20, bgSum = 4800.0, datesWithData = emptyList()
         )
         val p3 = GlucosePattern(
             startHour = 16, endHour = 17, type = PatternType.HIGH,
-            daysDetected = 6, daysEvaluated = 7, avgBgMgdl = 210.0,
-            sampleCount = 10, bgSum = 2100.0
+            daysDetected = 6, avgBgMgdl = 210.0,
+            sampleCount = 10, bgSum = 2100.0, datesWithData = emptyList()
         )
 
         // Total sum = 2000 + 4800 + 2100 = 8900, count = 40, avg = 222.5
@@ -233,7 +233,7 @@ class PatternDetectorTest {
     }
 
     @Test
-    fun `mergeAdjacent unions evaluatedDates and computes accurate daysEvaluated`() {
+    fun `mergeAdjacent unions flaggedDates and datesWithData`() {
         val d1 = LocalDate.of(2026, 3, 10)
         val d2 = LocalDate.of(2026, 3, 11)
         val d3 = LocalDate.of(2026, 3, 12)
@@ -241,24 +241,23 @@ class PatternDetectorTest {
 
         val p1 = GlucosePattern(
             startHour = 14, endHour = 15, type = PatternType.HIGH,
-            daysDetected = 2, daysEvaluated = 2, avgBgMgdl = 200.0,
+            daysDetected = 2, avgBgMgdl = 200.0,
             flaggedDates = listOf(d1, d2),
-            evaluatedDates = listOf(d1, d2)
+            datesWithData = listOf(d1, d2)
         )
         val p2 = GlucosePattern(
             startHour = 15, endHour = 16, type = PatternType.HIGH,
-            daysDetected = 2, daysEvaluated = 2, avgBgMgdl = 220.0,
+            daysDetected = 2, avgBgMgdl = 220.0,
             flaggedDates = listOf(d3, d4),
-            evaluatedDates = listOf(d2, d3, d4)
+            datesWithData = listOf(d2, d3, d4)
         )
 
         val merged = PatternDetector.mergeAdjacent(listOf(p1, p2))
         assertEquals(1, merged.size)
         val result = merged.first()
         assertEquals(4, result.daysDetected)
-        assertEquals(4, result.daysEvaluated)
         assertEquals(listOf(d1, d2, d3, d4), result.flaggedDates)
-        assertEquals(listOf(d1, d2, d3, d4), result.evaluatedDates)
+        assertEquals(listOf(d1, d2, d3, d4), result.datesWithData)
     }
 
     @Test
@@ -288,6 +287,28 @@ class PatternDetectorTest {
 
         // All 15:00 readings were during workouts -> excluded -> empty result
         assertTrue(result.patterns.isEmpty())
+    }
+
+    @Test
+    fun `detect counts a day with a workout in the pattern hour as a day with data`() {
+        val readings = (1..7).flatMap { dayOffset ->
+            generateHourReadings(baseDate.minusDays(dayOffset.toLong()), 15, listOf(210, 220, 205))
+        }
+        val workoutDay = generateHourReadings(baseDate.minusDays(1), 15, listOf(210, 220, 205))
+        val workouts = listOf(workoutDay.first().ts..workoutDay.last().ts)
+
+        val result = PatternDetector.detect(
+            readings = readings,
+            bgLowMgdl = 72.0,
+            bgHighMgdl = 180.0,
+            zone = zone,
+            now = now,
+            workoutPeriods = workouts
+        )
+
+        val pattern = result.patterns.single()
+        assertEquals(6, pattern.daysDetected)
+        assertEquals((7L downTo 1L).map { baseDate.minusDays(it) }, pattern.datesWithData)
     }
 
     @Test
