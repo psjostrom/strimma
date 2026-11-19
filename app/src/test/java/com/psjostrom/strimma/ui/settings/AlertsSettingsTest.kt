@@ -7,6 +7,7 @@ import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onLast
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -203,6 +204,14 @@ class AlertsSettingsTest {
 
         composeRule.onNodeWithText("Use night alerts").assertExists()
         composeRule.onNode(hasText("Night") and hasContentDescription("Active now")).assertExists()
+    }
+
+    @Test
+    fun `night From field is one button with its time and opens the picker`() {
+        render(activeSet = AlertSet.NIGHT, nightAlertsEnabled = true)
+
+        composeRule.onNodeWithContentDescription("From, 23:00").performScrollTo().performClick()
+        composeRule.onNodeWithText("Cancel").assertIsDisplayed()
     }
 
     @Test

@@ -110,9 +110,7 @@ internal fun MutablePreferences.importNightAlerts(settings: JSONObject, seedNigh
         highMgdl = threshold("high", current.highMgdl),
         urgentHighMgdl = threshold("urgent_high", current.urgentHighMgdl),
     )
-    require(imported.hasOrderedThresholds()) {
-        "Night alert thresholds must be ordered urgent low, low, high, urgent high"
-    }
+    // No ordering check: the first enable copies the Day set, and Day thresholds are stored unvalidated.
     putNightAlertProtocol(imported)
 }
 

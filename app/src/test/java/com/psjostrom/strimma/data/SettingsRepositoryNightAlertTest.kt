@@ -72,6 +72,17 @@ class SettingsRepositoryNightAlertTest {
     }
 
     @Test
+    fun `backup with night thresholds copied from an unordered day set restores`() = runTest {
+        val a = makeFixture()
+        a.setAlertLow(200f)
+        a.setNightAlertsEnabled(true)
+        val b = makeFixture()
+        b.importFromJson(a.exportToJson())
+        assertEquals(200f, b.alertLow.first())
+        assertEquals(a.nightAlertProtocol.first(), b.nightAlertProtocol.first())
+    }
+
+    @Test
     fun `imported night set survives a later first enable`() = runTest {
         val a = makeFixture()
         a.setNightAlertsEnabled(true)

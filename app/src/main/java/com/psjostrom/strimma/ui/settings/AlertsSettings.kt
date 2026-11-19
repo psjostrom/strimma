@@ -14,7 +14,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -296,9 +300,17 @@ private fun AlertSetTabs(selected: AlertSet, activeSet: AlertSet, onSelect: (Ale
 @Composable
 private fun TimeField(label: String, minutes: Int, onChange: (Int) -> Unit, modifier: Modifier) {
     var showPicker by remember { mutableStateOf(false) }
-    Box(modifier) {
+    val time = formatMinutes(minutes)
+    // TalkBack gets one button that names the field and its time; the read-only text field underneath has no action of its own.
+    Box(
+        modifier.clearAndSetSemantics {
+            contentDescription = "$label, $time"
+            role = Role.Button
+            onClick(label = label) { showPicker = true; true }
+        }
+    ) {
         OutlinedTextField(
-            value = formatMinutes(minutes),
+            value = time,
             onValueChange = {},
             readOnly = true,
             singleLine = true,
