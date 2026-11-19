@@ -157,8 +157,6 @@ Each set has the same seven alert rows:
 
 **Exercise** holds the alerts used while Workout Mode is active. Exercise Low and Exercise High also define the exercise graph range.
 
----
-
 ### Sounds
 
 The **Sounds** section has one row for each alert: Urgent Low, Low, High, Urgent High, Low Soon, High Soon and Stale Data. Tap a row to open the Android notification channel settings for that alert. The Day, Night and Exercise sets share these sounds. From the channel settings you can:
@@ -174,6 +172,8 @@ The **Sounds** section has one row for each alert: Urgent Low, Low, High, Urgent
 ### Alert Behavior
 
 **Alert Snooze Duration** and **Cooldown** appear once in this section and apply to whichever set is active. They are not separate Day, Night and Exercise settings.
+
+---
 
 ## Do Not Disturb Bypass
 

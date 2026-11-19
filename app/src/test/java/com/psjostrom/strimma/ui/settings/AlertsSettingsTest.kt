@@ -19,6 +19,7 @@ import com.psjostrom.strimma.notification.AlertManager
 import kotlinx.coroutines.flow.emptyFlow
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -186,6 +187,9 @@ class AlertsSettingsTest {
         composeRule.onNodeWithText("PATTERN INSIGHTS", useUnmergedTree = true).assertExists()
         composeRule.onNodeWithText("ALERT SETS", useUnmergedTree = true).assertExists()
         composeRule.onNodeWithText("Alert Snooze Duration").assertExists()
+        val setsTop = composeRule.onNodeWithText("ALERT SETS", useUnmergedTree = true).fetchSemanticsNode().positionInRoot.y
+        val soundsTop = composeRule.onNodeWithText("SOUNDS", useUnmergedTree = true).fetchSemanticsNode().positionInRoot.y
+        assertTrue("Alert sets must come before Sounds", setsTop < soundsTop)
         assertEquals(
             1,
             composeRule.onAllNodesWithText("Cooldown", useUnmergedTree = true)
