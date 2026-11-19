@@ -15,6 +15,8 @@ Tap the card to open a full-screen pager with 6 pages:
 5. **Your Meals** — Best/worst meal type, excursion by meal (requires treatments)
 6. **Your Story** — Written narrative summary with share button
 
+The Story leaves out [probable compression lows](graph.md#probable-compression-lows), so they do not count as low events.
+
 ## Browsing other months
 
 Use the **←** and **→** arrows in the top-right of the Story screen to scroll through every past month with data. Bounds:

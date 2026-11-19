@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.psjostrom.strimma.data.IOBComputer
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
+import com.psjostrom.strimma.data.StatsReadings
 import com.psjostrom.strimma.data.TreatmentDao
 import com.psjostrom.strimma.data.meal.MealAnalyzer
 import com.psjostrom.strimma.data.meal.MealTimeSlotConfig
@@ -68,6 +69,7 @@ class StoryViewModel @Inject constructor(
     private val treatmentDao: TreatmentDao,
     private val settings: SettingsRepository,
     private val mealAnalyzer: MealAnalyzer,
+    private val statsReadings: StatsReadings,
 ) : ViewModel() {
 
     private val zone = ZoneId.systemDefault()
@@ -147,8 +149,8 @@ class StoryViewModel @Inject constructor(
             val (curStart, curEnd) = month.toMillisRange(zone)
             val (prevStart, prevEnd) = prevMonth.toMillisRange(zone)
 
-            val readings = readingDao.readingsInRange(curStart, curEnd)
-            val prevReadings = readingDao.readingsInRange(prevStart, prevEnd)
+            val readings = statsReadings.inRange(curStart, curEnd)
+            val prevReadings = statsReadings.inRange(prevStart, prevEnd)
             val carbTreatments = treatmentDao.carbsInRange(curStart, curEnd)
             val allTreatments = treatmentDao.allSince(curStart)
 

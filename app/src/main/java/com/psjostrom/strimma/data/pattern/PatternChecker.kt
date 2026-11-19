@@ -4,6 +4,7 @@ import com.psjostrom.strimma.data.MS_PER_DAY
 import com.psjostrom.strimma.data.MS_PER_HOUR
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
+import com.psjostrom.strimma.data.StatsReadings
 import com.psjostrom.strimma.data.health.ExerciseDao
 import com.psjostrom.strimma.data.workout.Clock
 import com.psjostrom.strimma.data.workout.SystemClock
@@ -31,6 +32,7 @@ class PatternChecker @Inject constructor(
     private val readingDao: ReadingDao,
     private val exerciseDao: ExerciseDao,
     private val settings: SettingsRepository,
+    private val statsReadings: StatsReadings,
     private val clock: Clock = SystemClock()
 ) {
     companion object {
@@ -143,7 +145,7 @@ class PatternChecker @Inject constructor(
 
         val startMs = now.atZone(zone).toLocalDate()
             .minusDays(LOOKBACK_DAYS.toLong()).atStartOfDay(zone).toInstant().toEpochMilli()
-        val readings = readingDao.since(startMs)
+        val readings = statsReadings.inRange(startMs, nowMs)
         return readings.ifEmpty { null }
     }
 }

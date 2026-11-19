@@ -38,6 +38,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.psjostrom.strimma.R
+import com.psjostrom.strimma.data.CompressionLowDetector
 import com.psjostrom.strimma.data.Direction
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.IOBComputer
@@ -85,6 +86,8 @@ import androidx.compose.ui.graphics.Path
 import kotlinx.coroutines.delay
 
 private const val MINIMAP_WINDOW_MS = 24L * 3600_000L
+private const val COMPRESSION_BAND_ALPHA = 0.12f
+private const val COMPRESSION_DOT_ALPHA = 0.4f
 
 @Composable
 fun MainScreen(
@@ -876,6 +879,16 @@ fun GlucoseGraph(
         readings.filter { it.ts in visibleStart..viewportEnd }.sortedBy { it.ts }
     }
 
+    // Detect on the full list, not the visible slice: the detector needs 30 minutes on each side of a low.
+    val compressionSpans = remember(readings, treatments, exerciseSessions) {
+        CompressionLowDetector.detect(
+            readings,
+            carbTimes = treatments.filter { (it.carbs ?: 0.0) > 0 }.map { it.createdAt },
+            exercisePeriods = exerciseSessions.map { it.startTime..it.endTime }
+        )
+    }
+    val compressionLabel = stringResource(R.string.graph_compression_low)
+
     // Stable refs for pointerInput(Unit) — avoids coroutine restart on every recomposition
     val currentZoom by rememberUpdatedState(zoomScale)
     val currentViewportEnd by rememberUpdatedState(viewportEnd)
@@ -1122,12 +1135,26 @@ fun GlucoseGraph(
             )
         }
 
+        // Probable compression lows: a neutral band, drawn before the readings so dots stay on top
+        for (span in compressionSpans) {
+            if (span.last < visibleStart || span.first > viewportEnd) continue
+            val xStart = xFor(span.first).coerceIn(marginLeft, size.width - marginRight)
+            val xEnd = xFor(span.last).coerceIn(marginLeft, size.width - marginRight)
+            drawRect(
+                color = axisColor.copy(alpha = COMPRESSION_BAND_ALPHA),
+                topLeft = Offset(xStart, marginTop),
+                size = Size(xEnd - xStart, plotHeight)
+            )
+        }
+
         // Readings
         for (i in sorted.indices) {
             val r = sorted[i]
             val x = xFor(r.ts)
             val y = yFor(r.sgv.toDouble())
+            val inCompression = compressionSpans.any { r.ts in it }
             val color = dotColor(r.sgv.toDouble(), bgLow, bgHigh)
+                .let { if (inCompression) it.copy(alpha = COMPRESSION_DOT_ALPHA) else it }
 
             if (i < sorted.lastIndex) {
                 val next = sorted[i + 1]
@@ -1234,6 +1261,7 @@ fun GlucoseGraph(
 
             val line1 = "$valueStr ${direction.arrow}"
             val line2 = if (deltaStr != null) "$timeStr  $deltaStr" else timeStr
+            val line3 = if (compressionSpans.any { sel.ts in it }) compressionLabel else null
 
             val tooltipPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
                 this.color = tooltipText.toArgb()
@@ -1245,12 +1273,17 @@ fun GlucoseGraph(
                 textSize = 36f
             }
 
-            val textWidth = maxOf(tooltipPaint.measureText(line1), subtextPaint.measureText(line2))
+            val textWidth = maxOf(
+                tooltipPaint.measureText(line1),
+                subtextPaint.measureText(line2),
+                line3?.let { subtextPaint.measureText(it) } ?: 0f
+            )
             val padH = 28f
             val padV = 20f
             val spacing = 8f
             val tooltipW = textWidth + padH * 2
-            val tooltipH = tooltipPaint.fontSpacing + subtextPaint.fontSpacing + spacing + padV * 2
+            val line3Height = if (line3 != null) subtextPaint.fontSpacing + spacing else 0f
+            val tooltipH = tooltipPaint.fontSpacing + subtextPaint.fontSpacing + spacing + line3Height + padV * 2
             val cornerR = 20f
 
             val tx = (pointX - tooltipW / 2).coerceIn(marginLeft, size.width - marginRight - tooltipW)
@@ -1281,6 +1314,13 @@ fun GlucoseGraph(
                 ty + padV + tooltipPaint.fontSpacing + spacing + subtextPaint.fontSpacing - subtextPaint.descent(),
                 subtextPaint
             )
+            if (line3 != null) {
+                drawContext.canvas.nativeCanvas.drawText(
+                    line3, tx + padH,
+                    ty + padV + tooltipPaint.fontSpacing + (spacing + subtextPaint.fontSpacing) * 2 - subtextPaint.descent(),
+                    subtextPaint
+                )
+            }
         }
 
         // Axis labels

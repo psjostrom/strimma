@@ -7,6 +7,7 @@ import com.psjostrom.strimma.createTestDataStore
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
+import com.psjostrom.strimma.data.StatsReadings
 import com.psjostrom.strimma.data.StrimmaDatabase
 import com.psjostrom.strimma.data.health.ExerciseDao
 import com.psjostrom.strimma.data.workout.Clock
@@ -54,7 +55,9 @@ class PatternCheckerTest {
         val exerciseDao = db.exerciseDao()
         val dataStore = if (dataStoreScope != null) createTestDataStore(dataStoreScope) else createTestDataStore()
         val settings = SettingsRepository(context, WidgetSettingsRepository(context), dataStore)
-        val checker = PatternChecker(readingDao, exerciseDao, settings, testClock)
+        val checker = PatternChecker(
+            readingDao, exerciseDao, settings, StatsReadings(readingDao, db.treatmentDao(), exerciseDao), testClock
+        )
         return Fixture(db, readingDao, exerciseDao, settings, checker)
     }
 

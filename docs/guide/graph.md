@@ -31,6 +31,14 @@ A subtle cyan band fills the area between your low and high thresholds, making i
 
 A dashed line extending from your most recent reading into the future, showing where Strimma predicts your glucose is heading. The prediction uses the last 12 minutes of data with a dampened velocity model — see [Prediction Algorithm](../reference/prediction-algorithm.md) for the math.
 
+### Probable Compression Lows
+
+Lying on the sensor can squeeze the tissue around it, and the sensor then reports a false low. Strimma marks these episodes with a light grey band, and the readings inside the band are drawn faded. Tap a faded reading to see **Probable compression low · not in stats** in the tooltip.
+
+Strimma marks an episode only after the rebound. It looks for a low that falls at least 3 mg/dL (0.17 mmol/L) per minute, stays below 3.9 mmol/L (70 mg/dL) for 20 minutes or less, and rebounds at least 3 mg/dL per minute to recover at least 60% of the drop. A real low rarely falls and rebounds that fast. Strimma never marks a low with carbs logged within 20 minutes of the lowest reading, because a treated low was real to you. It also never marks a low during an exercise session. Alerts still fire for every low, because nobody can know whether a low is real until it rebounds.
+
+The readings in the band are not counted in [Statistics](statistics.md#probable-compression-lows), the Monthly Story or recurring patterns. Nightscout, Tidepool, Health Connect and the CSV export still receive every reading as the sensor reported it.
+
 ### Treatment Markers
 
 If treatment sync is enabled:
