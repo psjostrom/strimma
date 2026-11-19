@@ -1,5 +1,6 @@
 package com.psjostrom.strimma.ui
 
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -125,11 +126,11 @@ class StatsScreenTest {
             }
         }
 
-        composeRule.onNodeWithText("5 of 7 days").assertExists()
-        composeRule.onNodeWithContentDescription("Sunday, No data").assertExists()
-        composeRule.onNodeWithContentDescription("Tuesday, High").assertExists()
-        composeRule.onNodeWithContentDescription("Monday").assertExists()
-        composeRule.onNodeWithText("No data").assertExists()
+        composeRule.onNodeWithText("5 of 7 days").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Sunday, No data").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Tuesday, High").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Monday").assertIsDisplayed()
+        composeRule.onNodeWithText("No data").assertIsDisplayed()
     }
 
     @Test
@@ -152,7 +153,7 @@ class StatsScreenTest {
             }
         }
 
-        composeRule.onNodeWithText("5 of 7 days").assertExists()
+        composeRule.onNodeWithText("5 of 7 days").assertIsDisplayed()
         composeRule.onNodeWithText("No data").assertDoesNotExist()
     }
 
