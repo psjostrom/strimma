@@ -122,9 +122,9 @@ Testing against real CamAPS FX data showed a 31% mismatch rate between the app's
 
 mg/dL. This matches the Nightscout protocol and CGM industry standard. Display conversion to mmol/L happens at render time. See [Units](reference/units.md).
 
-### Why can't I set different thresholds for alerts vs. graph?
+### Do the graph colors match the alert thresholds?
 
-The low/high thresholds in Display settings control both the graph coloring and the alert triggers. This is intentional — having different thresholds for display vs. alerting would be confusing and potentially dangerous (you'd see "in range" colors while being in an alert state, or vice versa).
+Not always. The **Low** and **High** values in Display settings set the graph's in-range band. The alert thresholds are set per alert set in Settings > Alerts. The Day and Night sets use the Display band for the graph, so a reading can look in range while a Day or Night alert fires. During Workout Mode, Exercise Low and Exercise High set the graph band as well as the exercise alerts.
 
 ### Is Strimma a medical device?
 

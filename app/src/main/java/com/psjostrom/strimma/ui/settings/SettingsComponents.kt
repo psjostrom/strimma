@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -161,7 +162,10 @@ fun AlertBlock(
                 glucoseUnit.parseThreshold(v)?.let { onThresholdChange(it) }
             },
             label = { Text(thresholdLabel) },
-            modifier = Modifier.fillMaxWidth(),
+            // A rejected edit leaves the stored threshold unchanged, so leaving the field shows the stored value again.
+            modifier = Modifier.fillMaxWidth().onFocusChanged {
+                if (!it.isFocused) text = glucoseUnit.formatThreshold(threshold)
+            },
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
         )

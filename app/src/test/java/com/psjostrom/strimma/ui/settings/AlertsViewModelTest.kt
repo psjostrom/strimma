@@ -57,7 +57,7 @@ class AlertsViewModelTest {
     )
 
     private fun runFixtureTest(
-        nowMs: Long = System.currentTimeMillis(),
+        nowMs: Long = Instant.parse("2026-01-15T12:00:00Z").toEpochMilli(),
         setup: suspend (SettingsRepository) -> Unit = {},
         block: suspend TestScope.(Fixture) -> Unit,
     ) = runTest {

@@ -1,6 +1,8 @@
 package com.psjostrom.strimma.ui.settings
 
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isToggleable
@@ -11,6 +13,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextReplacement
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.notification.SnoozeDuration
 import com.psjostrom.strimma.data.workout.AlertProtocol
@@ -207,6 +210,16 @@ class AlertsSettingsTest {
     }
 
     @Test
+    fun `rejected threshold edit shows the stored value again after leaving the field`() {
+        render()
+
+        composeRule.onNodeWithText("Low Alert (mmol/L)").performScrollTo().performTextReplacement("9.9")
+        composeRule.onNodeWithText("Urgent Low (mmol/L)").performScrollTo().performClick()
+
+        composeRule.onNodeWithText("Low Alert (mmol/L)").assert(hasText("4.0"))
+    }
+
+    @Test
     fun `night From field is one button with its time and opens the picker`() {
         render(activeSet = AlertSet.NIGHT, nightAlertsEnabled = true)
 
@@ -227,8 +240,8 @@ class AlertsSettingsTest {
         var opened: String? = null
         render(onOpenAlertSound = { opened = it })
 
-        // Sounds sits below the alert sets, so the last "Low" is the Sounds row.
-        composeRule.onAllNodesWithText("Low").onLast().performScrollTo().performClick()
+        // The Sounds row is the only clickable "Low" node; the alert-set row has a separate switch.
+        composeRule.onNode(hasText("Low") and hasClickAction()).performScrollTo().performClick()
         assertEquals(AlertManager.CHANNEL_LOW, opened)
     }
 
