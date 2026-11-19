@@ -136,10 +136,28 @@ You can pause entire alert categories for a custom duration — useful during ex
 
 Go to **Settings > Alerts**. The screen has four parts, from top to bottom:
 
-1. **Sounds**, shared by all alert sets
-2. **Alert Behavior**, shared by all alert sets
-3. **Pattern Insights**, shared by all alert sets
-4. **Alert sets**, where you edit one set at a time
+1. **Alert sets**, where you edit one set at a time
+2. **Sounds**, shared by all alert sets
+3. **Alert Behavior**, shared by all alert sets
+4. **Pattern Insights**, shared by all alert sets
+
+### Alert sets
+
+The **Alert sets** section has three tabs: **Day**, **Night** and **Exercise**. The card under the tabs shows the seven alerts of the selected tab. The sections below the card are shared by all sets. A small dot on a tab marks the set that is active now. The screen opens on the tab of the active set. Changing a setting under one tab never changes another tab's set.
+
+Each set has the same seven alert rows:
+
+- Each configurable alert has an independent toggle. Disabled alerts never fire, regardless of your glucose level.
+- The four glucose threshold alerts (Urgent Low, Low, High, Urgent High) each have an editable threshold in your configured unit (mmol/L or mg/dL).
+- Low Soon, High Soon, and Stale Data each have a toggle in every set.
+
+**Day** holds the alerts used outside the night window and outside Workout Mode.
+
+**Night** starts with the **Use night alerts** switch and the **From** and **To** times. Tap a time to change it in a time picker. The times use the 24-hour format (HH:mm). While the switch is off, the alert rows are hidden. See [Night Alerts](#night-alerts).
+
+**Exercise** holds the alerts used while Workout Mode is active. Exercise Low and Exercise High also define the exercise graph range.
+
+---
 
 ### Sounds
 
@@ -156,24 +174,6 @@ The **Sounds** section has one row for each alert: Urgent Low, Low, High, Urgent
 ### Alert Behavior
 
 **Alert Snooze Duration** and **Cooldown** appear once in this section and apply to whichever set is active. They are not separate Day, Night and Exercise settings.
-
-### Alert sets
-
-The **Alert sets** section has three tabs: **Day**, **Night** and **Exercise**. The card under the tabs shows the seven alerts of the selected tab. A small dot on a tab marks the set that is active now. The screen opens on the tab of the active set. Changing a setting under one tab never changes another tab's set.
-
-Each set has the same seven alert rows:
-
-- Each configurable alert has an independent toggle. Disabled alerts never fire, regardless of your glucose level.
-- The four glucose threshold alerts (Urgent Low, Low, High, Urgent High) each have an editable threshold in your configured unit (mmol/L or mg/dL).
-- Low Soon, High Soon, and Stale Data each have a toggle in every set.
-
-**Day** holds the alerts used outside the night window and outside Workout Mode.
-
-**Night** starts with the **Use night alerts** switch and the **From** and **To** times. Tap a time to change it in a time picker. The times use the 24-hour format (HH:mm). While the switch is off, the alert rows are hidden. See [Night Alerts](#night-alerts).
-
-**Exercise** holds the alerts used while Workout Mode is active. Exercise Low and Exercise High also define the exercise graph range.
-
----
 
 ## Do Not Disturb Bypass
 

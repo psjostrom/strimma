@@ -85,6 +85,73 @@ fun AlertsSettings(
     }
 
     SettingsScaffold(title = stringResource(R.string.settings_alerts_title), onBack = onBack) {
+        var selectedSet by rememberSaveable { mutableStateOf(activeSet) }
+        SettingsSection(
+            title = stringResource(R.string.settings_alerts_sets_section),
+            header = { AlertSetTabs(selected = selectedSet, activeSet = activeSet, onSelect = { selectedSet = it }) },
+        ) {
+            when (selectedSet) {
+                AlertSet.DAY -> AlertProtocolRows(
+                    protocol = dayProtocol,
+                    glucoseUnit = glucoseUnit,
+                    callbacks = dayCallbacks,
+                    textColor = onBg,
+                    outlineColor = outline,
+                    dividerColor = outlineVar,
+                )
+                AlertSet.NIGHT -> {
+                    AlertToggleRow(
+                        label = stringResource(R.string.settings_alerts_night_enabled),
+                        description = stringResource(R.string.settings_alerts_night_enabled_desc),
+                        enabled = nightAlertsEnabled,
+                        onToggle = onNightAlertsEnabledChange,
+                        textColor = onBg,
+                        outlineColor = outline,
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        TimeField(
+                            label = stringResource(R.string.settings_alerts_night_from),
+                            minutes = nightWindow.startMinute,
+                            onChange = onNightWindowStartChange,
+                            modifier = Modifier.weight(1f),
+                        )
+                        TimeField(
+                            label = stringResource(R.string.settings_alerts_night_to),
+                            minutes = nightWindow.endMinute,
+                            onChange = onNightWindowEndChange,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    if (nightAlertsEnabled) {
+                        HorizontalDivider(color = outlineVar)
+                        AlertProtocolRows(
+                            protocol = nightProtocol,
+                            glucoseUnit = glucoseUnit,
+                            callbacks = nightCallbacks,
+                            textColor = onBg,
+                            outlineColor = outline,
+                            dividerColor = outlineVar,
+                        )
+                    }
+                }
+                AlertSet.EXERCISE -> {
+                    Text(
+                        stringResource(R.string.settings_alerts_exercise_desc),
+                        color = outline,
+                        fontSize = 12.sp
+                    )
+                    AlertProtocolRows(
+                        protocol = exerciseProtocol,
+                        glucoseUnit = glucoseUnit,
+                        callbacks = exerciseCallbacks,
+                        textColor = onBg,
+                        outlineColor = outline,
+                        dividerColor = outlineVar,
+                    )
+                }
+            }
+        }
+
         SettingsSection(stringResource(R.string.settings_alerts_sounds_section)) {
             Text(
                 stringResource(R.string.settings_alerts_tap_sound),
@@ -163,73 +230,6 @@ fun AlertsSettings(
                 textColor = onBg,
                 outlineColor = outline,
             )
-        }
-
-        var selectedSet by rememberSaveable { mutableStateOf(activeSet) }
-        SettingsSection(
-            title = stringResource(R.string.settings_alerts_sets_section),
-            header = { AlertSetTabs(selected = selectedSet, activeSet = activeSet, onSelect = { selectedSet = it }) },
-        ) {
-            when (selectedSet) {
-                AlertSet.DAY -> AlertProtocolRows(
-                    protocol = dayProtocol,
-                    glucoseUnit = glucoseUnit,
-                    callbacks = dayCallbacks,
-                    textColor = onBg,
-                    outlineColor = outline,
-                    dividerColor = outlineVar,
-                )
-                AlertSet.NIGHT -> {
-                    AlertToggleRow(
-                        label = stringResource(R.string.settings_alerts_night_enabled),
-                        description = stringResource(R.string.settings_alerts_night_enabled_desc),
-                        enabled = nightAlertsEnabled,
-                        onToggle = onNightAlertsEnabledChange,
-                        textColor = onBg,
-                        outlineColor = outline,
-                    )
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        TimeField(
-                            label = stringResource(R.string.settings_alerts_night_from),
-                            minutes = nightWindow.startMinute,
-                            onChange = onNightWindowStartChange,
-                            modifier = Modifier.weight(1f),
-                        )
-                        TimeField(
-                            label = stringResource(R.string.settings_alerts_night_to),
-                            minutes = nightWindow.endMinute,
-                            onChange = onNightWindowEndChange,
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                    if (nightAlertsEnabled) {
-                        HorizontalDivider(color = outlineVar)
-                        AlertProtocolRows(
-                            protocol = nightProtocol,
-                            glucoseUnit = glucoseUnit,
-                            callbacks = nightCallbacks,
-                            textColor = onBg,
-                            outlineColor = outline,
-                            dividerColor = outlineVar,
-                        )
-                    }
-                }
-                AlertSet.EXERCISE -> {
-                    Text(
-                        stringResource(R.string.settings_alerts_exercise_desc),
-                        color = outline,
-                        fontSize = 12.sp
-                    )
-                    AlertProtocolRows(
-                        protocol = exerciseProtocol,
-                        glucoseUnit = glucoseUnit,
-                        callbacks = exerciseCallbacks,
-                        textColor = onBg,
-                        outlineColor = outline,
-                        dividerColor = outlineVar,
-                    )
-                }
-            }
         }
     }
 }

@@ -6,7 +6,6 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -215,8 +214,8 @@ class AlertsSettingsTest {
         var opened: String? = null
         render(onOpenAlertSound = { opened = it })
 
-        // Sounds sits above the tabs, so the first "Low" is the Sounds row.
-        composeRule.onAllNodesWithText("Low").onFirst().performClick()
+        // Sounds sits below the alert sets, so the last "Low" is the Sounds row.
+        composeRule.onAllNodesWithText("Low").onLast().performScrollTo().performClick()
         assertEquals(AlertManager.CHANNEL_LOW, opened)
     }
 
@@ -307,8 +306,8 @@ class AlertsSettingsTest {
 
         composeRule.onNodeWithText("PATTERN INSIGHTS", useUnmergedTree = true).performScrollTo().assertExists()
         composeRule.onNodeWithText("Recurring patterns", useUnmergedTree = true).performScrollTo().assertExists()
-        // The pattern switch is the first switch on the screen; the alert sets follow it.
-        composeRule.onAllNodes(isToggleable(), useUnmergedTree = true).onFirst().performScrollTo().performClick()
+        composeRule.onNode(isToggleable() and hasContentDescription("Recurring patterns"))
+            .performScrollTo().performClick()
         assertEquals(false, toggledValue)
     }
 }

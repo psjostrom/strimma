@@ -124,10 +124,10 @@ See [Notifications](notifications.md) for full details on the action button.
 
 Configure glucose alerts in four parts, from top to bottom:
 
+- **Alert sets** — **Day**, **Night** and **Exercise** tabs above one card that shows the seven alerts of the selected set, each with its own enablement and thresholds. A dot marks the set that is active now. The **Night** tab also has **Use night alerts** and the **From** and **To** times; the defaults are 23:00 and 07:00. Exercise Low and Exercise High also define the exercise graph range. See [Night Alerts](alerts.md#night-alerts).
 - **Sounds** — one row per alert (Urgent Low, Low, High, Urgent High, Low Soon, High Soon, and Stale Data). Each row opens the Android notification-channel settings for that alert. All alert sets share these sounds.
 - **Alert Behavior** — shared Alert Snooze Duration and Cooldown controls. Each appears once and applies to the active alert set.
 - **Pattern Insights** — toggle for recurring pattern detection on the home screen. See [Pattern Insights](alerts.md#pattern-insights) for details.
-- **Alert sets** — **Day**, **Night** and **Exercise** tabs above one card that shows the seven alerts of the selected set, each with its own enablement and thresholds. A dot marks the set that is active now. The **Night** tab also has **Use night alerts** and the **From** and **To** times; the defaults are 23:00 and 07:00. Exercise Low and Exercise High also define the exercise graph range. See [Night Alerts](alerts.md#night-alerts).
 
 The Day, Night and Exercise sets use the same Android notification channel for each alert type. Changing one set does not change another set.
 

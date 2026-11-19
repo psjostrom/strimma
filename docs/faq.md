@@ -88,7 +88,7 @@ Technically yes, but it's not recommended — readings from different people wou
 
 ### Can Strimma wake me up at night for a low?
 
-Yes. Urgent Low and Urgent High alerts bypass Do Not Disturb mode by default. You can also configure **any** alert to bypass DND via the alert's row in the **Sounds** section at the top of Settings > Alerts, which opens Android's notification channel settings where you can enable "Override Do Not Disturb."
+Yes. Urgent Low and Urgent High alerts bypass Do Not Disturb mode by default. You can also configure **any** alert to bypass DND via the alert's row in the **Sounds** section of Settings > Alerts, which opens Android's notification channel settings where you can enable "Override Do Not Disturb."
 
 ### Do alerts keep repeating if I stay low/high?
 
@@ -96,7 +96,7 @@ Yes. Alerts fire on every new glucose reading as long as the condition persists.
 
 ### Can I change the alert sounds?
 
-Yes. In the **Sounds** section at the top of Settings > Alerts, each alert type has a row that opens the Android notification channel settings where you can choose any sound. All alert sets (Day, Night and Exercise) share these sounds.
+Yes. In the **Sounds** section of Settings > Alerts, each alert type has a row that opens the Android notification channel settings where you can choose any sound. All alert sets (Day, Night and Exercise) share these sounds.
 
 ---
 

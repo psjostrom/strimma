@@ -47,15 +47,15 @@ Night alerts are disabled by default. The night set has no stored values until t
 
 The screen keeps every setting on one page. Top to bottom it shows these sections:
 
-1. **Sounds.** This section has one row per alert channel: Urgent Low, Low, High, Urgent High, Low Soon, High Soon and Stale Data. Each row opens the Android channel settings through the existing `onOpenAlertSound(channelId)` callback. The rows show no sound name. The current per-alert "Sound" links inside the Day rows are removed.
-2. **Alert Behavior.** Snooze duration and cooldown move up unchanged.
-3. **Pattern Insights.** The recurring-patterns switch moves up unchanged.
-4. **Alert sets.** A segmented control with Day, Night and Exercise sits above one card. The card shows the selected set's seven alert rows, using the existing `AlertProtocolRows`. A dot on a tab marks the set that is active right now. The screen opens on the active set's tab.
+1. **Alert sets.** A segmented control with Day, Night and Exercise sits above one card. The card shows the selected set's seven alert rows, using the existing `AlertProtocolRows`. A dot on a tab marks the set that is active right now. The screen opens on the active set's tab.
    - The Day tab shows the Day set.
    - The Night tab shows a "Use night alerts" switch and the From and To times above the seven rows. While the switch is off, the rows are hidden.
    - The Exercise tab shows the existing line "Used while Workout Mode is active. Low and High also define the exercise graph range." above the seven rows.
+2. **Sounds.** This section has one row per alert channel: Urgent Low, Low, High, Urgent High, Low Soon, High Soon and Stale Data. Each row opens the Android channel settings through the existing `onOpenAlertSound(channelId)` callback. The rows show no sound name. The current per-alert "Sound" links inside the Day rows are removed.
+3. **Alert Behavior.** Snooze duration and cooldown stay unchanged.
+4. **Pattern Insights.** The recurring-patterns switch stays unchanged.
 
-Everything below the tabs belongs to the selected tab. Everything above the tabs is shared by all three sets.
+Alert sets comes first, because it is the main control on the screen. Everything inside the Alert sets card belongs to the selected tab. The sections after that card are separate cards, and they are shared by all three sets.
 
 The tab control is a Material 3 `SingleChoiceSegmentedButtonRow`, the same component as the snooze and cooldown controls. The active-set dot is a small `InRange` circle after the tab label. The From and To times are two outlined fields side by side, and each field opens a Material 3 time picker.
 
@@ -82,9 +82,10 @@ The tab control is a Material 3 `SingleChoiceSegmentedButtonRow`, the same compo
 
 **Placement of the settings shared by all sets.**
 
-- **Shared settings above the tabs. Chosen.** Everything stays on one page.
+- **Shared settings as separate cards after the Alert sets card. Chosen.** Everything stays on one page, and the alert sets come first.
 - A "Sounds and behavior" row opening a separate screen would keep the tabs at the top of the Alerts screen.
-- Leaving the shared sections below the tabs was rejected. A shared setting shown under every tab looks like a per-tab setting.
+- Shared settings above the tabs keep them out of the tabbed card, but they push the alert sets about 1½ screens down.
+- Shared settings inside the tabbed card were rejected. A shared setting shown under every tab looks like a per-tab setting.
 
 **Night window.**
 
