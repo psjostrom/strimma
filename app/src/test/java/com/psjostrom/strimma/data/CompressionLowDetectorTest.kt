@@ -102,9 +102,22 @@ class CompressionLowDetectorTest {
     }
 
     @Test
-    fun `low that stays below 70 for more than 20 minutes is a real low`() {
+    fun `compression low that sits on the sensor floor for 25 minutes is found`() {
+        // 5-minute readings: a fall to the 40 mg/dL floor, 25 minutes below 70, and a rebound without carbs.
         val readings = trace(
-            *(List(6) { 120 } + listOf(90, 60) + List(25) { 55 } + listOf(90, 120) + List(5) { 120 }).toIntArray()
+            76, 94, 94, 92, 81, 79, 79, 58, 40, 40, 40, 40, 40, 70, 95, 106, 112, 112, 114,
+            stepMinutes = 5
+        )
+
+        val kept = CompressionLowDetector.withoutCompressionLows(readings)
+
+        assertTrue(kept.none { it.sgv < 70 })
+    }
+
+    @Test
+    fun `low that stays below 70 for more than 30 minutes is a real low`() {
+        val readings = trace(
+            *(List(6) { 120 } + listOf(90, 60) + List(35) { 55 } + listOf(90, 120) + List(5) { 120 }).toIntArray()
         )
 
         assertTrue(CompressionLowDetector.detect(readings).isEmpty())

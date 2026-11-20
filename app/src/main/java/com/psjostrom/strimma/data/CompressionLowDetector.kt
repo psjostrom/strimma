@@ -13,9 +13,13 @@ package com.psjostrom.strimma.data
  * A low with carbs logged near the nadir is a low that someone treated, and a low during exercise
  * can fall and rebound fast for real. The detector never flags either.
  *
- * The thresholds come from 120 days of 1-minute Libre 3 data. A rule that requires a fast fall,
- * a fast rebound and a short time below 70 mg/dL flagged 28 of 342 lows. All 28 started between
- * 23:45 and 08:48, and none had carbs logged within 20 minutes, against 18% of the other lows.
+ * The fall is measured into the first reading at the nadir and the rebound out of the last one.
+ * A compression low often sits on the sensor's 40 mg/dL floor for many minutes, and a slow drift
+ * often comes before the fall, so rates measured from the window peaks would miss it.
+ *
+ * The thresholds come from 125 days of Libre 3 data, mostly at 1-minute intervals. The rule
+ * flagged 56 of 356 lows, and 50 of the 56 started between 23:00 and 09:00. A limit longer
+ * than 30 minutes below 70 mg/dL flagged no further lows.
  */
 object CompressionLowDetector {
 
@@ -24,11 +28,12 @@ object CompressionLowDetector {
     private const val WINDOW_MS = 30 * MS_PER_MINUTE
     private const val CARB_WINDOW_MS = 20 * MS_PER_MINUTE
     private const val EPISODE_MERGE_GAP_MS = 15 * MS_PER_MINUTE
-    private const val MIN_WINDOW_READINGS = 5
+    private const val MIN_WINDOW_READINGS = 4
+    private const val MIN_MOVE_MGDL = 30
     private const val MIN_FALL_MGDL_PER_MIN = 3.0
     private const val MIN_RISE_MGDL_PER_MIN = 3.0
     private const val MIN_RECOVERY_FRACTION = 0.6
-    private const val MAX_BELOW_LOW_MS = 20 * MS_PER_MINUTE
+    private const val MAX_BELOW_LOW_MS = 30 * MS_PER_MINUTE
     private const val MIN_SPAN_STEP_MGDL_PER_MIN = 1.5
 
     /**
@@ -79,39 +84,53 @@ object CompressionLowDetector {
         episode: List<GlucoseReading>,
         carbTimes: List<Long>
     ): LongRange? {
-        if (episode.last().ts - episode.first().ts > MAX_BELOW_LOW_MS) return null
+        val nadir = episode.minOf { it.sgv }
+        val nadirFirst = episode.first { it.sgv == nadir }
+        val nadirLast = episode.last { it.sgv == nadir }
+        val isShort = episode.last().ts - episode.first().ts <= MAX_BELOW_LOW_MS
+        val isTreated = carbTimes.any { it in (nadirFirst.ts - CARB_WINDOW_MS)..(nadirLast.ts + CARB_WINDOW_MS) }
+        val isCompression = isShort && !isTreated && hasCompressionShape(sorted, nadir, nadirFirst, nadirLast)
+        return if (isCompression) span(sorted, episode, nadirFirst, nadirLast) else null
+    }
 
-        val nadir = episode.minBy { it.sgv }
-        if (carbTimes.any { it in (nadir.ts - CARB_WINDOW_MS)..(nadir.ts + CARB_WINDOW_MS) }) return null
+    private fun hasCompressionShape(
+        sorted: List<GlucoseReading>,
+        nadir: Int,
+        nadirFirst: GlucoseReading,
+        nadirLast: GlucoseReading
+    ): Boolean {
+        val before = window(sorted, nadirFirst.ts - WINDOW_MS, nadirFirst.ts - 1)
+        val after = window(sorted, nadirLast.ts + 1, nadirLast.ts + WINDOW_MS)
+        if (before.size < MIN_WINDOW_READINGS || after.size < MIN_WINDOW_READINGS) return false
 
-        val before = window(sorted, nadir.ts - WINDOW_MS, nadir.ts)
-        val after = window(sorted, nadir.ts, nadir.ts + WINDOW_MS)
-        if (before.size < MIN_WINDOW_READINGS || after.size < MIN_WINDOW_READINGS) return null
+        // The steepest fall into the nadir and the steepest rise out of it. A reading counts only
+        // when it lies at least MIN_MOVE_MGDL above the nadir, so sensor noise next to the nadir
+        // cannot pass as a steep slope.
+        val fallRate = before.filter { it.sgv - nadir >= MIN_MOVE_MGDL }
+            .maxOfOrNull { (it.sgv - nadir) / minutesBetween(it.ts, nadirFirst.ts) } ?: 0.0
+        val riseRate = after.filter { it.sgv - nadir >= MIN_MOVE_MGDL }
+            .maxOfOrNull { (it.sgv - nadir) / minutesBetween(nadirLast.ts, it.ts) } ?: 0.0
+        val recovery = (after.maxOf { it.sgv } - nadir).toDouble() / maxOf(1, before.maxOf { it.sgv } - nadir)
 
-        // The last reading at the pre-fall peak and the first reading at the rebound peak.
-        val maxBefore = before.maxOf { it.sgv }
-        val maxAfter = after.maxOf { it.sgv }
-        val peakBefore = before.last { it.sgv == maxBefore }
-        val peakAfter = after.first { it.sgv == maxAfter }
-
-        val drop = peakBefore.sgv - nadir.sgv
-        val rebound = peakAfter.sgv - nadir.sgv
-        val fallRate = drop / minutesBetween(peakBefore.ts, nadir.ts)
-        val riseRate = rebound / minutesBetween(nadir.ts, peakAfter.ts)
-        val recovery = rebound.toDouble() / maxOf(1, drop)
-
-        val isCompression = fallRate >= MIN_FALL_MGDL_PER_MIN &&
+        return fallRate >= MIN_FALL_MGDL_PER_MIN &&
             riseRate >= MIN_RISE_MGDL_PER_MIN &&
             recovery >= MIN_RECOVERY_FRACTION
-        if (!isCompression) return null
+    }
 
-        // The span reaches from the nadir out to where the steep fall starts and the steep rebound
-        // ends. A slow drift before the fall and a slow overshoot after the rebound stay in the
-        // statistics. The span always covers every low reading of the episode.
-        val nadirIndex = sorted.binarySearchBy(nadir.ts) { it.ts }
-        var startIndex = nadirIndex
+    /**
+     * The span reaches from the nadir out to where the steep fall starts and the steep rebound ends.
+     * A slow drift before the fall and a slow overshoot after the rebound stay in the statistics.
+     * The span always covers every low reading of the episode.
+     */
+    private fun span(
+        sorted: List<GlucoseReading>,
+        episode: List<GlucoseReading>,
+        nadirFirst: GlucoseReading,
+        nadirLast: GlucoseReading
+    ): LongRange {
+        var startIndex = sorted.binarySearchBy(nadirFirst.ts) { it.ts }
         while (startIndex > 0 && isSteepStep(sorted[startIndex], sorted[startIndex - 1])) startIndex--
-        var endIndex = nadirIndex
+        var endIndex = sorted.binarySearchBy(nadirLast.ts) { it.ts }
         while (endIndex < sorted.lastIndex && isSteepStep(sorted[endIndex], sorted[endIndex + 1])) endIndex++
         return minOf(sorted[startIndex].ts, episode.first().ts)..maxOf(sorted[endIndex].ts, episode.last().ts)
     }
