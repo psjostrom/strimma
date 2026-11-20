@@ -158,22 +158,16 @@ class ReadingDaoTest {
     }
 
     @Test
-    fun `pruneUnpushedBefore deletes only stale unpushed rows`() = runTest {
-        // Stale pushed row should survive; stale unpushed should die; fresh of
-        // both kinds should survive. Pins the always-on cleanup that bounds
-        // poison-row paralysis (see SyncOrchestrator.STALE_UNPUSHED_DAYS).
+    fun `abandonUnpushedBefore stops pushing stale rows and keeps every row`() = runTest {
         dao.insert(reading(120, 90).copy(pushed = 1))  // 2h ago, pushed
         dao.insert(reading(100, 95).copy(pushed = 0))  // 100 min ago, unpushed
         dao.insert(reading(30, 108).copy(pushed = 0))  // 30 min ago, unpushed
         dao.insert(reading(0, 126).copy(pushed = 1))   // now, pushed
 
-        dao.pruneUnpushedBefore(baseTs - 60 * 60_000L) // cut off > 60 min ago
-        val survivors = dao.since(0).sortedBy { it.ts }
+        dao.abandonUnpushedBefore(baseTs - 60 * 60_000L) // cut off > 60 min ago
 
-        assertEquals(3, survivors.size)
-        assertEquals("stale pushed survives", 90, survivors[0].sgv)
-        assertEquals("fresh unpushed survives", 108, survivors[1].sgv)
-        assertEquals("fresh pushed survives", 126, survivors[2].sgv)
+        assertEquals(listOf(90, 95, 108, 126), dao.since(0).sortedBy { it.ts }.map { it.sgv })
+        assertEquals(listOf(108), dao.unpushed().map { it.sgv })
     }
 
     // --- earliestTsFlow ---
