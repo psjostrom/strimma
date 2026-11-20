@@ -260,73 +260,25 @@ class SettingsRepository @Inject constructor(
 
     companion object {
         private const val ENCRYPTED_PREFS_NAME = "strimma_secrets"
-        private val KEY_NIGHTSCOUT_URL = stringPreferencesKey("nightscout_url")
-        private val KEY_GRAPH_WINDOW_HOURS = intPreferencesKey("graph_window_hours")
-        private val KEY_BG_LOW = floatPreferencesKey("bg_low")
-        private val KEY_BG_HIGH = floatPreferencesKey("bg_high")
         private const val KEY_NIGHTSCOUT_SECRET = "nightscout_secret"
 
-        private val KEY_ALERT_LOW = floatPreferencesKey("alert_low")
-        private val KEY_ALERT_HIGH = floatPreferencesKey("alert_high")
-        private val KEY_ALERT_URGENT_LOW = floatPreferencesKey("alert_urgent_low")
-        private val KEY_ALERT_URGENT_HIGH = floatPreferencesKey("alert_urgent_high")
-        private val KEY_ALERT_COOLDOWN_MINUTES = intPreferencesKey("alert_cooldown_minutes")
-        private val KEY_ALERT_SNOOZE_DURATION = stringPreferencesKey("alert_snooze_duration")
-        private val KEY_THEME_MODE = stringPreferencesKey("theme_mode")
-        private val KEY_NOTIF_GRAPH_MINUTES = intPreferencesKey("notif_graph_minutes")
-        private val KEY_NOTIF_PREDICTION_MINUTES = intPreferencesKey("notif_prediction_minutes")
-        private val KEY_NOTIF_ACTION_TYPE = stringPreferencesKey("notif_action_type")
-        private val KEY_NOTIF_SNOOZE_CATEGORY = stringPreferencesKey("notif_snooze_category")
-        private val KEY_NOTIF_SNOOZE_DURATION = stringPreferencesKey("notif_snooze_duration")
-        private val KEY_GLUCOSE_UNIT = stringPreferencesKey("glucose_unit")
-        private val KEY_BG_BROADCAST_ENABLED = booleanPreferencesKey("bg_broadcast_enabled")
-        private val KEY_GLUCOSE_SOURCE = stringPreferencesKey("glucose_source")
         private const val SYNC_PREFS = "strimma_sync"
         private const val KEY_GLUCOSE_SOURCE_SYNC = "glucose_source"
-
-        private val KEY_FOLLOWER_POLL_SECONDS = intPreferencesKey("follower_poll_seconds")
 
         private const val KEY_LLU_EMAIL = "llu_email"
         private const val KEY_LLU_PASSWORD = "llu_password"
 
-        private val KEY_TREATMENTS_SYNC_ENABLED = booleanPreferencesKey("treatments_sync_enabled")
-        private val KEY_INSULIN_TYPE = stringPreferencesKey("insulin_type")
-        private val KEY_RETENTION_POLICY = stringPreferencesKey("retention_policy")
-        private val KEY_CUSTOM_DIA = floatPreferencesKey("custom_dia")
         private const val DEFAULT_CUSTOM_DIA_HOURS = 5.0
 
-        private val KEY_WEB_SERVER_ENABLED = booleanPreferencesKey("web_server_enabled")
         private const val KEY_WEB_SERVER_SECRET = "web_server_secret"
-        private val KEY_HBA1C_UNIT = stringPreferencesKey("hba1c_unit")
-        private val KEY_START_ON_BOOT = booleanPreferencesKey("start_on_boot")
         private const val KEY_START_ON_BOOT_SYNC = "start_on_boot"
 
-        private val KEY_PATTERN_ALERTS_ENABLED = booleanPreferencesKey("pattern_alerts_enabled")
-        private val KEY_PATTERN_CARD_DISMISSED_DATE = stringPreferencesKey("pattern_card_dismissed_date")
-
-
-        private val KEY_HC_WRITE_ENABLED = booleanPreferencesKey("hc_write_enabled")
-        private val KEY_HC_LAST_SYNC = longPreferencesKey("hc_last_sync")
-        private val KEY_HC_CHANGES_TOKEN = stringPreferencesKey("hc_changes_token")
-
-        private val KEY_SETUP_COMPLETED = booleanPreferencesKey("setup_completed")
-        private val KEY_SETUP_STEP = intPreferencesKey("setup_step")
-
         // Workout BG targets stored in mg/dL, converted at display time via GlucoseUnit
-        private val KEY_WORKOUT_CALENDAR_ID = longPreferencesKey("workout_calendar_id")
-        private val KEY_WORKOUT_CALENDAR_NAME = stringPreferencesKey("workout_calendar_name")
-        private val KEY_WORKOUT_LOOKAHEAD_HOURS = intPreferencesKey("workout_lookahead_hours")
-        private val KEY_WORKOUT_TRIGGER_MINUTES = intPreferencesKey("workout_trigger_minutes")
         // Legacy keys — read by migrateLegacyTarget* for backward-compatible fallback
-        private val KEY_WORKOUT_EASY_LOW = floatPreferencesKey("workout_easy_low")
-        private val KEY_WORKOUT_EASY_HIGH = floatPreferencesKey("workout_easy_high")
-        private val KEY_WORKOUT_STRENGTH_LOW = floatPreferencesKey("workout_strength_low")
-        private val KEY_WORKOUT_STRENGTH_HIGH = floatPreferencesKey("workout_strength_high")
 
         // Exercise target keys (keyed by ExerciseCategory.name)
         private fun exerciseTargetLowKey(name: String) = floatPreferencesKey("exercise_target_low_$name")
         private fun exerciseTargetHighKey(name: String) = floatPreferencesKey("exercise_target_high_$name")
-        private val KEY_MAX_HEART_RATE = intPreferencesKey("max_heart_rate")
 
         // Defaults: 6.0 / 5.0 / 14.0 / 16.0 mmol → mg/dL via factor 18.0182
         const val DEFAULT_WORKOUT_ALERT_LOW = 108f
@@ -335,38 +287,18 @@ class SettingsRepository @Inject constructor(
         const val DEFAULT_WORKOUT_ALERT_URGENT_HIGH = 288f
 
         // Manual safety timeout (1–12 hours)
-        private val KEY_WORKOUT_MODE_MAX_HOURS = intPreferencesKey("workout_mode_max_hours")
         const val DEFAULT_WORKOUT_MODE_MAX_HOURS = 3
 
         // Runtime state (set by WorkoutModeManager). Sentinel 0L = absent.
         // Snapshotted at toggle time so a clock jump does not extend or invalidate
         // an in-progress session and so that a mid-session change to maxHours does
         // not retroactively shorten an existing manual workout.
-        private val KEY_MANUAL_WORKOUT_SINCE_MS = longPreferencesKey("manual_workout_since_ms")
-        private val KEY_MANUAL_WORKOUT_EXPIRES_MS = longPreferencesKey("manual_workout_expires_ms")
-        private val KEY_MANUAL_OFF_OVERRIDE_UNTIL_MS = longPreferencesKey("manual_off_override_until_ms")
 
         // Meal time slot boundaries (minutes from midnight)
-        private val KEY_MEAL_BREAKFAST_START = intPreferencesKey("meal_breakfast_start")
-        private val KEY_MEAL_BREAKFAST_END = intPreferencesKey("meal_breakfast_end")
-        private val KEY_MEAL_LUNCH_START = intPreferencesKey("meal_lunch_start")
-        private val KEY_MEAL_LUNCH_END = intPreferencesKey("meal_lunch_end")
-        private val KEY_MEAL_DINNER_START = intPreferencesKey("meal_dinner_start")
-        private val KEY_MEAL_DINNER_END = intPreferencesKey("meal_dinner_end")
 
         private const val DEFAULT_WORKOUT_LOOKAHEAD_HOURS = 3
         private const val DEFAULT_WORKOUT_TRIGGER_MINUTES = 120
 
-        private val KEY_STORY_VIEWED_MONTH = stringPreferencesKey("story_viewed_month")
-
-        private val KEY_TIDEPOOL_ENABLED = booleanPreferencesKey("tidepool_enabled")
-        private val KEY_TIDEPOOL_ONLY_WHILE_CHARGING = booleanPreferencesKey("tidepool_only_while_charging")
-        private val KEY_TIDEPOOL_ONLY_WHILE_WIFI = booleanPreferencesKey("tidepool_only_while_wifi")
-        private val KEY_TIDEPOOL_USER_ID = stringPreferencesKey("tidepool_user_id")
-        private val KEY_TIDEPOOL_DATASET_ID = stringPreferencesKey("tidepool_dataset_id")
-        private val KEY_TIDEPOOL_LAST_UPLOAD_END = longPreferencesKey("tidepool_last_upload_end")
-        private val KEY_TIDEPOOL_LAST_UPLOAD_TIME = longPreferencesKey("tidepool_last_upload_time")
-        private val KEY_TIDEPOOL_LAST_ERROR = stringPreferencesKey("tidepool_last_error")
         private const val KEY_TIDEPOOL_REFRESH_TOKEN = "tidepool_refresh_token"
 
         // Settings defaults (mg/dL)
