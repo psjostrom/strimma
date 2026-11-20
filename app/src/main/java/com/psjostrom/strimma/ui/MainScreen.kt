@@ -38,7 +38,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.psjostrom.strimma.R
-import com.psjostrom.strimma.data.CompressionLowDetector
 import com.psjostrom.strimma.data.Direction
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.IOBComputer
@@ -96,7 +95,7 @@ fun MainScreen(
     bgLow: Float,
     bgHigh: Float,
     graphWindowHours: Int,
-    compressionLowDetection: Boolean = true,
+    compressionSpans: List<LongRange> = emptyList(),
     predictionMinutes: Int = 15,
     glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
     treatments: List<Treatment> = emptyList(),
@@ -311,7 +310,7 @@ fun MainScreen(
                     glucoseUnit = glucoseUnit,
                     treatments = treatments,
                     exerciseSessions = exerciseSessions,
-                    detectCompressionLows = compressionLowDetection,
+                    compressionSpans = compressionSpans,
                     onExerciseTap = { selectedExercise = it },
                     onViewportChange = { viewportEnd = it },
                     onZoomChange = { zoomScale = it },
@@ -855,7 +854,7 @@ fun GlucoseGraph(
     glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
     treatments: List<Treatment> = emptyList(),
     exerciseSessions: List<StoredExerciseSession> = emptyList(),
-    detectCompressionLows: Boolean = true,
+    compressionSpans: List<LongRange> = emptyList(),
     onExerciseTap: (StoredExerciseSession) -> Unit = {},
     prediction: Prediction? = null,
     onResetZoomAndViewport: (() -> Unit)? = null,
@@ -882,18 +881,6 @@ fun GlucoseGraph(
         readings.filter { it.ts in visibleStart..viewportEnd }.sortedBy { it.ts }
     }
 
-    // Detect on the full list, not the visible slice: the detector needs 30 minutes on each side of a low.
-    val compressionSpans = remember(readings, treatments, exerciseSessions, detectCompressionLows) {
-        if (!detectCompressionLows) {
-            emptyList()
-        } else {
-            CompressionLowDetector.detect(
-                readings,
-                carbTimes = treatments.filter { (it.carbs ?: 0.0) > 0 }.map { it.createdAt },
-                exercisePeriods = exerciseSessions.map { it.startTime..it.endTime }
-            )
-        }
-    }
     val compressionLabel = stringResource(R.string.graph_compression_low)
 
     // Stable refs for pointerInput(Unit) — avoids coroutine restart on every recomposition
@@ -1268,7 +1255,6 @@ fun GlucoseGraph(
 
             val line1 = "$valueStr ${direction.arrow}"
             val line2 = if (deltaStr != null) "$timeStr  $deltaStr" else timeStr
-            val line3 = if (compressionSpans.any { sel.ts in it }) compressionLabel else null
 
             val tooltipPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
                 this.color = tooltipText.toArgb()
@@ -1280,20 +1266,26 @@ fun GlucoseGraph(
                 textSize = 36f
             }
 
-            val textWidth = maxOf(
-                tooltipPaint.measureText(line1),
-                subtextPaint.measureText(line2),
-                line3?.let { subtextPaint.measureText(it) } ?: 0f
-            )
             val padH = 28f
             val padV = 20f
             val spacing = 8f
-            val tooltipW = textWidth + padH * 2
-            val line3Height = if (line3 != null) subtextPaint.fontSpacing + spacing else 0f
-            val tooltipH = tooltipPaint.fontSpacing + subtextPaint.fontSpacing + spacing + line3Height + padV * 2
+            val maxTooltipW = size.width - marginLeft - marginRight
+            // The compression annotation is long in some languages. It breaks at " · " when it
+            // does not fit next to the plot.
+            val annotationLines = when {
+                compressionSpans.none { sel.ts in it } -> emptyList()
+                subtextPaint.measureText(compressionLabel) + padH * 2 <= maxTooltipW -> listOf(compressionLabel)
+                else -> compressionLabel.split(" · ")
+            }
+            val subLines = listOf(line2) + annotationLines
+
+            val textWidth = maxOf(tooltipPaint.measureText(line1), subLines.maxOf { subtextPaint.measureText(it) })
+            val tooltipW = minOf(textWidth + padH * 2, maxTooltipW)
+            val tooltipH = tooltipPaint.fontSpacing + (subtextPaint.fontSpacing + spacing) * subLines.size + padV * 2
             val cornerR = 20f
 
-            val tx = (pointX - tooltipW / 2).coerceIn(marginLeft, size.width - marginRight - tooltipW)
+            val maxTx = maxOf(marginLeft, size.width - marginRight - tooltipW)
+            val tx = (pointX - tooltipW / 2).coerceIn(marginLeft, maxTx)
             var ty = pointY - tooltipH - 24f
             if (ty < marginTop) ty = pointY + 24f
 
@@ -1316,15 +1308,11 @@ fun GlucoseGraph(
                 ty + padV + tooltipPaint.fontSpacing - tooltipPaint.descent(),
                 tooltipPaint
             )
-            drawContext.canvas.nativeCanvas.drawText(
-                line2, tx + padH,
-                ty + padV + tooltipPaint.fontSpacing + spacing + subtextPaint.fontSpacing - subtextPaint.descent(),
-                subtextPaint
-            )
-            if (line3 != null) {
+            subLines.forEachIndexed { i, line ->
                 drawContext.canvas.nativeCanvas.drawText(
-                    line3, tx + padH,
-                    ty + padV + tooltipPaint.fontSpacing + (spacing + subtextPaint.fontSpacing) * 2 - subtextPaint.descent(),
+                    line, tx + padH,
+                    ty + padV + tooltipPaint.fontSpacing + (spacing + subtextPaint.fontSpacing) * (i + 1) -
+                        subtextPaint.descent(),
                     subtextPaint
                 )
             }

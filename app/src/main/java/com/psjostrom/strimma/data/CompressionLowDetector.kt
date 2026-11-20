@@ -101,8 +101,11 @@ object CompressionLowDetector {
         val hour = Instant.ofEpochMilli(nadirFirst.ts).atZone(zone).hour
         val isNight = hour >= NIGHT_START_HOUR || hour < NIGHT_END_HOUR
         val isShort = episode.last().ts - episode.first().ts <= MAX_BELOW_LOW_MS
+        // The episode is over only once a reading at or above LOW_MGDL follows its last low reading.
+        val next = sorted.getOrNull(sorted.binarySearchBy(episode.last().ts) { it.ts } + 1)
+        val hasEnded = next != null && next.sgv >= LOW_MGDL
         val isTreated = carbTimes.any { it in (nadirFirst.ts - CARB_WINDOW_MS)..(nadirLast.ts + CARB_WINDOW_MS) }
-        val isCompression = isNight && isShort && !isTreated &&
+        val isCompression = isNight && isShort && hasEnded && !isTreated &&
             hasCompressionShape(sorted, nadir, nadirFirst, nadirLast)
         return if (isCompression) span(sorted, episode, nadirFirst, nadirLast) else null
     }

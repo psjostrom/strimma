@@ -245,7 +245,7 @@ fun StrimmaNavGraph(
                 bgLow = bgLow,
                 bgHigh = bgHigh,
                 graphWindowHours = graphWindowHours,
-                compressionLowDetection = compressionLowDetection,
+                compressionSpans = viewModel.compressionSpans.collectAsState().value,
                 predictionMinutes = predictionMinutes,
                 glucoseUnit = glucoseUnit,
                 treatments = treatments,

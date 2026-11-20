@@ -139,6 +139,17 @@ class CompressionLowDetectorTest {
     }
 
     @Test
+    fun `low is flagged only after glucose is back at or above 70`() {
+        // A sensor that reads below 40 rises 35 mg/dL while still under 70.
+        val stillLow = listOf(120, 120, 120, 120, 120, 120, 90, 60, 30, 45, 55, 65, 65, 65)
+        val readingsStillLow = trace(*stillLow.toIntArray())
+        val readingsBackUp = trace(*(stillLow + listOf(80, 110, 115, 115)).toIntArray())
+
+        assertTrue(CompressionLowDetector.detect(readingsStillLow, zone = utc).isEmpty())
+        assertEquals(1, CompressionLowDetector.detect(readingsBackUp, zone = utc).size)
+    }
+
+    @Test
     fun `low without a rebound yet is not flagged`() {
         val readings = trace(120, 120, 120, 120, 120, 120, 100, 80, 60, 55, 56)
 
