@@ -70,7 +70,7 @@ Night alerts replace the Day alerts during a daily time window. You choose, for 
 
 While the Night set is active, the four glucose threshold alerts carry a `Night · ` prefix in the title (for example, `Night · Low Glucose`). The Low Soon, High Soon and Stale Data alerts have no prefix.
 
-Night alert settings are part of the settings export and import. An export file from an older version leaves your current night settings unchanged on import.
+Night alert settings are part of the settings export and import. The import restores the night set exactly as it was exported. An export file from an older version leaves your current night settings unchanged on import.
 
 ---
 
@@ -149,6 +149,7 @@ Each set has the same seven alert rows:
 
 - Each configurable alert has an independent toggle. Disabled alerts never fire, regardless of your glucose level.
 - The four glucose threshold alerts (Urgent Low, Low, High, Urgent High) each have an editable threshold in your configured unit (mmol/L or mg/dL).
+- In the Night and Exercise sets, the thresholds must stay in the order Urgent Low ≤ Low ≤ High ≤ Urgent High. Strimma rejects an edit that breaks this order and shows a message. When you leave the field, it shows the stored value again.
 - Low Soon, High Soon, and Stale Data each have a toggle in every set.
 
 **Day** holds the alerts used outside the night window and outside Workout Mode.

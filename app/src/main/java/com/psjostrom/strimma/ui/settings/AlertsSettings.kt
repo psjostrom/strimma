@@ -306,7 +306,7 @@ private fun TimeField(label: String, minutes: Int, onChange: (Int) -> Unit, modi
         modifier.clearAndSetSemantics {
             contentDescription = "$label, $time"
             role = Role.Button
-            onClick(label = label) { showPicker = true; true }
+            onClick { showPicker = true; true }
         }
     ) {
         OutlinedTextField(
@@ -317,7 +317,7 @@ private fun TimeField(label: String, minutes: Int, onChange: (Int) -> Unit, modi
             label = { Text(label) },
             modifier = Modifier.fillMaxWidth(),
         )
-        Box(Modifier.matchParentSize().clickable(onClickLabel = label) { showPicker = true })
+        Box(Modifier.matchParentSize().clickable { showPicker = true })
     }
     if (showPicker) {
         TimePickerDialog(
