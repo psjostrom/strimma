@@ -52,8 +52,10 @@ If a push fails (network error, server down, etc.):
 Unpushed readings survive app restarts. Every 5 minutes, Strimma checks for unpushed readings and attempts to push them in a batch. This means:
 
 - If you lose connectivity, readings accumulate locally
-- When connectivity returns, all queued readings are pushed
-- No data is lost during network outages
+- When connectivity returns, the queued readings from the last 30 days are pushed
+- Strimma stops trying to push a reading once it is 30 days old. The reading stays on the phone.
+
+This 30-day limit also applies when you set up Nightscout after using Strimma without it. Strimma pushes the readings from the last 30 days.
 
 ---
 
