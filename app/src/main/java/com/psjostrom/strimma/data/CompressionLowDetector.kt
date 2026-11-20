@@ -1,5 +1,8 @@
 package com.psjostrom.strimma.data
 
+import java.time.Instant
+import java.time.ZoneId
+
 /**
  * Lying on a CGM sensor squeezes the tissue around it, and the sensor then reports a false low.
  * The trace falls faster than insulin can drive glucose down, and it rebounds as soon as the
@@ -10,16 +13,19 @@ package com.psjostrom.strimma.data
  * main graph calls [detect] to mark the episodes. Alerts do not use this detector: a low alert must
  * fire before anyone can know whether the low is real.
  *
- * A low with carbs logged near the nadir is a low that someone treated, and a low during exercise
- * can fall and rebound fast for real. The detector never flags either.
+ * The glucose curve alone cannot tell a compression low from a real low treated with sweets that
+ * nobody logged: both fall, sit at the bottom and climb back fast. People lie on the sensor while
+ * they sleep, so the detector only flags lows whose nadir falls between 23:00 and 09:00 local time.
+ * It also never flags a low with carbs logged near the nadir, or a low during exercise.
  *
  * The fall is measured into the first reading at the nadir and the rebound out of the last one.
  * A compression low often sits on the sensor's 40 mg/dL floor for many minutes, and a slow drift
  * often comes before the fall, so rates measured from the window peaks would miss it.
  *
- * The thresholds come from 125 days of Libre 3 data, mostly at 1-minute intervals. The rule
- * flagged 56 of 356 lows, and 50 of the 56 started between 23:00 and 09:00. A limit longer
- * than 30 minutes below 70 mg/dL flagged no further lows.
+ * The thresholds come from 125 days of Libre 3 data, mostly at 1-minute intervals. Without the
+ * night window the rule flagged 56 of 356 lows. The person wearing the sensor confirmed that the
+ * 6 daytime lows among them were not compression lows. A limit longer than 30 minutes below
+ * 70 mg/dL flagged no further lows.
  */
 object CompressionLowDetector {
 
@@ -35,21 +41,24 @@ object CompressionLowDetector {
     private const val MIN_RECOVERY_FRACTION = 0.6
     private const val MAX_BELOW_LOW_MS = 30 * MS_PER_MINUTE
     private const val MIN_SPAN_STEP_MGDL_PER_MIN = 1.5
+    private const val NIGHT_START_HOUR = 23
+    private const val NIGHT_END_HOUR = 9
 
     /**
      * Returns the time span of each probable compression low. Both ends are inclusive.
      *
      * [carbTimes] are the timestamps of carb treatments. [exercisePeriods] are the time spans of
-     * exercise sessions.
+     * exercise sessions. [zone] decides which hours are night.
      */
     fun detect(
         readings: List<GlucoseReading>,
         carbTimes: List<Long> = emptyList(),
-        exercisePeriods: List<LongRange> = emptyList()
+        exercisePeriods: List<LongRange> = emptyList(),
+        zone: ZoneId = ZoneId.systemDefault()
     ): List<LongRange> {
         val sorted = readings.sortedBy { it.ts }
         return lowEpisodes(sorted)
-            .mapNotNull { episode -> compressionSpan(sorted, episode, carbTimes) }
+            .mapNotNull { episode -> compressionSpan(sorted, episode, carbTimes, zone) }
             .filter { span -> exercisePeriods.none { it.first <= span.last && span.first <= it.last } }
     }
 
@@ -57,9 +66,10 @@ object CompressionLowDetector {
     fun withoutCompressionLows(
         readings: List<GlucoseReading>,
         carbTimes: List<Long> = emptyList(),
-        exercisePeriods: List<LongRange> = emptyList()
+        exercisePeriods: List<LongRange> = emptyList(),
+        zone: ZoneId = ZoneId.systemDefault()
     ): List<GlucoseReading> {
-        val spans = detect(readings, carbTimes, exercisePeriods)
+        val spans = detect(readings, carbTimes, exercisePeriods, zone)
         if (spans.isEmpty()) return readings
         return readings.filter { r -> spans.none { r.ts in it } }
     }
@@ -82,14 +92,18 @@ object CompressionLowDetector {
     private fun compressionSpan(
         sorted: List<GlucoseReading>,
         episode: List<GlucoseReading>,
-        carbTimes: List<Long>
+        carbTimes: List<Long>,
+        zone: ZoneId
     ): LongRange? {
         val nadir = episode.minOf { it.sgv }
         val nadirFirst = episode.first { it.sgv == nadir }
         val nadirLast = episode.last { it.sgv == nadir }
+        val hour = Instant.ofEpochMilli(nadirFirst.ts).atZone(zone).hour
+        val isNight = hour >= NIGHT_START_HOUR || hour < NIGHT_END_HOUR
         val isShort = episode.last().ts - episode.first().ts <= MAX_BELOW_LOW_MS
         val isTreated = carbTimes.any { it in (nadirFirst.ts - CARB_WINDOW_MS)..(nadirLast.ts + CARB_WINDOW_MS) }
-        val isCompression = isShort && !isTreated && hasCompressionShape(sorted, nadir, nadirFirst, nadirLast)
+        val isCompression = isNight && isShort && !isTreated &&
+            hasCompressionShape(sorted, nadir, nadirFirst, nadirLast)
         return if (isCompression) span(sorted, episode, nadirFirst, nadirLast) else null
     }
 

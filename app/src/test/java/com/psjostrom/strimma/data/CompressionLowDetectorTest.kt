@@ -3,11 +3,15 @@ package com.psjostrom.strimma.data
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.Instant
+import java.time.ZoneOffset
 
 class CompressionLowDetectorTest {
 
-    private val start = 1_800_000_000_000L
+    // 02:00 UTC. The tests pass UTC as the zone, so every trace lies inside the night window.
+    private val start = Instant.parse("2026-11-20T02:00:00Z").toEpochMilli()
     private val minute = 60_000L
+    private val utc = ZoneOffset.UTC
 
     /** One reading every [stepMinutes] minutes, starting at [start]. */
     private fun trace(vararg sgvs: Int, stepMinutes: Int = 1): List<GlucoseReading> =
@@ -24,10 +28,10 @@ class CompressionLowDetectorTest {
             118, 118, 118, 118
         )
 
-        val spans = CompressionLowDetector.detect(readings)
+        val spans = CompressionLowDetector.detect(readings, zone = utc)
 
         assertEquals(listOf((start + 5 * minute)..(start + 16 * minute)), spans)
-        val kept = CompressionLowDetector.withoutCompressionLows(readings)
+        val kept = CompressionLowDetector.withoutCompressionLows(readings, zone = utc)
         assertTrue(kept.none { it.sgv < 70 })
         assertEquals(readings.size - 12, kept.size)
     }
@@ -44,7 +48,7 @@ class CompressionLowDetectorTest {
     fun `low with carbs logged near the nadir is a treated low`() {
         val readings = trace(*vShape)
 
-        assertTrue(CompressionLowDetector.detect(readings, carbTimes = listOf(nadirTs + 5 * minute)).isEmpty())
+        assertTrue(CompressionLowDetector.detect(readings, carbTimes = listOf(nadirTs + 5 * minute), zone = utc).isEmpty())
     }
 
     @Test
@@ -52,7 +56,7 @@ class CompressionLowDetectorTest {
         val readings = trace(*vShape)
         val run = (start - 20 * minute)..(start + 8 * minute)
 
-        assertTrue(CompressionLowDetector.detect(readings, exercisePeriods = listOf(run)).isEmpty())
+        assertTrue(CompressionLowDetector.detect(readings, exercisePeriods = listOf(run), zone = utc).isEmpty())
     }
 
     @Test
@@ -63,7 +67,7 @@ class CompressionLowDetectorTest {
         val overshoot = (126..135).toList()
         val readings = trace(*(drift + fall + rebound + overshoot).toIntArray())
 
-        val kept = CompressionLowDetector.withoutCompressionLows(readings)
+        val kept = CompressionLowDetector.withoutCompressionLows(readings, zone = utc)
 
         assertEquals((135 downTo 127).toList() + overshoot, kept.map { it.sgv })
     }
@@ -78,16 +82,27 @@ class CompressionLowDetectorTest {
             120, 120, 120, 120, 120
         )
 
-        val kept = CompressionLowDetector.withoutCompressionLows(readings)
+        val kept = CompressionLowDetector.withoutCompressionLows(readings, zone = utc)
 
         assertTrue(kept.none { it.sgv < 70 })
+    }
+
+    @Test
+    fun `same shape in the daytime is not flagged`() {
+        // 15:00 UTC: awake people treat lows with sweets they rarely log, and the curve looks the same.
+        val afternoon = Instant.parse("2026-11-20T15:00:00Z").toEpochMilli()
+        val readings = vShape.mapIndexed { i, sgv ->
+            GlucoseReading(ts = afternoon + i * minute, sgv = sgv, direction = "Flat", delta = null)
+        }
+
+        assertTrue(CompressionLowDetector.detect(readings, zone = utc).isEmpty())
     }
 
     @Test
     fun `compression low is found in 5-minute sensor data`() {
         val readings = trace(120, 120, 120, 120, 120, 120, 120, 55, 115, 120, 120, 120, 120, 120, stepMinutes = 5)
 
-        assertEquals(1, CompressionLowDetector.detect(readings).size)
+        assertEquals(1, CompressionLowDetector.detect(readings, zone = utc).size)
     }
 
     @Test
@@ -97,8 +112,8 @@ class CompressionLowDetectorTest {
         val rise = (1..25).map { 60 + it * 2 }
         val readings = trace(*(fall + rise).toIntArray())
 
-        assertTrue(CompressionLowDetector.detect(readings).isEmpty())
-        assertEquals(readings, CompressionLowDetector.withoutCompressionLows(readings))
+        assertTrue(CompressionLowDetector.detect(readings, zone = utc).isEmpty())
+        assertEquals(readings, CompressionLowDetector.withoutCompressionLows(readings, zone = utc))
     }
 
     @Test
@@ -109,7 +124,7 @@ class CompressionLowDetectorTest {
             stepMinutes = 5
         )
 
-        val kept = CompressionLowDetector.withoutCompressionLows(readings)
+        val kept = CompressionLowDetector.withoutCompressionLows(readings, zone = utc)
 
         assertTrue(kept.none { it.sgv < 70 })
     }
@@ -120,13 +135,13 @@ class CompressionLowDetectorTest {
             *(List(6) { 120 } + listOf(90, 60) + List(35) { 55 } + listOf(90, 120) + List(5) { 120 }).toIntArray()
         )
 
-        assertTrue(CompressionLowDetector.detect(readings).isEmpty())
+        assertTrue(CompressionLowDetector.detect(readings, zone = utc).isEmpty())
     }
 
     @Test
     fun `low without a rebound yet is not flagged`() {
         val readings = trace(120, 120, 120, 120, 120, 120, 100, 80, 60, 55, 56)
 
-        assertTrue(CompressionLowDetector.detect(readings).isEmpty())
+        assertTrue(CompressionLowDetector.detect(readings, zone = utc).isEmpty())
     }
 }
