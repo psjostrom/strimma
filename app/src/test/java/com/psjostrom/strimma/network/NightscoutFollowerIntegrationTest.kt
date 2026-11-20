@@ -212,7 +212,7 @@ class NightscoutFollowerIntegrationTest {
             entry(115, baseTs - 2016 * 60_000L),
             entry(120, baseTs - 2017 * 60_000L)
         )
-        env.fakeClient.entriesPages = mutableListOf(invalidPage, validPage)
+        env.fakeClient.entries = invalidPage + validPage
 
         val follower = NightscoutFollower(env.fakeClient, env.dao, env.directionComputer, env.settings)
         val newReadings = mutableListOf<GlucoseReading>()
@@ -222,6 +222,46 @@ class NightscoutFollowerIntegrationTest {
         val readings = env.dao.lastN(10)
         assertEquals("Backfill should continue to the later valid page", 2, readings.size)
         assertEquals("Only the final backfill reading should trigger onNewReading", 1, newReadings.size)
+
+        job.cancel()
+    }
+
+    @Test
+    fun `backfill stores every entry of a 7-day gap`() = runTest {
+        val env = createEnv()
+        env.settings.setNightscoutUrl("https://ns.example.com")
+        env.settings.setNightscoutSecret("secret")
+        val count = 6 * 1440
+        env.fakeClient.entries = (0 until count).map { i -> entry(100 + (i % 50), baseTs - i * 60_000L) }
+
+        val follower = NightscoutFollower(env.fakeClient, env.dao, env.directionComputer, env.settings)
+        val job = follower.start(this) { }
+        advanceAndSettle(env)
+
+        assertEquals(count, env.dao.since(0).size)
+
+        job.cancel()
+    }
+
+    @Test
+    fun `poll stores every entry of a gap longer than one page`() = runTest {
+        val env = createEnv()
+        env.settings.setNightscoutUrl("https://ns.example.com")
+        env.settings.setNightscoutSecret("secret")
+        env.settings.setFollowerPollSeconds(60)
+        val gapStart = System.currentTimeMillis() - 3 * 1440 * 60_000L
+        env.dao.insert(GlucoseReading(ts = gapStart, sgv = 100, direction = "Flat", delta = null, pushed = 1))
+
+        val follower = NightscoutFollower(env.fakeClient, env.dao, env.directionComputer, env.settings)
+        val job = follower.start(this) { }
+        advanceAndSettle(env)
+
+        val gapCount = 3 * 1440
+        env.fakeClient.entries = (1..gapCount).map { i -> entry(100 + (i % 50), gapStart + i * 60_000L) }
+        advanceTimeBy(61_000)
+        advanceAndSettle(env)
+
+        assertEquals(gapCount + 1, env.dao.since(0).size)
 
         job.cancel()
     }
@@ -261,9 +301,10 @@ class NightscoutFollowerIntegrationTest {
 
     private class FakeClient : NightscoutClient() {
         var entries: List<NightscoutEntryResponse> = emptyList()
-        var entriesPages: MutableList<List<NightscoutEntryResponse>>? = null
         var fetchReturnsNull = false
 
+        // Answers the way a Nightscout server answers /api/v1/entries: newest first,
+        // date after `since`, date before `before`, at most `count` entries.
         override suspend fun fetchEntries(
             baseUrl: String,
             apiSecret: String,
@@ -272,11 +313,10 @@ class NightscoutFollowerIntegrationTest {
             before: Long?
         ): List<NightscoutEntryResponse>? {
             if (fetchReturnsNull) return null
-            val pages = entriesPages
-            if (pages != null && pages.isNotEmpty()) {
-                return pages.removeFirst()
-            }
             return entries
+                .filter { it.date!! > since && (before == null || it.date!! < before) }
+                .sortedByDescending { it.date }
+                .take(count)
         }
 
         override suspend fun pushReadings(

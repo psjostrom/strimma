@@ -212,6 +212,29 @@ open class NightscoutClient @Inject constructor() {
         }
     }
 
+    /**
+     * Fetches every entry newer than [since], one page at a time. Nightscout returns
+     * entries newest first, so the first page holds the newest [pageSize] entries and
+     * each next page asks for entries older than the oldest entry seen so far. Pages
+     * reach [onPage] newest first. Returns false when a fetch fails.
+     */
+    suspend fun forEachEntryPage(
+        baseUrl: String,
+        apiSecret: String,
+        since: Long,
+        pageSize: Int = 2016,
+        onPage: suspend (List<NightscoutEntryResponse>) -> Unit,
+    ): Boolean {
+        var before: Long? = null
+        while (true) {
+            val page = fetchEntries(baseUrl, apiSecret, since, pageSize, before) ?: return false
+            if (page.isEmpty()) return true
+            onPage(page)
+            if (page.size < pageSize) return true
+            before = page.mapNotNull { it.date }.minOrNull() ?: return true
+        }
+    }
+
     open suspend fun fetchTreatments(
         baseUrl: String,
         secret: String,
