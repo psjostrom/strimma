@@ -5,7 +5,7 @@ compose-bom = "2026.09.00"
 room = "2.8.5"
 hilt = "2.60.1"
 ktor = "3.6.1"
-ksp = "2.3.13"
+ksp = "2.3.14"
 datastore = "1.3.0"
 security-crypto = "1.1.0"
 activity-compose = "1.13.0"
@@ -71,7 +71,7 @@ bottomsheetdialog-compose = { module = "com.holix.android:bottomsheetdialog-comp
 
 junit = { module = "junit:junit", version = "4.13.2" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
-robolectric = { module = "org.robolectric:robolectric", version = "4.17" }
+robolectric = { module = "org.robolectric:robolectric", version = "4.18" }
 androidx-test-core = { module = "androidx.test:core-ktx", version = "1.7.0" }
 room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
 ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor" }
