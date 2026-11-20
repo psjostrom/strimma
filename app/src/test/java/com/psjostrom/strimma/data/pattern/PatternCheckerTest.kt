@@ -56,7 +56,7 @@ class PatternCheckerTest {
         val dataStore = if (dataStoreScope != null) createTestDataStore(dataStoreScope) else createTestDataStore()
         val settings = SettingsRepository(context, WidgetSettingsRepository(context), dataStore)
         val checker = PatternChecker(
-            readingDao, exerciseDao, settings, StatsReadings(readingDao, db.treatmentDao(), exerciseDao), testClock
+            readingDao, exerciseDao, settings, StatsReadings(readingDao, db.treatmentDao(), exerciseDao, settings), testClock
         )
         return Fixture(db, readingDao, exerciseDao, settings, checker)
     }

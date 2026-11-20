@@ -101,7 +101,7 @@ class SyncOrchestratorTest {
         val updateChecker = UpdateChecker()
         val patternChecker = com.psjostrom.strimma.data.pattern.PatternChecker(
             db.readingDao(), db.exerciseDao(), settings,
-            com.psjostrom.strimma.data.StatsReadings(db.readingDao(), db.treatmentDao(), db.exerciseDao())
+            com.psjostrom.strimma.data.StatsReadings(db.readingDao(), db.treatmentDao(), db.exerciseDao(), settings)
         )
 
         val orchestrator = SyncOrchestrator(

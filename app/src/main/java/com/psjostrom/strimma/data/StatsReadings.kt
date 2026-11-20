@@ -1,6 +1,7 @@
 package com.psjostrom.strimma.data
 
 import com.psjostrom.strimma.data.health.ExerciseDao
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
 /**
@@ -12,10 +13,15 @@ import javax.inject.Inject
 class StatsReadings @Inject constructor(
     private val readingDao: ReadingDao,
     private val treatmentDao: TreatmentDao,
-    private val exerciseDao: ExerciseDao
+    private val exerciseDao: ExerciseDao,
+    private val settings: SettingsRepository
 ) {
-    /** Readings with [start] <= ts <= [end], without probable compression lows. */
+    /**
+     * Readings with [start] <= ts <= [end]. Probable compression lows are left out unless the user
+     * turned compression low detection off.
+     */
     suspend fun inRange(start: Long, end: Long): List<GlucoseReading> {
+        if (!settings.compressionLowDetection.first()) return readingDao.readingsInRange(start, end)
         val from = start - CONTEXT_MS
         val to = end + CONTEXT_MS
         val carbTimes = treatmentDao.carbsInRange(from, to).map { it.createdAt }

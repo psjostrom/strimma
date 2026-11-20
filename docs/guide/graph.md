@@ -37,7 +37,7 @@ Lying on the sensor can squeeze the tissue around it, and the sensor then report
 
 Strimma marks an episode only after the rebound, and only when the lowest reading falls between 23:00 and 09:00, when you are likely asleep. During the day a low treated with sweets looks the same on the graph, so Strimma leaves daytime lows alone. It looks for a low where glucose falls at least 30 mg/dL (1.7 mmol/L) into the low at 3 mg/dL (0.17 mmol/L) per minute or faster, stays below 3.9 mmol/L (70 mg/dL) for 30 minutes or less, and climbs back out at 3 mg/dL per minute or faster to recover at least 60% of the drop. The low may sit flat on the sensor's lowest value before it climbs back out. A real low rarely falls and rebounds that fast. Strimma never marks a low with carbs logged within 20 minutes of the lowest reading, because a treated low was real to you. It also never marks a low during an exercise session. Alerts still fire for every low, because nobody can know whether a low is real until it rebounds.
 
-The readings in the band are not counted in [Statistics](statistics.md#probable-compression-lows), the Monthly Story or recurring patterns. Nightscout, Tidepool, Health Connect and the CSV export still receive every reading as the sensor reported it.
+The readings in the band are not counted in [Statistics](statistics.md#probable-compression-lows), the Monthly Story or recurring patterns. To turn this off, go to **Settings > Display** and switch off **Detect compression lows**. Strimma then shows no bands and counts every low. Nightscout, Tidepool, Health Connect and the CSV export still receive every reading as the sensor reported it.
 
 ### Treatment Markers
 

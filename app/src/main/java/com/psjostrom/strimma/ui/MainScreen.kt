@@ -96,6 +96,7 @@ fun MainScreen(
     bgLow: Float,
     bgHigh: Float,
     graphWindowHours: Int,
+    compressionLowDetection: Boolean = true,
     predictionMinutes: Int = 15,
     glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
     treatments: List<Treatment> = emptyList(),
@@ -310,6 +311,7 @@ fun MainScreen(
                     glucoseUnit = glucoseUnit,
                     treatments = treatments,
                     exerciseSessions = exerciseSessions,
+                    detectCompressionLows = compressionLowDetection,
                     onExerciseTap = { selectedExercise = it },
                     onViewportChange = { viewportEnd = it },
                     onZoomChange = { zoomScale = it },
@@ -853,6 +855,7 @@ fun GlucoseGraph(
     glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
     treatments: List<Treatment> = emptyList(),
     exerciseSessions: List<StoredExerciseSession> = emptyList(),
+    detectCompressionLows: Boolean = true,
     onExerciseTap: (StoredExerciseSession) -> Unit = {},
     prediction: Prediction? = null,
     onResetZoomAndViewport: (() -> Unit)? = null,
@@ -880,12 +883,16 @@ fun GlucoseGraph(
     }
 
     // Detect on the full list, not the visible slice: the detector needs 30 minutes on each side of a low.
-    val compressionSpans = remember(readings, treatments, exerciseSessions) {
-        CompressionLowDetector.detect(
-            readings,
-            carbTimes = treatments.filter { (it.carbs ?: 0.0) > 0 }.map { it.createdAt },
-            exercisePeriods = exerciseSessions.map { it.startTime..it.endTime }
-        )
+    val compressionSpans = remember(readings, treatments, exerciseSessions, detectCompressionLows) {
+        if (!detectCompressionLows) {
+            emptyList()
+        } else {
+            CompressionLowDetector.detect(
+                readings,
+                carbTimes = treatments.filter { (it.carbs ?: 0.0) > 0 }.map { it.createdAt },
+                exercisePeriods = exerciseSessions.map { it.startTime..it.endTime }
+            )
+        }
     }
     val compressionLabel = stringResource(R.string.graph_compression_low)
 

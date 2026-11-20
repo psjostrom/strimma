@@ -83,7 +83,7 @@ class StoryViewModelTest {
         (0 until 24).map { hour -> readingAt(sgv, year, month, day, hour) }
 
     private fun statsReadings(db: StrimmaDatabase) =
-        StatsReadings(db.readingDao(), db.treatmentDao(), db.exerciseDao())
+        StatsReadings(db.readingDao(), db.treatmentDao(), db.exerciseDao(), settings)
 
     private fun createViewModel(year: Int, month: Int): StoryViewModel {
         val handle = SavedStateHandle(mapOf("year" to year, "month" to month))
@@ -153,6 +153,33 @@ class StoryViewModelTest {
         awaitLoaded(vm)
 
         assertEquals(1, vm.story.value!!.events.lowEvents)
+    }
+
+    @Test
+    fun `story counts a compression low when detection is off`() = runBlocking {
+        val minuteMs = 60_000L
+        fun minuteTrace(start: LocalDateTime, sgvs: List<Int>): List<GlucoseReading> {
+            val startTs = start.atZone(zone).toInstant().toEpochMilli()
+            return sgvs.mapIndexed { i, sgv -> GlucoseReading(ts = startTs + i * minuteMs, sgv = sgv, direction = "Flat", delta = null) }
+        }
+        val days = (1..10).flatMap { fullDay(120, 2026, 3, it) }
+        // Lying on the sensor: a 65 mg/dL drop in 5 minutes and a rebound just as fast.
+        val compressionLow = minuteTrace(
+            LocalDateTime.of(2026, 3, 11, 3, 0),
+            listOf(120, 120, 120, 120, 120, 120, 110, 95, 80, 65, 55, 60, 75, 90, 105, 115, 118, 118, 118, 118)
+        )
+        // A real low: 1.5 mg/dL per minute down, 2 mg/dL per minute back up after carbs.
+        val realLow = minuteTrace(
+            LocalDateTime.of(2026, 3, 12, 15, 0),
+            (0..40).map { 120 - (it * 1.5).toInt() } + (1..25).map { 60 + it * 2 }
+        )
+        db.readingDao().insertBatch(days + compressionLow + realLow)
+        settings.setCompressionLowDetection(false)
+
+        val vm = createViewModel(2026, 3)
+        awaitLoaded(vm)
+
+        assertEquals(2, vm.story.value!!.events.lowEvents)
     }
 
     @Test

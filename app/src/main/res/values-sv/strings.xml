@@ -137,6 +137,8 @@
     <string name="settings_display_language">Språk</string>
     <string name="settings_display_language_system">Systemstandard</string>
     <string name="settings_display_theme">Tema</string>
+    <string name="settings_display_compression_lows">Upptäck kompressionslåga</string>
+    <string name="settings_display_compression_lows_desc">Markera troliga falska låga från att ligga på sensorn på natten och räkna inte med dem i statistiken</string>
     <string name="settings_display_theme_light">Ljust</string>
     <string name="settings_display_theme_dark">M\u00F6rkt</string>
     <string name="settings_display_theme_system">System</string>

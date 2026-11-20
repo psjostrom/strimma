@@ -375,6 +375,12 @@ class SettingsRepository @Inject constructor(
     val patternAlertsEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_PATTERN_ALERTS_ENABLED] ?: true }
     suspend fun setPatternAlertsEnabled(enabled: Boolean) { dataStore.edit { it[KEY_PATTERN_ALERTS_ENABLED] = enabled } }
 
+    /** When true, probable compression lows are shaded on the graph and left out of statistics. */
+    val compressionLowDetection: Flow<Boolean> = dataStore.data.map { it[KEY_COMPRESSION_LOW_DETECTION] ?: true }
+    suspend fun setCompressionLowDetection(enabled: Boolean) {
+        dataStore.edit { it[KEY_COMPRESSION_LOW_DETECTION] = enabled }
+    }
+
     val patternCardDismissedDate: Flow<String> = dataStore.data.map { it[KEY_PATTERN_CARD_DISMISSED_DATE] ?: "" }
     suspend fun setPatternCardDismissedDate(date: String) { dataStore.edit { it[KEY_PATTERN_CARD_DISMISSED_DATE] = date } }
 

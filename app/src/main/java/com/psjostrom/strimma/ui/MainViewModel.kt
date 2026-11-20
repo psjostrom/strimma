@@ -169,6 +169,9 @@ class MainViewModel @Inject constructor(
     val graphWindowHours: StateFlow<Int> = settings.graphWindowHours
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 4)
 
+    val compressionLowDetection: StateFlow<Boolean> = settings.compressionLowDetection
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
     // Filter the placeholder NaN seed so the UI never renders against a junk
     // threshold for the first frame after VM construction. The seeded fallback
     // (72f / 180f) matches SettingsRepository defaults — same race window as
