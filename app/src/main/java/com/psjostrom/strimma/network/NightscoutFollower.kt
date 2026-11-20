@@ -136,9 +136,8 @@ class NightscoutFollower @Inject constructor(
                 delay(pollSeconds * SECONDS_TO_MS)
 
                 val latestTs = dao.latestOnce()?.ts ?: (System.currentTimeMillis() - SEVEN_DAYS_MS)
-                val entries = fetchAllSince(url, secret, since = latestTs)
-
-                if (entries == null) {
+                val inserted = syncSince(url, secret, latestTs, onNewReading)
+                if (inserted == null) {
                     if (_status.value !is IntegrationStatus.Error) {
                         _status.value = IntegrationStatus.Error("Connection lost")
                     }
@@ -146,19 +145,8 @@ class NightscoutFollower @Inject constructor(
                     continue
                 }
 
-                val valid = filterValidEntries(entries)
-                if (valid.isEmpty()) {
-                    _status.value = IntegrationStatus.Connected(lastActivityTs = System.currentTimeMillis())
-                    continue
-                }
-
-                val newReadings = processNightscoutEntries(valid, dao, directionComputer)
-                for (reading in newReadings) {
-                    onNewReading(reading)
-                }
-
                 _status.value = IntegrationStatus.Connected(lastActivityTs = System.currentTimeMillis())
-                DebugLog.log(message = "Follower: ${valid.size} valid entries, ${newReadings.size} new readings")
+                if (inserted > 0) DebugLog.log(message = "Follower: $inserted new readings")
             }
         }
     }
@@ -179,26 +167,43 @@ class NightscoutFollower @Inject constructor(
 
         DebugLog.log(message = "Follower: starting backfill")
         val since = if (latestTs > 0) latestTs else sevenDaysAgo
-        val entries = fetchAllSince(url, secret, since)
-        if (entries == null) {
+        val inserted = syncSince(url, secret, since, onNewReading)
+        if (inserted == null) {
             _status.value = IntegrationStatus.Error("Backfill failed")
             DebugLog.log(message = "Follower: backfill fetch failed")
             return
         }
 
-        val newReadings = processNightscoutEntries(filterValidEntries(entries), dao, directionComputer)
-        newReadings.lastOrNull()?.let { onNewReading(it) }
-
         _status.value = IntegrationStatus.Connected(lastActivityTs = System.currentTimeMillis())
-        DebugLog.log(message = "Follower: backfill complete, ${newReadings.size} readings")
+        DebugLog.log(message = "Follower: backfill complete, $inserted readings")
     }
 
-    // Collects every page before processing, because the pages arrive newest first and
-    // direction needs the readings in time order.
-    private suspend fun fetchAllSince(url: String, secret: String, since: Long): List<NightscoutEntryResponse>? {
-        val entries = mutableListOf<NightscoutEntryResponse>()
-        val ok = client.forEachEntryPage(url, secret, since) { entries += it }
-        return if (ok) entries else null
+    /**
+     * Stores every entry newer than [since] and returns how many readings were new, or
+     * null when a fetch failed. Pages arrive newest first and each page is stored as it
+     * arrives, so the current BG is stored and alerted on before older pages download.
+     * The oldest readings of each page have no earlier readings stored yet, so their
+     * direction is NONE. [onNewReading] fires once, for the newest new reading, because
+     * a catch-up of thousands of readings must not redraw the notification for each one.
+     */
+    private suspend fun syncSince(
+        url: String,
+        secret: String,
+        since: Long,
+        onNewReading: suspend (GlucoseReading) -> Unit,
+    ): Int? {
+        var inserted = 0
+        var notified = false
+        val ok = client.forEachEntryPage(url, secret, since) { page ->
+            val newReadings = processNightscoutEntries(filterValidEntries(page), dao, directionComputer)
+            inserted += newReadings.size
+            val newest = newReadings.lastOrNull()
+            if (!notified && newest != null) {
+                notified = true
+                onNewReading(newest)
+            }
+        }
+        return if (ok) inserted else null
     }
 
 }

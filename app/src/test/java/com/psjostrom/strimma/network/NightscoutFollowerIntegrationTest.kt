@@ -227,7 +227,7 @@ class NightscoutFollowerIntegrationTest {
     }
 
     @Test
-    fun `backfill stores every entry of a 7-day gap`() = runTest {
+    fun `backfill stores every entry of a gap that spans several pages`() = runTest {
         val env = createEnv()
         env.settings.setNightscoutUrl("https://ns.example.com")
         env.settings.setNightscoutSecret("secret")
@@ -237,7 +237,10 @@ class NightscoutFollowerIntegrationTest {
         val follower = NightscoutFollower(env.fakeClient, env.dao, env.directionComputer, env.settings)
         val job = follower.start(this) { }
         advanceAndSettle(env)
+        // Each page makes its own Room calls, so one settle round is not enough.
+        repeat(10) { if (follower.status.value is IntegrationStatus.Connecting) advanceAndSettle(env) }
 
+        assertTrue(follower.status.value is IntegrationStatus.Connected)
         assertEquals(count, env.dao.since(0).size)
 
         job.cancel()
@@ -262,6 +265,56 @@ class NightscoutFollowerIntegrationTest {
         advanceAndSettle(env)
 
         assertEquals(gapCount + 1, env.dao.since(0).size)
+
+        job.cancel()
+    }
+
+    @Test
+    fun `poll stores the newest page when an older page fails`() = runTest {
+        val env = createEnv()
+        env.settings.setNightscoutUrl("https://ns.example.com")
+        env.settings.setNightscoutSecret("secret")
+        env.settings.setFollowerPollSeconds(60)
+        val gapStart = System.currentTimeMillis() - 3 * 1440 * 60_000L
+        env.dao.insert(GlucoseReading(ts = gapStart, sgv = 100, direction = "Flat", delta = null, pushed = 1))
+
+        val follower = NightscoutFollower(env.fakeClient, env.dao, env.directionComputer, env.settings)
+        val newReadings = mutableListOf<GlucoseReading>()
+        val job = follower.start(this) { newReadings.add(it) }
+        advanceAndSettle(env)
+
+        val newestTs = gapStart + 3 * 1440 * 60_000L
+        env.fakeClient.entries = (0 until 3 * 1440).map { i -> entry(100 + (i % 50), newestTs - i * 60_000L) }
+        env.fakeClient.failOlderPages = true
+        advanceTimeBy(61_000)
+        advanceAndSettle(env)
+
+        assertEquals(newestTs, env.dao.latestOnce()!!.ts)
+        assertEquals(listOf(newestTs), newReadings.map { it.ts })
+        assertTrue(follower.status.value is IntegrationStatus.Error)
+
+        job.cancel()
+    }
+
+    @Test
+    fun `poll ends with an error when the server ignores the before cursor`() = runTest {
+        val env = createEnv()
+        env.settings.setNightscoutUrl("https://ns.example.com")
+        env.settings.setNightscoutSecret("secret")
+        env.settings.setFollowerPollSeconds(60)
+        val gapStart = System.currentTimeMillis() - 3 * 1440 * 60_000L
+        env.dao.insert(GlucoseReading(ts = gapStart, sgv = 100, direction = "Flat", delta = null, pushed = 1))
+
+        val follower = NightscoutFollower(env.fakeClient, env.dao, env.directionComputer, env.settings)
+        val job = follower.start(this) { }
+        advanceAndSettle(env)
+
+        env.fakeClient.entries = (1..3 * 1440).map { i -> entry(100 + (i % 50), gapStart + i * 60_000L) }
+        env.fakeClient.ignoreBefore = true
+        advanceTimeBy(61_000)
+        advanceAndSettle(env)
+
+        assertTrue(follower.status.value is IntegrationStatus.Error)
 
         job.cancel()
     }
@@ -302,6 +355,8 @@ class NightscoutFollowerIntegrationTest {
     private class FakeClient : NightscoutClient() {
         var entries: List<NightscoutEntryResponse> = emptyList()
         var fetchReturnsNull = false
+        var failOlderPages = false
+        var ignoreBefore = false
 
         // Answers the way a Nightscout server answers /api/v1/entries: newest first,
         // date after `since`, date before `before`, at most `count` entries.
@@ -313,8 +368,10 @@ class NightscoutFollowerIntegrationTest {
             before: Long?
         ): List<NightscoutEntryResponse>? {
             if (fetchReturnsNull) return null
+            if (failOlderPages && before != null) return null
+            val upper = if (ignoreBefore) null else before
             return entries
-                .filter { it.date!! > since && (before == null || it.date!! < before) }
+                .filter { it.date!! > since && (upper == null || it.date!! < upper) }
                 .sortedByDescending { it.date }
                 .take(count)
         }

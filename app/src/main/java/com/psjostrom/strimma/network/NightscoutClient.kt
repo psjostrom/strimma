@@ -66,6 +66,7 @@ open class NightscoutClient @Inject constructor() {
         private const val HTTP_NOT_FOUND = 404
         const val MAX_ERROR_LENGTH = 80
         private const val DEFAULT_TREATMENT_COUNT = 100
+        private const val ENTRIES_PAGE_SIZE = 2016
         private const val REQUEST_TIMEOUT_MS = 30_000L
         private const val SOCKET_TIMEOUT_MS = 30_000L
 
@@ -189,7 +190,7 @@ open class NightscoutClient @Inject constructor() {
         baseUrl: String,
         apiSecret: String,
         since: Long,
-        count: Int = 2016,
+        count: Int = ENTRIES_PAGE_SIZE,
         before: Long? = null
     ): List<NightscoutEntryResponse>? {
         if (baseUrl.isBlank() || apiSecret.isBlank()) return emptyList()
@@ -214,24 +215,25 @@ open class NightscoutClient @Inject constructor() {
 
     /**
      * Fetches every entry newer than [since], one page at a time. Nightscout returns
-     * entries newest first, so the first page holds the newest [pageSize] entries and
-     * each next page asks for entries older than the oldest entry seen so far. Pages
-     * reach [onPage] newest first. Returns false when a fetch fails.
+     * entries newest first, so the first page holds the newest entries and each next
+     * page asks for entries older than the oldest entry seen so far. Pages
+     * reach [onPage] newest first. Returns false when a fetch fails, or when a page holds
+     * nothing older than the previous page, which means the server ignored `before`.
      */
     suspend fun forEachEntryPage(
         baseUrl: String,
         apiSecret: String,
         since: Long,
-        pageSize: Int = 2016,
         onPage: suspend (List<NightscoutEntryResponse>) -> Unit,
     ): Boolean {
         var before: Long? = null
         while (true) {
-            val page = fetchEntries(baseUrl, apiSecret, since, pageSize, before) ?: return false
-            if (page.isEmpty()) return true
-            onPage(page)
-            if (page.size < pageSize) return true
-            before = page.mapNotNull { it.date }.minOrNull() ?: return true
+            val page = fetchEntries(baseUrl, apiSecret, since, ENTRIES_PAGE_SIZE, before) ?: return false
+            if (page.isNotEmpty()) onPage(page)
+            val oldest = page.mapNotNull { it.date }.minOrNull()
+            if (page.size < ENTRIES_PAGE_SIZE || oldest == null) return true
+            if (before != null && oldest >= before) return false
+            before = oldest
         }
     }
 
