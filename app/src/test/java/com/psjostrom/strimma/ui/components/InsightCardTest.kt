@@ -24,8 +24,8 @@ class InsightCardTest {
         endHour = 16,
         type = PatternType.HIGH,
         daysDetected = 5,
-        daysEvaluated = 7,
-        avgBgMgdl = 216.0 // 12.0 mmol/L
+        avgBgMgdl = 216.0, // 12.0 mmol/L
+        datesWithData = emptyList()
     )
 
     private val lowPattern = GlucosePattern(
@@ -33,8 +33,8 @@ class InsightCardTest {
         endHour = 5,
         type = PatternType.LOW,
         daysDetected = 4,
-        daysEvaluated = 7,
-        avgBgMgdl = 63.0 // 3.5 mmol/L
+        avgBgMgdl = 63.0, // 3.5 mmol/L
+        datesWithData = emptyList()
     )
 
     @Test

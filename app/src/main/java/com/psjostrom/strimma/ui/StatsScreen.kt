@@ -2,6 +2,7 @@ package com.psjostrom.strimma.ui
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -20,6 +21,8 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -36,6 +39,7 @@ import com.psjostrom.strimma.data.Treatment
 import com.psjostrom.strimma.data.meal.MealAnalyzer
 import com.psjostrom.strimma.data.meal.MealTimeSlotConfig
 import com.psjostrom.strimma.data.pattern.GlucosePattern
+import com.psjostrom.strimma.data.pattern.PatternChecker
 import com.psjostrom.strimma.data.pattern.PatternType
 import com.psjostrom.strimma.ui.theme.Danger
 import com.psjostrom.strimma.ui.theme.InRange
@@ -704,7 +708,7 @@ private fun RecurringPatternsCard(
                             text = stringResource(
                                 R.string.stats_pattern_days_count,
                                 pattern.daysDetected,
-                                pattern.daysEvaluated
+                                PatternChecker.LOOKBACK_DAYS
                             ),
                             color = outline,
                             fontSize = 12.sp,
@@ -744,6 +748,11 @@ private fun RecurringPatternsCard(
                         val firstDayOfWeek = resolveFirstDayOfWeek(locale)
                         val daysOfWeek = (0L until DAYS_IN_WEEK).map { firstDayOfWeek.plus(it) }
                         val flaggedDaysOfWeek = pattern.flaggedDates.map { it.dayOfWeek }.toSet()
+                        val daysOfWeekWithData = pattern.datesWithData.map { it.dayOfWeek }.toSet()
+                        val noDataDescription = stringResource(R.string.stats_pattern_no_data)
+                        val noDataRing = Modifier
+                            .size(8.dp)
+                            .border(width = 1.dp, color = outline.copy(alpha = 0.6f), shape = CircleShape)
 
                         Row(
                             modifier = Modifier
@@ -754,8 +763,18 @@ private fun RecurringPatternsCard(
                         ) {
                             daysOfWeek.forEach { dayOfWeek ->
                                 val isFlagged = dayOfWeek in flaggedDaysOfWeek
+                                val hasData = dayOfWeek in daysOfWeekWithData
                                 val dayLabel = dayOfWeek.getDisplayName(TextStyle.NARROW, locale)
+                                val dayName = dayOfWeek.getDisplayName(TextStyle.FULL, locale)
+                                val dayDescription = when {
+                                    isFlagged -> stringResource(R.string.stats_pattern_day_status, dayName, badgeText)
+                                    hasData -> dayName
+                                    else -> stringResource(R.string.stats_pattern_day_status, dayName, noDataDescription)
+                                }
                                 Column(
+                                    modifier = Modifier.semantics(mergeDescendants = true) {
+                                        contentDescription = dayDescription
+                                    },
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                     verticalArrangement = Arrangement.spacedBy(3.dp)
                                 ) {
@@ -765,15 +784,33 @@ private fun RecurringPatternsCard(
                                         fontSize = 11.sp,
                                         fontWeight = if (isFlagged) FontWeight.SemiBold else FontWeight.Normal
                                     )
-                                    Box(
-                                        modifier = Modifier
-                                            .size(8.dp)
-                                            .background(
-                                                color = if (isFlagged) badgeColor else outline.copy(alpha = 0.25f),
-                                                shape = CircleShape
-                                            )
-                                    )
+                                    if (hasData) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(8.dp)
+                                                .background(
+                                                    color = if (isFlagged) badgeColor else outline.copy(alpha = 0.25f),
+                                                    shape = CircleShape
+                                                )
+                                        )
+                                    } else {
+                                        Box(modifier = noDataRing)
+                                    }
                                 }
+                            }
+                        }
+
+                        if (daysOfWeek.any { it !in daysOfWeekWithData }) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(modifier = noDataRing)
+                                Text(
+                                    text = noDataDescription,
+                                    color = outline,
+                                    fontSize = 11.sp
+                                )
                             }
                         }
                     }

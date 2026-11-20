@@ -33,7 +33,7 @@ Select the time period at the top:
 
 ### Recurring Patterns
 
-When recurring time-of-day patterns are detected across the last 7 days (and Pattern Insights are enabled in Settings), a **Recurring patterns** card appears above Time in Range in the 7-day view. Each pattern displays its time range, type (High or Low badge), frequency across evaluated days, average glucose and range (min–max), a 7-day occurrence breakdown, and contextual clinical guidance.
+When recurring time-of-day patterns are detected across the last 7 days (and Pattern Insights are enabled in Settings), a **Recurring patterns** card appears above Time in Range in the 7-day view. Each pattern displays its time range, type (High or Low badge), the number of days out of range in the last 7 days, average glucose and range (min–max), a 7-day occurrence breakdown, and contextual clinical guidance. In the 7-day breakdown, a filled dot marks a day with data. A hollow ring marks a day without enough readings in the pattern hours, and a **No data** caption appears under the row when such a day exists.
 
 ### Time in Range (TIR)
 

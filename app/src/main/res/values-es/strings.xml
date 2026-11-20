@@ -281,6 +281,8 @@
     <string name="stats_recurring_patterns">Patrones recurrentes</string>
     <string name="stats_recurring_patterns_subtitle">Detectados en los últimos 7 días</string>
     <string name="stats_pattern_days_count">%1$d de %2$d días</string>
+    <string name="stats_pattern_no_data">Sin datos</string>
+    <string name="stats_pattern_day_status">%1$s, %2$s</string>
     <string name="stats_pattern_range">Prom. %1$s · Rango %2$s – %3$s</string>
     <string name="insight_pattern_guide_night_low">Bajadas nocturnas: revisar la insulina basal o el bolo de la cena</string>
     <string name="insight_pattern_guide_day_low">Bajadas recurrentes: riesgo de exceso de insulina o actividad no compensada</string>
