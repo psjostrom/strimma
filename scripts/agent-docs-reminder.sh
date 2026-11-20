@@ -8,7 +8,7 @@ if [ "${1:-}" = "--host" ]; then
   host="${2:-claude}"
 fi
 
-message="DOCS CHECK: You edited a source file that may affect user-visible behavior. Before declaring done: grep docs/ for references to this feature, update affected docs, flag stale screenshots. See AGENTS.md Documentation Updates rule."
+message="DOCS CHECK: You edited a source file that may affect user-visible behavior. Before declaring done: grep docs/ for references to this feature, update affected docs, retake stale screenshots. See AGENTS.md Documentation Updates rule."
 
 is_kotlin_source_path() {
   printf '%s\n' "$1" | grep -Eq 'app/src/.*\.kt$'
