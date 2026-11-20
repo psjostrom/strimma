@@ -5,7 +5,6 @@
     <string name="common_cancel">Abbrechen</string>
     <string name="common_save">Speichern</string>
     <string name="common_export">Exportieren</string>
-    <string name="common_sound">Ton</string>
     <string name="common_no_data">Keine Daten</string>
     <string name="common_dismiss">Schlie\u00DFen</string>
 
@@ -152,11 +151,20 @@
 
     <!-- Alerts Settings -->
     <string name="settings_alerts_title">Alarme</string>
-    <string name="settings_alerts_section">Alarme</string>
-    <string name="settings_alerts_exercise_section">Trainingsalarme</string>
     <string name="settings_alerts_exercise_desc">Wird verwendet, wenn der Trainingsmodus aktiv ist. Niedrig und Hoch definieren au\u00DFerdem den Bereich des Trainingsdiagramms.</string>
     <string name="settings_alerts_behavior_section">Alarmverhalten</string>
-    <string name="settings_alerts_tap_sound">Tippe auf \"Ton\" um Klingelton, Vibration und \u00DCberschreibungseinstellungen pro Alarm zu w\u00E4hlen.</string>
+    <string name="settings_alerts_tap_sound">W\u00E4hle Klingelton, Vibration und Bitte-nicht-st\u00F6ren-Ausnahme pro Alarm. Die T\u00F6ne gelten f\u00FCr Tag, Nacht und Training.</string>
+    <string name="settings_alerts_sounds_section">T\u00F6ne</string>
+    <string name="settings_alerts_sets_section">Alarmsets</string>
+    <string name="alert_set_day">Tag</string>
+    <string name="alert_set_night">Nacht</string>
+    <string name="alert_set_exercise">Training</string>
+    <string name="settings_alerts_night_enabled">Nachtalarme verwenden</string>
+    <string name="settings_alerts_night_enabled_desc">Ersetzen die Tag-Alarme in diesen Stunden</string>
+    <string name="settings_alerts_night_from">Von</string>
+    <string name="settings_alerts_night_to">Bis</string>
+    <string name="settings_alerts_active_now">Jetzt aktiv</string>
+    <string name="settings_alerts_night_empty_window">Nachtalarme brauchen eine Startzeit, die sich von der Endzeit unterscheidet.</string>
     <string name="settings_alerts_urgent_low">Akut tief</string>
     <string name="settings_alerts_urgent_low_threshold">Akut tief (%1$s)</string>
     <string name="settings_alerts_low">Tief</string>
@@ -560,9 +568,10 @@
         <item quantity="one">Auto-aus nach %1$d Stunde</item>
         <item quantity="other">Auto-aus nach %1$d Stunden</item>
     </plurals>
-    <string name="workout_mode_settings_info">Trainingsalarme werden unter Einstellungen \u203A Alarme \u203A Trainingsalarme konfiguriert. Niedrig und Hoch definieren au\u00DFerdem den Bereich des Trainingsdiagramms.</string>
-    <string name="exercise_alert_threshold_order_error">Die Grenzen der Trainingsalarme m\u00FCssen folgende Reihenfolge einhalten: kritisch niedrig \u2264 niedrig \u2264 hoch \u2264 kritisch hoch.</string>
+    <string name="workout_mode_settings_info">Trainingsalarme werden unter Einstellungen \u203A Alarme \u203A Alarmsets \u203A Training konfiguriert. Niedrig und Hoch definieren au\u00DFerdem den Bereich des Trainingsdiagramms.</string>
+    <string name="alert_threshold_order_error">Die Alarmgrenzen m\u00FCssen folgende Reihenfolge einhalten: kritisch niedrig \u2264 niedrig \u2264 hoch \u2264 kritisch hoch.</string>
     <string name="alert_workout_prefix">Training \u00B7 %1$s</string>
+    <string name="alert_night_prefix">Nacht \u00B7 %1$s</string>
     <string name="widget_workout_indicator">TRAINING</string>
 
     <!-- Notification Action Button -->

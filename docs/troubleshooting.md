@@ -104,15 +104,15 @@ Some manufacturers (Samsung, Xiaomi, Huawei, OnePlus) add extra battery restrict
 
 ### No alert sound
 
-1. **Check alert is enabled:** Settings > Alerts > make sure the toggle is on
+1. **Check alert is enabled:** Settings > Alerts > Alert sets > open the tab of the active set (the one with the dot) and make sure the alert's toggle is on
 2. **Check the threshold:** Make sure the threshold matches your situation (e.g., a low alert at 4.0 mmol/L won't fire at 4.5 mmol/L)
-3. **Check Android notification channel:** Settings > Alerts > Sound button — verify a sound is selected
+3. **Check Android notification channel:** Settings > Alerts > Sounds > tap the alert's row — verify a sound is selected
 4. **Check Do Not Disturb:** Regular alerts respect DND. Only Urgent Low and Urgent High bypass DND by default.
 5. **Check snooze:** If you snoozed the alert, it won't fire again for 30 minutes
 
 ### Alert fires but no sound
 
-- The notification channel may have sound disabled. Tap the **Sound** button next to the alert in Strimma settings to open the Android channel settings.
+- The notification channel may have sound disabled. Open **Settings > Alerts > Sounds** and tap the alert's row to open the Android channel settings.
 - Check your phone's volume — alert sound uses the notification volume.
 
 ---

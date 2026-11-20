@@ -122,16 +122,16 @@ See [Notifications](notifications.md) for full details on the action button.
 
 ## Alerts
 
-Configure glucose alerts in four sections:
+Configure glucose alerts in four parts, from top to bottom:
 
-- **Alerts** — the independent Regular protocol: Urgent Low, Low, High, Urgent High, Low Soon, High Soon, and Stale Data alerts. These rows also have Sound buttons for Android notification-channel customization.
-- **Exercise Alerts** — the independent protocol selected while Workout Mode is active, with its own alert enablement and threshold controls. Exercise Low and Exercise High also define the exercise graph range. These rows have no separate Sound buttons.
-- **Alert Behavior** — shared Alert Snooze Duration and Cooldown controls. Each appears once and applies to the active alert protocol.
+- **Alert sets** — **Day**, **Night** and **Exercise** tabs above one card that shows the seven alerts of the selected set. Urgent Low, Low, High and Urgent High each have a switch and a threshold. Low Soon, High Soon and Stale Data each have a switch only. A dot marks the set that is active now. The **Night** tab also has **Use night alerts** and the **From** and **To** times; the defaults are 23:00 and 07:00. Exercise Low and Exercise High also define the exercise graph range. See [Night Alerts](alerts.md#night-alerts).
+- **Sounds** — one row per alert (Urgent Low, Low, High, Urgent High, Low Soon, High Soon, and Stale Data). Each row opens the Android notification-channel settings for that alert. All alert sets share these sounds.
+- **Alert Behavior** — shared Alert Snooze Duration and Cooldown controls. Each appears once and applies to the active alert set.
 - **Pattern Insights** — toggle for recurring pattern detection on the home screen. See [Pattern Insights](alerts.md#pattern-insights) for details.
 
-Regular and Exercise protocols use the same Android notification channel for each corresponding alert type. Changing one protocol does not change the other.
+The Day, Night and Exercise sets use the same Android notification channel for each alert type. Changing one set does not change another set.
 
-The values below are Regular protocol defaults; Exercise Alerts stores a separate set of values.
+The values below are Day set defaults. The Night and Exercise sets store separate values.
 
 | Setting | Description | Default |
 |---------|-------------|---------|

@@ -88,7 +88,7 @@ Technically yes, but it's not recommended — readings from different people wou
 
 ### Can Strimma wake me up at night for a low?
 
-Yes. Urgent Low and Urgent High alerts bypass Do Not Disturb mode by default. You can also configure **any** alert to bypass DND via the Sound button in Settings > Alerts, which opens Android's notification channel settings where you can enable "Override Do Not Disturb."
+Yes. Urgent Low and Urgent High alerts bypass Do Not Disturb mode by default. You can also make any alert listed in the **Sounds** section of Settings > Alerts bypass DND. Tap the alert's row to open Android's notification channel settings, and enable "Override Do Not Disturb." Push Failed has no row in Sounds. Its channel is in Android's notification settings for Strimma.
 
 ### Do alerts keep repeating if I stay low/high?
 
@@ -96,7 +96,7 @@ Yes. Alerts fire on every new glucose reading as long as the condition persists.
 
 ### Can I change the alert sounds?
 
-Yes. In Settings > Alerts, each alert type has a **Sound** button that opens the Android notification channel settings where you can choose any sound.
+Yes. In the **Sounds** section of Settings > Alerts, each glucose and stale-data alert has a row that opens the Android notification channel settings where you can choose any sound. All alert sets (Day, Night and Exercise) share these sounds. Push Failed has no row in Sounds. Its channel is in Android's notification settings for Strimma.
 
 ---
 
@@ -122,9 +122,9 @@ Testing against real CamAPS FX data showed a 31% mismatch rate between the app's
 
 mg/dL. This matches the Nightscout protocol and CGM industry standard. Display conversion to mmol/L happens at render time. See [Units](reference/units.md).
 
-### Why can't I set different thresholds for alerts vs. graph?
+### Do the graph colors match the alert thresholds?
 
-The low/high thresholds in Display settings control both the graph coloring and the alert triggers. This is intentional — having different thresholds for display vs. alerting would be confusing and potentially dangerous (you'd see "in range" colors while being in an alert state, or vice versa).
+Not always. The **Low** and **High** values in Display settings set the graph's in-range band. The alert thresholds are set per alert set in Settings > Alerts. The Day and Night sets use the Display band for the graph, so a reading can look in range while a Day or Night alert fires. During Workout Mode, Exercise Low and Exercise High set the graph band as well as the exercise alerts.
 
 ### Is Strimma a medical device?
 

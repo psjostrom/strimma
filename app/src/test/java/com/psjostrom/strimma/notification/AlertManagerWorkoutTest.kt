@@ -7,6 +7,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.psjostrom.strimma.createTestDataStore
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.SettingsRepository
+import com.psjostrom.strimma.data.workout.AlertSet
 import com.psjostrom.strimma.data.workout.WorkoutModeManager
 import com.psjostrom.strimma.testutil.workout.FakeCalendarPoller
 import com.psjostrom.strimma.testutil.workout.MutableClock
@@ -78,7 +79,7 @@ class AlertManagerWorkoutTest {
         rig.settings.setExerciseAlertLow(120f)
         rig.manager.setManualOn()
         rig.manager.effectiveThresholds.first {
-            it.workoutModeOn && it.alertProtocol.lowMgdl == 120f && it.alertProtocol.lowEnabled
+            it.activeSet == AlertSet.EXERCISE && it.alertProtocol.lowMgdl == 120f && it.alertProtocol.lowEnabled
         }
 
         rig.alertManager.checkReading(reading(110), emptyList(), predictionMinutes = 0)
@@ -97,7 +98,7 @@ class AlertManagerWorkoutTest {
         rig.settings.setExerciseAlertHigh(200f)
         rig.manager.setManualOn()
         rig.manager.effectiveThresholds.first {
-            it.workoutModeOn && it.alertProtocol.highMgdl == 200f && it.alertProtocol.highEnabled
+            it.activeSet == AlertSet.EXERCISE && it.alertProtocol.highMgdl == 200f && it.alertProtocol.highEnabled
         }
 
         rig.alertManager.checkReading(reading(210), emptyList(), predictionMinutes = 0)
@@ -125,7 +126,7 @@ class AlertManagerWorkoutTest {
         rig.settings.setExerciseAlertUrgentLow(100f)
         rig.manager.setManualOn()
         rig.manager.effectiveThresholds.first {
-            it.workoutModeOn && it.alertProtocol.urgentLowMgdl == 100f && it.alertProtocol.urgentLowEnabled
+            it.activeSet == AlertSet.EXERCISE && it.alertProtocol.urgentLowMgdl == 100f && it.alertProtocol.urgentLowEnabled
         }
 
         rig.alertManager.checkReading(reading(95), emptyList(), predictionMinutes = 0)
@@ -163,7 +164,7 @@ class AlertManagerWorkoutTest {
         rig.settings.setExerciseAlertUrgentHigh(240f)
         rig.manager.setManualOn()
         rig.manager.effectiveThresholds.first {
-            it.workoutModeOn && it.alertProtocol.urgentHighMgdl == 240f && it.alertProtocol.urgentHighEnabled
+            it.activeSet == AlertSet.EXERCISE && it.alertProtocol.urgentHighMgdl == 240f && it.alertProtocol.urgentHighEnabled
         }
 
         rig.alertManager.checkReading(reading(245), emptyList(), predictionMinutes = 0)
@@ -182,7 +183,7 @@ class AlertManagerWorkoutTest {
         rig.settings.setExerciseAlertLow(100f)
         rig.manager.setManualOn()
         rig.manager.effectiveThresholds.first {
-            it.workoutModeOn && it.alertProtocol.lowMgdl == 100f && it.alertProtocol.lowSoonEnabled
+            it.activeSet == AlertSet.EXERCISE && it.alertProtocol.lowMgdl == 100f && it.alertProtocol.lowSoonEnabled
         }
 
         val now = System.currentTimeMillis()
@@ -210,7 +211,7 @@ class AlertManagerWorkoutTest {
         rig.settings.setExerciseAlertHigh(220f)
         rig.manager.setManualOn()
         rig.manager.effectiveThresholds.first {
-            it.workoutModeOn && it.alertProtocol.highMgdl == 220f && it.alertProtocol.highSoonEnabled
+            it.activeSet == AlertSet.EXERCISE && it.alertProtocol.highMgdl == 220f && it.alertProtocol.highSoonEnabled
         }
 
         val now = System.currentTimeMillis()
@@ -244,7 +245,7 @@ class AlertManagerWorkoutTest {
         rig.settings.setAlertStaleEnabled(false)
         rig.settings.setExerciseAlertStaleEnabled(true)
         rig.manager.setManualOn()
-        rig.manager.effectiveThresholds.first { it.workoutModeOn && it.alertProtocol.staleEnabled }
+        rig.manager.effectiveThresholds.first { it.activeSet == AlertSet.EXERCISE && it.alertProtocol.staleEnabled }
         val staleTs = rig.clock.nowMs - 11 * 60_000L
 
         rig.alertManager.checkStale(staleTs)
@@ -262,7 +263,7 @@ class AlertManagerWorkoutTest {
         val rig = setup()
         rig.settings.setAlertStaleEnabled(true)
         rig.settings.setExerciseAlertStaleEnabled(true)
-        rig.manager.effectiveThresholds.first { !it.workoutModeOn && it.alertProtocol.staleEnabled }
+        rig.manager.effectiveThresholds.first { it.activeSet != AlertSet.EXERCISE && it.alertProtocol.staleEnabled }
         val staleTs = rig.clock.nowMs - 11 * 60_000L
 
         rig.alertManager.checkStale(staleTs)
@@ -270,7 +271,7 @@ class AlertManagerWorkoutTest {
 
         rig.settings.setExerciseAlertStaleEnabled(false)
         rig.manager.setManualOn()
-        rig.manager.effectiveThresholds.first { it.workoutModeOn && !it.alertProtocol.staleEnabled }
+        rig.manager.effectiveThresholds.first { it.activeSet == AlertSet.EXERCISE && !it.alertProtocol.staleEnabled }
         rig.alertManager.checkStale(staleTs)
 
         assertNull(Shadows.shadowOf(rig.notificationManager).getNotification(AlertManager.ALERT_STALE_ID))
@@ -282,7 +283,7 @@ class AlertManagerWorkoutTest {
         rig.settings.setAlertCooldownMinutes(15)
         rig.settings.setExerciseAlertLow(120f)
         rig.manager.setManualOn()
-        rig.manager.effectiveThresholds.first { it.workoutModeOn && it.alertProtocol.lowMgdl == 120f }
+        rig.manager.effectiveThresholds.first { it.activeSet == AlertSet.EXERCISE && it.alertProtocol.lowMgdl == 120f }
 
         rig.alertManager.checkReading(reading(110), emptyList(), predictionMinutes = 0)
         val notificationManager = Shadows.shadowOf(rig.notificationManager)

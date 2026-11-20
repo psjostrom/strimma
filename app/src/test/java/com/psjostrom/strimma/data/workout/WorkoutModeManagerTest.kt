@@ -237,7 +237,7 @@ class WorkoutModeManagerTest {
         // currentEffectiveThresholds() suspends past the placeholder and returns
         // real values seeded from SettingsRepository defaults.
         val t = rig.manager.currentEffectiveThresholds()
-        assertFalse(t.workoutModeOn)
+        assertEquals(AlertSet.DAY, t.activeSet)
         assertEquals(72f, t.displayLowMgdl)
         assertEquals(180f, t.displayHighMgdl)
         assertTrue(t.alertProtocol.lowEnabled)
@@ -272,7 +272,7 @@ class WorkoutModeManagerTest {
 
         val thresholds = manager.currentEffectiveThresholds()
 
-        assertTrue(thresholds.workoutModeOn)
+        assertEquals(AlertSet.EXERCISE, thresholds.activeSet)
         assertTrue(thresholds.alertProtocol.lowEnabled)
         assertEquals(120f, thresholds.alertProtocol.lowMgdl)
     }
@@ -284,8 +284,8 @@ class WorkoutModeManagerTest {
         rig.settings.setExerciseAlertHigh(260f)
         rig.settings.setExerciseAlertLowEnabled(false)
         rig.manager.setManualOn()
-        val t = rig.manager.effectiveThresholds.first { it.workoutModeOn }
-        assertTrue(t.workoutModeOn)
+        val t = rig.manager.effectiveThresholds.first { it.activeSet == AlertSet.EXERCISE }
+        assertEquals(AlertSet.EXERCISE, t.activeSet)
         assertFalse(t.alertProtocol.lowEnabled)
         assertEquals(120f, t.alertProtocol.lowMgdl)
         assertEquals(260f, t.alertProtocol.highMgdl)
@@ -309,7 +309,7 @@ class WorkoutModeManagerTest {
             endMs = baseNowMs + msPerHour,
         )
 
-        val exercise = rig.manager.effectiveThresholds.first { it.workoutModeOn }
+        val exercise = rig.manager.effectiveThresholds.first { it.activeSet == AlertSet.EXERCISE }
         assertTrue(exercise.alertProtocol.lowEnabled)
         assertEquals(120f, exercise.alertProtocol.lowMgdl)
         assertEquals(260f, exercise.alertProtocol.highMgdl)
@@ -317,8 +317,8 @@ class WorkoutModeManagerTest {
         assertEquals(260f, exercise.displayHighMgdl)
 
         rig.nextEventFlow.value = null
-        val regular = rig.manager.effectiveThresholds.first { !it.workoutModeOn }
-        assertFalse(regular.workoutModeOn)
+        val regular = rig.manager.effectiveThresholds.first { it.activeSet != AlertSet.EXERCISE }
+        assertEquals(AlertSet.DAY, regular.activeSet)
         assertFalse(regular.alertProtocol.lowEnabled)
         assertEquals(70f, regular.alertProtocol.lowMgdl)
         assertEquals(200f, regular.alertProtocol.highMgdl)

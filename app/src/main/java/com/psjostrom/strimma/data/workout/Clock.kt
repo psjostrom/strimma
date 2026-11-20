@@ -4,11 +4,13 @@ import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import java.time.ZoneId
 import javax.inject.Inject
 import javax.inject.Singleton
 
 interface Clock {
     fun nowMs(): Long
+    fun zone(): ZoneId = ZoneId.systemDefault()
 }
 
 @Singleton

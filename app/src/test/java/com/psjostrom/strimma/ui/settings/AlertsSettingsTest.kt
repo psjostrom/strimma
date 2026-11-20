@@ -1,18 +1,28 @@
 package com.psjostrom.strimma.ui.settings
 
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onLast
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextReplacement
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.notification.SnoozeDuration
 import com.psjostrom.strimma.data.workout.AlertProtocol
-import kotlinx.coroutines.flow.Flow
+import com.psjostrom.strimma.data.workout.AlertSet
+import com.psjostrom.strimma.data.workout.NightWindow
+import com.psjostrom.strimma.notification.AlertManager
 import kotlinx.coroutines.flow.emptyFlow
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -69,80 +79,70 @@ class AlertsSettingsTest {
         staleEnabled = staleEnabled,
     )
 
+    private fun callbacks(
+        onHighEnabledChange: (Boolean) -> Unit = {},
+    ) = AlertProtocolCallbacks(
+        onUrgentLowEnabledChange = {},
+        onLowEnabledChange = {},
+        onHighEnabledChange = onHighEnabledChange,
+        onUrgentHighEnabledChange = {},
+        onUrgentLowChange = {},
+        onLowChange = {},
+        onHighChange = {},
+        onUrgentHighChange = {},
+        onLowSoonEnabledChange = {},
+        onHighSoonEnabledChange = {},
+        onStaleEnabledChange = {},
+    )
+
     private fun render(
         glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
-        regularAlertProtocol: AlertProtocol = regularProtocol(),
-        exerciseAlertProtocol: AlertProtocol = exerciseProtocol(),
+        activeSet: AlertSet = AlertSet.DAY,
+        dayProtocol: AlertProtocol = regularProtocol(),
+        nightProtocol: AlertProtocol = regularProtocol(),
+        exerciseProtocol: AlertProtocol = exerciseProtocol(),
+        nightAlertsEnabled: Boolean = true,
+        dayCallbacks: AlertProtocolCallbacks = callbacks(),
+        nightCallbacks: AlertProtocolCallbacks = callbacks(),
+        exerciseCallbacks: AlertProtocolCallbacks = callbacks(),
         alertCooldownMinutes: Int = 0,
         alertSnoozeDuration: SnoozeDuration = SnoozeDuration.M30,
-        onAlertLowEnabledChange: (Boolean) -> Unit = {},
-        onAlertHighEnabledChange: (Boolean) -> Unit = {},
-        onAlertUrgentLowEnabledChange: (Boolean) -> Unit = {},
-        onAlertUrgentHighEnabledChange: (Boolean) -> Unit = {},
-        onAlertStaleEnabledChange: (Boolean) -> Unit = {},
-        onAlertLowSoonEnabledChange: (Boolean) -> Unit = {},
-        onAlertHighSoonEnabledChange: (Boolean) -> Unit = {},
         onAlertCooldownChange: (Int) -> Unit = {},
         onAlertSnoozeDurationChange: (SnoozeDuration) -> Unit = {},
-        onExerciseAlertLowEnabledChange: (Boolean) -> Unit = {},
-        onExerciseAlertHighEnabledChange: (Boolean) -> Unit = {},
-        onExerciseAlertUrgentLowEnabledChange: (Boolean) -> Unit = {},
-        onExerciseAlertUrgentHighEnabledChange: (Boolean) -> Unit = {},
-        onExerciseAlertLowChange: (Float) -> Unit = {},
-        onExerciseAlertHighChange: (Float) -> Unit = {},
-        onExerciseAlertUrgentLowChange: (Float) -> Unit = {},
-        onExerciseAlertUrgentHighChange: (Float) -> Unit = {},
-        onExerciseAlertStaleEnabledChange: (Boolean) -> Unit = {},
-        onExerciseAlertLowSoonEnabledChange: (Boolean) -> Unit = {},
-        onExerciseAlertHighSoonEnabledChange: (Boolean) -> Unit = {},
         patternAlertsEnabled: Boolean = false,
         onPatternAlertsEnabledChange: (Boolean) -> Unit = {},
-        validationError: Flow<AlertsViewModel.ValidationError> = emptyFlow(),
         onOpenAlertSound: (String) -> Unit = {},
-        onBack: () -> Unit = {}
     ) {
         composeRule.setContent {
             AlertsSettings(
                 glucoseUnit = glucoseUnit,
-                regularAlertProtocol = regularAlertProtocol,
-                exerciseAlertProtocol = exerciseAlertProtocol,
+                activeSet = activeSet,
+                dayProtocol = dayProtocol,
+                nightProtocol = nightProtocol,
+                exerciseProtocol = exerciseProtocol,
+                nightAlertsEnabled = nightAlertsEnabled,
+                nightWindow = NightWindow.DEFAULT,
+                dayCallbacks = dayCallbacks,
+                nightCallbacks = nightCallbacks,
+                exerciseCallbacks = exerciseCallbacks,
+                onNightAlertsEnabledChange = {},
+                onNightWindowStartChange = {},
+                onNightWindowEndChange = {},
                 alertCooldownMinutes = alertCooldownMinutes,
                 alertSnoozeDuration = alertSnoozeDuration,
-                onAlertLowEnabledChange = onAlertLowEnabledChange,
-                onAlertHighEnabledChange = onAlertHighEnabledChange,
-                onAlertUrgentLowEnabledChange = onAlertUrgentLowEnabledChange,
-                onAlertUrgentHighEnabledChange = onAlertUrgentHighEnabledChange,
-                onAlertLowChange = {},
-                onAlertHighChange = {},
-                onAlertUrgentLowChange = {},
-                onAlertUrgentHighChange = {},
-                onAlertStaleEnabledChange = onAlertStaleEnabledChange,
-                onAlertLowSoonEnabledChange = onAlertLowSoonEnabledChange,
-                onAlertHighSoonEnabledChange = onAlertHighSoonEnabledChange,
-                patternAlertsEnabled = patternAlertsEnabled,
-                onPatternAlertsEnabledChange = onPatternAlertsEnabledChange,
                 onAlertCooldownChange = onAlertCooldownChange,
                 onAlertSnoozeDurationChange = onAlertSnoozeDurationChange,
-                onExerciseAlertLowEnabledChange = onExerciseAlertLowEnabledChange,
-                onExerciseAlertHighEnabledChange = onExerciseAlertHighEnabledChange,
-                onExerciseAlertUrgentLowEnabledChange = onExerciseAlertUrgentLowEnabledChange,
-                onExerciseAlertUrgentHighEnabledChange = onExerciseAlertUrgentHighEnabledChange,
-                onExerciseAlertLowChange = onExerciseAlertLowChange,
-                onExerciseAlertHighChange = onExerciseAlertHighChange,
-                onExerciseAlertUrgentLowChange = onExerciseAlertUrgentLowChange,
-                onExerciseAlertUrgentHighChange = onExerciseAlertUrgentHighChange,
-                onExerciseAlertStaleEnabledChange = onExerciseAlertStaleEnabledChange,
-                onExerciseAlertLowSoonEnabledChange = onExerciseAlertLowSoonEnabledChange,
-                onExerciseAlertHighSoonEnabledChange = onExerciseAlertHighSoonEnabledChange,
-                validationError = validationError,
+                patternAlertsEnabled = patternAlertsEnabled,
+                onPatternAlertsEnabledChange = onPatternAlertsEnabledChange,
+                validationError = emptyFlow(),
                 onOpenAlertSound = onOpenAlertSound,
-                onBack = onBack
+                onBack = {},
             )
         }
     }
 
     @Test
-    fun `displays all alert types`() {
+    fun `displays all alert types in sounds and the selected set`() {
         render()
         assertEquals(2, composeRule.onAllNodesWithText("Urgent Low").fetchSemanticsNodes().size)
         assertEquals(2, composeRule.onAllNodesWithText("Low").fetchSemanticsNodes().size)
@@ -154,23 +154,15 @@ class AlertsSettingsTest {
     }
 
     @Test
-    fun `enabled alerts show threshold fields and sound button`() {
+    fun `enabled alerts show threshold fields`() {
         render()
-        assertEquals(2, composeRule.onAllNodesWithText("Low Alert (mmol/L)").fetchSemanticsNodes().size)
-        // Multiple "Sound" buttons exist when all alerts enabled
-        assertTrue(composeRule.onAllNodesWithText("Sound").fetchSemanticsNodes().isNotEmpty())
+        assertEquals(1, composeRule.onAllNodesWithText("Low Alert (mmol/L)").fetchSemanticsNodes().size)
     }
 
     @Test
     fun `disabled alert hides threshold field`() {
         render(
-            regularAlertProtocol = regularProtocol(
-                lowEnabled = false,
-                highEnabled = false,
-                urgentLowEnabled = false,
-                urgentHighEnabled = false,
-            ),
-            exerciseAlertProtocol = exerciseProtocol(
+            dayProtocol = regularProtocol(
                 lowEnabled = false,
                 highEnabled = false,
                 urgentLowEnabled = false,
@@ -186,19 +178,22 @@ class AlertsSettingsTest {
     @Test
     fun `threshold labels reflect glucose unit`() {
         render(glucoseUnit = GlucoseUnit.MGDL)
-        assertEquals(2, composeRule.onAllNodesWithText("Low Alert (mg/dL)").fetchSemanticsNodes().size)
-        assertEquals(2, composeRule.onAllNodesWithText("High Alert (mg/dL)").fetchSemanticsNodes().size)
+        assertEquals(1, composeRule.onAllNodesWithText("Low Alert (mg/dL)").fetchSemanticsNodes().size)
+        assertEquals(1, composeRule.onAllNodesWithText("High Alert (mg/dL)").fetchSemanticsNodes().size)
     }
 
     @Test
-    fun `alerts screen has three sections and shared controls appear once`() {
+    fun `alerts screen has four sections and shared controls appear once`() {
         render()
 
-        composeRule.onNodeWithText("ALERTS", useUnmergedTree = true).assertExists()
-        composeRule.onNodeWithText("EXERCISE ALERTS", useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithText("SOUNDS", useUnmergedTree = true).assertExists()
         composeRule.onNodeWithText("ALERT BEHAVIOR", useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithText("PATTERN INSIGHTS", useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithText("ALERT SETS", useUnmergedTree = true).assertExists()
         composeRule.onNodeWithText("Alert Snooze Duration").assertExists()
-        composeRule.onNodeWithText("Cooldown").assertExists()
+        val setsTop = composeRule.onNodeWithText("ALERT SETS", useUnmergedTree = true).fetchSemanticsNode().positionInRoot.y
+        val soundsTop = composeRule.onNodeWithText("SOUNDS", useUnmergedTree = true).fetchSemanticsNode().positionInRoot.y
+        assertTrue("Alert sets must come before Sounds", setsTop < soundsTop)
         assertEquals(
             1,
             composeRule.onAllNodesWithText("Cooldown", useUnmergedTree = true)
@@ -207,15 +202,84 @@ class AlertsSettingsTest {
     }
 
     @Test
-    fun `exercise alert rows do not add sound buttons`() {
+    fun `screen opens on the active set tab`() {
+        render(activeSet = AlertSet.NIGHT)
+
+        composeRule.onNodeWithText("Use night alerts").assertExists()
+        composeRule.onNode(hasText("Night") and hasContentDescription("Active now")).assertExists()
+    }
+
+    @Test
+    fun `rejected threshold edit shows the stored value again after leaving the field`() {
         render()
 
-        // Seven enabled Regular alerts produce seven Sound buttons; Exercise adds none.
-        assertEquals(
-            7,
-            composeRule.onAllNodesWithText("Sound", useUnmergedTree = true)
-                .fetchSemanticsNodes().size
+        composeRule.onNodeWithText("Low Alert (mmol/L)").performScrollTo().performTextReplacement("9.9")
+        composeRule.onNodeWithText("Urgent Low (mmol/L)").performScrollTo().performClick()
+
+        composeRule.onNodeWithText("Low Alert (mmol/L)").assert(hasText("4.0"))
+    }
+
+    @Test
+    fun `night From field is one button with its time and opens the picker`() {
+        render(activeSet = AlertSet.NIGHT, nightAlertsEnabled = true)
+
+        composeRule.onNodeWithContentDescription("From, 23:00").performScrollTo().performClick()
+        composeRule.onNodeWithText("Cancel").assertIsDisplayed()
+    }
+
+    @Test
+    fun `night rows hidden while night alerts off`() {
+        render(activeSet = AlertSet.NIGHT, nightAlertsEnabled = false)
+
+        composeRule.onNodeWithText("Use night alerts").assertExists()
+        assertEquals(0, composeRule.onAllNodesWithText("Urgent Low (mmol/L)").fetchSemanticsNodes().size)
+    }
+
+    @Test
+    fun `sound row opens that channel`() {
+        var opened: String? = null
+        render(onOpenAlertSound = { opened = it })
+
+        // The Sounds row is the only clickable "Low" node; the alert-set row has a separate switch.
+        composeRule.onNode(hasText("Low") and hasClickAction()).performScrollTo().performClick()
+        assertEquals(AlertManager.CHANNEL_LOW, opened)
+    }
+
+    @Test
+    fun `exercise tab edits exercise set`() {
+        var dayHigh: Boolean? = null
+        var exerciseHigh: Boolean? = null
+        render(
+            dayCallbacks = callbacks(onHighEnabledChange = { dayHigh = it }),
+            exerciseCallbacks = callbacks(onHighEnabledChange = { exerciseHigh = it }),
         )
+
+        composeRule.onNodeWithText("Exercise").performScrollTo().performClick()
+        composeRule.onNode(isToggleable() and hasContentDescription("High")).performScrollTo().performClick()
+
+        assertEquals(false, exerciseHigh)
+        assertNull(dayHigh)
+    }
+
+    @Test
+    fun `night tab shows rows when night alerts on and edits night set`() {
+        var dayHigh: Boolean? = null
+        var nightHigh: Boolean? = null
+        var exerciseHigh: Boolean? = null
+        render(
+            activeSet = AlertSet.NIGHT,
+            nightAlertsEnabled = true,
+            dayCallbacks = callbacks(onHighEnabledChange = { dayHigh = it }),
+            nightCallbacks = callbacks(onHighEnabledChange = { nightHigh = it }),
+            exerciseCallbacks = callbacks(onHighEnabledChange = { exerciseHigh = it }),
+        )
+
+        composeRule.onNodeWithText("Urgent Low (mmol/L)").performScrollTo().assertIsDisplayed()
+        composeRule.onNode(isToggleable() and hasContentDescription("High")).performScrollTo().performClick()
+
+        assertEquals(false, nightHigh)
+        assertNull(dayHigh)
+        assertNull(exerciseHigh)
     }
 
     @Test
@@ -268,7 +332,8 @@ class AlertsSettingsTest {
 
         composeRule.onNodeWithText("PATTERN INSIGHTS", useUnmergedTree = true).performScrollTo().assertExists()
         composeRule.onNodeWithText("Recurring patterns", useUnmergedTree = true).performScrollTo().assertExists()
-        composeRule.onAllNodes(isToggleable(), useUnmergedTree = true).onLast().performScrollTo().performClick()
+        composeRule.onNode(isToggleable() and hasContentDescription("Recurring patterns"))
+            .performScrollTo().performClick()
         assertEquals(false, toggledValue)
     }
 }
