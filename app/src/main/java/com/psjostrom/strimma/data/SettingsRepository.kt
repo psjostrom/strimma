@@ -113,24 +113,24 @@ val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(
 )
 
 // Physical keys stay workout_* for persistence compatibility.
-private val KEY_EXERCISE_ALERT_LOW = floatPreferencesKey("workout_alert_low")
-private val KEY_EXERCISE_ALERT_HIGH = floatPreferencesKey("workout_alert_high")
-private val KEY_EXERCISE_ALERT_URGENT_LOW = floatPreferencesKey("workout_alert_urgent_low")
-private val KEY_EXERCISE_ALERT_URGENT_HIGH = floatPreferencesKey("workout_alert_urgent_high")
-private val KEY_EXERCISE_ALERT_LOW_ENABLED = booleanPreferencesKey("exercise_alert_low_enabled")
-private val KEY_EXERCISE_ALERT_HIGH_ENABLED = booleanPreferencesKey("exercise_alert_high_enabled")
-private val KEY_EXERCISE_ALERT_URGENT_LOW_ENABLED = booleanPreferencesKey("exercise_alert_urgent_low_enabled")
-private val KEY_EXERCISE_ALERT_URGENT_HIGH_ENABLED = booleanPreferencesKey("exercise_alert_urgent_high_enabled")
-private val KEY_EXERCISE_ALERT_LOW_SOON_ENABLED = booleanPreferencesKey("exercise_alert_low_soon_enabled")
-private val KEY_EXERCISE_ALERT_HIGH_SOON_ENABLED = booleanPreferencesKey("exercise_alert_high_soon_enabled")
-private val KEY_EXERCISE_ALERT_STALE_ENABLED = booleanPreferencesKey("exercise_alert_stale_enabled")
-private val KEY_ALERT_LOW_ENABLED = booleanPreferencesKey("alert_low_enabled")
-private val KEY_ALERT_HIGH_ENABLED = booleanPreferencesKey("alert_high_enabled")
-private val KEY_ALERT_URGENT_LOW_ENABLED = booleanPreferencesKey("alert_urgent_low_enabled")
-private val KEY_ALERT_URGENT_HIGH_ENABLED = booleanPreferencesKey("alert_urgent_high_enabled")
-private val KEY_ALERT_LOW_SOON_ENABLED = booleanPreferencesKey("alert_low_soon_enabled")
-private val KEY_ALERT_HIGH_SOON_ENABLED = booleanPreferencesKey("alert_high_soon_enabled")
-private val KEY_ALERT_STALE_ENABLED = booleanPreferencesKey("alert_stale_enabled")
+internal val KEY_EXERCISE_ALERT_LOW = floatPreferencesKey("workout_alert_low")
+internal val KEY_EXERCISE_ALERT_HIGH = floatPreferencesKey("workout_alert_high")
+internal val KEY_EXERCISE_ALERT_URGENT_LOW = floatPreferencesKey("workout_alert_urgent_low")
+internal val KEY_EXERCISE_ALERT_URGENT_HIGH = floatPreferencesKey("workout_alert_urgent_high")
+internal val KEY_EXERCISE_ALERT_LOW_ENABLED = booleanPreferencesKey("exercise_alert_low_enabled")
+internal val KEY_EXERCISE_ALERT_HIGH_ENABLED = booleanPreferencesKey("exercise_alert_high_enabled")
+internal val KEY_EXERCISE_ALERT_URGENT_LOW_ENABLED = booleanPreferencesKey("exercise_alert_urgent_low_enabled")
+internal val KEY_EXERCISE_ALERT_URGENT_HIGH_ENABLED = booleanPreferencesKey("exercise_alert_urgent_high_enabled")
+internal val KEY_EXERCISE_ALERT_LOW_SOON_ENABLED = booleanPreferencesKey("exercise_alert_low_soon_enabled")
+internal val KEY_EXERCISE_ALERT_HIGH_SOON_ENABLED = booleanPreferencesKey("exercise_alert_high_soon_enabled")
+internal val KEY_EXERCISE_ALERT_STALE_ENABLED = booleanPreferencesKey("exercise_alert_stale_enabled")
+internal val KEY_ALERT_LOW_ENABLED = booleanPreferencesKey("alert_low_enabled")
+internal val KEY_ALERT_HIGH_ENABLED = booleanPreferencesKey("alert_high_enabled")
+internal val KEY_ALERT_URGENT_LOW_ENABLED = booleanPreferencesKey("alert_urgent_low_enabled")
+internal val KEY_ALERT_URGENT_HIGH_ENABLED = booleanPreferencesKey("alert_urgent_high_enabled")
+internal val KEY_ALERT_LOW_SOON_ENABLED = booleanPreferencesKey("alert_low_soon_enabled")
+internal val KEY_ALERT_HIGH_SOON_ENABLED = booleanPreferencesKey("alert_high_soon_enabled")
+internal val KEY_ALERT_STALE_ENABLED = booleanPreferencesKey("alert_stale_enabled")
 
 private val EXERCISE_ALERT_THRESHOLD_FIELDS = listOf(
     "exercise_alert_urgent_low",
@@ -139,7 +139,7 @@ private val EXERCISE_ALERT_THRESHOLD_FIELDS = listOf(
     "exercise_alert_urgent_high",
 )
 
-private fun JSONObject.importThreshold(key: String, isV1: Boolean): Float {
+internal fun JSONObject.importThreshold(key: String, isV1: Boolean): Float {
     val value = getDouble(key).toFloat()
     return if (isV1) Math.round(value * GlucoseUnit.MGDL_FACTOR.toFloat()).toFloat() else value
 }
@@ -188,7 +188,7 @@ private val EXERCISE_ALERT_BOOLEAN_FIELDS = listOf(
     Triple("exercise_alert_stale_enabled", KEY_EXERCISE_ALERT_STALE_ENABLED, KEY_ALERT_STALE_ENABLED),
 )
 
-private fun MutablePreferences.importExerciseAlerts(
+internal fun MutablePreferences.importExerciseAlerts(
     settings: JSONObject,
     isV1: Boolean,
     inheritRegularEnablement: Boolean,
@@ -268,7 +268,7 @@ class SettingsRepository @Inject constructor(
         private const val KEY_LLU_EMAIL = "llu_email"
         private const val KEY_LLU_PASSWORD = "llu_password"
 
-        private const val DEFAULT_CUSTOM_DIA_HOURS = 5.0
+        internal const val DEFAULT_CUSTOM_DIA_HOURS = 5.0
 
         private const val KEY_WEB_SERVER_SECRET = "web_server_secret"
         private const val KEY_START_ON_BOOT_SYNC = "start_on_boot"
@@ -302,7 +302,7 @@ class SettingsRepository @Inject constructor(
         private const val KEY_TIDEPOOL_REFRESH_TOKEN = "tidepool_refresh_token"
 
         // Settings defaults (mg/dL)
-        private const val DEFAULT_GRAPH_WINDOW_HOURS = 4
+        internal const val DEFAULT_GRAPH_WINDOW_HOURS = 4
         const val DEFAULT_BG_LOW = 72f
         const val DEFAULT_BG_HIGH = 180f
         const val DEFAULT_ALERT_LOW = 72f
@@ -311,10 +311,10 @@ class SettingsRepository @Inject constructor(
         const val DEFAULT_ALERT_URGENT_HIGH = 234f
         const val DEFAULT_NOTIF_GRAPH_MINUTES = 60
         const val DEFAULT_PREDICTION_MINUTES = 15
-        private const val DEFAULT_FOLLOWER_POLL_SECONDS = 60
+        internal const val DEFAULT_FOLLOWER_POLL_SECONDS = 60
         private const val DEFAULT_CUSTOM_DIA_FLOAT = 5.0f
-        private const val DEFAULT_ALERT_COOLDOWN_MINUTES = 0
-        private const val SETTINGS_EXPORT_VERSION = 3
+        internal const val DEFAULT_ALERT_COOLDOWN_MINUTES = 0
+        internal const val SETTINGS_EXPORT_VERSION = 3
         const val COOLDOWN_MINUTES_MIN = 0
         const val COOLDOWN_MINUTES_MAX = 60
         internal const val MINUTES_PER_DAY = 1440
@@ -859,49 +859,10 @@ class SettingsRepository @Inject constructor(
         else -> null
     }
 
-    @Suppress("CyclomaticComplexMethod") // Flat serialization of all settings
     suspend fun exportToJson(): String {
         val prefs = dataStore.data.first()
 
-        val settings = JSONObject().apply {
-            put("nightscout_url", prefs[KEY_NIGHTSCOUT_URL] ?: "")
-            put("graph_window_hours", prefs[KEY_GRAPH_WINDOW_HOURS] ?: DEFAULT_GRAPH_WINDOW_HOURS)
-            put("bg_low", prefs[KEY_BG_LOW]?.toDouble() ?: DEFAULT_BG_LOW.toDouble())
-            put("bg_high", prefs[KEY_BG_HIGH]?.toDouble() ?: DEFAULT_BG_HIGH.toDouble())
-            put("alert_low_enabled", prefs[KEY_ALERT_LOW_ENABLED] ?: true)
-            put("alert_high_enabled", prefs[KEY_ALERT_HIGH_ENABLED] ?: true)
-            put("alert_urgent_low_enabled", prefs[KEY_ALERT_URGENT_LOW_ENABLED] ?: true)
-            put("alert_urgent_high_enabled", prefs[KEY_ALERT_URGENT_HIGH_ENABLED] ?: true)
-            put("alert_low", prefs[KEY_ALERT_LOW]?.toDouble() ?: DEFAULT_ALERT_LOW.toDouble())
-            put("alert_high", prefs[KEY_ALERT_HIGH]?.toDouble() ?: DEFAULT_ALERT_HIGH.toDouble())
-            put("alert_urgent_low", prefs[KEY_ALERT_URGENT_LOW]?.toDouble() ?: DEFAULT_ALERT_URGENT_LOW.toDouble())
-            put("alert_urgent_high", prefs[KEY_ALERT_URGENT_HIGH]?.toDouble() ?: DEFAULT_ALERT_URGENT_HIGH.toDouble())
-            put("alert_stale_enabled", prefs[KEY_ALERT_STALE_ENABLED] ?: true)
-            put("alert_low_soon_enabled", prefs[KEY_ALERT_LOW_SOON_ENABLED] ?: true)
-            put("alert_high_soon_enabled", prefs[KEY_ALERT_HIGH_SOON_ENABLED] ?: true)
-            put("pattern_alerts_enabled", prefs[KEY_PATTERN_ALERTS_ENABLED] ?: true)
-            putExerciseAlertSettings(prefs)
-            putNightAlertSettings(prefs)
-            put("alert_cooldown_minutes", prefs[KEY_ALERT_COOLDOWN_MINUTES] ?: DEFAULT_ALERT_COOLDOWN_MINUTES)
-            put("alert_snooze_duration", normalizedAlertSnoozeDurationName(prefs[KEY_ALERT_SNOOZE_DURATION]))
-            put("theme_mode", prefs[KEY_THEME_MODE] ?: "System")
-            put("notif_graph_minutes", prefs[KEY_NOTIF_GRAPH_MINUTES] ?: DEFAULT_NOTIF_GRAPH_MINUTES)
-            put("notif_prediction_minutes", prefs[KEY_NOTIF_PREDICTION_MINUTES] ?: DEFAULT_PREDICTION_MINUTES)
-            put("notif_action_type", prefs[KEY_NOTIF_ACTION_TYPE] ?: NotificationActionConfig.DEFAULT.type.name)
-            put("notif_snooze_category", prefs[KEY_NOTIF_SNOOZE_CATEGORY] ?: NotificationActionConfig.DEFAULT.snoozeCategory.name)
-            put("notif_snooze_duration", prefs[KEY_NOTIF_SNOOZE_DURATION] ?: NotificationActionConfig.DEFAULT.snoozeDuration.name)
-            put("glucose_unit", prefs[KEY_GLUCOSE_UNIT] ?: "MMOL")
-            put("hba1c_unit", prefs[KEY_HBA1C_UNIT] ?: "MMOL_MOL")
-            put("bg_broadcast_enabled", prefs[KEY_BG_BROADCAST_ENABLED] ?: false)
-            put("glucose_source", prefs[KEY_GLUCOSE_SOURCE] ?: "COMPANION")
-            put("follower_poll_seconds", prefs[KEY_FOLLOWER_POLL_SECONDS] ?: DEFAULT_FOLLOWER_POLL_SECONDS)
-            put("treatments_sync_enabled", prefs[KEY_TREATMENTS_SYNC_ENABLED] ?: false)
-            put("insulin_type", prefs[KEY_INSULIN_TYPE] ?: "FIASP")
-            put("custom_dia", prefs[KEY_CUSTOM_DIA]?.toDouble() ?: DEFAULT_CUSTOM_DIA_HOURS)
-            put("web_server_enabled", prefs[KEY_WEB_SERVER_ENABLED] ?: false)
-            put("start_on_boot", prefs[KEY_START_ON_BOOT] ?: true)
-            put("hc_write_enabled", prefs[KEY_HC_WRITE_ENABLED] ?: false)
-        }
+        val settings = settingsToJson(prefs)
 
         val secrets = JSONObject().apply {
             put("nightscout_secret", getNightscoutSecret())
@@ -919,63 +880,15 @@ class SettingsRepository @Inject constructor(
         }.toString(2)
     }
 
-    @Suppress("CyclomaticComplexMethod", "LongMethod") // Flat deserialization of all settings
     suspend fun importFromJson(json: String) {
         val root = JSONObject(json)
         val settings = root.getJSONObject("settings")
-        // v1 exports stored thresholds in mmol/L — convert to mg/dL on import
         val importVersion = root.optInt("version", 1)
-        val isV1 = importVersion < 2
-        fun importThreshold(key: String): Float = settings.importThreshold(key, isV1)
 
         dataStore.edit { prefs ->
-            if (settings.has("nightscout_url")) prefs[KEY_NIGHTSCOUT_URL] = settings.getString("nightscout_url").trim()
-            if (settings.has("graph_window_hours")) prefs[KEY_GRAPH_WINDOW_HOURS] = settings.getInt("graph_window_hours")
-            if (settings.has("bg_low")) prefs[KEY_BG_LOW] = importThreshold("bg_low")
-            if (settings.has("bg_high")) prefs[KEY_BG_HIGH] = importThreshold("bg_high")
-            if (settings.has("alert_low_enabled")) prefs[KEY_ALERT_LOW_ENABLED] = settings.getBoolean("alert_low_enabled")
-            if (settings.has("alert_high_enabled")) prefs[KEY_ALERT_HIGH_ENABLED] = settings.getBoolean("alert_high_enabled")
-            if (settings.has("alert_urgent_low_enabled"))
-                prefs[KEY_ALERT_URGENT_LOW_ENABLED] = settings.getBoolean("alert_urgent_low_enabled")
-            if (settings.has("alert_urgent_high_enabled"))
-                prefs[KEY_ALERT_URGENT_HIGH_ENABLED] = settings.getBoolean("alert_urgent_high_enabled")
-            if (settings.has("alert_low")) prefs[KEY_ALERT_LOW] = importThreshold("alert_low")
-            if (settings.has("alert_high")) prefs[KEY_ALERT_HIGH] = importThreshold("alert_high")
-            if (settings.has("alert_urgent_low")) prefs[KEY_ALERT_URGENT_LOW] = importThreshold("alert_urgent_low")
-            if (settings.has("alert_urgent_high")) prefs[KEY_ALERT_URGENT_HIGH] = importThreshold("alert_urgent_high")
-            if (settings.has("alert_stale_enabled")) prefs[KEY_ALERT_STALE_ENABLED] = settings.getBoolean("alert_stale_enabled")
-            if (settings.has("alert_low_soon_enabled")) prefs[KEY_ALERT_LOW_SOON_ENABLED] = settings.getBoolean("alert_low_soon_enabled")
-            if (settings.has("alert_high_soon_enabled")) prefs[KEY_ALERT_HIGH_SOON_ENABLED] = settings.getBoolean("alert_high_soon_enabled")
-            if (settings.has("pattern_alerts_enabled")) prefs[KEY_PATTERN_ALERTS_ENABLED] = settings.getBoolean("pattern_alerts_enabled")
-            prefs.importExerciseAlerts(
-                settings,
-                isV1,
-                inheritRegularEnablement = importVersion < SETTINGS_EXPORT_VERSION,
-            )
+            applySettingsJson(prefs, settings, importVersion)
             prefs.importNightAlerts(settings) { prefs.copyDayAlertsToNightOnce() }
             if (prefs[KEY_NIGHT_ALERTS_ENABLED] == true) prefs.copyDayAlertsToNightOnce()
-            if (settings.has("alert_cooldown_minutes")) prefs[KEY_ALERT_COOLDOWN_MINUTES] = settings.getInt("alert_cooldown_minutes")
-            if (settings.has("alert_snooze_duration")) {
-                prefs[KEY_ALERT_SNOOZE_DURATION] =
-                    normalizedAlertSnoozeDurationName(settings.getString("alert_snooze_duration"))
-            }
-            if (settings.has("theme_mode")) prefs[KEY_THEME_MODE] = settings.getString("theme_mode")
-            if (settings.has("notif_graph_minutes")) prefs[KEY_NOTIF_GRAPH_MINUTES] = settings.getInt("notif_graph_minutes")
-            if (settings.has("notif_prediction_minutes")) prefs[KEY_NOTIF_PREDICTION_MINUTES] = settings.getInt("notif_prediction_minutes")
-            if (settings.has("notif_action_type")) prefs[KEY_NOTIF_ACTION_TYPE] = settings.getString("notif_action_type")
-            if (settings.has("notif_snooze_category")) prefs[KEY_NOTIF_SNOOZE_CATEGORY] = settings.getString("notif_snooze_category")
-            if (settings.has("notif_snooze_duration")) prefs[KEY_NOTIF_SNOOZE_DURATION] = settings.getString("notif_snooze_duration")
-            if (settings.has("glucose_unit")) prefs[KEY_GLUCOSE_UNIT] = settings.getString("glucose_unit")
-            if (settings.has("hba1c_unit")) prefs[KEY_HBA1C_UNIT] = settings.getString("hba1c_unit")
-            if (settings.has("bg_broadcast_enabled")) prefs[KEY_BG_BROADCAST_ENABLED] = settings.getBoolean("bg_broadcast_enabled")
-            if (settings.has("glucose_source")) prefs[KEY_GLUCOSE_SOURCE] = settings.getString("glucose_source")
-            if (settings.has("follower_poll_seconds")) prefs[KEY_FOLLOWER_POLL_SECONDS] = settings.getInt("follower_poll_seconds")
-            if (settings.has("treatments_sync_enabled")) prefs[KEY_TREATMENTS_SYNC_ENABLED] = settings.getBoolean("treatments_sync_enabled")
-            if (settings.has("insulin_type")) prefs[KEY_INSULIN_TYPE] = settings.getString("insulin_type")
-            if (settings.has("custom_dia")) prefs[KEY_CUSTOM_DIA] = settings.getDouble("custom_dia").toFloat()
-            if (settings.has("web_server_enabled")) prefs[KEY_WEB_SERVER_ENABLED] = settings.getBoolean("web_server_enabled")
-            if (settings.has("start_on_boot")) prefs[KEY_START_ON_BOOT] = settings.getBoolean("start_on_boot")
-            if (settings.has("hc_write_enabled")) prefs[KEY_HC_WRITE_ENABLED] = settings.getBoolean("hc_write_enabled")
 
             // Sync to SharedPreferences atomically with DataStore edit
             val sourceName = settings.optString("glucose_source", "COMPANION")
@@ -999,16 +912,9 @@ class SettingsRepository @Inject constructor(
             widgetSettingsRepository.importFromJson(root.getJSONObject("widget"))
         }
     }
-
-    private fun normalizedAlertSnoozeDurationName(raw: String?): String =
-        try {
-            SnoozeDuration.valueOf(raw ?: SnoozeDuration.M30.name).name
-        } catch (_: IllegalArgumentException) {
-            SnoozeDuration.M30.name
-    }
 }
 
-private fun JSONObject.putExerciseAlertSettings(prefs: Preferences) {
+internal fun JSONObject.putExerciseAlertSettings(prefs: Preferences) {
     put("exercise_alert_low_enabled", prefs[KEY_EXERCISE_ALERT_LOW_ENABLED] ?: true)
     put("exercise_alert_high_enabled", prefs[KEY_EXERCISE_ALERT_HIGH_ENABLED] ?: true)
     put("exercise_alert_urgent_low_enabled", prefs[KEY_EXERCISE_ALERT_URGENT_LOW_ENABLED] ?: true)
