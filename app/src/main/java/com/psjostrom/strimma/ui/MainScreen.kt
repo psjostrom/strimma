@@ -1292,6 +1292,8 @@ fun GlucoseGraph(
             val tx = (pointX - tooltipW / 2).coerceIn(marginLeft, maxTx)
             var ty = pointY - tooltipH - 24f
             if (ty < marginTop) ty = pointY + 24f
+            // A wrapped compression annotation makes the tooltip taller, so keep it inside the plot.
+            ty = ty.coerceIn(marginTop, maxOf(marginTop, size.height - marginBottom - tooltipH))
 
             drawRoundRect(
                 color = tooltipBg.copy(alpha = 0.95f),
