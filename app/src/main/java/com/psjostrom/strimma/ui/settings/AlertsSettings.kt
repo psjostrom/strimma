@@ -1,6 +1,5 @@
 package com.psjostrom.strimma.ui.settings
 
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -13,7 +12,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -31,7 +29,6 @@ import com.psjostrom.strimma.data.workout.AlertSet
 import com.psjostrom.strimma.data.workout.NightWindow
 import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.ui.theme.InRange
-import kotlinx.coroutines.flow.Flow
 
 private val cooldownOptions = listOf(0, 5, 10, 15)
 
@@ -67,27 +64,12 @@ fun AlertsSettings(
     onAlertSnoozeDurationChange: (SnoozeDuration) -> Unit,
     patternAlertsEnabled: Boolean,
     onPatternAlertsEnabledChange: (Boolean) -> Unit,
-    validationError: Flow<AlertsViewModel.ValidationError>,
     onOpenAlertSound: (String) -> Unit,
     onBack: () -> Unit,
 ) {
     val onBg = MaterialTheme.colorScheme.onBackground
     val outline = MaterialTheme.colorScheme.outline
     val outlineVar = MaterialTheme.colorScheme.outlineVariant
-    val context = LocalContext.current
-    val orderErrorMessage = stringResource(R.string.alert_threshold_order_error)
-    val emptyWindowMessage = stringResource(R.string.settings_alerts_night_empty_window)
-
-    LaunchedEffect(validationError) {
-        validationError.collect { error ->
-            val message = when (error) {
-                AlertsViewModel.ValidationError.Order -> orderErrorMessage
-                AlertsViewModel.ValidationError.EmptyWindow -> emptyWindowMessage
-            }
-            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-        }
-    }
-
     SettingsScaffold(title = stringResource(R.string.settings_alerts_title), onBack = onBack) {
         var selectedSet by rememberSaveable { mutableStateOf(activeSet) }
         SettingsSection(

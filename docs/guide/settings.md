@@ -87,7 +87,7 @@ See [Treatments & IOB](treatments.md) for details.
 
 ## Display
 
-Configure units, graph window, thresholds, and theme.
+Configure units, graph window, thresholds, and theme. BG Low and BG High are saved when you leave the field or press Done on the keyboard.
 
 | Setting | Description | Default |
 |---------|-------------|---------|
@@ -172,7 +172,7 @@ Configure Health Connect integration, workout calendar, and pre-activity guidanc
 
 ### Category Target Ranges
 
-Each exercise category (Running, Cycling, Strength, etc.) has a configurable low and high BG threshold. Defaults come from the category's metabolic profile (Aerobic, Resistance, or High-Intensity).
+Each exercise category (Running, Cycling, Strength, etc.) has a configurable low and high BG threshold. Defaults come from the category's metabolic profile (Aerobic, Resistance, or High-Intensity). A threshold is saved when you leave its field or press Done on the keyboard. Low must stay below High; a value that breaks this is not saved, and the field shows the stored value again.
 
 See [Exercise](exercise.md) for details.
 

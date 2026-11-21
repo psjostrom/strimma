@@ -508,7 +508,6 @@ fun StrimmaNavGraph(
                     onAlertSnoozeDurationChange = alertsViewModel::setAlertSnoozeDuration,
                     patternAlertsEnabled = patternAlertsEnabled,
                     onPatternAlertsEnabledChange = alertsViewModel::setPatternAlertsEnabled,
-                    validationError = alertsViewModel.validationError,
                     onOpenAlertSound = alertsViewModel::openAlertChannelSettings,
                     onBack = { navController.popBackStack() }
                 )

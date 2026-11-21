@@ -1,5 +1,9 @@
 package com.psjostrom.strimma.ui.settings
 
+import android.content.Context
+import android.widget.Toast
+import androidx.annotation.StringRes
+import com.psjostrom.strimma.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.psjostrom.strimma.data.SettingsRepository
@@ -11,11 +15,12 @@ import com.psjostrom.strimma.data.workout.WorkoutModeManager
 import com.psjostrom.strimma.notification.AlertCategory
 import com.psjostrom.strimma.notification.AlertManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
@@ -24,6 +29,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @Suppress("TooManyFunctions") // One getter+setter per alert setting
@@ -32,6 +38,11 @@ class AlertsViewModel @Inject constructor(
     private val settings: SettingsRepository,
     private val alertManager: AlertManager,
     workoutModeManager: WorkoutModeManager,
+    // Threshold saves run here, not in viewModelScope: a threshold field saves when the screen closes,
+    // and the ViewModel is cleared before that save finishes.
+    private val appScope: CoroutineScope,
+    // Rejections show a toast from here, because a save that runs after the screen closed has no screen to report to.
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     val alertLowEnabled: StateFlow<Boolean> = settings.alertLowEnabled
@@ -100,8 +111,7 @@ class AlertsViewModel @Inject constructor(
     val pauseLowExpiryMs: StateFlow<Long?> = alertManager.pauseLowExpiryMs
     val pauseHighExpiryMs: StateFlow<Long?> = alertManager.pauseHighExpiryMs
 
-    private val _validationError = MutableSharedFlow<ValidationError>(extraBufferCapacity = 1)
-    val validationError: SharedFlow<ValidationError> = _validationError
+    private val dayThresholdMutex = Mutex()
     private val exerciseThresholdMutex = Mutex()
     private val nightThresholdMutex = Mutex()
     private val nightWindowMutex = Mutex()
@@ -131,11 +141,23 @@ class AlertsViewModel @Inject constructor(
     fun setAlertLowEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertLowEnabled(enabled) }
     fun setAlertHighEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertHighEnabled(enabled) }
     fun setAlertUrgentLowEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertUrgentLowEnabled(enabled) }
-    fun setAlertLow(value: Float) = viewModelScope.launch { settings.setAlertLow(value) }
-    fun setAlertHigh(value: Float) = viewModelScope.launch { settings.setAlertHigh(value) }
-    fun setAlertUrgentLow(value: Float) = viewModelScope.launch { settings.setAlertUrgentLow(value) }
+    fun setAlertLow(value: Float) =
+        updateThreshold(settings.regularAlertProtocol, dayThresholdMutex, { it.copy(lowMgdl = value) }) {
+            settings.setAlertLow(value)
+        }
+    fun setAlertHigh(value: Float) =
+        updateThreshold(settings.regularAlertProtocol, dayThresholdMutex, { it.copy(highMgdl = value) }) {
+            settings.setAlertHigh(value)
+        }
+    fun setAlertUrgentLow(value: Float) =
+        updateThreshold(settings.regularAlertProtocol, dayThresholdMutex, { it.copy(urgentLowMgdl = value) }) {
+            settings.setAlertUrgentLow(value)
+        }
     fun setAlertUrgentHighEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertUrgentHighEnabled(enabled) }
-    fun setAlertUrgentHigh(value: Float) = viewModelScope.launch { settings.setAlertUrgentHigh(value) }
+    fun setAlertUrgentHigh(value: Float) =
+        updateThreshold(settings.regularAlertProtocol, dayThresholdMutex, { it.copy(urgentHighMgdl = value) }) {
+            settings.setAlertUrgentHigh(value)
+        }
     fun setAlertStaleEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertStaleEnabled(enabled) }
     fun setAlertLowSoonEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertLowSoonEnabled(enabled) }
     fun setAlertHighSoonEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertHighSoonEnabled(enabled) }
@@ -193,7 +215,7 @@ class AlertsViewModel @Inject constructor(
         nightWindowMutex.withLock {
             val next = edit(settings.nightWindow.first())
             if (next.startMinute == next.endMinute) {
-                _validationError.tryEmit(ValidationError.EmptyWindow)
+                showError(R.string.settings_alerts_night_empty_window)
             } else {
                 settings.setNightWindow(next)
             }
@@ -246,12 +268,13 @@ class AlertsViewModel @Inject constructor(
         mutex: Mutex,
         change: (AlertProtocol) -> AlertProtocol,
         onValid: suspend () -> Unit,
-    ): Job = viewModelScope.launch {
+    ): Job = appScope.launch {
         mutex.withLock {
-            if (change(protocol.first()).hasOrderedThresholds()) {
+            val current = protocol.first()
+            if (change(current).keepsOrderOf(current)) {
                 onValid()
             } else {
-                _validationError.tryEmit(ValidationError.Order)
+                showError(R.string.alert_threshold_order_error)
             }
         }
     }
@@ -274,5 +297,7 @@ class AlertsViewModel @Inject constructor(
         alertManager.cancelAllAlerts()
     }
 
-    enum class ValidationError { Order, EmptyWindow }
+    private suspend fun showError(@StringRes message: Int) = withContext(Dispatchers.Main) {
+        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+    }
 }
