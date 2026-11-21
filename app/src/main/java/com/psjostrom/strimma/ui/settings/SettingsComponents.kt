@@ -174,12 +174,13 @@ internal fun ThresholdField(
     textStyle: TextStyle = LocalTextStyle.current,
 ) {
     var text by remember(threshold, glucoseUnit) { mutableStateOf(glucoseUnit.formatThreshold(threshold)) }
-    var edited by remember { mutableStateOf(false) }
+    var edited by remember(threshold, glucoseUnit) { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
     val commit by rememberUpdatedState {
         if (edited) {
             edited = false
-            glucoseUnit.parseThreshold(text)?.takeIf { it != threshold }?.let(onThresholdChange)
+            // Retyping the shown value must not save: "4.0" parses to 72.07, not the stored 72.
+            if (text != glucoseUnit.formatThreshold(threshold)) glucoseUnit.parseThreshold(text)?.let(onThresholdChange)
             // A rejected or unparseable edit leaves the stored threshold unchanged, so the field shows it again.
             text = glucoseUnit.formatThreshold(threshold)
         }

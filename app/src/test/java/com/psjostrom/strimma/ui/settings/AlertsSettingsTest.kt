@@ -29,7 +29,6 @@ import com.psjostrom.strimma.data.workout.AlertProtocol
 import com.psjostrom.strimma.data.workout.AlertSet
 import com.psjostrom.strimma.data.workout.NightWindow
 import com.psjostrom.strimma.notification.AlertManager
-import kotlinx.coroutines.flow.emptyFlow
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -143,7 +142,6 @@ class AlertsSettingsTest {
                 onAlertSnoozeDurationChange = onAlertSnoozeDurationChange,
                 patternAlertsEnabled = patternAlertsEnabled,
                 onPatternAlertsEnabledChange = onPatternAlertsEnabledChange,
-                validationError = emptyFlow(),
                 onOpenAlertSound = onOpenAlertSound,
                 onBack = {},
             )
@@ -272,6 +270,18 @@ class AlertsSettingsTest {
         field.performImeAction()
         assertEquals(listOf(GlucoseUnit.MMOL.parseThreshold("4.5")), saved)
         field.assert(hasText("4.5"))
+    }
+
+    @Test
+    fun `retyping the shown threshold does not save`() {
+        val saved = mutableListOf<Float>()
+        renderLowField(saved)
+
+        val field = composeRule.onNodeWithText("Low Alert (mmol/L)")
+        field.performTextReplacement("4.0")
+        field.performImeAction()
+
+        assertEquals(emptyList<Float>(), saved)
     }
 
     @Test
