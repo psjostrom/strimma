@@ -259,6 +259,21 @@ class NightscoutFollowerIntegrationTest {
         assertEquals(4, env.dao.lastN(10).size)
     }
 
+    @Test
+    fun `processNightscoutEntries drops entries more than five minutes in the future`() = runTest {
+        val env = createEnv()
+        val now = System.currentTimeMillis()
+        val batch = listOf(
+            entry(110, now - 60_000),
+            entry(115, now + 4 * 60_000),
+            entry(200, now + 60 * 60_000)
+        )
+
+        processNightscoutEntries(batch, env.dao, env.directionComputer)
+
+        assertEquals(listOf(now + 4 * 60_000, now - 60_000), env.dao.lastN(10).map { it.ts })
+    }
+
     private class FakeClient : NightscoutClient() {
         var entries: List<NightscoutEntryResponse> = emptyList()
         var entriesPages: MutableList<List<NightscoutEntryResponse>>? = null

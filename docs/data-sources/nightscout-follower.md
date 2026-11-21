@@ -34,7 +34,7 @@ graph LR
 ```
 
 1. Strimma sends `GET /api/v1/entries.json?find[date][$gt]=<timestamp>&count=2016` to the Nightscout server
-2. New entries are validated (type "sgv", value 18–900 mg/dL)
+2. New entries are validated (type "sgv", value 18–900 mg/dL, timestamp no more than 5 minutes ahead of the phone clock)
 3. Direction and delta are computed locally from the received data
 4. Readings are stored in the local database and displayed
 

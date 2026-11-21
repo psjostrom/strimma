@@ -23,5 +23,14 @@ data class GlucoseReading(
 
         fun isValidSgv(value: Int): Boolean = value in MIN_VALID_SGV..MAX_VALID_SGV
         fun isValidSgv(value: Double): Boolean = value >= MIN_VALID_SGV && value <= MAX_VALID_SGV
+
+        // A reading stamped in the future becomes the latest reading until the clock
+        // catches up. The main screen shows it as current, the stale alert stays quiet,
+        // and the Nightscout follower asks only for entries newer than it, so real
+        // readings stop arriving. Up to five minutes ahead is allowed for clock drift
+        // between the phone and the source.
+        const val MAX_CLOCK_SKEW_MS = 5 * 60_000L
+
+        fun isFutureTs(ts: Long, now: Long): Boolean = ts > now + MAX_CLOCK_SKEW_MS
     }
 }

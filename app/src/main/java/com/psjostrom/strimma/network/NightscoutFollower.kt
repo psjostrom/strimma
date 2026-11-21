@@ -39,8 +39,7 @@ suspend fun processNightscoutEntries(
 ): List<GlucoseReading> {
     if (entries.isEmpty()) return emptyList()
 
-    val sortedEntries = entries
-        .filter { it.sgv != null && it.date != null }
+    val sortedEntries = dropFutureEntries(entries.filter { it.sgv != null && it.date != null })
         .sortedBy { it.date }
     if (sortedEntries.isEmpty()) return emptyList()
 
@@ -85,6 +84,16 @@ suspend fun processNightscoutEntries(
     }
 
     return newReadings
+}
+
+/** Drops entries stamped beyond [GlucoseReading.MAX_CLOCK_SKEW_MS] ahead of the phone clock. */
+internal fun dropFutureEntries(entries: List<NightscoutEntryResponse>): List<NightscoutEntryResponse> {
+    val now = System.currentTimeMillis()
+    val kept = entries.filter { entry -> entry.date?.let { GlucoseReading.isFutureTs(it, now) } != true }
+    if (kept.size < entries.size) {
+        DebugLog.log("Rejected ${entries.size - kept.size} entries with future timestamps, now=$now")
+    }
+    return kept
 }
 
 suspend fun processNightscoutEntry(
