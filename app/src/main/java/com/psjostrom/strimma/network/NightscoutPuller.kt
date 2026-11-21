@@ -73,7 +73,7 @@ class NightscoutPuller @Inject constructor(
     }
 
     private suspend fun insertPulledEntries(entries: List<NightscoutEntryResponse>): Int {
-        val readings = NightscoutFollower.filterValidEntries(entries).mapNotNull { entry ->
+        val readings = dropFutureEntries(NightscoutFollower.filterValidEntries(entries)).mapNotNull { entry ->
             val sgv = entry.sgv ?: return@mapNotNull null
             val ts = entry.date ?: return@mapNotNull null
             GlucoseReading(

@@ -65,7 +65,7 @@ graph LR
 1. Your Libre 3 sensor sends readings to the Libre 3 app via Bluetooth
 2. The Libre 3 app uploads readings to Abbott's cloud
 3. Strimma polls the LibreLinkUp API every 60 seconds
-4. New readings are validated (18–900 mg/dL), direction is computed locally, and readings are stored
+4. New readings are validated (18–900 mg/dL, timestamp no more than 5 minutes ahead of the phone clock), direction is computed locally, and readings are stored
 5. Readings are displayed, alerts fire, and optionally pushed to Nightscout and Health Connect
 
 ---
