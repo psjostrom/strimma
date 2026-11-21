@@ -58,13 +58,12 @@ interface ReadingDao {
     @Query("SELECT * FROM readings WHERE pushed = 0 ORDER BY ts DESC LIMIT :limit")
     suspend fun unpushed(limit: Int = 100): List<GlucoseReading>
 
-    // Bounds the worst case where a poison row at the head of the unpushed queue
-    // keeps failing every batch and starves all newer readings. The retention
-    // loop runs this unconditionally on a 30-day cutoff regardless of the user's
-    // RetentionPolicy — `pushed = 0` rows older than that are degenerate state,
-    // not "history the user might want".
-    @Query("DELETE FROM readings WHERE pushed = 0 AND ts < :before")
-    suspend fun pruneUnpushedBefore(before: Long)
+    // Bounds the worst case where a poison row in the unpushed queue keeps failing
+    // every batch and starves all newer readings. The retention loop runs this on a
+    // 30-day cutoff and gives up on pushing those rows. The rows stay, because a
+    // reading is also history: users without Nightscout never push any reading.
+    @Query("UPDATE readings SET pushed = 1 WHERE pushed = 0 AND ts < :before")
+    suspend fun abandonUnpushedBefore(before: Long)
 
     @Query("UPDATE readings SET pushed = 1 WHERE ts IN (:timestamps)")
     suspend fun markPushed(timestamps: List<Long>)
