@@ -37,6 +37,7 @@ internal val KEY_WEB_SERVER_ENABLED = booleanPreferencesKey("web_server_enabled"
 internal val KEY_HBA1C_UNIT = stringPreferencesKey("hba1c_unit")
 internal val KEY_START_ON_BOOT = booleanPreferencesKey("start_on_boot")
 internal val KEY_PATTERN_ALERTS_ENABLED = booleanPreferencesKey("pattern_alerts_enabled")
+internal val KEY_COMPRESSION_LOW_DETECTION = booleanPreferencesKey("compression_low_detection")
 internal val KEY_PATTERN_CARD_DISMISSED_DATE = stringPreferencesKey("pattern_card_dismissed_date")
 internal val KEY_HC_WRITE_ENABLED = booleanPreferencesKey("hc_write_enabled")
 internal val KEY_HC_LAST_SYNC = longPreferencesKey("hc_last_sync")
