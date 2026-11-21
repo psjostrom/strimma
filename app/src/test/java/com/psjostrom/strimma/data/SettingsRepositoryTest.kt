@@ -5,6 +5,10 @@ import androidx.test.core.app.ApplicationProvider
 import com.psjostrom.strimma.createTestDataStore
 import com.psjostrom.strimma.widget.WidgetSettingsRepository
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -44,6 +48,24 @@ class SettingsRepositoryTest {
 
         assertEquals(false, fromFlow)
         assertEquals(false, fromSync)
+    }
+
+    @Test
+    fun `glucoseSource does not emit again when another setting is written`() = runTest {
+        val store = createTestDataStore(scope = backgroundScope)
+        val repo = SettingsRepository(context, WidgetSettingsRepository(context), store)
+        val seen = mutableListOf<GlucoseSource>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            repo.glucoseSource.toList(seen)
+        }
+        advanceUntilIdle()
+
+        repo.setHcLastSync(1_000L)
+        advanceUntilIdle()
+        repo.setGlucoseSource(GlucoseSource.LIBRELINKUP)
+        advanceUntilIdle()
+
+        assertEquals(listOf(GlucoseSource.COMPANION, GlucoseSource.LIBRELINKUP), seen)
     }
 
     @Test
