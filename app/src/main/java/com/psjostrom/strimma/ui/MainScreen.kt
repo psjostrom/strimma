@@ -1261,7 +1261,7 @@ fun GlucoseGraph(
                 textSize = 44f
                 typeface = android.graphics.Typeface.DEFAULT_BOLD
             }
-            val subtextPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            val subtextPaint = android.text.TextPaint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
                 this.color = tooltipSubtext.toArgb()
                 textSize = 36f
             }
@@ -1271,13 +1271,17 @@ fun GlucoseGraph(
             val spacing = 8f
             val maxTooltipW = size.width - marginLeft - marginRight
             // The compression annotation is long in some languages. It breaks at " · " when it
-            // does not fit next to the plot.
+            // does not fit next to the plot, and a part that still does not fit ends in an ellipsis.
             val annotationLines = when {
                 compressionSpans.none { sel.ts in it } -> emptyList()
                 subtextPaint.measureText(compressionLabel) + padH * 2 <= maxTooltipW -> listOf(compressionLabel)
                 else -> compressionLabel.split(" · ")
             }
-            val subLines = listOf(line2) + annotationLines
+            val subLines = (listOf(line2) + annotationLines).map {
+                android.text.TextUtils.ellipsize(
+                    it, subtextPaint, maxTooltipW - padH * 2, android.text.TextUtils.TruncateAt.END
+                ).toString()
+            }
 
             val textWidth = maxOf(tooltipPaint.measureText(line1), subLines.maxOf { subtextPaint.measureText(it) })
             val tooltipW = minOf(textWidth + padH * 2, maxTooltipW)

@@ -19,6 +19,12 @@ class CompressionLowDetectorTest {
             GlucoseReading(ts = start + i * stepMinutes * minute, sgv = sgv, direction = "Flat", delta = null)
         }
 
+    /** The readings that lie outside every probable compression low. */
+    private fun kept(readings: List<GlucoseReading>): List<GlucoseReading> {
+        val spans = CompressionLowDetector.detect(readings, zone = utc)
+        return readings.filter { r -> spans.none { r.ts in it } }
+    }
+
     @Test
     fun `fast fall and fast rebound is a compression low`() {
         val readings = trace(
@@ -31,7 +37,7 @@ class CompressionLowDetectorTest {
         val spans = CompressionLowDetector.detect(readings, zone = utc)
 
         assertEquals(listOf((start + 5 * minute)..(start + 16 * minute)), spans)
-        val kept = CompressionLowDetector.withoutCompressionLows(readings, zone = utc)
+        val kept = kept(readings)
         assertTrue(kept.none { it.sgv < 70 })
         assertEquals(readings.size - 12, kept.size)
     }
@@ -67,7 +73,7 @@ class CompressionLowDetectorTest {
         val overshoot = (126..135).toList()
         val readings = trace(*(drift + fall + rebound + overshoot).toIntArray())
 
-        val kept = CompressionLowDetector.withoutCompressionLows(readings, zone = utc)
+        val kept = kept(readings)
 
         assertEquals((135 downTo 127).toList() + overshoot, kept.map { it.sgv })
     }
@@ -82,7 +88,7 @@ class CompressionLowDetectorTest {
             120, 120, 120, 120, 120
         )
 
-        val kept = CompressionLowDetector.withoutCompressionLows(readings, zone = utc)
+        val kept = kept(readings)
 
         assertTrue(kept.none { it.sgv < 70 })
     }
@@ -113,7 +119,7 @@ class CompressionLowDetectorTest {
         val readings = trace(*(fall + rise).toIntArray())
 
         assertTrue(CompressionLowDetector.detect(readings, zone = utc).isEmpty())
-        assertEquals(readings, CompressionLowDetector.withoutCompressionLows(readings, zone = utc))
+        assertEquals(readings, kept(readings))
     }
 
     @Test
@@ -124,7 +130,7 @@ class CompressionLowDetectorTest {
             stepMinutes = 5
         )
 
-        val kept = CompressionLowDetector.withoutCompressionLows(readings, zone = utc)
+        val kept = kept(readings)
 
         assertTrue(kept.none { it.sgv < 70 })
     }

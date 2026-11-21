@@ -188,6 +188,36 @@ class PatternCheckerTest {
     }
 
     @Test
+    fun `nightly compression lows count as a low pattern only when detection is off`() = runTest {
+        val fix = createFixture(dataStoreScope = backgroundScope)
+        // The detector judges night in the system zone, so the readings use the same zone.
+        val localZone = ZoneId.systemDefault()
+        try {
+            val today = baseInstant.atZone(localZone).toLocalDate()
+            for (d in 1..7) {
+                val start = today.minusDays(d.toLong()).atTime(3, 0).atZone(localZone).toInstant().toEpochMilli()
+                // 03:00-05:55 every 5 minutes. On five nights the sensor drops to 55 for 04:00-04:25.
+                val readings = (0 until 36).map { i ->
+                    val sgv = if (d <= 5 && i in 12..17) 55 else 140
+                    GlucoseReading(ts = start + i * 5 * 60_000L, sgv = sgv, direction = "Flat", delta = null)
+                }
+                fix.readingDao.insertBatch(readings)
+            }
+
+            fix.checker.start(backgroundScope, localZone)
+            assertTrue(fix.checker.checkNow(now = baseInstant, zone = localZone)!!.patterns.isEmpty())
+
+            fix.settings.setCompressionLowDetection(false)
+            val patterns = fix.checker.activePatterns.first { it.isNotEmpty() }
+            assertEquals(PatternType.LOW, patterns.single().type)
+            assertEquals(4, patterns.single().startHour)
+        } finally {
+            fix.checker.stop()
+            fix.db.close()
+        }
+    }
+
+    @Test
     fun `reset clears active patterns`() = runTest {
         val fix = createFixture()
         try {

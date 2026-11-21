@@ -8,10 +8,10 @@ import java.time.ZoneId
  * The trace falls faster than insulin can drive glucose down, and it rebounds as soon as the
  * pressure goes away. These episodes are artifacts, so statistics must not count them as lows.
  *
- * This detector finds those V-shaped episodes after the rebound. [StatsReadings] leaves the readings
- * of an episode out of statistics, Story and pattern detection, so they count as missing data. The
- * main graph calls [detect] to mark the episodes. Alerts do not use this detector: a low alert must
- * fire before anyone can know whether the low is real.
+ * This detector finds those V-shaped episodes after the rebound. [StatsReadings] calls [detect] and
+ * leaves the readings of an episode out of statistics, Story and pattern detection, so they count as
+ * missing data. The main graph marks the spans that [StatsReadings] returns. Alerts do not use this
+ * detector: a low alert must fire before anyone can know whether the low is real.
  *
  * The glucose curve alone cannot tell a compression low from a real low treated with sweets that
  * nobody logged: both fall, sit at the bottom and climb back fast. People lie on the sensor while
@@ -60,18 +60,6 @@ object CompressionLowDetector {
         return lowEpisodes(sorted)
             .mapNotNull { episode -> compressionSpan(sorted, episode, carbTimes, zone) }
             .filter { span -> exercisePeriods.none { it.first <= span.last && span.first <= it.last } }
-    }
-
-    /** Returns [readings] without the readings that lie inside a probable compression low. */
-    fun withoutCompressionLows(
-        readings: List<GlucoseReading>,
-        carbTimes: List<Long> = emptyList(),
-        exercisePeriods: List<LongRange> = emptyList(),
-        zone: ZoneId = ZoneId.systemDefault()
-    ): List<GlucoseReading> {
-        val spans = detect(readings, carbTimes, exercisePeriods, zone)
-        if (spans.isEmpty()) return readings
-        return readings.filter { r -> spans.none { r.ts in it } }
     }
 
     /** Groups readings below [LOW_MGDL] into episodes. A gap over 15 minutes between two low readings starts a new episode. */

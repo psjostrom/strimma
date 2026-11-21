@@ -16,6 +16,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
@@ -53,19 +55,24 @@ class PatternChecker @Inject constructor(
         settingsJob?.cancel()
 
         settingsJob = scope.launch {
-            settings.patternAlertsEnabled.drop(1).collect { enabled ->
-                if (enabled) {
-                    try {
-                        checkNow(zone = zone)
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                        DebugLog.log("Pattern check on settings change failed: ${e.message}")
+            // A change to compression low detection changes which readings count, so it also
+            // triggers a check.
+            combine(settings.patternAlertsEnabled, settings.compressionLowDetection, ::Pair)
+                .distinctUntilChanged()
+                .drop(1)
+                .collect { (enabled, _) ->
+                    if (enabled) {
+                        try {
+                            checkNow(zone = zone)
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                            DebugLog.log("Pattern check on settings change failed: ${e.message}")
+                        }
+                    } else {
+                        reset()
                     }
-                } else {
-                    reset()
                 }
-            }
         }
 
         val job = scope.launch {
@@ -116,8 +123,8 @@ class PatternChecker @Inject constructor(
         val nowMs = now.toEpochMilli()
         val startMs = now.atZone(zone).toLocalDate()
             .minusDays(LOOKBACK_DAYS.toLong()).atStartOfDay(zone).toInstant().toEpochMilli()
-        val exercises = exerciseDao.getSessionsInRange(startMs, nowMs)
-        val workoutPeriods = exercises.map { it.startTime..it.endTime }
+        val workoutPeriods = exerciseDao.getSessionsInRange(startMs, nowMs).map { it.startTime..it.endTime }
+        val compressionSpans = statsReadings.compressionSpans(startMs, nowMs)
 
         val result = PatternDetector.detect(
             readings = readings,
@@ -126,7 +133,7 @@ class PatternChecker @Inject constructor(
             lookbackDays = LOOKBACK_DAYS,
             zone = zone,
             now = now,
-            workoutPeriods = workoutPeriods
+            excludedPeriods = workoutPeriods + compressionSpans
         )
 
         if (!settings.patternAlertsEnabled.first()) {
@@ -145,7 +152,7 @@ class PatternChecker @Inject constructor(
 
         val startMs = now.atZone(zone).toLocalDate()
             .minusDays(LOOKBACK_DAYS.toLong()).atStartOfDay(zone).toInstant().toEpochMilli()
-        val readings = statsReadings.inRange(startMs, nowMs)
+        val readings = readingDao.readingsInRange(startMs, nowMs)
         return readings.ifEmpty { null }
     }
 }
