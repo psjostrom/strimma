@@ -38,6 +38,7 @@ import com.psjostrom.strimma.ui.theme.InRange
 import com.psjostrom.strimma.ui.theme.Stale
 import com.psjostrom.strimma.ui.theme.Warning
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -51,7 +52,8 @@ import javax.inject.Inject
 class ExerciseSettingsViewModel @Inject constructor(
     val healthConnectManager: HealthConnectManager,
     private val settings: SettingsRepository,
-    val calendarReader: CalendarReader
+    val calendarReader: CalendarReader,
+    private val appScope: CoroutineScope,
 ) : ViewModel() {
 
     val hcWriteEnabled: StateFlow<Boolean> = settings.hcWriteEnabled
@@ -98,8 +100,9 @@ class ExerciseSettingsViewModel @Inject constructor(
     }
     fun setWorkoutLookaheadHours(hours: Int) { viewModelScope.launch { settings.setWorkoutLookaheadHours(hours) } }
     fun setWorkoutTriggerMinutes(minutes: Int) { viewModelScope.launch { settings.setWorkoutTriggerMinutes(minutes) } }
+    // Runs in appScope: a target field saves when the screen closes, after the ViewModel is cleared.
     fun setExerciseTarget(category: ExerciseCategory, low: Float, high: Float) {
-        viewModelScope.launch { settings.setExerciseTarget(category, low, high) }
+        appScope.launch { settings.setExerciseTarget(category, low, high) }
     }
     fun exerciseTargetLow(category: ExerciseCategory) = settings.exerciseTargetLow(category)
     fun exerciseTargetHigh(category: ExerciseCategory) = settings.exerciseTargetHigh(category)
@@ -424,9 +427,6 @@ private fun ExerciseTargetRow(
     val high by viewModel.exerciseTargetHigh(category)
         .collectAsState(initial = category.defaultMetabolicProfile.defaultTargetHighMgdl)
 
-    var lowText by remember(low, glucoseUnit) { mutableStateOf(glucoseUnit.formatThreshold(low)) }
-    var highText by remember(high, glucoseUnit) { mutableStateOf(glucoseUnit.formatThreshold(high)) }
-
     Column {
         Text(
             "${category.emoji} ${category.displayName}",
@@ -436,31 +436,19 @@ private fun ExerciseTargetRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            OutlinedTextField(
-                value = lowText,
-                onValueChange = { v ->
-                    lowText = v
-                    glucoseUnit.parseThreshold(v)?.let { parsed ->
-                        if (parsed < high) viewModel.setExerciseTarget(category, parsed, high)
-                    }
-                },
-                label = { Text("Low (${glucoseUnit.label})") },
+            ThresholdField(
+                threshold = low,
+                onThresholdChange = { if (it < high) viewModel.setExerciseTarget(category, it, high) },
+                glucoseUnit = glucoseUnit,
                 modifier = Modifier.weight(1f),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                label = "Low (${glucoseUnit.label})",
             )
-            OutlinedTextField(
-                value = highText,
-                onValueChange = { v ->
-                    highText = v
-                    glucoseUnit.parseThreshold(v)?.let { parsed ->
-                        if (parsed > low) viewModel.setExerciseTarget(category, low, parsed)
-                    }
-                },
-                label = { Text("High (${glucoseUnit.label})") },
+            ThresholdField(
+                threshold = high,
+                onThresholdChange = { if (it > low) viewModel.setExerciseTarget(category, low, it) },
+                glucoseUnit = glucoseUnit,
                 modifier = Modifier.weight(1f),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                label = "High (${glucoseUnit.label})",
             )
         }
     }

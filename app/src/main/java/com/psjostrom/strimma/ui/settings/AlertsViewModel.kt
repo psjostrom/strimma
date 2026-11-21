@@ -11,6 +11,7 @@ import com.psjostrom.strimma.data.workout.WorkoutModeManager
 import com.psjostrom.strimma.notification.AlertCategory
 import com.psjostrom.strimma.notification.AlertManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -32,6 +33,9 @@ class AlertsViewModel @Inject constructor(
     private val settings: SettingsRepository,
     private val alertManager: AlertManager,
     workoutModeManager: WorkoutModeManager,
+    // Threshold saves run here, not in viewModelScope: a threshold field saves when the screen closes,
+    // and the ViewModel is cleared before that save finishes.
+    private val appScope: CoroutineScope,
 ) : ViewModel() {
 
     val alertLowEnabled: StateFlow<Boolean> = settings.alertLowEnabled
@@ -102,6 +106,7 @@ class AlertsViewModel @Inject constructor(
 
     private val _validationError = MutableSharedFlow<ValidationError>(extraBufferCapacity = 1)
     val validationError: SharedFlow<ValidationError> = _validationError
+    private val dayThresholdMutex = Mutex()
     private val exerciseThresholdMutex = Mutex()
     private val nightThresholdMutex = Mutex()
     private val nightWindowMutex = Mutex()
@@ -131,11 +136,23 @@ class AlertsViewModel @Inject constructor(
     fun setAlertLowEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertLowEnabled(enabled) }
     fun setAlertHighEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertHighEnabled(enabled) }
     fun setAlertUrgentLowEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertUrgentLowEnabled(enabled) }
-    fun setAlertLow(value: Float) = viewModelScope.launch { settings.setAlertLow(value) }
-    fun setAlertHigh(value: Float) = viewModelScope.launch { settings.setAlertHigh(value) }
-    fun setAlertUrgentLow(value: Float) = viewModelScope.launch { settings.setAlertUrgentLow(value) }
+    fun setAlertLow(value: Float) =
+        updateThreshold(settings.regularAlertProtocol, dayThresholdMutex, { it.copy(lowMgdl = value) }) {
+            settings.setAlertLow(value)
+        }
+    fun setAlertHigh(value: Float) =
+        updateThreshold(settings.regularAlertProtocol, dayThresholdMutex, { it.copy(highMgdl = value) }) {
+            settings.setAlertHigh(value)
+        }
+    fun setAlertUrgentLow(value: Float) =
+        updateThreshold(settings.regularAlertProtocol, dayThresholdMutex, { it.copy(urgentLowMgdl = value) }) {
+            settings.setAlertUrgentLow(value)
+        }
     fun setAlertUrgentHighEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertUrgentHighEnabled(enabled) }
-    fun setAlertUrgentHigh(value: Float) = viewModelScope.launch { settings.setAlertUrgentHigh(value) }
+    fun setAlertUrgentHigh(value: Float) =
+        updateThreshold(settings.regularAlertProtocol, dayThresholdMutex, { it.copy(urgentHighMgdl = value) }) {
+            settings.setAlertUrgentHigh(value)
+        }
     fun setAlertStaleEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertStaleEnabled(enabled) }
     fun setAlertLowSoonEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertLowSoonEnabled(enabled) }
     fun setAlertHighSoonEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertHighSoonEnabled(enabled) }
@@ -246,9 +263,10 @@ class AlertsViewModel @Inject constructor(
         mutex: Mutex,
         change: (AlertProtocol) -> AlertProtocol,
         onValid: suspend () -> Unit,
-    ): Job = viewModelScope.launch {
+    ): Job = appScope.launch {
         mutex.withLock {
-            if (change(protocol.first()).hasOrderedThresholds()) {
+            val current = protocol.first()
+            if (change(current).keepsOrderOf(current)) {
                 onValid()
             } else {
                 _validationError.tryEmit(ValidationError.Order)

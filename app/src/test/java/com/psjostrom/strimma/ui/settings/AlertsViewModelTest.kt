@@ -82,7 +82,7 @@ class AlertsViewModelTest {
                 backgroundScope,
             )
             val alertManager = AlertManager(context, settings, workoutModeManager, backgroundScope)
-            val viewModel = AlertsViewModel(settings, alertManager, workoutModeManager)
+            val viewModel = AlertsViewModel(settings, alertManager, workoutModeManager, backgroundScope)
             vm = viewModel
             block(Fixture(context, notifManager, settings, viewModel))
         } finally {
@@ -224,6 +224,60 @@ class AlertsViewModelTest {
 
         assertEquals(AlertsViewModel.ValidationError.Order, validation.await())
         assertEquals(rig.settings.alertLow.first(), rig.settings.nightAlertProtocol.first().lowMgdl)
+    }
+
+    @Test
+    fun `day threshold out of order is rejected`() = runFixtureTest { rig ->
+        val validation = backgroundScope.async(start = CoroutineStart.UNDISPATCHED) {
+            rig.viewModel.validationError.first()
+        }
+        rig.viewModel.setAlertHigh(60f).join()
+
+        assertEquals(AlertsViewModel.ValidationError.Order, validation.await())
+        assertEquals(SettingsRepository.DEFAULT_ALERT_HIGH, rig.settings.alertHigh.first())
+    }
+
+    @Test
+    fun `day set stored with two pairs out of order can be repaired one field at a time`() = runFixtureTest(
+        setup = { settings ->
+            settings.setAlertUrgentLow(100f)
+            settings.setAlertHigh(300f)
+        },
+    ) { rig ->
+        rig.viewModel.setAlertLow(150f).join()
+        rig.viewModel.setAlertUrgentHigh(350f).join()
+
+        assertEquals(150f, rig.settings.alertLow.first())
+        assertEquals(350f, rig.settings.alertUrgentHigh.first())
+    }
+
+    @Test
+    fun `edit to a day set stored out of order is rejected when it breaks a pair that was in order`() = runFixtureTest(
+        setup = { settings -> settings.setAlertUrgentLow(100f) },
+    ) { rig ->
+        val validation = backgroundScope.async(start = CoroutineStart.UNDISPATCHED) {
+            rig.viewModel.validationError.first()
+        }
+        rig.viewModel.setAlertHigh(60f).join()
+
+        assertEquals(AlertsViewModel.ValidationError.Order, validation.await())
+        assertEquals(SettingsRepository.DEFAULT_ALERT_HIGH, rig.settings.alertHigh.first())
+    }
+
+    @Test
+    fun `threshold save finishes after the ViewModel is cleared`() = runFixtureTest { rig ->
+        val save = rig.viewModel.setAlertHigh(200f)
+        rig.viewModel.viewModelScope.cancel()
+        save.join()
+
+        assertEquals(200f, rig.settings.alertHigh.first())
+    }
+
+    @Test
+    fun `valid day threshold persists`() = runFixtureTest { rig ->
+        rig.viewModel.setAlertHigh(200f).join()
+
+        assertEquals(200f, rig.settings.alertHigh.first())
     }
 
     @Test
