@@ -94,6 +94,8 @@ Connection status is shown inline in **Settings > Data Source**, below the Libre
 - **Connected · Last reading: X ago** — connected, shown in cyan
 - **Connecting…** — initial login in progress
 - **Login failed** / **Connection lost** / **No connections found** — error, shown in red
+- **Poll failed** — Strimma hit an error while storing or showing the last poll's readings, shown in red. Strimma keeps polling, and alerts for readings it stored still run.
+- **Settings unreadable** — Strimma could not read the connection settings, shown in red. Strimma tries again every minute.
 
 ---
 
