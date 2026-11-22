@@ -329,9 +329,26 @@ class MealAnalyzerTest {
     }
 
     @Test
-    fun `a meal that is low at 180 minutes keeps the 180 minute window`() {
+    fun `a meal that is below Low at 180 minutes extends the window to 240`() {
         val preMeal = (-15L..-1L step 5).map { reading(it, 108) }
         val postMeal = (5L..240L step 5).map { t -> reading(t, if (t < 60) 160 else 60) }
+
+        val result = analyzer.analyze(
+            meal = meal(50.0),
+            readings = preMeal + postMeal,
+            params = MealAnalysisParams(
+                bgLow = 72.0, bgHigh = 180.0,
+                nextMealTime = null, allTreatments = emptyList(),
+                tauMinutes = 55.0)
+        )
+
+        assertEquals(240, result!!.windowMinutes)
+    }
+
+    @Test
+    fun `a meal below the pre-meal level but above Low at 180 minutes keeps the 180 minute window`() {
+        val preMeal = (-15L..-1L step 5).map { reading(it, 108) }
+        val postMeal = (5L..240L step 5).map { t -> reading(t, if (t < 60) 160 else 90) }
 
         val result = analyzer.analyze(
             meal = meal(50.0),

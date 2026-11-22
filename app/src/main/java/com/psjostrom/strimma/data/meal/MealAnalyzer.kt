@@ -56,7 +56,7 @@ class MealAnalyzer @Inject constructor() {
         val baseline = computeBaseline(readings, mealTime) ?: return null
 
         // 2. Determine postprandial window
-        val windowMinutes = determineWindow(readings, mealTime, baseline, params.nextMealTime)
+        val windowMinutes = determineWindow(readings, mealTime, baseline, params.bgLow, params.nextMealTime)
 
         // 3. Extract postprandial readings
         val windowEnd = mealTime + Duration.ofMinutes(windowMinutes).toMillis()
@@ -122,6 +122,7 @@ class MealAnalyzer @Inject constructor() {
         readings: List<GlucoseReading>,
         mealTime: Long,
         baseline: Double,
+        bgLow: Double,
         nextMealTime: Long?
     ): Long {
         val defaultEnd = mealTime + Duration.ofMinutes(DEFAULT_WINDOW_MINUTES).toMillis()
@@ -139,11 +140,13 @@ class MealAnalyzer @Inject constructor() {
             .filter { it.ts in (effectiveEnd - MS_PER_MINUTE * RECOVERY_CHECK_WINDOW_MINUTES)..effectiveEnd }
             .lastOrNull()
 
-        // Extend toward 4h if BG hasn't recovered at 3h. A next meal before 3h already
-        // ended the window; a next meal between 3h and 4h ends the extension.
+        // Extend toward 4h if BG at 3h has not come back down, or is below the Low threshold,
+        // so a low after the meal stays in the window. A next meal before 3h already ended
+        // the window; a next meal between 3h and 4h ends the extension.
+        val bgAt3h = bgAtDefaultEnd?.sgv?.toDouble()
         val shouldExtend = (nextMealTime == null || nextMealTime >= defaultEnd) &&
-            bgAtDefaultEnd != null &&
-            !hasReturned(bgAtDefaultEnd.sgv.toDouble(), baseline)
+            bgAt3h != null &&
+            (!hasReturned(bgAt3h, baseline) || bgAt3h < bgLow)
 
         val finalEnd = if (shouldExtend) minOf(extendedEnd, nextMealTime ?: extendedEnd) else effectiveEnd
 

@@ -151,7 +151,7 @@ Each meal shows:
 - Treatment sync must be enabled
 - Treatment retention follows **Settings > General > Storage > Data retention** (default: Forever; minimum 3 months)
 - Each meal needs ≥3 pre-meal readings (15-min window) and ≥5 postprandial readings to be analyzed
-- The postprandial window is 3 hours by default, extending to 4 hours if glucose hasn't recovered. The next meal ends the window early.
+- The postprandial window is 3 hours by default. It extends to 4 hours if glucose at 3 hours hasn't come back down, or is below your Low threshold. The next meal ends the window early.
 - Recovery time is the time from the meal until glucose, after its peak, is no more than 0.3 mmol/L (5 mg/dL) above the pre-meal level for two readings in a row. A drop below the pre-meal level also counts as recovered. A meal where glucose did not rise more than 0.3 mmol/L has no recovery time.
 - IOB at meal includes insulin given before the selected period.
 
