@@ -51,6 +51,11 @@ class ReadingPipeline @Inject constructor(
         timestamp: Long,
         source: String? = null
     ): GlucoseReading? {
+        val now = System.currentTimeMillis()
+        if (GlucoseReading.isFutureTs(timestamp, now)) {
+            DebugLog.log("Rejected future timestamp: ts=$timestamp now=$now source=$source")
+            return null
+        }
         return readingMutex.withLock { processReadingLocked(mgdl, timestamp, source) }
     }
 
