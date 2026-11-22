@@ -26,7 +26,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -78,7 +80,6 @@ class SyncOrchestrator @Inject constructor(
     @Volatile private var job = SupervisorJob()
     @Volatile private var scope = CoroutineScope(job + dispatcher + crashHandler)
 
-    private var treatmentSyncJob: Job? = null
     private var exerciseSyncJob: Job? = null
 
     @VisibleForTesting
@@ -121,10 +122,9 @@ class SyncOrchestrator @Inject constructor(
         tidepoolUploader.stop()
         localWebServer.stop()
 
-        // `treatmentSyncJob` and `exerciseSyncJob` are children of `scope` —
+        // The treatment sync job and `exerciseSyncJob` are children of `scope` —
         // `scope.cancel()` below cancels them transitively. Just null the
-        // references so a re-start() doesn't observe stale Jobs.
-        treatmentSyncJob = null
+        // reference so a re-start() doesn't observe a stale Job.
         exerciseSyncJob = null
 
         scope.cancel()
@@ -192,28 +192,38 @@ class SyncOrchestrator @Inject constructor(
         }
     }
 
+    /**
+     * Treatment sync runs while the setting is on and the Nightscout URL and secret are
+     * both set. A missing URL or secret pauses sync without changing the user's setting,
+     * so clearing the URL to retype it does not turn sync off.
+     */
     private fun startTreatmentSyncLifecycle() {
-        scope.launch {
-            combine(
-                settings.treatmentsSyncEnabled,
-                settings.nightscoutUrl,
-                settings.secretVersion
-            ) { enabled, nsUrl, _ ->
-                if (!enabled) return@combine false
-                val hasConfig = nsUrl.isNotBlank() && settings.getNightscoutSecret().isNotBlank()
-                if (!hasConfig && enabled) {
-                    settings.setTreatmentsSyncEnabled(false)
-                    DebugLog.log("Treatment sync auto-disabled: Nightscout not configured")
-                }
-                hasConfig && enabled
-            }.collect { shouldSync ->
-                treatmentSyncJob?.cancel()
-                treatmentSyncJob = null
-                if (shouldSync) {
-                    treatmentSyncJob = treatmentSyncer.start(scope)
-                    DebugLog.log("Treatment sync started")
-                } else {
-                    DebugLog.log("Treatment sync stopped")
+        // The sync job starts in the same scope as this lifecycle, so a stop() that
+        // replaces `scope` cancels both together. The job reference is local, so a
+        // lifecycle that is being cancelled cannot overwrite the next lifecycle's job.
+        val lifecycleScope = scope
+        lifecycleScope.launch {
+            var syncJob: Job? = null
+            fun stopSync() {
+                val running = syncJob ?: return
+                running.cancel()
+                syncJob = null
+                DebugLog.log("Treatment sync stopped")
+            }
+            settings.treatmentsSyncEnabled.collectLatest { enabled ->
+                stopSync()
+                if (!enabled) return@collectLatest
+                runPerConnection(
+                    combine(settings.nightscoutUrl, settings.secretVersion) { url, version -> url to version },
+                    onChange = { stopSync() }
+                ) {
+                    stopSync()
+                    if (settings.nightscoutUrl.first().isNotBlank() && settings.getNightscoutSecret().isNotBlank()) {
+                        syncJob = treatmentSyncer.start(lifecycleScope)
+                        DebugLog.log("Treatment sync started")
+                    } else {
+                        DebugLog.log("Treatment sync paused: Nightscout not configured")
+                    }
                 }
             }
         }
