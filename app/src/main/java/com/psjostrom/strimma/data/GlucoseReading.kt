@@ -1,5 +1,6 @@
 package com.psjostrom.strimma.data
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -15,7 +16,10 @@ data class GlucoseReading(
     val sgv: Int,
     val direction: String,
     val delta: Double?,
-    val pushed: Int = 0
+    val pushed: Int = 0,
+    // 1 once Tidepool has the reading. A flag per reading, not a time cursor, because a
+    // follower catch-up or a Nightscout pull stores readings older than ones already sent.
+    @ColumnInfo(defaultValue = "0") val tidepoolUploaded: Int = 0
 ) {
     companion object {
         const val MIN_VALID_SGV = 18
