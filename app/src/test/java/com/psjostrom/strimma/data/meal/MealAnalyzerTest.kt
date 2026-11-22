@@ -363,6 +363,60 @@ class MealAnalyzerTest {
     }
 
     @Test
+    fun `a meal whose window has not ended is not analyzed`() {
+        val preMeal = (-15L..-1L step 5).map { reading(it, 108) }
+        val soFar = (5L..60L step 5).map { reading(it, 160) }
+
+        val result = analyzer.analyze(
+            meal = meal(50.0),
+            readings = preMeal + soFar,
+            params = MealAnalysisParams(
+                bgLow = 72.0, bgHigh = 180.0,
+                nextMealTime = null, allTreatments = emptyList(),
+                tauMinutes = 55.0),
+            now = baseTime + minutes(60)
+        )
+
+        assertNull(result)
+    }
+
+    @Test
+    fun `a meal is analyzed once its window has ended`() {
+        val preMeal = (-15L..-1L step 5).map { reading(it, 108) }
+        val postMeal = (5L..180L step 5).map { t -> reading(t, if (t < 120) 160 else 110) }
+
+        val result = analyzer.analyze(
+            meal = meal(50.0),
+            readings = preMeal + postMeal,
+            params = MealAnalysisParams(
+                bgLow = 72.0, bgHigh = 180.0,
+                nextMealTime = null, allTreatments = emptyList(),
+                tauMinutes = 55.0),
+            now = baseTime + minutes(180)
+        )
+
+        assertEquals(180, result!!.windowMinutes)
+    }
+
+    @Test
+    fun `a meal that has not come back down waits for the 4 hour window`() {
+        val preMeal = (-15L..-1L step 5).map { reading(it, 108) }
+        val soFar = (5L..200L step 5).map { reading(it, 200) }
+
+        val result = analyzer.analyze(
+            meal = meal(50.0),
+            readings = preMeal + soFar,
+            params = MealAnalysisParams(
+                bgLow = 72.0, bgHigh = 180.0,
+                nextMealTime = null, allTreatments = emptyList(),
+                tauMinutes = 55.0),
+            now = baseTime + minutes(200)
+        )
+
+        assertNull(result)
+    }
+
+    @Test
     fun `TIR computed within window`() {
         val readings = spikeAndRecoverReadings()
 
