@@ -831,28 +831,40 @@ class SettingsRepository @Inject constructor(
     }
 
     fun exerciseTargetLow(category: com.psjostrom.strimma.data.health.ExerciseCategory): Flow<Float> =
-        dataStore.prefFlow { prefs ->
-            prefs[exerciseTargetLowKey(category.name)]
-                ?: migrateLegacyTargetLow(prefs, category)
-                ?: category.defaultMetabolicProfile.defaultTargetLowMgdl
-        }
+        dataStore.prefFlow { it.exerciseTargetLow(category) }
 
     fun exerciseTargetHigh(category: com.psjostrom.strimma.data.health.ExerciseCategory): Flow<Float> =
-        dataStore.prefFlow { prefs ->
-            prefs[exerciseTargetHighKey(category.name)]
-                ?: migrateLegacyTargetHigh(prefs, category)
-                ?: category.defaultMetabolicProfile.defaultTargetHighMgdl
-        }
+        dataStore.prefFlow { it.exerciseTargetHigh(category) }
 
-    suspend fun setExerciseTarget(
-        category: com.psjostrom.strimma.data.health.ExerciseCategory,
-        low: Float,
-        high: Float
-    ) {
+    private fun Preferences.exerciseTargetLow(category: com.psjostrom.strimma.data.health.ExerciseCategory): Float =
+        this[exerciseTargetLowKey(category.name)]
+            ?: migrateLegacyTargetLow(this, category)
+            ?: category.defaultMetabolicProfile.defaultTargetLowMgdl
+
+    private fun Preferences.exerciseTargetHigh(category: com.psjostrom.strimma.data.health.ExerciseCategory): Float =
+        this[exerciseTargetHighKey(category.name)]
+            ?: migrateLegacyTargetHigh(this, category)
+            ?: category.defaultMetabolicProfile.defaultTargetHighMgdl
+
+    // Each setter writes only its own end and reads the other end inside the same edit, so a save can never put
+    // back an older value of the end the user did not edit. Returns false and stores nothing when Low would not
+    // stay below High.
+    suspend fun setExerciseTargetLow(category: com.psjostrom.strimma.data.health.ExerciseCategory, value: Float): Boolean {
+        var stored = false
         dataStore.edit {
-            it[exerciseTargetLowKey(category.name)] = low
-            it[exerciseTargetHighKey(category.name)] = high
+            stored = value < it.exerciseTargetHigh(category)
+            if (stored) it[exerciseTargetLowKey(category.name)] = value
         }
+        return stored
+    }
+
+    suspend fun setExerciseTargetHigh(category: com.psjostrom.strimma.data.health.ExerciseCategory, value: Float): Boolean {
+        var stored = false
+        dataStore.edit {
+            stored = it.exerciseTargetLow(category) < value
+            if (stored) it[exerciseTargetHighKey(category.name)] = value
+        }
+        return stored
     }
 
     private fun migrateLegacyTargetLow(

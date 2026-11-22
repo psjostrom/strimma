@@ -29,6 +29,7 @@ import com.psjostrom.strimma.data.workout.AlertProtocol
 import com.psjostrom.strimma.data.workout.AlertSet
 import com.psjostrom.strimma.data.workout.NightWindow
 import com.psjostrom.strimma.notification.AlertManager
+import com.psjostrom.strimma.ui.theme.StrimmaTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -230,28 +231,30 @@ class AlertsSettingsTest {
     private fun renderLowField(saved: MutableList<Float>) {
         composeRule.setContent {
             var low by remember { mutableFloatStateOf(72f) }
-            Column {
-                AlertBlock(
-                    label = "Low",
-                    enabled = true,
-                    onToggle = {},
-                    threshold = low,
-                    onThresholdChange = {
-                        saved += it
-                        low = it
-                    },
-                    thresholdLabel = "Low Alert (mmol/L)",
-                    textColor = Color.Black,
-                )
-                AlertBlock(
-                    label = "High",
-                    enabled = true,
-                    onToggle = {},
-                    threshold = 180f,
-                    onThresholdChange = {},
-                    thresholdLabel = "High Alert (mmol/L)",
-                    textColor = Color.Black,
-                )
+            StrimmaTheme {
+                Column {
+                    AlertBlock(
+                        label = "Low",
+                        enabled = true,
+                        onToggle = {},
+                        threshold = low,
+                        onThresholdChange = {
+                            saved += it
+                            low = it
+                        },
+                        thresholdLabel = "Low Alert (mmol/L)",
+                        textColor = Color.Black,
+                    )
+                    AlertBlock(
+                        label = "High",
+                        enabled = true,
+                        onToggle = {},
+                        threshold = 180f,
+                        onThresholdChange = {},
+                        thresholdLabel = "High Alert (mmol/L)",
+                        textColor = Color.Black,
+                    )
+                }
             }
         }
     }
