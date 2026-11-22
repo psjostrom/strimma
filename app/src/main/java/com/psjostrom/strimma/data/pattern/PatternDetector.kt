@@ -35,19 +35,19 @@ object PatternDetector {
         lookbackDays: Int = 7,
         zone: ZoneId = ZoneId.systemDefault(),
         now: Instant = Instant.now(),
-        workoutPeriods: List<LongRange> = emptyList()
+        excludedPeriods: List<LongRange> = emptyList()
     ): PatternResult {
         val today = now.atZone(zone).toLocalDate()
         val startDate = today.minusDays(lookbackDays.toLong())
 
-        // Filter to lookback window and exclude workout periods
+        // Filter to lookback window and leave out workouts and probable compression lows
         val startMs = startDate.atStartOfDay(zone).toInstant().toEpochMilli()
         val endMs = now.toEpochMilli()
         val inWindow = readings.filter { it.ts in startMs..endMs }
-        val filtered = inWindow.filter { r -> workoutPeriods.none { r.ts in it } }
+        val filtered = inWindow.filter { r -> excludedPeriods.none { r.ts in it } }
 
         // Group by (calendar day, hour-of-day). Days with data come from the readings before
-        // workout exclusion, so a workout day does not show as a day without data.
+        // the exclusion, so a workout day does not show as a day without data.
         val dayHour = { r: GlucoseReading ->
             val zdt = Instant.ofEpochMilli(r.ts).atZone(zone)
             zdt.toLocalDate() to zdt.hour

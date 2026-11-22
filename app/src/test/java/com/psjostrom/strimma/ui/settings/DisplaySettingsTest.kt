@@ -1,6 +1,8 @@
 package com.psjostrom.strimma.ui.settings
 
 import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -27,12 +29,14 @@ class DisplaySettingsTest {
         bgLow: Float = 4.0f,
         bgHigh: Float = 10.0f,
         themeMode: ThemeMode = ThemeMode.System,
+        compressionLowDetection: Boolean = true,
         onGlucoseUnitChange: (GlucoseUnit) -> Unit = {},
         onHbA1cUnitChange: (HbA1cUnit) -> Unit = {},
         onGraphWindowChange: (Int) -> Unit = {},
         onBgLowChange: (Float) -> Unit = {},
         onBgHighChange: (Float) -> Unit = {},
         onThemeModeChange: (ThemeMode) -> Unit = {},
+        onCompressionLowDetectionChange: (Boolean) -> Unit = {},
         onBack: () -> Unit = {}
     ) {
         composeRule.setContent {
@@ -43,12 +47,14 @@ class DisplaySettingsTest {
                 bgLow = bgLow,
                 bgHigh = bgHigh,
                 themeMode = themeMode,
+                compressionLowDetection = compressionLowDetection,
                 onGlucoseUnitChange = onGlucoseUnitChange,
                 onHbA1cUnitChange = onHbA1cUnitChange,
                 onGraphWindowChange = onGraphWindowChange,
                 onBgLowChange = onBgLowChange,
                 onBgHighChange = onBgHighChange,
                 onThemeModeChange = onThemeModeChange,
+                onCompressionLowDetectionChange = onCompressionLowDetectionChange,
                 onBack = onBack
             )
         }
@@ -122,5 +128,14 @@ class DisplaySettingsTest {
         composeRule.onNodeWithText("Dark").performScrollTo().performClick()
         composeRule.waitForIdle()
         assertEquals(ThemeMode.Dark, selected)
+    }
+
+    @Test
+    fun `turning compression low detection off fires callback`() {
+        var enabled: Boolean? = null
+        render(compressionLowDetection = true, onCompressionLowDetectionChange = { enabled = it })
+        composeRule.onNodeWithText("Detect compression lows").assertExists()
+        composeRule.onNode(isToggleable()).performScrollTo().assertIsOn().performClick()
+        assertEquals(false, enabled)
     }
 }

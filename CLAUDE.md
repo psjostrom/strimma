@@ -93,7 +93,7 @@ Any user-visible change is not done until docs are checked. Before declaring wor
 
 1. **Grep `docs/` for references** to the changed feature (screen name, setting name, behavior). Update any doc pages that describe changed behavior.
 2. **If no docs exist** for a user-visible feature, write them. Match the structure and style of existing `docs/guide/` pages.
-3. **Grep affected doc pages for `screenshots/`** references. Flag any screenshot that may be stale: "Screenshot `X.png` may be stale — [reason]."
+3. **Grep affected doc pages for `screenshots/`** references. Open each referenced screenshot and compare it with the changed screen. Retake every screenshot that no longer matches, on an emulator with `scripts/capture_doc_screenshot.py`, at the same framing and width as the old one. Do this in the same PR as the change.
 
 Skip only for pure refactors with zero user-visible change.
 

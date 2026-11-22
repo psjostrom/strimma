@@ -100,7 +100,8 @@ class SyncOrchestratorTest {
         val nightscoutPuller = NightscoutPuller(nsClient, db.readingDao(), settings)
         val updateChecker = UpdateChecker()
         val patternChecker = com.psjostrom.strimma.data.pattern.PatternChecker(
-            db.readingDao(), db.exerciseDao(), settings
+            db.readingDao(), db.exerciseDao(), settings,
+            com.psjostrom.strimma.data.StatsReadings(db.readingDao(), db.treatmentDao(), db.exerciseDao(), settings)
         )
 
         val orchestrator = SyncOrchestrator(

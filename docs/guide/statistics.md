@@ -35,6 +35,10 @@ Select the time period at the top:
 
 When recurring time-of-day patterns are detected across the last 7 days (and Pattern Insights are enabled in Settings), a **Recurring patterns** card appears above Time in Range in the 7-day view. Each pattern displays its time range, type (High or Low badge), the number of days out of range in the last 7 days, average glucose and range (min–max), a 7-day occurrence breakdown, and contextual clinical guidance. In the 7-day breakdown, a filled dot marks a day with data. A hollow ring marks a day without enough readings in the pattern hours, and a **No data** caption appears under the row when such a day exists.
 
+### Probable Compression Lows
+
+Statistics leave out readings that Strimma marks as a [probable compression low](graph.md#probable-compression-lows) on the graph. Those minutes count as missing data. They are not counted as time below range, and they are not part of the average, GMI, CV, the AGP, the Meals tab or recurring patterns. The Reading Count is lower by the number of readings left out.
+
 ### Time in Range (TIR)
 
 A horizontal bar chart showing the percentage of readings in each zone:
@@ -103,7 +107,7 @@ Tap the **share icon** in the top bar to export your glucose data as a CSV file.
 | `direction` | Trend arrow |
 | `delta_mgdl` | Change since previous reading in mg/dL |
 
-The CSV covers the currently selected time period. You can share it via email, messaging, or save it to files.
+The CSV covers the currently selected time period. It contains every reading, including the readings of probable compression lows. You can share it via email, messaging, or save it to files.
 
 ---
 

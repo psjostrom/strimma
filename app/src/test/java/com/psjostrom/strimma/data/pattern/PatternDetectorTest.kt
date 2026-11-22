@@ -282,7 +282,7 @@ class PatternDetectorTest {
             bgHighMgdl = 180.0,
             zone = zone,
             now = now,
-            workoutPeriods = workouts
+            excludedPeriods = workouts
         )
 
         // All 15:00 readings were during workouts -> excluded -> empty result
@@ -303,7 +303,7 @@ class PatternDetectorTest {
             bgHighMgdl = 180.0,
             zone = zone,
             now = now,
-            workoutPeriods = workouts
+            excludedPeriods = workouts
         )
 
         val pattern = result.patterns.single()

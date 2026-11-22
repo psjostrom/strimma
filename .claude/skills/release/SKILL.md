@@ -56,7 +56,7 @@ Check docs for staleness against the release changes:
 git diff --name-only ${LAST_TAG}..main -- docs/
 ```
 
-For every user-visible change in the release, grep `docs/` for references to the changed feature or behavior. Update affected docs, and flag screenshots that may be stale.
+For every user-visible change in the release, grep `docs/` for references to the changed feature or behavior. Update affected docs, and retake every screenshot that no longer matches the app.
 
 ### 4. Run what the merged PRs left untested
 
