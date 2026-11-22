@@ -35,6 +35,8 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.advanceTimeBy
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -59,6 +61,7 @@ class SyncOrchestratorTest {
         val settings: SettingsRepository,
         val managerScope: CoroutineScope,
         val orchestrator: SyncOrchestrator,
+        val nsClient: SilentNightscoutClient,
     ) {
         fun close() {
             orchestrator.stop()
@@ -111,7 +114,7 @@ class SyncOrchestratorTest {
             treatmentSyncer, localWebServer, exerciseSyncer,
             nightscoutPuller, updateChecker, patternChecker, dispatcher
         )
-        return Fixture(db, settings, managerScope, orchestrator)
+        return Fixture(db, settings, managerScope, orchestrator, nsClient)
     }
 
     private fun runFixtureTest(block: suspend TestScope.(Fixture) -> Unit) = runTest {
@@ -121,6 +124,78 @@ class SyncOrchestratorTest {
         } finally {
             fixture.close()
         }
+    }
+
+    @Test
+    fun `clearing the Nightscout URL keeps treatment sync on and resumes it with the new URL`() =
+        runFixtureTest { rig ->
+            rig.settings.setNightscoutUrl("https://old.example.com")
+            rig.settings.setNightscoutSecret("secret")
+            rig.settings.setTreatmentsSyncEnabled(true)
+            rig.orchestrator.start()
+            advanceTimeBy(1_000)
+
+            rig.settings.setNightscoutUrl("")
+            advanceTimeBy(4_000)
+            assertTrue(rig.settings.treatmentsSyncEnabled.first())
+
+            rig.settings.setNightscoutUrl("https://new.example.com")
+            advanceTimeBy(4_000)
+
+            assertTrue(rig.settings.treatmentsSyncEnabled.first())
+            assertEquals("https://new.example.com", rig.nsClient.treatmentRequestUrls.last())
+        }
+
+    @Test
+    fun `typing a Nightscout URL syncs treatments only from the finished URL`() = runFixtureTest { rig ->
+        rig.settings.setNightscoutUrl("https://old.example.com")
+        rig.settings.setNightscoutSecret("secret")
+        rig.settings.setTreatmentsSyncEnabled(true)
+        rig.orchestrator.start()
+        advanceTimeBy(1_000)
+
+        for (typed in listOf("https://n", "https://ne", "https://new", "https://new.example.com")) {
+            rig.settings.setNightscoutUrl(typed)
+            advanceTimeBy(300)
+        }
+        advanceTimeBy(4_000)
+
+        assertEquals(
+            listOf("https://old.example.com", "https://new.example.com"),
+            rig.nsClient.treatmentRequestUrls.distinct()
+        )
+    }
+
+    @Test
+    fun `a new Nightscout secret restarts treatment sync`() = runFixtureTest { rig ->
+        rig.settings.setNightscoutUrl("https://ns.example.com")
+        rig.settings.setNightscoutSecret("old-secret")
+        rig.settings.setTreatmentsSyncEnabled(true)
+        rig.orchestrator.start()
+        advanceTimeBy(1_000)
+        val requestsBefore = rig.nsClient.treatmentRequestSecrets.size
+
+        rig.settings.setNightscoutSecret("new-secret")
+        advanceTimeBy(4_000)
+
+        assertEquals("new-secret", rig.nsClient.treatmentRequestSecrets.last())
+        assertTrue(rig.nsClient.treatmentRequestSecrets.size > requestsBefore)
+    }
+
+    @Test
+    fun `turning treatment sync off stops treatment requests`() = runFixtureTest { rig ->
+        rig.settings.setNightscoutUrl("https://ns.example.com")
+        rig.settings.setNightscoutSecret("secret")
+        rig.settings.setTreatmentsSyncEnabled(true)
+        rig.orchestrator.start()
+        advanceTimeBy(1_000)
+
+        rig.settings.setTreatmentsSyncEnabled(false)
+        advanceTimeBy(1_000)
+        val requestsWhenOff = rig.nsClient.treatmentRequestUrls.size
+        advanceTimeBy(30 * 60_000L)
+
+        assertEquals(requestsWhenOff, rig.nsClient.treatmentRequestUrls.size)
     }
 
     @Test
@@ -267,6 +342,10 @@ class SyncOrchestratorTest {
      * read (blank) settings and find nothing to do.
      */
     private class SilentNightscoutClient : NightscoutClient() {
+        /** The Nightscout URL and API secret of every treatments request, in order. */
+        val treatmentRequestUrls = mutableListOf<String>()
+        val treatmentRequestSecrets = mutableListOf<String>()
+
         override suspend fun fetchEntries(
             baseUrl: String,
             apiSecret: String,
@@ -286,6 +365,10 @@ class SyncOrchestratorTest {
             secret: String,
             since: Long,
             count: Int,
-        ): List<Treatment> = emptyList()
+        ): List<Treatment> {
+            treatmentRequestUrls.add(baseUrl)
+            treatmentRequestSecrets.add(secret)
+            return emptyList()
+        }
     }
 }
