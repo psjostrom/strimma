@@ -139,12 +139,13 @@ class MealAnalyzer @Inject constructor() {
             .filter { it.ts in (effectiveEnd - MS_PER_MINUTE * RECOVERY_CHECK_WINDOW_MINUTES)..effectiveEnd }
             .lastOrNull()
 
-        // Extend to 4h if BG hasn't recovered at 3h (and no next meal cutoff)
-        val shouldExtend = nextMealTime == null &&
+        // Extend toward 4h if BG hasn't recovered at 3h. A next meal before 3h already
+        // ended the window; a next meal between 3h and 4h ends the extension.
+        val shouldExtend = (nextMealTime == null || nextMealTime >= defaultEnd) &&
             bgAtDefaultEnd != null &&
             !hasReturned(bgAtDefaultEnd.sgv.toDouble(), baseline)
 
-        val finalEnd = if (shouldExtend) extendedEnd else effectiveEnd
+        val finalEnd = if (shouldExtend) minOf(extendedEnd, nextMealTime ?: extendedEnd) else effectiveEnd
 
         return ((finalEnd - mealTime) / MS_PER_MINUTE)
     }
@@ -154,20 +155,30 @@ class MealAnalyzer @Inject constructor() {
         mealTime: Long,
         baseline: Double
     ): Int? {
-        // Find peak
+        // A meal without a rise has nothing to recover from.
         val peak = postprandialReadings.maxByOrNull { it.sgv } ?: return null
+        if (hasReturned(peak.sgv.toDouble(), baseline)) return null
 
-        // Find first reading after peak that returns to baseline ±5
+        // The first reading after the peak that is back down near the pre-meal level, and
+        // whose next reading is too. One low reading, such as sensor noise or a
+        // compression low, does not end recovery.
         val afterPeak = postprandialReadings.filter { it.ts > peak.ts }
-        val recoveryReading = afterPeak.firstOrNull { hasReturned(it.sgv.toDouble(), baseline) }
+        val recoveryReading = afterPeak.zipWithNext()
+            .firstOrNull { (reading, next) ->
+                hasReturned(reading.sgv.toDouble(), baseline) && hasReturned(next.sgv.toDouble(), baseline)
+            }
+            ?.first
 
         return recoveryReading?.let {
             ((it.ts - mealTime) / MS_PER_MINUTE).toInt()
         }
     }
 
+    // Glucose has recovered once it is at most 5 mg/dL (0.3 mmol/L) above the pre-meal
+    // level. Falling below the pre-meal level also counts: a reading that drops past the
+    // baseline between two samples has recovered.
     private fun hasReturned(bgMgdl: Double, baseline: Double): Boolean {
-        return bgMgdl in (baseline - BASELINE_TOLERANCE_MGDL)..(baseline + BASELINE_TOLERANCE_MGDL)
+        return bgMgdl <= baseline + BASELINE_TOLERANCE_MGDL
     }
 
     private fun computeTIR(

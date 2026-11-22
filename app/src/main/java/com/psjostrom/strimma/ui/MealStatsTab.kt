@@ -32,6 +32,7 @@ import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.MS_PER_MINUTE
 import com.psjostrom.strimma.data.GlucoseUnit
+import com.psjostrom.strimma.data.IOBComputer
 import com.psjostrom.strimma.data.Treatment
 import com.psjostrom.strimma.data.meal.CarbSizeBucket
 import com.psjostrom.strimma.data.meal.MealAgpCalculator
@@ -103,14 +104,15 @@ fun MealStatsTab(
     var selectedSlot by remember { mutableStateOf<MealTimeSlot?>(null) }
 
     var mealsLoaded by remember { mutableStateOf(false) }
-    val results by produceState<List<MealPostprandialResult>>(emptyList(), selectedPeriod) {
+    val results by produceState<List<MealPostprandialResult>>(emptyList(), selectedPeriod, tauMinutes, bgLow, bgHigh) {
         mealsLoaded = false
         val (hours, _) = periods[selectedPeriod]
         val now = System.currentTimeMillis()
         val start = now - hours * 3600_000L
         val readings = onLoadReadings(hours)
         val carbTreatments = onLoadCarbTreatments(start, now)
-        val allTreatments = onLoadAllTreatments(start)
+        // IOB at the first meal counts insulin from before the period.
+        val allTreatments = onLoadAllTreatments(start - IOBComputer.lookbackMs(tauMinutes))
         value = carbTreatments.mapIndexedNotNull { i, meal ->
             val nextMealTime = carbTreatments.getOrNull(i + 1)?.createdAt
             analyzer.analyze(meal, readings, MealAnalysisParams(
