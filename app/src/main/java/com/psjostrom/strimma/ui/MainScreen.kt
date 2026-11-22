@@ -85,6 +85,8 @@ import androidx.compose.ui.graphics.Path
 import kotlinx.coroutines.delay
 
 private const val MINIMAP_WINDOW_MS = 24L * 3600_000L
+private const val COMPRESSION_BAND_ALPHA = 0.12f
+private const val COMPRESSION_DOT_ALPHA = 0.4f
 
 @Composable
 fun MainScreen(
@@ -93,6 +95,7 @@ fun MainScreen(
     bgLow: Float,
     bgHigh: Float,
     graphWindowHours: Int,
+    compressionSpans: List<LongRange> = emptyList(),
     predictionMinutes: Int = 15,
     glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
     treatments: List<Treatment> = emptyList(),
@@ -307,6 +310,7 @@ fun MainScreen(
                     glucoseUnit = glucoseUnit,
                     treatments = treatments,
                     exerciseSessions = exerciseSessions,
+                    compressionSpans = compressionSpans,
                     onExerciseTap = { selectedExercise = it },
                     onViewportChange = { viewportEnd = it },
                     onZoomChange = { zoomScale = it },
@@ -850,6 +854,7 @@ fun GlucoseGraph(
     glucoseUnit: GlucoseUnit = GlucoseUnit.MMOL,
     treatments: List<Treatment> = emptyList(),
     exerciseSessions: List<StoredExerciseSession> = emptyList(),
+    compressionSpans: List<LongRange> = emptyList(),
     onExerciseTap: (StoredExerciseSession) -> Unit = {},
     prediction: Prediction? = null,
     onResetZoomAndViewport: (() -> Unit)? = null,
@@ -875,6 +880,8 @@ fun GlucoseGraph(
     val sorted = remember(readings, visibleStart, viewportEnd) {
         readings.filter { it.ts in visibleStart..viewportEnd }.sortedBy { it.ts }
     }
+
+    val compressionLabel = stringResource(R.string.graph_compression_low)
 
     // Stable refs for pointerInput(Unit) — avoids coroutine restart on every recomposition
     val currentZoom by rememberUpdatedState(zoomScale)
@@ -1122,12 +1129,26 @@ fun GlucoseGraph(
             )
         }
 
+        // Probable compression lows: a neutral band, drawn before the readings so dots stay on top
+        for (span in compressionSpans) {
+            if (span.last < visibleStart || span.first > viewportEnd) continue
+            val xStart = xFor(span.first).coerceIn(marginLeft, size.width - marginRight)
+            val xEnd = xFor(span.last).coerceIn(marginLeft, size.width - marginRight)
+            drawRect(
+                color = axisColor.copy(alpha = COMPRESSION_BAND_ALPHA),
+                topLeft = Offset(xStart, marginTop),
+                size = Size(xEnd - xStart, plotHeight)
+            )
+        }
+
         // Readings
         for (i in sorted.indices) {
             val r = sorted[i]
             val x = xFor(r.ts)
             val y = yFor(r.sgv.toDouble())
+            val inCompression = compressionSpans.any { r.ts in it }
             val color = dotColor(r.sgv.toDouble(), bgLow, bgHigh)
+                .let { if (inCompression) it.copy(alpha = COMPRESSION_DOT_ALPHA) else it }
 
             if (i < sorted.lastIndex) {
                 val next = sorted[i + 1]
@@ -1240,22 +1261,39 @@ fun GlucoseGraph(
                 textSize = 44f
                 typeface = android.graphics.Typeface.DEFAULT_BOLD
             }
-            val subtextPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            val subtextPaint = android.text.TextPaint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
                 this.color = tooltipSubtext.toArgb()
                 textSize = 36f
             }
 
-            val textWidth = maxOf(tooltipPaint.measureText(line1), subtextPaint.measureText(line2))
             val padH = 28f
             val padV = 20f
             val spacing = 8f
-            val tooltipW = textWidth + padH * 2
-            val tooltipH = tooltipPaint.fontSpacing + subtextPaint.fontSpacing + spacing + padV * 2
+            val maxTooltipW = size.width - marginLeft - marginRight
+            // The compression annotation is long in some languages. It breaks at " · " when it
+            // does not fit next to the plot, and a part that still does not fit ends in an ellipsis.
+            val annotationLines = when {
+                compressionSpans.none { sel.ts in it } -> emptyList()
+                subtextPaint.measureText(compressionLabel) + padH * 2 <= maxTooltipW -> listOf(compressionLabel)
+                else -> compressionLabel.split(" · ")
+            }
+            val subLines = (listOf(line2) + annotationLines).map {
+                android.text.TextUtils.ellipsize(
+                    it, subtextPaint, maxTooltipW - padH * 2, android.text.TextUtils.TruncateAt.END
+                ).toString()
+            }
+
+            val textWidth = maxOf(tooltipPaint.measureText(line1), subLines.maxOf { subtextPaint.measureText(it) })
+            val tooltipW = minOf(textWidth + padH * 2, maxTooltipW)
+            val tooltipH = tooltipPaint.fontSpacing + (subtextPaint.fontSpacing + spacing) * subLines.size + padV * 2
             val cornerR = 20f
 
-            val tx = (pointX - tooltipW / 2).coerceIn(marginLeft, size.width - marginRight - tooltipW)
+            val maxTx = maxOf(marginLeft, size.width - marginRight - tooltipW)
+            val tx = (pointX - tooltipW / 2).coerceIn(marginLeft, maxTx)
             var ty = pointY - tooltipH - 24f
             if (ty < marginTop) ty = pointY + 24f
+            // A wrapped compression annotation makes the tooltip taller, so keep it inside the plot.
+            ty = ty.coerceIn(marginTop, maxOf(marginTop, size.height - marginBottom - tooltipH))
 
             drawRoundRect(
                 color = tooltipBg.copy(alpha = 0.95f),
@@ -1276,11 +1314,14 @@ fun GlucoseGraph(
                 ty + padV + tooltipPaint.fontSpacing - tooltipPaint.descent(),
                 tooltipPaint
             )
-            drawContext.canvas.nativeCanvas.drawText(
-                line2, tx + padH,
-                ty + padV + tooltipPaint.fontSpacing + spacing + subtextPaint.fontSpacing - subtextPaint.descent(),
-                subtextPaint
-            )
+            subLines.forEachIndexed { i, line ->
+                drawContext.canvas.nativeCanvas.drawText(
+                    line, tx + padH,
+                    ty + padV + tooltipPaint.fontSpacing + (spacing + subtextPaint.fontSpacing) * (i + 1) -
+                        subtextPaint.descent(),
+                    subtextPaint
+                )
+            }
         }
 
         // Axis labels

@@ -10,6 +10,7 @@ import com.psjostrom.strimma.data.IOBComputer
 import com.psjostrom.strimma.data.InsulinType
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
+import com.psjostrom.strimma.data.StatsReadings
 import com.psjostrom.strimma.data.calendar.CalendarPoller
 import com.psjostrom.strimma.data.calendar.GuidanceState
 import com.psjostrom.strimma.data.calendar.PreActivityAssessor
@@ -74,6 +75,7 @@ class MainViewModel @Inject constructor(
     private val updateInstaller: UpdateInstaller,
     private val workoutModeManager: WorkoutModeManager,
     private val patternChecker: com.psjostrom.strimma.data.pattern.PatternChecker,
+    private val statsReadings: StatsReadings,
 ) : ViewModel() {
 
     companion object {
@@ -167,6 +169,9 @@ class MainViewModel @Inject constructor(
     val graphWindowHours: StateFlow<Int> = settings.graphWindowHours
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 4)
 
+    val compressionLowDetection: StateFlow<Boolean> = settings.compressionLowDetection
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
     // Filter the placeholder NaN seed so the UI never renders against a junk
     // threshold for the first frame after VM construction. The seeded fallback
     // (72f / 180f) matches SettingsRepository defaults — same race window as
@@ -195,6 +200,11 @@ class MainViewModel @Inject constructor(
             val since = System.currentTimeMillis() - HOURS_PER_DAY * MS_PER_HOUR
             dao.since(since)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /** Probable compression lows within the graph history. Empty when detection is off. */
+    val compressionSpans: StateFlow<List<LongRange>> = combine(readings, settings.compressionLowDetection) { r, _ -> r }
+        .mapLatest { r -> if (r.isEmpty()) emptyList() else statsReadings.compressionSpans(r.first().ts, r.last().ts) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val predictionMinutes: StateFlow<Int> = settings.predictionMinutes
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 15)
@@ -341,13 +351,14 @@ class MainViewModel @Inject constructor(
 
     suspend fun importSettings(json: String) = settings.importFromJson(json)
 
+    /** Readings for statistics. Probable compression lows are left out, so statistics treat them as missing data. */
     suspend fun readingsForPeriod(hours: Int): List<GlucoseReading> {
-        val since = System.currentTimeMillis() - hours * MS_PER_HOUR
-        return dao.since(since)
+        val now = System.currentTimeMillis()
+        return statsReadings.inRange(now - hours * MS_PER_HOUR, now)
     }
 
     suspend fun exportCsv(hours: Int): String {
-        val readings = readingsForPeriod(hours)
+        val readings = dao.since(System.currentTimeMillis() - hours * MS_PER_HOUR)
         return buildString {
             appendLine("timestamp,datetime,sgv,direction,delta_mgdl")
             val sdf = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault())
