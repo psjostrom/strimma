@@ -119,6 +119,8 @@ The **AGP** tab shows an Ambulatory Glucose Profile — the ADA-endorsed standar
 
 Below the chart, a 5-tier Time in Range bar shows Very Low, Low, In Range, High, and Very High percentages.
 
+**Sensor Active** is the share of expected readings that Strimma has over the whole 14 days. Days without a sensor, including days before you started using Strimma, count as inactive.
+
 ---
 
 ## Meals Tab

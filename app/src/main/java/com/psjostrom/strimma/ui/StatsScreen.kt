@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.AgpCalculator
+import com.psjostrom.strimma.data.MS_PER_HOUR
 import com.psjostrom.strimma.data.AgpResult
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.GlucoseStats
@@ -121,8 +122,9 @@ fun StatsScreen(
 
     var agpLoaded by remember { mutableStateOf(false) }
     val agpResult by produceState<AgpResult?>(null) {
+        val periodEnd = System.currentTimeMillis()
         val readings = onLoadReadings(HOURS_14_DAYS)
-        value = AgpCalculator.compute(readings)
+        value = AgpCalculator.compute(readings, periodEnd - HOURS_14_DAYS * MS_PER_HOUR, periodEnd)
         agpLoaded = true
     }
 
