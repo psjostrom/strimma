@@ -12,7 +12,7 @@ Follow a remote Nightscout server to monitor someone else's glucose.
 4. Enter the **API Secret** for that server
 5. Set the **Poll Interval** — how often to check (default: 60 seconds)
 
-Strimma begins polling immediately. The same Nightscout URL and API secret are also used for manual pulls and treatment sync.
+Strimma begins polling. When you change the URL or API secret, Strimma reconnects 3 seconds after the last change. The same Nightscout URL and API secret are also used for manual pulls and treatment sync.
 
 ---
 
