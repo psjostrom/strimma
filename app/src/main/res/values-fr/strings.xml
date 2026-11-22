@@ -39,6 +39,7 @@
     <string name="main_iob_active_boluses">BOLUS ACTIFS</string>
     <string name="main_iob_remaining">%1$.1fU restant</string>
     <string name="main_bolus_label">%1$.1fU</string>
+    <string name="graph_compression_low">Hypo de compression probable · hors statistiques</string>
     <string name="main_carb_label">%1$.0fg</string>
 
     <!-- Settings Menu -->
@@ -136,6 +137,8 @@
     <string name="settings_display_language">Langue</string>
     <string name="settings_display_language_system">Par d\u00E9faut du syst\u00E8me</string>
     <string name="settings_display_theme">Th\u00E8me</string>
+    <string name="settings_display_compression_lows">Détecter les hypos de compression</string>
+    <string name="settings_display_compression_lows_desc">Marquer les hypos probablement fausses dues à un appui nocturne sur le capteur et les exclure des statistiques</string>
     <string name="settings_display_theme_light">Clair</string>
     <string name="settings_display_theme_dark">Sombre</string>
     <string name="settings_display_theme_system">Syst\u00E8me</string>
