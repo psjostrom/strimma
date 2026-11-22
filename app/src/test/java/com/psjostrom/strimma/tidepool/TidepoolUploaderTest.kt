@@ -6,10 +6,15 @@ import androidx.test.core.app.ApplicationProvider
 import com.psjostrom.strimma.data.GlucoseReading
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.StrimmaDatabase
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
 import com.psjostrom.strimma.createTestDataStore
 import com.psjostrom.strimma.widget.WidgetSettingsRepository
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.toByteArray
 import io.ktor.client.engine.mock.MockRequestHandler
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -52,35 +57,132 @@ class TidepoolUploaderTest {
     }
 
     @Test
-    fun `computeChunkEnd caps at 7 days from start`() {
-        val start = 1774375800000L
-        val now = start + 14 * 86_400_000L
-        val end = TidepoolUploader.computeChunkEnd(start, now)
-        assertEquals(start + 7 * 86_400_000L, end)
-    }
+    fun `a reading stored after a newer one was uploaded still reaches Tidepool`() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val db = Room.inMemoryDatabaseBuilder(context, StrimmaDatabase::class.java)
+            .allowMainThreadQueries()
+            .build()
+        val settings = SettingsRepository(context, WidgetSettingsRepository(context), createTestDataStore())
+        val authManager = TidepoolAuthManager(context, settings)
+        seedLoggedIn(authManager, settings, token = "token-abc")
+        settings.setTidepoolEnabled(true)
+        settings.setTidepoolUserId("user123")
+        settings.setTidepoolDatasetId("dataset-1")
 
-    @Test
-    fun `computeChunkEnd uses now minus buffer when within 7 days`() {
-        val start = 1774375800000L
-        val now = start + 3600_000L
-        val end = TidepoolUploader.computeChunkEnd(start, now)
-        assertEquals(now - TidepoolUploader.UPLOAD_BUFFER_MS, end)
-    }
-
-    @Test
-    fun `computeChunkEnd returns value at or below start when now is too close`() {
-        val start = 1774375800000L
-        val now = start + 60_000L
-        val end = TidepoolUploader.computeChunkEnd(start, now)
-        assertTrue(end <= start)
-    }
-
-    @Test
-    fun `clampLastUploadEnd clamps zero to 2 months ago`() {
+        val uploadedBodies = mutableListOf<String>()
+        val uploader = TidepoolUploader(
+            context = context,
+            client = mockClient { request ->
+                uploadedBodies.add(String(request.body.toByteArray()))
+                respond(
+                    content = "ok",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                )
+            },
+            authManager = authManager,
+            dao = db.readingDao(),
+            settings = settings
+        )
         val now = System.currentTimeMillis()
-        val result = TidepoolUploader.clampLastUploadEnd(0L, now)
-        val twoMonthsAgo = now - 60L * 86_400_000L
-        assertTrue(result >= twoMonthsAgo - 1000)
+        val newer = now - 20 * 60_000L
+        val lateArrival = now - 40 * 60_000L
+
+        db.readingDao().insert(GlucoseReading(ts = newer, sgv = 120, direction = "Flat", delta = 0.0))
+        assertEquals(1, uploader.forceUpload())
+
+        // A follower catch-up stores a reading older than the one already uploaded.
+        db.readingDao().insert(GlucoseReading(ts = lateArrival, sgv = 140, direction = "Flat", delta = 0.0))
+        assertEquals(1, uploader.forceUpload())
+        assertEquals(0, uploader.forceUpload())
+
+        assertEquals(2, uploadedBodies.size)
+        assertTrue(uploadedBodies[1].contains("strimma-cbg-$lateArrival"))
+
+        uploader.stop()
+        db.close()
+    }
+
+    private class UploadEnv(
+        val db: StrimmaDatabase,
+        val dataStore: DataStore<Preferences>,
+        val uploader: TidepoolUploader,
+        val uploadedBodies: List<String>,
+    )
+
+    /** A logged-in uploader whose Tidepool server accepts every upload and keeps the bodies. */
+    private suspend fun uploadEnv(): UploadEnv {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val db = Room.inMemoryDatabaseBuilder(context, StrimmaDatabase::class.java)
+            .allowMainThreadQueries()
+            .build()
+        val dataStore = createTestDataStore()
+        val settings = SettingsRepository(context, WidgetSettingsRepository(context), dataStore)
+        val authManager = TidepoolAuthManager(context, settings)
+        seedLoggedIn(authManager, settings, token = "token-abc")
+        settings.setTidepoolEnabled(true)
+        settings.setTidepoolUserId("user123")
+        settings.setTidepoolDatasetId("dataset-1")
+        val bodies = mutableListOf<String>()
+        val client = mockClient { request ->
+            bodies.add(String(request.body.toByteArray()))
+            respond(
+                content = "ok",
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            )
+        }
+        val uploader = TidepoolUploader(context, client, authManager, db.readingDao(), settings)
+        return UploadEnv(db, dataStore, uploader, bodies)
+    }
+
+    private fun reading(ts: Long, sgv: Int = 120) = GlucoseReading(ts = ts, sgv = sgv, direction = "Flat", delta = 0.0)
+
+    @Test
+    fun `readings up to the old upload cursor are not sent again after the update`() = runTest {
+        // The cursor key as the previous version stored it.
+        val oldCursorKey = longPreferencesKey("tidepool_last_upload_end")
+        val env = uploadEnv()
+        val now = System.currentTimeMillis()
+        val sentBefore = now - 60 * 60_000L
+        val notSentYet = now - 20 * 60_000L
+        env.dataStore.edit { it[oldCursorKey] = now - 30 * 60_000L }
+        env.db.readingDao().insertBatch(listOf(reading(sentBefore), reading(notSentYet)))
+
+        assertEquals(1, env.uploader.forceUpload())
+        assertTrue(env.uploadedBodies.single().contains("strimma-cbg-$notSentYet"))
+        assertEquals(null, env.dataStore.data.first()[oldCursorKey])
+
+        env.uploader.stop()
+        env.db.close()
+    }
+
+    @Test
+    fun `an invalid reading at the front of the queue does not block valid ones`() = runTest {
+        val env = uploadEnv()
+        val now = System.currentTimeMillis()
+        env.db.readingDao().insertBatch(listOf(reading(now - 40 * 60_000L, sgv = 30), reading(now - 20 * 60_000L)))
+
+        assertEquals(1, env.uploader.forceUpload())
+        assertEquals(0, env.uploader.forceUpload())
+
+        env.uploader.stop()
+        env.db.close()
+    }
+
+    @Test
+    fun `a backlog larger than one upload drains over two uploads`() = runTest {
+        val env = uploadEnv()
+        val newest = System.currentTimeMillis() - 20 * 60_000L
+        val backlog = (0 until 7 * 24 * 60 + 1).map { reading(newest - it * 60_000L) }
+        env.db.readingDao().insertBatch(backlog)
+
+        assertEquals(7 * 24 * 60, env.uploader.forceUpload())
+        assertEquals(1, env.uploader.forceUpload())
+        assertEquals(0, env.uploader.forceUpload())
+
+        env.uploader.stop()
+        env.db.close()
     }
 
     @Test
@@ -115,7 +217,6 @@ class TidepoolUploaderTest {
         settings.setTidepoolDatasetId("dataset-1")
 
         val now = System.currentTimeMillis()
-        settings.setTidepoolLastUploadEnd(now - 30 * 60_000L)
         db.readingDao().insert(
             GlucoseReading(
                 ts = now - 20 * 60_000L,
@@ -181,7 +282,6 @@ class TidepoolUploaderTest {
         settings.setTidepoolDatasetId("dataset-1")
 
         val now = System.currentTimeMillis()
-        settings.setTidepoolLastUploadEnd(now - 30 * 60_000L)
 
         var uploadCalls = 0
         val uploader = TidepoolUploader(
@@ -211,13 +311,12 @@ class TidepoolUploaderTest {
 
         uploader.uploadIfReady()
 
-        val noOpLastEnd = settings.tidepoolLastUploadEnd.first()
         assertEquals(0, uploadCalls)
         assertEquals(0L, settings.tidepoolLastUploadTime.first())
 
         db.readingDao().insert(
             GlucoseReading(
-                ts = noOpLastEnd,
+                ts = now - 20 * 60_000L,
                 sgv = 125,
                 direction = "Flat",
                 delta = 0.0,
@@ -248,7 +347,6 @@ class TidepoolUploaderTest {
         settings.setTidepoolDatasetId("dataset-1")
 
         val now = System.currentTimeMillis()
-        settings.setTidepoolLastUploadEnd(now - 30 * 60_000L)
         db.readingDao().insert(
             GlucoseReading(
                 ts = now - 20 * 60_000L,
@@ -318,7 +416,6 @@ class TidepoolUploaderTest {
         settings.setTidepoolDatasetId("dataset-1")
 
         val now = System.currentTimeMillis()
-        settings.setTidepoolLastUploadEnd(now - 30 * 60_000L)
         db.readingDao().insert(
             GlucoseReading(
                 ts = now - 20 * 60_000L,
@@ -356,7 +453,7 @@ class TidepoolUploaderTest {
         )
 
         // Two simultaneous force uploads — the mutex must serialize them so only one
-        // POST is observed. The second call sees the first's advanced lastUploadEnd
+        // POST is observed. The second call finds the reading already marked uploaded
         // and returns 0 records.
         val results = listOf(
             async { uploader.forceUpload() },
@@ -384,7 +481,6 @@ class TidepoolUploaderTest {
         settings.setTidepoolDatasetId("dataset-1")
 
         val now = System.currentTimeMillis()
-        settings.setTidepoolLastUploadEnd(now - 30 * 60_000L)
         db.readingDao().insert(
             GlucoseReading(
                 ts = now - 20 * 60_000L,

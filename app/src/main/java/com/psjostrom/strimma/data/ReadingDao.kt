@@ -68,6 +68,18 @@ interface ReadingDao {
     @Query("UPDATE readings SET pushed = 1 WHERE ts IN (:timestamps)")
     suspend fun markPushed(timestamps: List<Long>)
 
+    @Query(
+        "SELECT * FROM readings WHERE tidepoolUploaded = 0 AND ts BETWEEN :from AND :to " +
+            "ORDER BY ts LIMIT :limit"
+    )
+    suspend fun notUploadedToTidepool(from: Long, to: Long, limit: Int): List<GlucoseReading>
+
+    @Query("UPDATE readings SET tidepoolUploaded = 1 WHERE ts IN (:timestamps)")
+    suspend fun markUploadedToTidepool(timestamps: List<Long>)
+
+    @Query("UPDATE readings SET tidepoolUploaded = 1 WHERE ts <= :ts")
+    suspend fun markUploadedToTidepoolUpTo(ts: Long)
+
     @Query("DELETE FROM readings WHERE ts < :before")
     suspend fun pruneBefore(before: Long)
 

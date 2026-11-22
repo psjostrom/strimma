@@ -68,7 +68,7 @@ class NightscoutPuller @Inject constructor(
     }
 
     private suspend fun insertPulledEntries(entries: List<NightscoutEntryResponse>): Int {
-        val readings = NightscoutFollower.filterValidEntries(entries).mapNotNull { entry ->
+        val readings = dropFutureEntries(NightscoutFollower.filterValidEntries(entries)).mapNotNull { entry ->
             val sgv = entry.sgv ?: return@mapNotNull null
             val ts = entry.date ?: return@mapNotNull null
             GlucoseReading(
@@ -76,7 +76,10 @@ class NightscoutPuller @Inject constructor(
                 sgv = sgv,
                 direction = entry.direction ?: "NONE",
                 delta = entry.delta,
-                pushed = 1
+                pushed = 1,
+                // Pulled history is not sent to Tidepool. It came from Nightscout, and
+                // the uploader that sent it there may already send it to Tidepool.
+                tidepoolUploaded = 1
             )
         }
 

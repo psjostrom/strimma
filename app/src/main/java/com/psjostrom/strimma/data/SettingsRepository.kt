@@ -792,8 +792,12 @@ class SettingsRepository @Inject constructor(
     val tidepoolDatasetId: Flow<String> = dataStore.prefFlow { it[KEY_TIDEPOOL_DATASET_ID] ?: "" }
     suspend fun setTidepoolDatasetId(id: String) { dataStore.edit { it[KEY_TIDEPOOL_DATASET_ID] = id } }
 
-    val tidepoolLastUploadEnd: Flow<Long> = dataStore.prefFlow { it[KEY_TIDEPOOL_LAST_UPLOAD_END] ?: 0L }
-    suspend fun setTidepoolLastUploadEnd(ts: Long) { dataStore.edit { it[KEY_TIDEPOOL_LAST_UPLOAD_END] = ts } }
+    /** Reads and removes the Tidepool upload cursor that the per-reading flag replaced. */
+    suspend fun takeLegacyTidepoolUploadEnd(): Long? {
+        var cursor: Long? = null
+        dataStore.edit { cursor = it.remove(KEY_TIDEPOOL_LAST_UPLOAD_END) }
+        return cursor
+    }
 
     val tidepoolLastUploadTime: Flow<Long> = dataStore.prefFlow { it[KEY_TIDEPOOL_LAST_UPLOAD_TIME] ?: 0L }
     suspend fun setTidepoolLastUploadTime(ts: Long) { dataStore.edit { it[KEY_TIDEPOOL_LAST_UPLOAD_TIME] = ts } }
