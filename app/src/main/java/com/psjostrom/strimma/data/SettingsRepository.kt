@@ -17,6 +17,7 @@ import com.psjostrom.strimma.receiver.DebugLog
 import com.psjostrom.strimma.ui.theme.ThemeMode
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import com.psjostrom.strimma.widget.WidgetSettingsRepository
@@ -144,6 +145,13 @@ internal fun JSONObject.importThreshold(key: String, isV1: Boolean): Float {
     return if (isV1) Math.round(value * GlucoseUnit.MGDL_FACTOR.toFloat()).toFloat() else value
 }
 
+// DataStore emits the whole Preferences object on every write to any key. Each
+// setting's flow drops repeats of its own value, so a write to one key does not
+// re-emit the others. Collectors that restart work on emission (data source,
+// followers, treatment sync, web server) would otherwise restart on unrelated writes.
+private fun <T> DataStore<Preferences>.prefFlow(read: (Preferences) -> T): Flow<T> =
+    data.map(read).distinctUntilChanged()
+
 private fun JSONObject.importExerciseAlertProtocol(isV1: Boolean, current: AlertProtocol): AlertProtocol {
     fun thresholdOr(key: String, fallback: Float): Float =
         if (has(key)) importThreshold(key, isV1) else fallback
@@ -220,6 +228,9 @@ class SettingsRepository @Inject constructor(
 ) {
     private val _secretVersion = kotlinx.coroutines.flow.MutableStateFlow(0)
     val secretVersion: kotlinx.coroutines.flow.StateFlow<Int> = _secretVersion
+
+    private val _lluCredentialsVersion = kotlinx.coroutines.flow.MutableStateFlow(0)
+    val lluCredentialsVersion: kotlinx.coroutines.flow.StateFlow<Int> = _lluCredentialsVersion
 
     private val _credentialsLost = kotlinx.coroutines.flow.MutableStateFlow(false)
     val credentialsLost: kotlinx.coroutines.flow.StateFlow<Boolean> = _credentialsLost
@@ -320,24 +331,24 @@ class SettingsRepository @Inject constructor(
         internal const val MINUTES_PER_DAY = 1440
     }
 
-    val nightscoutUrl: Flow<String> = dataStore.data.map { it[KEY_NIGHTSCOUT_URL] ?: "" }
-    val graphWindowHours: Flow<Int> = dataStore.data.map { it[KEY_GRAPH_WINDOW_HOURS] ?: DEFAULT_GRAPH_WINDOW_HOURS }
-    val bgLow: Flow<Float> = dataStore.data.map { it[KEY_BG_LOW] ?: DEFAULT_BG_LOW }
-    val bgHigh: Flow<Float> = dataStore.data.map { it[KEY_BG_HIGH] ?: DEFAULT_BG_HIGH }
+    val nightscoutUrl: Flow<String> = dataStore.prefFlow { it[KEY_NIGHTSCOUT_URL] ?: "" }
+    val graphWindowHours: Flow<Int> = dataStore.prefFlow { it[KEY_GRAPH_WINDOW_HOURS] ?: DEFAULT_GRAPH_WINDOW_HOURS }
+    val bgLow: Flow<Float> = dataStore.prefFlow { it[KEY_BG_LOW] ?: DEFAULT_BG_LOW }
+    val bgHigh: Flow<Float> = dataStore.prefFlow { it[KEY_BG_HIGH] ?: DEFAULT_BG_HIGH }
 
-    val alertLowEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_LOW_ENABLED] ?: true }
-    val alertHighEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_HIGH_ENABLED] ?: true }
-    val alertUrgentLowEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_URGENT_LOW_ENABLED] ?: true }
-    val alertLow: Flow<Float> = dataStore.data.map { it[KEY_ALERT_LOW] ?: DEFAULT_ALERT_LOW }
-    val alertHigh: Flow<Float> = dataStore.data.map { it[KEY_ALERT_HIGH] ?: DEFAULT_ALERT_HIGH }
-    val alertUrgentLow: Flow<Float> = dataStore.data.map { it[KEY_ALERT_URGENT_LOW] ?: DEFAULT_ALERT_URGENT_LOW }
-    val alertUrgentHighEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_URGENT_HIGH_ENABLED] ?: true }
-    val alertUrgentHigh: Flow<Float> = dataStore.data.map { it[KEY_ALERT_URGENT_HIGH] ?: DEFAULT_ALERT_URGENT_HIGH }
-    val alertStaleEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_STALE_ENABLED] ?: true }
-    val alertLowSoonEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_LOW_SOON_ENABLED] ?: true }
-    val alertHighSoonEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_ALERT_HIGH_SOON_ENABLED] ?: true }
+    val alertLowEnabled: Flow<Boolean> = dataStore.prefFlow { it[KEY_ALERT_LOW_ENABLED] ?: true }
+    val alertHighEnabled: Flow<Boolean> = dataStore.prefFlow { it[KEY_ALERT_HIGH_ENABLED] ?: true }
+    val alertUrgentLowEnabled: Flow<Boolean> = dataStore.prefFlow { it[KEY_ALERT_URGENT_LOW_ENABLED] ?: true }
+    val alertLow: Flow<Float> = dataStore.prefFlow { it[KEY_ALERT_LOW] ?: DEFAULT_ALERT_LOW }
+    val alertHigh: Flow<Float> = dataStore.prefFlow { it[KEY_ALERT_HIGH] ?: DEFAULT_ALERT_HIGH }
+    val alertUrgentLow: Flow<Float> = dataStore.prefFlow { it[KEY_ALERT_URGENT_LOW] ?: DEFAULT_ALERT_URGENT_LOW }
+    val alertUrgentHighEnabled: Flow<Boolean> = dataStore.prefFlow { it[KEY_ALERT_URGENT_HIGH_ENABLED] ?: true }
+    val alertUrgentHigh: Flow<Float> = dataStore.prefFlow { it[KEY_ALERT_URGENT_HIGH] ?: DEFAULT_ALERT_URGENT_HIGH }
+    val alertStaleEnabled: Flow<Boolean> = dataStore.prefFlow { it[KEY_ALERT_STALE_ENABLED] ?: true }
+    val alertLowSoonEnabled: Flow<Boolean> = dataStore.prefFlow { it[KEY_ALERT_LOW_SOON_ENABLED] ?: true }
+    val alertHighSoonEnabled: Flow<Boolean> = dataStore.prefFlow { it[KEY_ALERT_HIGH_SOON_ENABLED] ?: true }
 
-    val regularAlertProtocol: Flow<AlertProtocol> = dataStore.data.map { it.regularAlertProtocol() }
+    val regularAlertProtocol: Flow<AlertProtocol> = dataStore.prefFlow { it.regularAlertProtocol() }
 
     private fun Preferences.regularAlertProtocol() = AlertProtocol(
         urgentLowEnabled = this[KEY_ALERT_URGENT_LOW_ENABLED] ?: true,
@@ -353,7 +364,7 @@ class SettingsRepository @Inject constructor(
         staleEnabled = this[KEY_ALERT_STALE_ENABLED] ?: true,
     )
 
-    val alertCooldownMinutes: Flow<Int> = dataStore.data.map {
+    val alertCooldownMinutes: Flow<Int> = dataStore.prefFlow {
         (it[KEY_ALERT_COOLDOWN_MINUTES] ?: DEFAULT_ALERT_COOLDOWN_MINUTES)
             .coerceIn(COOLDOWN_MINUTES_MIN, COOLDOWN_MINUTES_MAX)
     }
@@ -361,7 +372,7 @@ class SettingsRepository @Inject constructor(
         dataStore.edit { it[KEY_ALERT_COOLDOWN_MINUTES] = minutes.coerceIn(COOLDOWN_MINUTES_MIN, COOLDOWN_MINUTES_MAX) }
     }
 
-    val alertSnoozeDuration: Flow<SnoozeDuration> = dataStore.data.map {
+    val alertSnoozeDuration: Flow<SnoozeDuration> = dataStore.prefFlow {
         try {
             SnoozeDuration.valueOf(it[KEY_ALERT_SNOOZE_DURATION] ?: SnoozeDuration.M30.name)
         } catch (_: Exception) {
@@ -372,53 +383,53 @@ class SettingsRepository @Inject constructor(
         dataStore.edit { it[KEY_ALERT_SNOOZE_DURATION] = duration.name }
     }
 
-    val patternAlertsEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_PATTERN_ALERTS_ENABLED] ?: true }
+    val patternAlertsEnabled: Flow<Boolean> = dataStore.prefFlow { it[KEY_PATTERN_ALERTS_ENABLED] ?: true }
     suspend fun setPatternAlertsEnabled(enabled: Boolean) { dataStore.edit { it[KEY_PATTERN_ALERTS_ENABLED] = enabled } }
 
     /** When true, probable compression lows are shaded on the graph and left out of statistics. */
-    val compressionLowDetection: Flow<Boolean> = dataStore.data.map { it[KEY_COMPRESSION_LOW_DETECTION] ?: true }
+    val compressionLowDetection: Flow<Boolean> = dataStore.prefFlow { it[KEY_COMPRESSION_LOW_DETECTION] ?: true }
     suspend fun setCompressionLowDetection(enabled: Boolean) {
         dataStore.edit { it[KEY_COMPRESSION_LOW_DETECTION] = enabled }
     }
 
-    val patternCardDismissedDate: Flow<String> = dataStore.data.map { it[KEY_PATTERN_CARD_DISMISSED_DATE] ?: "" }
+    val patternCardDismissedDate: Flow<String> = dataStore.prefFlow { it[KEY_PATTERN_CARD_DISMISSED_DATE] ?: "" }
     suspend fun setPatternCardDismissedDate(date: String) { dataStore.edit { it[KEY_PATTERN_CARD_DISMISSED_DATE] = date } }
 
     // --- Exercise alerts ---
-    val exerciseAlertLowEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_EXERCISE_ALERT_LOW_ENABLED] ?: true }
-    val exerciseAlertHighEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_EXERCISE_ALERT_HIGH_ENABLED] ?: true }
-    val exerciseAlertUrgentLowEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_EXERCISE_ALERT_URGENT_LOW_ENABLED] ?: true }
-    val exerciseAlertUrgentHighEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_EXERCISE_ALERT_URGENT_HIGH_ENABLED] ?: true }
-    val exerciseAlertLowSoonEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_EXERCISE_ALERT_LOW_SOON_ENABLED] ?: true }
-    val exerciseAlertHighSoonEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_EXERCISE_ALERT_HIGH_SOON_ENABLED] ?: true }
-    val exerciseAlertStaleEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_EXERCISE_ALERT_STALE_ENABLED] ?: true }
+    val exerciseAlertLowEnabled: Flow<Boolean> = dataStore.prefFlow { it[KEY_EXERCISE_ALERT_LOW_ENABLED] ?: true }
+    val exerciseAlertHighEnabled: Flow<Boolean> = dataStore.prefFlow { it[KEY_EXERCISE_ALERT_HIGH_ENABLED] ?: true }
+    val exerciseAlertUrgentLowEnabled: Flow<Boolean> = dataStore.prefFlow { it[KEY_EXERCISE_ALERT_URGENT_LOW_ENABLED] ?: true }
+    val exerciseAlertUrgentHighEnabled: Flow<Boolean> = dataStore.prefFlow { it[KEY_EXERCISE_ALERT_URGENT_HIGH_ENABLED] ?: true }
+    val exerciseAlertLowSoonEnabled: Flow<Boolean> = dataStore.prefFlow { it[KEY_EXERCISE_ALERT_LOW_SOON_ENABLED] ?: true }
+    val exerciseAlertHighSoonEnabled: Flow<Boolean> = dataStore.prefFlow { it[KEY_EXERCISE_ALERT_HIGH_SOON_ENABLED] ?: true }
+    val exerciseAlertStaleEnabled: Flow<Boolean> = dataStore.prefFlow { it[KEY_EXERCISE_ALERT_STALE_ENABLED] ?: true }
 
-    val exerciseAlertLow: Flow<Float> = dataStore.data.map { it[KEY_EXERCISE_ALERT_LOW] ?: DEFAULT_WORKOUT_ALERT_LOW }
-    val exerciseAlertHigh: Flow<Float> = dataStore.data.map { it[KEY_EXERCISE_ALERT_HIGH] ?: DEFAULT_WORKOUT_ALERT_HIGH }
-    val exerciseAlertUrgentLow: Flow<Float> = dataStore.data.map { it[KEY_EXERCISE_ALERT_URGENT_LOW] ?: DEFAULT_WORKOUT_ALERT_URGENT_LOW }
-    val exerciseAlertUrgentHigh: Flow<Float> = dataStore.data.map {
+    val exerciseAlertLow: Flow<Float> = dataStore.prefFlow { it[KEY_EXERCISE_ALERT_LOW] ?: DEFAULT_WORKOUT_ALERT_LOW }
+    val exerciseAlertHigh: Flow<Float> = dataStore.prefFlow { it[KEY_EXERCISE_ALERT_HIGH] ?: DEFAULT_WORKOUT_ALERT_HIGH }
+    val exerciseAlertUrgentLow: Flow<Float> = dataStore.prefFlow { it[KEY_EXERCISE_ALERT_URGENT_LOW] ?: DEFAULT_WORKOUT_ALERT_URGENT_LOW }
+    val exerciseAlertUrgentHigh: Flow<Float> = dataStore.prefFlow {
         it[KEY_EXERCISE_ALERT_URGENT_HIGH] ?: DEFAULT_WORKOUT_ALERT_URGENT_HIGH
     }
 
-    val exerciseAlertProtocol: Flow<AlertProtocol> = dataStore.data.map { it.exerciseAlertProtocol() }
+    val exerciseAlertProtocol: Flow<AlertProtocol> = dataStore.prefFlow { it.exerciseAlertProtocol() }
 
     // --- Night alerts ---
-    val nightAlertsEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_NIGHT_ALERTS_ENABLED] ?: false }
-    val nightWindow: Flow<NightWindow> = dataStore.data.map { it.nightWindow() }
-    val nightAlertProtocol: Flow<AlertProtocol> = dataStore.data.map { it.nightAlertProtocol() }
+    val nightAlertsEnabled: Flow<Boolean> = dataStore.prefFlow { it[KEY_NIGHT_ALERTS_ENABLED] ?: false }
+    val nightWindow: Flow<NightWindow> = dataStore.prefFlow { it.nightWindow() }
+    val nightAlertProtocol: Flow<AlertProtocol> = dataStore.prefFlow { it.nightAlertProtocol() }
 
     // --- Workout safety timeout ---
-    val workoutModeMaxHours: Flow<Int> = dataStore.data.map { it[KEY_WORKOUT_MODE_MAX_HOURS] ?: DEFAULT_WORKOUT_MODE_MAX_HOURS }
+    val workoutModeMaxHours: Flow<Int> = dataStore.prefFlow { it[KEY_WORKOUT_MODE_MAX_HOURS] ?: DEFAULT_WORKOUT_MODE_MAX_HOURS }
     suspend fun setWorkoutModeMaxHours(hours: Int) { dataStore.edit { it[KEY_WORKOUT_MODE_MAX_HOURS] = hours } }
 
     // --- Workout runtime state. Sentinel 0L = absent (mapped to null). ---
-    val manualWorkoutSinceMs: Flow<Long?> = dataStore.data.map {
+    val manualWorkoutSinceMs: Flow<Long?> = dataStore.prefFlow {
         it[KEY_MANUAL_WORKOUT_SINCE_MS]?.takeIf { v -> v != 0L }
     }
-    val manualWorkoutExpiresMs: Flow<Long?> = dataStore.data.map {
+    val manualWorkoutExpiresMs: Flow<Long?> = dataStore.prefFlow {
         it[KEY_MANUAL_WORKOUT_EXPIRES_MS]?.takeIf { v -> v != 0L }
     }
-    val manualOffOverrideUntilMs: Flow<Long?> = dataStore.data.map {
+    val manualOffOverrideUntilMs: Flow<Long?> = dataStore.prefFlow {
         it[KEY_MANUAL_OFF_OVERRIDE_UNTIL_MS]?.takeIf { v -> v != 0L }
     }
 
@@ -562,18 +573,18 @@ class SettingsRepository @Inject constructor(
     suspend fun setNightAlertUrgentLow(mgdl: Float) { dataStore.edit { it[KEY_NIGHT_ALERT_URGENT_LOW] = mgdl } }
     suspend fun setNightAlertUrgentHigh(mgdl: Float) { dataStore.edit { it[KEY_NIGHT_ALERT_URGENT_HIGH] = mgdl } }
 
-    val themeMode: Flow<ThemeMode> = dataStore.data.map {
+    val themeMode: Flow<ThemeMode> = dataStore.prefFlow {
         try { ThemeMode.valueOf(it[KEY_THEME_MODE] ?: "System") } catch (_: Exception) { ThemeMode.System }
     }
     suspend fun setThemeMode(mode: ThemeMode) { dataStore.edit { it[KEY_THEME_MODE] = mode.name } }
 
-    val notifGraphMinutes: Flow<Int> = dataStore.data.map { it[KEY_NOTIF_GRAPH_MINUTES] ?: DEFAULT_NOTIF_GRAPH_MINUTES }
+    val notifGraphMinutes: Flow<Int> = dataStore.prefFlow { it[KEY_NOTIF_GRAPH_MINUTES] ?: DEFAULT_NOTIF_GRAPH_MINUTES }
     suspend fun setNotifGraphMinutes(minutes: Int) { dataStore.edit { it[KEY_NOTIF_GRAPH_MINUTES] = minutes } }
 
-    val predictionMinutes: Flow<Int> = dataStore.data.map { it[KEY_NOTIF_PREDICTION_MINUTES] ?: DEFAULT_PREDICTION_MINUTES }
+    val predictionMinutes: Flow<Int> = dataStore.prefFlow { it[KEY_NOTIF_PREDICTION_MINUTES] ?: DEFAULT_PREDICTION_MINUTES }
     suspend fun setPredictionMinutes(minutes: Int) { dataStore.edit { it[KEY_NOTIF_PREDICTION_MINUTES] = minutes } }
 
-    val notifActionType: Flow<NotificationActionType> = dataStore.data.map {
+    val notifActionType: Flow<NotificationActionType> = dataStore.prefFlow {
         try { NotificationActionType.valueOf(it[KEY_NOTIF_ACTION_TYPE] ?: NotificationActionConfig.DEFAULT.type.name) }
         catch (_: Exception) { NotificationActionConfig.DEFAULT.type }
     }
@@ -581,7 +592,7 @@ class SettingsRepository @Inject constructor(
         dataStore.edit { it[KEY_NOTIF_ACTION_TYPE] = type.name }
     }
 
-    val notifSnoozeCategory: Flow<SnoozeCategory> = dataStore.data.map {
+    val notifSnoozeCategory: Flow<SnoozeCategory> = dataStore.prefFlow {
         try { SnoozeCategory.valueOf(it[KEY_NOTIF_SNOOZE_CATEGORY] ?: NotificationActionConfig.DEFAULT.snoozeCategory.name) }
         catch (_: Exception) { NotificationActionConfig.DEFAULT.snoozeCategory }
     }
@@ -589,7 +600,7 @@ class SettingsRepository @Inject constructor(
         dataStore.edit { it[KEY_NOTIF_SNOOZE_CATEGORY] = category.name }
     }
 
-    val notifSnoozeDuration: Flow<SnoozeDuration> = dataStore.data.map {
+    val notifSnoozeDuration: Flow<SnoozeDuration> = dataStore.prefFlow {
         try { SnoozeDuration.valueOf(it[KEY_NOTIF_SNOOZE_DURATION] ?: NotificationActionConfig.DEFAULT.snoozeDuration.name) }
         catch (_: Exception) { NotificationActionConfig.DEFAULT.snoozeDuration }
     }
@@ -597,15 +608,15 @@ class SettingsRepository @Inject constructor(
         dataStore.edit { it[KEY_NOTIF_SNOOZE_DURATION] = duration.name }
     }
 
-    val glucoseUnit: Flow<GlucoseUnit> = dataStore.data.map {
+    val glucoseUnit: Flow<GlucoseUnit> = dataStore.prefFlow {
         try { GlucoseUnit.valueOf(it[KEY_GLUCOSE_UNIT] ?: "MMOL") } catch (_: Exception) { GlucoseUnit.MMOL }
     }
     suspend fun setGlucoseUnit(unit: GlucoseUnit) { dataStore.edit { it[KEY_GLUCOSE_UNIT] = unit.name } }
 
-    val bgBroadcastEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_BG_BROADCAST_ENABLED] ?: false }
+    val bgBroadcastEnabled: Flow<Boolean> = dataStore.prefFlow { it[KEY_BG_BROADCAST_ENABLED] ?: false }
     suspend fun setBgBroadcastEnabled(enabled: Boolean) { dataStore.edit { it[KEY_BG_BROADCAST_ENABLED] = enabled } }
 
-    val glucoseSource: Flow<GlucoseSource> = dataStore.data.map {
+    val glucoseSource: Flow<GlucoseSource> = dataStore.prefFlow {
         try { GlucoseSource.valueOf(it[KEY_GLUCOSE_SOURCE] ?: "COMPANION") }
         catch (_: Exception) { GlucoseSource.COMPANION }
     }
@@ -623,28 +634,29 @@ class SettingsRepository @Inject constructor(
         return try { GlucoseSource.valueOf(name) } catch (_: Exception) { GlucoseSource.COMPANION }
     }
 
-    val followerPollSeconds: Flow<Int> = dataStore.data.map { it[KEY_FOLLOWER_POLL_SECONDS] ?: DEFAULT_FOLLOWER_POLL_SECONDS }
+    val followerPollSeconds: Flow<Int> = dataStore.prefFlow { it[KEY_FOLLOWER_POLL_SECONDS] ?: DEFAULT_FOLLOWER_POLL_SECONDS }
     suspend fun setFollowerPollSeconds(seconds: Int) { dataStore.edit { it[KEY_FOLLOWER_POLL_SECONDS] = seconds } }
 
     fun getLluEmail(): String = encryptedPrefs.getString(KEY_LLU_EMAIL, "") ?: ""
-    fun setLluEmail(email: String) {
-        encryptedPrefs.edit { putString(KEY_LLU_EMAIL, email) }
-    }
+    fun setLluEmail(email: String) = setLluCredential(KEY_LLU_EMAIL, email)
 
     fun getLluPassword(): String = encryptedPrefs.getString(KEY_LLU_PASSWORD, "") ?: ""
-    fun setLluPassword(password: String) {
-        encryptedPrefs.edit { putString(KEY_LLU_PASSWORD, password) }
+    fun setLluPassword(password: String) = setLluCredential(KEY_LLU_PASSWORD, password)
+
+    private fun setLluCredential(key: String, value: String) {
+        encryptedPrefs.edit { putString(key, value) }
+        _lluCredentialsVersion.value++
     }
 
-    val treatmentsSyncEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_TREATMENTS_SYNC_ENABLED] ?: false }
+    val treatmentsSyncEnabled: Flow<Boolean> = dataStore.prefFlow { it[KEY_TREATMENTS_SYNC_ENABLED] ?: false }
     suspend fun setTreatmentsSyncEnabled(enabled: Boolean) { dataStore.edit { it[KEY_TREATMENTS_SYNC_ENABLED] = enabled } }
 
-    val insulinType: Flow<InsulinType> = dataStore.data.map {
+    val insulinType: Flow<InsulinType> = dataStore.prefFlow {
         try { InsulinType.valueOf(it[KEY_INSULIN_TYPE] ?: "FIASP") } catch (_: Exception) { InsulinType.FIASP }
     }
     suspend fun setInsulinType(type: InsulinType) { dataStore.edit { it[KEY_INSULIN_TYPE] = type.name } }
 
-    val retentionPolicy: Flow<RetentionPolicy> = dataStore.data.map { prefs ->
+    val retentionPolicy: Flow<RetentionPolicy> = dataStore.prefFlow { prefs ->
         val raw = prefs[KEY_RETENTION_POLICY]
         try {
             RetentionPolicy.valueOf(raw ?: "INDEFINITE")
@@ -662,16 +674,16 @@ class SettingsRepository @Inject constructor(
         dataStore.edit { it[KEY_RETENTION_POLICY] = policy.name }
     }
 
-    val customDIA: Flow<Float> = dataStore.data.map { it[KEY_CUSTOM_DIA] ?: DEFAULT_CUSTOM_DIA_FLOAT }
+    val customDIA: Flow<Float> = dataStore.prefFlow { it[KEY_CUSTOM_DIA] ?: DEFAULT_CUSTOM_DIA_FLOAT }
     suspend fun setCustomDIA(hours: Float) { dataStore.edit { it[KEY_CUSTOM_DIA] = hours } }
 
     // Meal time slot boundaries (minutes from midnight)
-    val mealBreakfastStart: Flow<Int> = dataStore.data.map { it[KEY_MEAL_BREAKFAST_START] ?: 360 }
-    val mealBreakfastEnd: Flow<Int> = dataStore.data.map { it[KEY_MEAL_BREAKFAST_END] ?: 600 }
-    val mealLunchStart: Flow<Int> = dataStore.data.map { it[KEY_MEAL_LUNCH_START] ?: 690 }
-    val mealLunchEnd: Flow<Int> = dataStore.data.map { it[KEY_MEAL_LUNCH_END] ?: 870 }
-    val mealDinnerStart: Flow<Int> = dataStore.data.map { it[KEY_MEAL_DINNER_START] ?: 1020 }
-    val mealDinnerEnd: Flow<Int> = dataStore.data.map { it[KEY_MEAL_DINNER_END] ?: 1260 }
+    val mealBreakfastStart: Flow<Int> = dataStore.prefFlow { it[KEY_MEAL_BREAKFAST_START] ?: 360 }
+    val mealBreakfastEnd: Flow<Int> = dataStore.prefFlow { it[KEY_MEAL_BREAKFAST_END] ?: 600 }
+    val mealLunchStart: Flow<Int> = dataStore.prefFlow { it[KEY_MEAL_LUNCH_START] ?: 690 }
+    val mealLunchEnd: Flow<Int> = dataStore.prefFlow { it[KEY_MEAL_LUNCH_END] ?: 870 }
+    val mealDinnerStart: Flow<Int> = dataStore.prefFlow { it[KEY_MEAL_DINNER_START] ?: 1020 }
+    val mealDinnerEnd: Flow<Int> = dataStore.prefFlow { it[KEY_MEAL_DINNER_END] ?: 1260 }
 
     suspend fun setMealSlotBoundary(key: String, minutes: Int) {
         if (minutes < 0 || minutes >= MINUTES_PER_DAY) return
@@ -687,7 +699,7 @@ class SettingsRepository @Inject constructor(
         dataStore.edit { it[prefKey] = minutes }
     }
 
-    val webServerEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_WEB_SERVER_ENABLED] ?: false }
+    val webServerEnabled: Flow<Boolean> = dataStore.prefFlow { it[KEY_WEB_SERVER_ENABLED] ?: false }
     suspend fun setWebServerEnabled(enabled: Boolean) { dataStore.edit { it[KEY_WEB_SERVER_ENABLED] = enabled } }
 
     fun getWebServerSecret(): String = encryptedPrefs.getString(KEY_WEB_SERVER_SECRET, "") ?: ""
@@ -695,7 +707,7 @@ class SettingsRepository @Inject constructor(
         encryptedPrefs.edit { putString(KEY_WEB_SERVER_SECRET, secret) }
     }
 
-    val startOnBoot: Flow<Boolean> = dataStore.data.map { it[KEY_START_ON_BOOT] ?: true }
+    val startOnBoot: Flow<Boolean> = dataStore.prefFlow { it[KEY_START_ON_BOOT] ?: true }
     suspend fun setStartOnBoot(enabled: Boolean) {
         dataStore.edit { prefs ->
             prefs[KEY_START_ON_BOOT] = enabled
@@ -711,10 +723,10 @@ class SettingsRepository @Inject constructor(
 
 
 
-    val hcWriteEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_HC_WRITE_ENABLED] ?: false }
+    val hcWriteEnabled: Flow<Boolean> = dataStore.prefFlow { it[KEY_HC_WRITE_ENABLED] ?: false }
     suspend fun setHcWriteEnabled(enabled: Boolean) { dataStore.edit { it[KEY_HC_WRITE_ENABLED] = enabled } }
 
-    val hcLastSync: Flow<Long> = dataStore.data.map { it[KEY_HC_LAST_SYNC] ?: 0L }
+    val hcLastSync: Flow<Long> = dataStore.prefFlow { it[KEY_HC_LAST_SYNC] ?: 0L }
     suspend fun setHcLastSync(timestamp: Long) { dataStore.edit { it[KEY_HC_LAST_SYNC] = timestamp } }
 
     suspend fun getHcChangesToken(): String? = dataStore.data.first()[KEY_HC_CHANGES_TOKEN]
@@ -725,13 +737,13 @@ class SettingsRepository @Inject constructor(
         }
     }
 
-    val setupCompleted: Flow<Boolean> = dataStore.data.map { it[KEY_SETUP_COMPLETED] ?: false }
+    val setupCompleted: Flow<Boolean> = dataStore.prefFlow { it[KEY_SETUP_COMPLETED] ?: false }
     suspend fun setSetupCompleted(completed: Boolean) { dataStore.edit { it[KEY_SETUP_COMPLETED] = completed } }
 
-    val setupStep: Flow<Int> = dataStore.data.map { it[KEY_SETUP_STEP] ?: 0 }
+    val setupStep: Flow<Int> = dataStore.prefFlow { it[KEY_SETUP_STEP] ?: 0 }
     suspend fun setSetupStep(step: Int) { dataStore.edit { it[KEY_SETUP_STEP] = step } }
 
-    val storyViewedMonth: Flow<String> = dataStore.data.map { it[KEY_STORY_VIEWED_MONTH] ?: "" }
+    val storyViewedMonth: Flow<String> = dataStore.prefFlow { it[KEY_STORY_VIEWED_MONTH] ?: "" }
 
     /**
      * Marks [yearMonth] (in `YYYY-MM` format) as viewed, but only if it is later
@@ -758,35 +770,35 @@ class SettingsRepository @Inject constructor(
         }
     }
 
-    val hbA1cUnit: Flow<HbA1cUnit> = dataStore.data.map {
+    val hbA1cUnit: Flow<HbA1cUnit> = dataStore.prefFlow {
         try { HbA1cUnit.valueOf(it[KEY_HBA1C_UNIT] ?: "MMOL_MOL") } catch (_: Exception) { HbA1cUnit.MMOL_MOL }
     }
     suspend fun setHbA1cUnit(unit: HbA1cUnit) { dataStore.edit { it[KEY_HBA1C_UNIT] = unit.name } }
 
     // Tidepool
-    val tidepoolEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_TIDEPOOL_ENABLED] ?: false }
+    val tidepoolEnabled: Flow<Boolean> = dataStore.prefFlow { it[KEY_TIDEPOOL_ENABLED] ?: false }
     suspend fun setTidepoolEnabled(enabled: Boolean) { dataStore.edit { it[KEY_TIDEPOOL_ENABLED] = enabled } }
 
 
-    val tidepoolOnlyWhileCharging: Flow<Boolean> = dataStore.data.map { it[KEY_TIDEPOOL_ONLY_WHILE_CHARGING] ?: false }
+    val tidepoolOnlyWhileCharging: Flow<Boolean> = dataStore.prefFlow { it[KEY_TIDEPOOL_ONLY_WHILE_CHARGING] ?: false }
     suspend fun setTidepoolOnlyWhileCharging(enabled: Boolean) { dataStore.edit { it[KEY_TIDEPOOL_ONLY_WHILE_CHARGING] = enabled } }
 
-    val tidepoolOnlyWhileWifi: Flow<Boolean> = dataStore.data.map { it[KEY_TIDEPOOL_ONLY_WHILE_WIFI] ?: false }
+    val tidepoolOnlyWhileWifi: Flow<Boolean> = dataStore.prefFlow { it[KEY_TIDEPOOL_ONLY_WHILE_WIFI] ?: false }
     suspend fun setTidepoolOnlyWhileWifi(enabled: Boolean) { dataStore.edit { it[KEY_TIDEPOOL_ONLY_WHILE_WIFI] = enabled } }
 
-    val tidepoolUserId: Flow<String> = dataStore.data.map { it[KEY_TIDEPOOL_USER_ID] ?: "" }
+    val tidepoolUserId: Flow<String> = dataStore.prefFlow { it[KEY_TIDEPOOL_USER_ID] ?: "" }
     suspend fun setTidepoolUserId(id: String) { dataStore.edit { it[KEY_TIDEPOOL_USER_ID] = id } }
 
-    val tidepoolDatasetId: Flow<String> = dataStore.data.map { it[KEY_TIDEPOOL_DATASET_ID] ?: "" }
+    val tidepoolDatasetId: Flow<String> = dataStore.prefFlow { it[KEY_TIDEPOOL_DATASET_ID] ?: "" }
     suspend fun setTidepoolDatasetId(id: String) { dataStore.edit { it[KEY_TIDEPOOL_DATASET_ID] = id } }
 
-    val tidepoolLastUploadEnd: Flow<Long> = dataStore.data.map { it[KEY_TIDEPOOL_LAST_UPLOAD_END] ?: 0L }
+    val tidepoolLastUploadEnd: Flow<Long> = dataStore.prefFlow { it[KEY_TIDEPOOL_LAST_UPLOAD_END] ?: 0L }
     suspend fun setTidepoolLastUploadEnd(ts: Long) { dataStore.edit { it[KEY_TIDEPOOL_LAST_UPLOAD_END] = ts } }
 
-    val tidepoolLastUploadTime: Flow<Long> = dataStore.data.map { it[KEY_TIDEPOOL_LAST_UPLOAD_TIME] ?: 0L }
+    val tidepoolLastUploadTime: Flow<Long> = dataStore.prefFlow { it[KEY_TIDEPOOL_LAST_UPLOAD_TIME] ?: 0L }
     suspend fun setTidepoolLastUploadTime(ts: Long) { dataStore.edit { it[KEY_TIDEPOOL_LAST_UPLOAD_TIME] = ts } }
 
-    val tidepoolLastError: Flow<String> = dataStore.data.map { it[KEY_TIDEPOOL_LAST_ERROR] ?: "" }
+    val tidepoolLastError: Flow<String> = dataStore.prefFlow { it[KEY_TIDEPOOL_LAST_ERROR] ?: "" }
     suspend fun setTidepoolLastError(error: String) { dataStore.edit { it[KEY_TIDEPOOL_LAST_ERROR] = error } }
 
     fun getTidepoolRefreshToken(): String = encryptedPrefs.getString(KEY_TIDEPOOL_REFRESH_TOKEN, "") ?: ""
@@ -794,23 +806,23 @@ class SettingsRepository @Inject constructor(
         encryptedPrefs.edit { putString(KEY_TIDEPOOL_REFRESH_TOKEN, token) }
     }
 
-    val workoutCalendarId: Flow<Long> = dataStore.data.map { it[KEY_WORKOUT_CALENDAR_ID] ?: -1L }
+    val workoutCalendarId: Flow<Long> = dataStore.prefFlow { it[KEY_WORKOUT_CALENDAR_ID] ?: -1L }
     suspend fun setWorkoutCalendarId(id: Long) { dataStore.edit { it[KEY_WORKOUT_CALENDAR_ID] = id } }
 
-    val workoutCalendarName: Flow<String> = dataStore.data.map { it[KEY_WORKOUT_CALENDAR_NAME] ?: "" }
+    val workoutCalendarName: Flow<String> = dataStore.prefFlow { it[KEY_WORKOUT_CALENDAR_NAME] ?: "" }
     suspend fun setWorkoutCalendarName(name: String) { dataStore.edit { it[KEY_WORKOUT_CALENDAR_NAME] = name } }
 
-    val workoutLookaheadHours: Flow<Int> = dataStore.data.map {
+    val workoutLookaheadHours: Flow<Int> = dataStore.prefFlow {
         it[KEY_WORKOUT_LOOKAHEAD_HOURS] ?: DEFAULT_WORKOUT_LOOKAHEAD_HOURS
     }
     suspend fun setWorkoutLookaheadHours(hours: Int) { dataStore.edit { it[KEY_WORKOUT_LOOKAHEAD_HOURS] = hours } }
 
-    val workoutTriggerMinutes: Flow<Int> = dataStore.data.map {
+    val workoutTriggerMinutes: Flow<Int> = dataStore.prefFlow {
         it[KEY_WORKOUT_TRIGGER_MINUTES] ?: DEFAULT_WORKOUT_TRIGGER_MINUTES
     }
     suspend fun setWorkoutTriggerMinutes(minutes: Int) { dataStore.edit { it[KEY_WORKOUT_TRIGGER_MINUTES] = minutes } }
 
-    val maxHeartRate: Flow<Int?> = dataStore.data.map { it[KEY_MAX_HEART_RATE] }
+    val maxHeartRate: Flow<Int?> = dataStore.prefFlow { it[KEY_MAX_HEART_RATE] }
     suspend fun setMaxHeartRate(hr: Int?) {
         dataStore.edit {
             if (hr != null) it[KEY_MAX_HEART_RATE] = hr
@@ -819,14 +831,14 @@ class SettingsRepository @Inject constructor(
     }
 
     fun exerciseTargetLow(category: com.psjostrom.strimma.data.health.ExerciseCategory): Flow<Float> =
-        dataStore.data.map { prefs ->
+        dataStore.prefFlow { prefs ->
             prefs[exerciseTargetLowKey(category.name)]
                 ?: migrateLegacyTargetLow(prefs, category)
                 ?: category.defaultMetabolicProfile.defaultTargetLowMgdl
         }
 
     fun exerciseTargetHigh(category: com.psjostrom.strimma.data.health.ExerciseCategory): Flow<Float> =
-        dataStore.data.map { prefs ->
+        dataStore.prefFlow { prefs ->
             prefs[exerciseTargetHighKey(category.name)]
                 ?: migrateLegacyTargetHigh(prefs, category)
                 ?: category.defaultMetabolicProfile.defaultTargetHighMgdl

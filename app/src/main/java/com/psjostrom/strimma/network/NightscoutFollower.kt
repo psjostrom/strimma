@@ -117,7 +117,6 @@ class NightscoutFollower @Inject constructor(
 
     companion object {
         private const val SEVEN_DAYS_MS = 7L * 24 * 60 * 60 * 1000
-        private const val FETCH_COUNT = 2016
 
         fun filterValidEntries(entries: List<NightscoutEntryResponse>): List<NightscoutEntryResponse> {
             return entries
@@ -146,9 +145,8 @@ class NightscoutFollower @Inject constructor(
                 delay(pollSeconds * SECONDS_TO_MS)
 
                 val latestTs = dao.latestOnce()?.ts ?: (System.currentTimeMillis() - SEVEN_DAYS_MS)
-                val entries = client.fetchEntries(url, secret, since = latestTs)
-
-                if (entries == null) {
+                val inserted = syncSince(url, secret, latestTs, onNewReading)
+                if (inserted == null) {
                     if (_status.value !is IntegrationStatus.Error) {
                         _status.value = IntegrationStatus.Error("Connection lost")
                     }
@@ -156,19 +154,8 @@ class NightscoutFollower @Inject constructor(
                     continue
                 }
 
-                val valid = filterValidEntries(entries)
-                if (valid.isEmpty()) {
-                    _status.value = IntegrationStatus.Connected(lastActivityTs = System.currentTimeMillis())
-                    continue
-                }
-
-                val newReadings = processNightscoutEntries(valid, dao, directionComputer)
-                for (reading in newReadings) {
-                    onNewReading(reading)
-                }
-
                 _status.value = IntegrationStatus.Connected(lastActivityTs = System.currentTimeMillis())
-                DebugLog.log(message = "Follower: ${valid.size} valid entries, ${newReadings.size} new readings")
+                if (inserted > 0) DebugLog.log(message = "Follower: $inserted new readings")
             }
         }
     }
@@ -188,54 +175,44 @@ class NightscoutFollower @Inject constructor(
         }
 
         DebugLog.log(message = "Follower: starting backfill")
-        var since = if (latestTs > 0) latestTs else sevenDaysAgo
-        var totalInserted = 0
-        var lastReading: GlucoseReading? = null
-
-        while (true) {
-            val entries = client.fetchEntries(url, secret, since = since, count = FETCH_COUNT)
-            if (entries == null) {
-                _status.value = IntegrationStatus.Error("Backfill failed")
-                DebugLog.log(message = "Follower: backfill fetch failed")
-                return
-            }
-            if (entries.isEmpty()) break
-
-            val pageResult = processBackfillEntries(entries)
-            totalInserted += pageResult.insertedCount
-            if (pageResult.lastReading != null) {
-                lastReading = pageResult.lastReading
-            }
-
-            since = nextBackfillSince(entries) ?: break
-        }
-
-        if (lastReading != null) {
-            onNewReading(lastReading)
+        val since = if (latestTs > 0) latestTs else sevenDaysAgo
+        val inserted = syncSince(url, secret, since, onNewReading)
+        if (inserted == null) {
+            _status.value = IntegrationStatus.Error("Backfill failed")
+            DebugLog.log(message = "Follower: backfill fetch failed")
+            return
         }
 
         _status.value = IntegrationStatus.Connected(lastActivityTs = System.currentTimeMillis())
-        DebugLog.log(message = "Follower: backfill complete, $totalInserted readings")
+        DebugLog.log(message = "Follower: backfill complete, $inserted readings")
     }
 
-    private suspend fun processBackfillEntries(entries: List<NightscoutEntryResponse>): BackfillPageResult {
-        val valid = filterValidEntries(entries)
-        val newReadings = processNightscoutEntries(valid, dao, directionComputer)
-
-        return BackfillPageResult(
-            insertedCount = newReadings.size,
-            lastReading = newReadings.lastOrNull()
-        )
+    /**
+     * Stores every entry newer than [since] and returns how many readings were new, or
+     * null when a fetch failed. Pages arrive newest first and each page is stored as it
+     * arrives, so the current BG is stored and alerted on before older pages download.
+     * The oldest readings of each page have no earlier readings stored yet, so their
+     * direction is NONE. [onNewReading] fires once, for the newest new reading, because
+     * a catch-up of thousands of readings must not redraw the notification for each one.
+     */
+    private suspend fun syncSince(
+        url: String,
+        secret: String,
+        since: Long,
+        onNewReading: suspend (GlucoseReading) -> Unit,
+    ): Int? {
+        var inserted = 0
+        var notified = false
+        val ok = client.forEachEntryPage(url, secret, since) { page ->
+            val newReadings = processNightscoutEntries(filterValidEntries(page), dao, directionComputer)
+            inserted += newReadings.size
+            val newest = newReadings.lastOrNull()
+            if (!notified && newest != null) {
+                notified = true
+                onNewReading(newest)
+            }
+        }
+        return if (ok) inserted else null
     }
-
-    private fun nextBackfillSince(entries: List<NightscoutEntryResponse>): Long? {
-        if (entries.size < FETCH_COUNT) return null
-        return entries.mapNotNull { it.date }.maxOrNull()?.plus(1)
-    }
-
-    private data class BackfillPageResult(
-        val insertedCount: Int,
-        val lastReading: GlucoseReading?
-    )
 
 }

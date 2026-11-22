@@ -16,6 +16,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
@@ -55,12 +56,18 @@ class PatternChecker @Inject constructor(
         settingsJob?.cancel()
 
         settingsJob = scope.launch {
-            // A change to compression low detection changes which readings count, so it also
-            // triggers a check.
-            combine(settings.patternAlertsEnabled, settings.compressionLowDetection, ::Pair)
+            // The target range and compression low detection change which readings count as low or
+            // high, so a change to either also triggers a check. The range fields save on every
+            // keystroke, so a new value cancels the check that is still running.
+            combine(
+                settings.patternAlertsEnabled,
+                settings.compressionLowDetection,
+                settings.bgLow,
+                settings.bgHigh
+            ) { enabled, compression, low, high -> PatternSettings(enabled, compression, low, high) }
                 .distinctUntilChanged()
                 .drop(1)
-                .collect { (enabled, _) ->
+                .collectLatest { (enabled) ->
                     if (enabled) {
                         try {
                             checkNow(zone = zone)
@@ -156,3 +163,10 @@ class PatternChecker @Inject constructor(
         return readings.ifEmpty { null }
     }
 }
+
+private data class PatternSettings(
+    val enabled: Boolean,
+    val compressionLowDetection: Boolean,
+    val bgLow: Float,
+    val bgHigh: Float
+)

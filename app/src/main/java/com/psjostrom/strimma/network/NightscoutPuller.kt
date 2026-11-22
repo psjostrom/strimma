@@ -17,7 +17,6 @@ class NightscoutPuller @Inject constructor(
     private val settings: SettingsRepository
 ) {
     companion object {
-        private const val PAGE_SIZE = 2016
         private const val AUTO_PULL_DAYS = 100
     }
 
@@ -53,18 +52,14 @@ class NightscoutPuller @Inject constructor(
     }
 
     private suspend fun pullSince(url: String, secret: String, since: Long): Result<Int> {
-        var beforeCursor: Long? = null
         var totalInserted = 0
 
         return withNetworkBoundary<Result<Int>>(label = "Pull", onError = { Result.failure(it) }) {
-            while (true) {
-                val entries = client.fetchEntries(
-                    url, secret, since = since, count = PAGE_SIZE, before = beforeCursor
-                ) ?: return@withNetworkBoundary Result.failure(IllegalStateException("Failed to fetch from Nightscout"))
-
-                if (entries.isEmpty()) break
+            val ok = client.forEachEntryPage(url, secret, since) { entries ->
                 totalInserted += insertPulledEntries(entries)
-                beforeCursor = nextBeforeCursor(entries) ?: break
+            }
+            if (!ok) {
+                return@withNetworkBoundary Result.failure(IllegalStateException("Failed to fetch from Nightscout"))
             }
 
             DebugLog.log(message = "Pull: $totalInserted readings from Nightscout")
@@ -90,11 +85,6 @@ class NightscoutPuller @Inject constructor(
         }
 
         return readings.size
-    }
-
-    private fun nextBeforeCursor(entries: List<NightscoutEntryResponse>): Long? {
-        if (entries.size < PAGE_SIZE) return null
-        return entries.mapNotNull { it.date }.minOrNull()
     }
 
 }

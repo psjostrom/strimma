@@ -23,9 +23,8 @@ import java.time.ZoneId
  * often comes before the fall, so rates measured from the window peaks would miss it.
  *
  * The thresholds come from 125 days of Libre 3 data, mostly at 1-minute intervals. Without the
- * night window the rule flagged 56 of 356 lows. The person wearing the sensor confirmed that the
- * 6 daytime lows among them were not compression lows. A limit longer than 30 minutes below
- * 70 mg/dL flagged no further lows.
+ * night window the rule flagged 56 of 356 lows. The 6 daytime lows among them were checked and
+ * were not compression lows. A limit longer than 30 minutes below 70 mg/dL flagged no further lows.
  */
 object CompressionLowDetector {
 

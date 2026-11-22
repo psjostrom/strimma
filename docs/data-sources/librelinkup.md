@@ -46,7 +46,7 @@ If you've already set up LibreLinkUp sharing previously, skip straight to config
 1. Go to **Settings > Data Source**
 2. Select **LibreLinkUp**
 3. Enter your **Email** and **Password**
-4. Strimma connects immediately and starts polling every 60 seconds
+4. Strimma connects and polls every 60 seconds. When you change the email or password, Strimma reconnects 3 seconds after the last change
 
 Optionally, configure the shared Nightscout server URL and API secret below the credentials to forward readings to your Nightscout server.
 
