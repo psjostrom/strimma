@@ -22,21 +22,27 @@ class StatsReadings @Inject constructor(
      * turned compression low detection off.
      */
     suspend fun inRange(start: Long, end: Long): List<GlucoseReading> {
-        val readings = readingDao.readingsInRange(start, end)
-        val spans = compressionSpans(start, end)
-        if (spans.isEmpty()) return readings
-        return readings.filter { r -> spans.none { r.ts in it } }
+        if (!settings.compressionLowDetection.first()) return readingDao.readingsInRange(start, end)
+        val (context, spans) = detect(start, end)
+        return context.filter { r -> r.ts in start..end && spans.none { r.ts in it } }
     }
 
     /** Spans of probable compression lows that touch [start]..[end]. Empty when detection is off. */
     suspend fun compressionSpans(start: Long, end: Long): List<LongRange> {
         if (!settings.compressionLowDetection.first()) return emptyList()
+        return detect(start, end).second
+    }
+
+    /** Loads the readings around [start]..[end] and the compression low spans that touch the period. */
+    private suspend fun detect(start: Long, end: Long): Pair<List<GlucoseReading>, List<LongRange>> {
         val from = start - CONTEXT_MS
         val to = end + CONTEXT_MS
+        val context = readingDao.readingsInRange(from, to)
         val carbTimes = treatmentDao.carbsInRange(from, to).map { it.createdAt }
         val exercisePeriods = exerciseDao.getSessionsInRange(from, to).map { it.startTime..it.endTime }
-        return CompressionLowDetector.detect(readingDao.readingsInRange(from, to), carbTimes, exercisePeriods)
+        val spans = CompressionLowDetector.detect(context, carbTimes, exercisePeriods)
             .filter { it.first <= end && start <= it.last }
+        return context to spans
     }
 
     private companion object {
