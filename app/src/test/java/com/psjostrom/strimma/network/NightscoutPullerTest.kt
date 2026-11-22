@@ -175,6 +175,23 @@ class NightscoutPullerTest {
     }
 
     @Test
+    fun `pullHistory drops entries more than five minutes in the future`() = runTest {
+        settings.setNightscoutUrl("https://ns.example.com")
+        settings.setNightscoutSecret("secret")
+        val now = System.currentTimeMillis()
+
+        fakeClient.entries = listOf(
+            entry(120, now - 60_000),
+            entry(130, now + 60 * 60_000)
+        )
+
+        val result = puller.pullHistory(7)
+
+        assertEquals(1, result.getOrThrow())
+        assertEquals(listOf(now - 60_000), dao.lastN(10).map { it.ts })
+    }
+
+    @Test
     fun `pullHistory filters out non-sgv entries`() = runTest {
         settings.setNightscoutUrl("https://ns.example.com")
         settings.setNightscoutSecret("secret")

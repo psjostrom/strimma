@@ -47,7 +47,7 @@ If you have **both** xDrip Broadcast mode (input) and BG Broadcast output enable
 
 ## Validation
 
-Received values must be in the range 18–900 mg/dL. Invalid values are silently ignored and logged to the debug log.
+Received values must be in the range 18–900 mg/dL. A reading stamped more than 5 minutes ahead of the phone clock is rejected, because it would show as the current reading until the clock caught up. Invalid readings are ignored and logged to the debug log.
 
 ---
 

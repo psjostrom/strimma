@@ -202,9 +202,10 @@ class MainViewModel @Inject constructor(
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     /** Probable compression lows within the graph history. Empty when detection is off. */
-    val compressionSpans: StateFlow<List<LongRange>> = combine(readings, settings.compressionLowDetection) { r, _ -> r }
-        .mapLatest { r -> if (r.isEmpty()) emptyList() else statsReadings.compressionSpans(r.first().ts, r.last().ts) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val compressionSpans: StateFlow<List<LongRange>> =
+        combine(readings, settings.compressionLowDetection.distinctUntilChanged()) { r, _ -> r }
+            .mapLatest { r -> if (r.isEmpty()) emptyList() else statsReadings.compressionSpans(r.first().ts, r.last().ts) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val predictionMinutes: StateFlow<Int> = settings.predictionMinutes
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 15)
@@ -245,8 +246,7 @@ class MainViewModel @Inject constructor(
         IOBComputer.computeIOB(treatments, System.currentTimeMillis(), tau)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
-    private val _tidepoolLoggedIn = MutableStateFlow(tidepoolAuthManager.isLoggedIn())
-    val tidepoolLoggedIn: StateFlow<Boolean> = _tidepoolLoggedIn
+    val tidepoolLoggedIn: StateFlow<Boolean> = tidepoolAuthManager.loggedIn
 
     fun buildTidepoolAuthIntent(): Intent =
         tidepoolAuthManager.buildAuthIntent()
@@ -265,13 +265,11 @@ class MainViewModel @Inject constructor(
             return
         }
 
-        settings.setTidepoolUserId(userId)
-        settings.setTidepoolLastError("")
-        _tidepoolLoggedIn.value = true
+        tidepoolAuthManager.completeLogin(userId)
     }
 
     fun tidepoolLogout() {
-        if (!_tidepoolLoggedIn.compareAndSet(expect = true, update = false)) return
+        if (!tidepoolLoggedIn.value) return
         viewModelScope.launch {
             tidepoolAuthManager.logout()
         }
