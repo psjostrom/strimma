@@ -33,6 +33,12 @@ If you want to push readings immediately, use the **Force upload** button in **S
 
 ---
 
+## Session Expired
+
+When Tidepool ends your session, Strimma shows **Session expired. Please log in again.** in **Settings > Tidepool**. The **Login with Tidepool** button replaces **Connected**. Strimma stops uploading until you log in again. After you log in, Strimma uploads the readings it missed, up to 2 months back.
+
+---
+
 ## Disconnect
 
 To stop uploading and remove your Tidepool credentials:

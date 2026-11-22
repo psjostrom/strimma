@@ -15,14 +15,19 @@ import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import net.openid.appauth.AppAuthConfiguration
+import net.openid.appauth.AuthorizationException
 import net.openid.appauth.AuthorizationRequest
 import net.openid.appauth.AuthorizationResponse
 import net.openid.appauth.AuthorizationService
 import net.openid.appauth.AuthorizationServiceConfiguration
+import net.openid.appauth.connectivity.ConnectionBuilder
 import net.openid.appauth.ResponseTypeValues
 import net.openid.appauth.TokenRequest
 import kotlin.coroutines.cancellation.CancellationException
@@ -52,7 +57,24 @@ class TidepoolAuthManager @Inject constructor(
         private const val AUTH_BASE = "https://auth.tidepool.org/realms/tidepool"
     }
 
-    private val authService = AuthorizationService(context)
+    private var authService = AuthorizationService(context)
+
+    /**
+     * Test seam: sends AppAuth's token requests through [connectionBuilder], so a test
+     * can answer them from a local HTTP server.
+     */
+    @VisibleForTesting
+    internal constructor(
+        context: Context,
+        settings: SettingsRepository,
+        connectionBuilder: ConnectionBuilder,
+    ) : this(context, settings) {
+        authService.dispose()
+        authService = AuthorizationService(
+            context,
+            AppAuthConfiguration.Builder().setConnectionBuilder(connectionBuilder).build()
+        )
+    }
 
     private val httpClient = HttpClient(CIO) {
         install(ContentNegotiation) {
@@ -101,8 +123,13 @@ class TidepoolAuthManager @Inject constructor(
             return false
         }
 
-        val tokenRequest = response.createTokenExchangeRequest()
-        return performTokenExchange(tokenRequest) != null
+        val (token, error) = requestTokens(response.createTokenExchangeRequest())
+        if (token == null) {
+            DebugLog.log(message = "Tidepool token exchange failed: ${error?.message?.take(MAX_ERROR_LENGTH)}")
+        } else {
+            DebugLog.log(message = "Tidepool token exchange success")
+        }
+        return token != null
     }
 
     /**
@@ -150,10 +177,22 @@ class TidepoolAuthManager @Inject constructor(
         }
     }
 
+    private val _loggedIn = MutableStateFlow(settings.getTidepoolRefreshToken().isNotBlank())
+
     /**
-     * Returns true if a refresh token is stored (user has logged in before).
+     * True from [completeLogin] until [logout]. An upload that finds the refresh token
+     * expired logs out, so the Settings screen offers login again.
      */
-    fun isLoggedIn(): Boolean = settings.getTidepoolRefreshToken().isNotBlank()
+    val loggedIn: StateFlow<Boolean> = _loggedIn
+
+    fun isLoggedIn(): Boolean = _loggedIn.value
+
+    /** Stores the Tidepool user ID of a login whose tokens [handleAuthResponse] stored. */
+    suspend fun completeLogin(userId: String) {
+        settings.setTidepoolUserId(userId)
+        settings.setTidepoolLastError("")
+        _loggedIn.value = true
+    }
 
     /**
      * Test seam for seeding an in-memory access token without going through the
@@ -163,6 +202,7 @@ class TidepoolAuthManager @Inject constructor(
     internal fun seedTokensForTest(token: String, expiryMs: Long) {
         accessToken = token
         accessTokenExpiry = expiryMs
+        _loggedIn.value = true
     }
 
     /**
@@ -171,6 +211,7 @@ class TidepoolAuthManager @Inject constructor(
     suspend fun logout() {
         accessToken = null
         accessTokenExpiry = 0L
+        _loggedIn.value = false
         settings.setTidepoolRefreshToken("")
         settings.setTidepoolUserId("")
         settings.setTidepoolDatasetId("")
@@ -198,43 +239,41 @@ class TidepoolAuthManager @Inject constructor(
             .setRefreshToken(refreshToken)
             .build()
 
-        return@withLock performTokenExchange(tokenRequest, isRefresh = true)
+        val (token, error) = requestTokens(tokenRequest)
+        if (token != null) {
+            DebugLog.log(message = "Tidepool token refresh success")
+            return@withLock token
+        }
+        // AppAuth matches the OAuth error code of the response, so this is true when the
+        // server rejected the refresh token itself. A login that finished during the
+        // request stored a new refresh token, and that login must survive.
+        if (error == AuthorizationException.TokenRequestErrors.INVALID_GRANT &&
+            settings.getTidepoolRefreshToken() == refreshToken
+        ) {
+            DebugLog.log(message = "Tidepool refresh token expired, logging out")
+            logout()
+        } else {
+            DebugLog.log(message = "Tidepool token refresh failed: ${error?.message?.take(MAX_ERROR_LENGTH)}")
+        }
+        return@withLock null
     }
 
-    private suspend fun performTokenExchange(
-        tokenRequest: TokenRequest,
-        isRefresh: Boolean = false
-    ): String? = suspendCoroutine { continuation ->
-        authService.performTokenRequest(tokenRequest) { response, exception ->
-            if (response != null && response.accessToken != null) {
-                accessToken = response.accessToken
-                accessTokenExpiry = response.accessTokenExpirationTime ?: 0L
-                response.refreshToken?.let { settings.setTidepoolRefreshToken(it) }
-                val action = if (isRefresh) "refresh" else "exchange"
-                DebugLog.log(message = "Tidepool token $action success")
-                continuation.resume(response.accessToken)
-            } else {
-                if (isRefresh) {
-                    val errorType = exception?.type?.toString() ?: ""
-                    if (errorType.contains("invalid_grant")) {
-                        DebugLog.log(message = "Tidepool refresh token expired, clearing")
-                        settings.setTidepoolRefreshToken("")
-                        accessToken = null
-                        accessTokenExpiry = 0L
-                    } else {
-                        DebugLog.log(
-                            message = "Tidepool token refresh failed: ${exception?.message?.take(MAX_ERROR_LENGTH)}"
-                        )
-                    }
-                } else {
-                    DebugLog.log(
-                        message = "Tidepool token exchange failed: ${exception?.message?.take(MAX_ERROR_LENGTH)}"
-                    )
+    /**
+     * Sends [tokenRequest] and stores the tokens of a successful response. Returns the
+     * access token, or null and the error.
+     */
+    private suspend fun requestTokens(tokenRequest: TokenRequest): Pair<String?, AuthorizationException?> =
+        suspendCoroutine { continuation ->
+            authService.performTokenRequest(tokenRequest) { response, exception ->
+                val token = response?.accessToken
+                if (response != null && token != null) {
+                    accessToken = token
+                    accessTokenExpiry = response.accessTokenExpirationTime ?: 0L
+                    response.refreshToken?.let { settings.setTidepoolRefreshToken(it) }
                 }
-                continuation.resume(null)
+                continuation.resume(token to exception)
             }
         }
-    }
 
 }
 
