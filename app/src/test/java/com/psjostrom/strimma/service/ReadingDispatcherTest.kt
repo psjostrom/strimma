@@ -28,7 +28,7 @@ class ReadingDispatcherTest {
         val pushed = mutableListOf<Int>()
         val uploadCount = AtomicInteger(0)
         val broadcasted = mutableListOf<Int>()
-        val hcWritten = mutableListOf<Int>()
+        val hcCount = AtomicInteger(0)
     }
 
     private suspend fun ReadingDispatcher.dispatch(
@@ -44,7 +44,7 @@ class ReadingDispatcherTest {
             push = { settled -> spies.pushed.add(settled.sgv) },
             upload = { spies.uploadCount.incrementAndGet() },
             broadcast = { settled -> spies.broadcasted.add(settled.sgv) },
-            hc = { settled -> spies.hcWritten.add(settled.sgv) },
+            hc = { spies.hcCount.incrementAndGet() },
         )
     }
 
@@ -64,7 +64,7 @@ class ReadingDispatcherTest {
         assertEquals(listOf(108), spies.pushed)
         assertEquals(1, spies.uploadCount.get())
         assertEquals(listOf(108), spies.broadcasted)
-        assertEquals(listOf(108), spies.hcWritten)
+        assertEquals(1, spies.hcCount.get())
     }
 
     @Test
@@ -82,7 +82,7 @@ class ReadingDispatcherTest {
         assertEquals("push fires once with NEW (no stale OLD row in NS)", listOf(85), spies.pushed)
         assertEquals(1, spies.uploadCount.get())
         assertEquals(listOf(85), spies.broadcasted)
-        assertEquals(listOf(85), spies.hcWritten)
+        assertEquals(1, spies.hcCount.get())
     }
 
     @Test
@@ -102,7 +102,7 @@ class ReadingDispatcherTest {
         assertEquals(listOf(108), spies.alerted)
         assertEquals(1, spies.uploadCount.get())
         assertEquals(listOf(108), spies.broadcasted)
-        assertEquals(listOf(108), spies.hcWritten)
+        assertEquals(1, spies.hcCount.get())
     }
 
     @Test

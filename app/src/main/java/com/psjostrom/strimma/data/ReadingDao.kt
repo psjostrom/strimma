@@ -77,6 +77,12 @@ interface ReadingDao {
     @Query("UPDATE readings SET tidepoolUploaded = 1 WHERE ts IN (:timestamps)")
     suspend fun markUploadedToTidepool(timestamps: List<Long>)
 
+    @Query("SELECT * FROM readings WHERE hcWritten = 0 AND ts >= :from ORDER BY ts LIMIT :limit")
+    suspend fun notWrittenToHealthConnect(from: Long, limit: Int): List<GlucoseReading>
+
+    @Query("UPDATE readings SET hcWritten = 1 WHERE ts IN (:timestamps)")
+    suspend fun markWrittenToHealthConnect(timestamps: List<Long>)
+
     @Query("UPDATE readings SET tidepoolUploaded = 1 WHERE ts <= :ts")
     suspend fun markUploadedToTidepoolUpTo(ts: Long)
 

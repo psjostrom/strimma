@@ -30,7 +30,7 @@ class ReadingDispatcher @Inject constructor(
         push: suspend (GlucoseReading) -> Unit,
         upload: suspend () -> Unit,
         broadcast: suspend (GlucoseReading) -> Unit,
-        hc: suspend (GlucoseReading) -> Unit,
+        hc: suspend () -> Unit,
     ) {
         eager()
         fanOut.fire(reading) { settled ->
@@ -38,7 +38,7 @@ class ReadingDispatcher @Inject constructor(
             if (!cameFromNightscout) push(settled)
             upload()
             broadcast(settled)
-            hc(settled)
+            hc()
         }
     }
 }

@@ -19,7 +19,10 @@ data class GlucoseReading(
     val pushed: Int = 0,
     // 1 once Tidepool has the reading. A flag per reading, not a time cursor, because a
     // follower catch-up or a Nightscout pull stores readings older than ones already sent.
-    @ColumnInfo(defaultValue = "0") val tidepoolUploaded: Int = 0
+    @ColumnInfo(defaultValue = "0") val tidepoolUploaded: Int = 0,
+    // 1 once Health Connect has the reading. The column default is 1 so rows that existed
+    // before this column are not written again; new rows start at 0.
+    @ColumnInfo(defaultValue = "1") val hcWritten: Int = 0
 ) {
     companion object {
         const val MIN_VALID_SGV = 18

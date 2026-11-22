@@ -16,6 +16,7 @@ import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.TreatmentDao
 import com.psjostrom.strimma.data.health.ExerciseDao
 import com.psjostrom.strimma.data.health.HealthConnectManager
+import com.psjostrom.strimma.data.health.writeUnwrittenToHealthConnect
 import com.psjostrom.strimma.data.notification.NotificationActionConfig
 import com.psjostrom.strimma.data.notification.NotificationActionType
 import com.psjostrom.strimma.data.notification.SnoozeCategory
@@ -365,7 +366,7 @@ class StrimmaService : Service() {
             push = { settled -> pusher.pushReading(settled) },
             upload = { tidepoolUploader.onNewReading() },
             broadcast = { settled -> broadcastBgIfEnabled(settled) },
-            hc = { settled -> writeToHealthConnectIfEnabled(settled) },
+            hc = { writeToHealthConnectIfEnabled() },
         )
     }
 
@@ -450,11 +451,13 @@ class StrimmaService : Service() {
      * implementation `scope.launch { ... }`'d onto the cancellable service scope, which
      * silently no-op'd whenever onDestroy's `scope.cancel()` raced an in-flight dispatch.
      */
-    private suspend fun writeToHealthConnectIfEnabled(reading: GlucoseReading) {
+    private suspend fun writeToHealthConnectIfEnabled() {
         if (!hcWriteEnabled.value) return
         try {
             if (!healthConnectManager.hasPermissions()) return
-            healthConnectManager.writeGlucoseReading(reading)
+            writeUnwrittenToHealthConnect(dao, System.currentTimeMillis()) { readings ->
+                healthConnectManager.writeGlucoseReadings(readings)
+            }
         } catch (
             @Suppress("TooGenericExceptionCaught") // HC SDK can throw various platform exceptions
             e: Exception
