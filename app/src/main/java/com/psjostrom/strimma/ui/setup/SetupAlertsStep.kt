@@ -2,17 +2,16 @@ package com.psjostrom.strimma.ui.setup
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.GlucoseUnit
+import com.psjostrom.strimma.ui.settings.ThresholdField
 
 @Composable
 fun SetupAlertsStep(
@@ -142,19 +141,12 @@ private fun CompactAlertRow(
     ) {
         Text(label, fontSize = 14.sp, modifier = Modifier.weight(1f))
         if (enabled) {
-            var text by remember(threshold, glucoseUnit) {
-                mutableStateOf(glucoseUnit.formatThreshold(threshold))
-            }
-            OutlinedTextField(
-                value = text,
-                onValueChange = { v ->
-                    text = v
-                    glucoseUnit.parseThreshold(v)?.let { onThresholdChange(it) }
-                },
+            ThresholdField(
+                threshold = threshold,
+                onThresholdChange = onThresholdChange,
+                glucoseUnit = glucoseUnit,
                 modifier = Modifier.width(80.dp),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                textStyle = LocalTextStyle.current.copy(fontSize = 13.sp)
+                textStyle = LocalTextStyle.current.copy(fontSize = 13.sp),
             )
         }
         Spacer(Modifier.width(8.dp))

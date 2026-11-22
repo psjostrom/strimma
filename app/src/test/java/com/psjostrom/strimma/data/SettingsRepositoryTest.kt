@@ -3,6 +3,7 @@ package com.psjostrom.strimma.data
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.psjostrom.strimma.createTestDataStore
+import com.psjostrom.strimma.data.health.ExerciseCategory
 import com.psjostrom.strimma.widget.WidgetSettingsRepository
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
@@ -92,5 +93,26 @@ class SettingsRepositoryTest {
 
         repo.setRetentionPolicy(RetentionPolicy.INDEFINITE)
         assertEquals(RetentionPolicy.INDEFINITE, repo.retentionPolicy.first())
+    }
+
+    @Test
+    fun `exercise target edit to one end keeps the other end`() = runTest {
+        repo.setExerciseTargetHigh(ExerciseCategory.RUNNING, 200f)
+        repo.setExerciseTargetLow(ExerciseCategory.RUNNING, 110f)
+
+        assertEquals(110f, repo.exerciseTargetLow(ExerciseCategory.RUNNING).first())
+        assertEquals(200f, repo.exerciseTargetHigh(ExerciseCategory.RUNNING).first())
+    }
+
+    @Test
+    fun `exercise target Low at or above High is not stored`() = runTest {
+        val low = repo.exerciseTargetLow(ExerciseCategory.RUNNING).first()
+        val high = repo.exerciseTargetHigh(ExerciseCategory.RUNNING).first()
+
+        assertEquals(false, repo.setExerciseTargetLow(ExerciseCategory.RUNNING, high))
+        assertEquals(false, repo.setExerciseTargetHigh(ExerciseCategory.RUNNING, low))
+
+        assertEquals(low, repo.exerciseTargetLow(ExerciseCategory.RUNNING).first())
+        assertEquals(high, repo.exerciseTargetHigh(ExerciseCategory.RUNNING).first())
     }
 }
