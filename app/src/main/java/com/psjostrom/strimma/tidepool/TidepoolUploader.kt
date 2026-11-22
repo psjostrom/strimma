@@ -123,7 +123,10 @@ class TidepoolUploader @Inject constructor(
             check(enabled) { "Tidepool upload not enabled" }
             check(loggedIn) { "Not logged in to Tidepool" }
             val plan = prepareUpload() ?: return@withLock 0
-            executeUpload(plan)
+            val uploaded = executeUpload(plan)
+            // A refresh token that expired during this upload logged the user out.
+            check(authManager.isLoggedIn()) { "Session expired. Please log in again." }
+            uploaded
         }
     }
 

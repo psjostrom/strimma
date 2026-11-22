@@ -246,8 +246,7 @@ class MainViewModel @Inject constructor(
         IOBComputer.computeIOB(treatments, System.currentTimeMillis(), tau)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
-    private val _tidepoolLoggedIn = MutableStateFlow(tidepoolAuthManager.isLoggedIn())
-    val tidepoolLoggedIn: StateFlow<Boolean> = _tidepoolLoggedIn
+    val tidepoolLoggedIn: StateFlow<Boolean> = tidepoolAuthManager.loggedIn
 
     fun buildTidepoolAuthIntent(): Intent =
         tidepoolAuthManager.buildAuthIntent()
@@ -266,13 +265,11 @@ class MainViewModel @Inject constructor(
             return
         }
 
-        settings.setTidepoolUserId(userId)
-        settings.setTidepoolLastError("")
-        _tidepoolLoggedIn.value = true
+        tidepoolAuthManager.completeLogin(userId)
     }
 
     fun tidepoolLogout() {
-        if (!_tidepoolLoggedIn.compareAndSet(expect = true, update = false)) return
+        if (!tidepoolLoggedIn.value) return
         viewModelScope.launch {
             tidepoolAuthManager.logout()
         }
