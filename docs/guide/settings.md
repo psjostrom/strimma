@@ -95,6 +95,7 @@ Configure units, graph window, thresholds, and theme.
 | **Graph window** | Main graph time range (1–8 hours) | 4 hours |
 | **BG Low** | Low threshold for graph coloring and TIR | 4.0 mmol/L (72 mg/dL) |
 | **BG High** | High threshold for graph coloring and TIR | 10.0 mmol/L (180 mg/dL) |
+| **Detect compression lows** | Shade probable false lows from lying on the sensor at night, and leave them out of statistics, Story and patterns. See [Probable Compression Lows](graph.md#probable-compression-lows). | On |
 | **Theme** | App appearance — Light, Dark, or System | System |
 | **Language** | App language — System, English, Svenska, Deutsch, Español, Français | System |
 

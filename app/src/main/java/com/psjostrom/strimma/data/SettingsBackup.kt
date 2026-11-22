@@ -41,6 +41,7 @@ internal fun settingsToJson(prefs: Preferences): JSONObject = JSONObject().apply
     put("alert_low_soon_enabled", prefs[KEY_ALERT_LOW_SOON_ENABLED] ?: true)
     put("alert_high_soon_enabled", prefs[KEY_ALERT_HIGH_SOON_ENABLED] ?: true)
     put("pattern_alerts_enabled", prefs[KEY_PATTERN_ALERTS_ENABLED] ?: true)
+    put("compression_low_detection", prefs[KEY_COMPRESSION_LOW_DETECTION] ?: true)
     putExerciseAlertSettings(prefs)
     putNightAlertSettings(prefs)
     put("alert_cooldown_minutes", prefs[KEY_ALERT_COOLDOWN_MINUTES] ?: DEFAULT_ALERT_COOLDOWN_MINUTES)
@@ -88,6 +89,9 @@ internal fun applySettingsJson(prefs: MutablePreferences, settings: JSONObject, 
     if (settings.has("alert_low_soon_enabled")) prefs[KEY_ALERT_LOW_SOON_ENABLED] = settings.getBoolean("alert_low_soon_enabled")
     if (settings.has("alert_high_soon_enabled")) prefs[KEY_ALERT_HIGH_SOON_ENABLED] = settings.getBoolean("alert_high_soon_enabled")
     if (settings.has("pattern_alerts_enabled")) prefs[KEY_PATTERN_ALERTS_ENABLED] = settings.getBoolean("pattern_alerts_enabled")
+    if (settings.has("compression_low_detection")) {
+        prefs[KEY_COMPRESSION_LOW_DETECTION] = settings.getBoolean("compression_low_detection")
+    }
     prefs.importExerciseAlerts(
         settings,
         isV1,

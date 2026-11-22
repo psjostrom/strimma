@@ -28,12 +28,14 @@ fun DisplaySettings(
     bgLow: Float,
     bgHigh: Float,
     themeMode: ThemeMode,
+    compressionLowDetection: Boolean,
     onGlucoseUnitChange: (GlucoseUnit) -> Unit,
     onHbA1cUnitChange: (HbA1cUnit) -> Unit,
     onGraphWindowChange: (Int) -> Unit,
     onBgLowChange: (Float) -> Unit,
     onBgHighChange: (Float) -> Unit,
     onThemeModeChange: (ThemeMode) -> Unit,
+    onCompressionLowDetectionChange: (Boolean) -> Unit,
     onBack: () -> Unit
 ) {
     val onBg = MaterialTheme.colorScheme.onBackground
@@ -103,6 +105,22 @@ fun DisplaySettings(
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
             )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                    Text(stringResource(R.string.settings_display_compression_lows), color = onBg, fontSize = 14.sp)
+                    Text(
+                        stringResource(R.string.settings_display_compression_lows_desc),
+                        color = MaterialTheme.colorScheme.outline,
+                        fontSize = 12.sp
+                    )
+                }
+                Switch(checked = compressionLowDetection, onCheckedChange = onCompressionLowDetectionChange)
+            }
 
             LanguagePicker()
 

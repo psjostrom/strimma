@@ -153,6 +153,7 @@ fun StrimmaNavGraph(
     val bgLow by viewModel.bgLow.collectAsState()
     val bgHigh by viewModel.bgHigh.collectAsState()
     val graphWindowHours by viewModel.graphWindowHours.collectAsState()
+    val compressionLowDetection by viewModel.compressionLowDetection.collectAsState()
     val predictionMinutes by viewModel.predictionMinutes.collectAsState()
     val glucoseUnit by viewModel.glucoseUnit.collectAsState()
     val nightscoutConfigured by viewModel.nightscoutConfigured.collectAsState()
@@ -244,6 +245,7 @@ fun StrimmaNavGraph(
                 bgLow = bgLow,
                 bgHigh = bgHigh,
                 graphWindowHours = graphWindowHours,
+                compressionSpans = viewModel.compressionSpans.collectAsState().value,
                 predictionMinutes = predictionMinutes,
                 glucoseUnit = glucoseUnit,
                 treatments = treatments,
@@ -394,12 +396,14 @@ fun StrimmaNavGraph(
                 bgLow = bgLow,
                 bgHigh = bgHigh,
                 themeMode = themeMode,
+                compressionLowDetection = compressionLowDetection,
                 onGlucoseUnitChange = { scope.launch { viewModel.settings.setGlucoseUnit(it) } },
                 onHbA1cUnitChange = { scope.launch { viewModel.settings.setHbA1cUnit(it) } },
                 onGraphWindowChange = { scope.launch { viewModel.settings.setGraphWindowHours(it) } },
                 onBgLowChange = { scope.launch { viewModel.settings.setBgLow(it) } },
                 onBgHighChange = { scope.launch { viewModel.settings.setBgHigh(it) } },
                 onThemeModeChange = { scope.launch { viewModel.settings.setThemeMode(it) } },
+                onCompressionLowDetectionChange = { scope.launch { viewModel.settings.setCompressionLowDetection(it) } },
                 onBack = { navController.popBackStack() }
             )
         }

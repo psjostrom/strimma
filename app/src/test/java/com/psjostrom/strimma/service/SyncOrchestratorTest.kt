@@ -100,7 +100,8 @@ class SyncOrchestratorTest {
         val nightscoutPuller = NightscoutPuller(nsClient, db.readingDao(), settings)
         val updateChecker = UpdateChecker()
         val patternChecker = com.psjostrom.strimma.data.pattern.PatternChecker(
-            db.readingDao(), db.exerciseDao(), settings
+            db.readingDao(), db.exerciseDao(), settings,
+            com.psjostrom.strimma.data.StatsReadings(db.readingDao(), db.treatmentDao(), db.exerciseDao(), settings)
         )
 
         val orchestrator = SyncOrchestrator(
@@ -212,13 +213,11 @@ class SyncOrchestratorTest {
     }
 
     /**
-     * Pins the unconditional unpushed-cleanup contract. Even with INDEFINITE
-     * retention, `pushed = 0` rows older than 30 days are dropped on every
-     * retention tick — bounds the worst case where a poison row at the head
-     * of `unpushed()` keeps batch-failing and starves all newer pushes.
+     * Users without Nightscout never push a reading, so every reading stays
+     * unpushed. INDEFINITE retention must still keep all of them.
      */
     @Test
-    fun `start always prunes stale unpushed rows even with INDEFINITE retention`() = runFixtureTest { rig ->
+    fun `start keeps stale unpushed rows with INDEFINITE retention and stops pushing them`() = runFixtureTest { rig ->
         rig.settings.setRetentionPolicy(RetentionPolicy.INDEFINITE)
 
         val now = System.currentTimeMillis()
@@ -234,11 +233,8 @@ class SyncOrchestratorTest {
         rig.orchestrator.start()
         runCurrent()
 
-        // Stale unpushed gone, fresh unpushed kept — even though the user
-        // never opted into a finite retention policy.
-        val survivors = rig.db.readingDao().since(0)
-        assertEquals(1, survivors.size)
-        assertEquals(110, survivors[0].sgv)
+        assertEquals(listOf(100, 110), rig.db.readingDao().since(0).sortedBy { it.ts }.map { it.sgv })
+        assertEquals(listOf(110), rig.db.readingDao().unpushed().map { it.sgv })
     }
 
     private suspend fun Fixture.seedAncient(ts: Long) {

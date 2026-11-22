@@ -63,11 +63,8 @@ class SyncOrchestrator @Inject constructor(
         private const val RETENTION_INTERVAL_HOURS = 24L
         private const val HOURS_PER_DAY = 24L
 
-        // Stale unpushed rows older than this are dropped on every retention tick,
-        // regardless of the user's RetentionPolicy. Bounds the worst case where a
-        // poison row at the head of unpushed() blocks fresh BG indefinitely (the
-        // pre-PR 30-day prune used to self-heal this; the always-on cleanup
-        // restores that floor without resurrecting per-table prune asymmetry).
+        // Unpushed rows older than this are no longer pushed. Bounds the worst case
+        // where a poison row in unpushed() blocks fresh BG indefinitely.
         private const val STALE_UNPUSHED_DAYS = 30L
     }
 
@@ -150,15 +147,15 @@ class SyncOrchestrator @Inject constructor(
      * treatments, and exercise sessions. Reacts immediately when the policy
      * changes (so the user sees their disk free up shortly after picking a
      * tighter window) and re-runs every 24h to catch up. INDEFINITE skips the
-     * per-table prune but still runs the unpushed-cleanup pass below.
+     * per-table prune but still gives up on stale unpushed rows (see below).
      *
      * The prune contract is uniform across all three tables. Initial backfill
      * limits still vary per table (TreatmentSyncer.FULL_LOOKBACK_DAYS,
      * ExerciseSyncer.INITIAL_FETCH_DAYS) — that's a fill-side concern, not
      * retention.
      *
-     * `pruneUnpushedBefore` runs unconditionally so a poison row at the head
-     * of `unpushed()` cannot starve fresh BG forever; see STALE_UNPUSHED_DAYS.
+     * `abandonUnpushedBefore` runs unconditionally so a poison row in
+     * `unpushed()` cannot starve fresh BG forever; see STALE_UNPUSHED_DAYS.
      *
      * Wrapped in try/catch so a transient DataStore IO error or DAO exception
      * doesn't kill the loop for the rest of the service lifetime — the next
@@ -180,7 +177,7 @@ class SyncOrchestrator @Inject constructor(
                     @Suppress("TooGenericExceptionCaught") // DAO/DataStore can throw various types
                     try {
                         val now = System.currentTimeMillis()
-                        readingDao.pruneUnpushedBefore(now - STALE_UNPUSHED_DAYS * HOURS_PER_DAY * MS_PER_HOUR)
+                        readingDao.abandonUnpushedBefore(now - STALE_UNPUSHED_DAYS * HOURS_PER_DAY * MS_PER_HOUR)
                         val days = policy.days
                         if (days != null) {
                             val cutoff = now - days * HOURS_PER_DAY * MS_PER_HOUR
