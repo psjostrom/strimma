@@ -21,7 +21,7 @@ Follower mode lets you monitor someone else's glucose remotely by polling a Nigh
 4. Enter the **API Secret** for that server
 5. Adjust the **Poll Interval** if needed (default: 60 seconds)
 
-Strimma will start polling immediately and display the first reading within one poll cycle. The Nightscout URL and API secret are shared with manual Nightscout pulls and treatment sync.
+Strimma starts polling and displays the first reading within one poll cycle. When you change the URL or API secret, Strimma reconnects 3 seconds after the last change. The Nightscout URL and API secret are shared with manual Nightscout pulls and treatment sync.
 
 ---
 
@@ -34,7 +34,7 @@ graph LR
 ```
 
 1. Strimma sends `GET /api/v1/entries.json?find[date][$gt]=<timestamp>&count=2016` to the Nightscout server
-2. New entries are validated (type "sgv", value 18–900 mg/dL)
+2. New entries are validated (type "sgv", value 18–900 mg/dL, timestamp no more than 5 minutes ahead of the phone clock)
 3. Direction and delta are computed locally from the received data
 4. Readings are stored in the local database and displayed
 

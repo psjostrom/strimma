@@ -202,9 +202,10 @@ class MainViewModel @Inject constructor(
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     /** Probable compression lows within the graph history. Empty when detection is off. */
-    val compressionSpans: StateFlow<List<LongRange>> = combine(readings, settings.compressionLowDetection) { r, _ -> r }
-        .mapLatest { r -> if (r.isEmpty()) emptyList() else statsReadings.compressionSpans(r.first().ts, r.last().ts) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val compressionSpans: StateFlow<List<LongRange>> =
+        combine(readings, settings.compressionLowDetection.distinctUntilChanged()) { r, _ -> r }
+            .mapLatest { r -> if (r.isEmpty()) emptyList() else statsReadings.compressionSpans(r.first().ts, r.last().ts) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val predictionMinutes: StateFlow<Int> = settings.predictionMinutes
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 15)

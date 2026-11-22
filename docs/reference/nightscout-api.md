@@ -122,6 +122,7 @@ Manual Nightscout history pulls preserve the server-provided `direction` and `de
 - Entry `type` must be "sgv" (non-SGV entries are ignored)
 - SGV must be in range **18–900 mg/dL**
 - Entries outside this range are rejected
+- Entries stamped more than 5 minutes ahead of the phone clock are rejected
 - Timestamp parsing attempts `OffsetDateTime.parse()` first, falls back to ISO 8601 format
 
 ---

@@ -89,6 +89,16 @@ class ReadingPipelineIntegrationTest {
     }
 
     @Test
+    fun `reading more than five minutes ahead of the clock is rejected`() = runTest {
+        withPipeline { env ->
+            val now = System.currentTimeMillis()
+            assertNull(env.pipeline.processReading(150.0, now + 6 * 60_000, xdrip))
+            assertNotNull(env.pipeline.processReading(150.0, now + 4 * 60_000, xdrip))
+            assertEquals(listOf(now + 4 * 60_000), env.dao.since(0).map { it.ts })
+        }
+    }
+
+    @Test
     fun `sgv at minimum boundary is accepted`() = runTest {
         withPipeline { env ->
             env.pipeline.processReading(18.0, baseTs)
