@@ -1,6 +1,7 @@
 package com.psjostrom.strimma.network
 
 import android.content.Context
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.psjostrom.strimma.createTestDataStore
@@ -32,20 +33,7 @@ class NightscoutFollowerIntegrationTest {
     private fun entry(sgv: Int, ts: Long): NightscoutEntryResponse =
         NightscoutEntryResponse(sgv = sgv, date = ts, type = "sgv")
 
-    /**
-     * Advances virtual time and waits for async executors to complete.
-     * Room dispatches to [Env.roomExecutor] (drained via submit/get).
-     * DataStore dispatches to Dispatchers.IO (brief sleep between rounds).
-     * Uses advanceTimeBy (not advanceUntilIdle) to avoid hanging on the infinite polling loop.
-     */
-    private fun TestScope.advanceAndSettle(env: Env) {
-        repeat(10) {
-            advanceTimeBy(100)
-            runCurrent()
-            env.roomExecutor.submit {}.get()
-            Thread.sleep(10)
-        }
-    }
+    private fun TestScope.advanceAndSettle(env: Env) = settleFollower(env.roomExecutor)
 
     private data class Env(
         val db: StrimmaDatabase,
@@ -129,6 +117,41 @@ class NightscoutFollowerIntegrationTest {
         advanceAndSettle(env)
 
         assertTrue("Should have received new readings from poll", newReadings.isNotEmpty())
+
+        job.cancel()
+    }
+
+    @Test
+    fun `a reading callback that throws does not stop the follower`() = runTest {
+        val env = createEnv()
+        env.settings.setNightscoutUrl("https://ns.example.com")
+        env.settings.setNightscoutSecret("secret")
+        env.settings.setFollowerPollSeconds(60)
+        val start = System.currentTimeMillis()
+        env.dao.insert(GlucoseReading(ts = start - 60_000, sgv = 100, direction = "Flat", delta = null, pushed = 1))
+
+        val follower = NightscoutFollower(env.fakeClient, env.dao, env.directionComputer, env.settings)
+        val delivered = mutableListOf<Int>()
+        var calls = 0
+        val job = follower.start(this) { reading ->
+            calls++
+            check(calls > 1) { "first callback fails" }
+            delivered.add(reading.sgv)
+        }
+        advanceAndSettle(env)
+
+        env.fakeClient.entries = listOf(entry(130, start))
+        advanceTimeBy(61_000)
+        advanceAndSettle(env)
+        assertEquals(IntegrationStatus.Error("Poll failed"), follower.status.value)
+
+        env.fakeClient.entries = listOf(entry(140, start + 60_000))
+        advanceTimeBy(61_000)
+        advanceAndSettle(env)
+
+        assertTrue(follower.status.value is IntegrationStatus.Connected)
+        assertEquals(listOf(140), delivered)
+        assertTrue(job.isActive)
 
         job.cancel()
     }
@@ -241,6 +264,83 @@ class NightscoutFollowerIntegrationTest {
         repeat(10) { if (follower.status.value is IntegrationStatus.Connecting) advanceAndSettle(env) }
 
         assertTrue(follower.status.value is IntegrationStatus.Connected)
+        assertEquals(count, env.dao.since(0).size)
+
+        job.cancel()
+    }
+
+    @Test
+    fun `a poll that throws does not stop the follower`() = runTest {
+        val env = createEnv()
+        env.settings.setNightscoutUrl("https://ns.example.com")
+        env.settings.setNightscoutSecret("secret")
+        env.settings.setFollowerPollSeconds(60)
+        val start = System.currentTimeMillis()
+        env.dao.insert(GlucoseReading(ts = start - 60_000, sgv = 100, direction = "Flat", delta = null, pushed = 1))
+
+        val follower = NightscoutFollower(env.fakeClient, env.dao, env.directionComputer, env.settings)
+        val delivered = mutableListOf<Int>()
+        val job = follower.start(this) { delivered.add(it.sgv) }
+        advanceAndSettle(env)
+
+        env.fakeClient.throwOnFetch = true
+        advanceTimeBy(61_000)
+        advanceAndSettle(env)
+        assertEquals(IntegrationStatus.Error("Poll failed"), follower.status.value)
+
+        env.fakeClient.throwOnFetch = false
+        env.fakeClient.entries = listOf(entry(140, start))
+        advanceTimeBy(61_000)
+        advanceAndSettle(env)
+
+        assertTrue(follower.status.value is IntegrationStatus.Connected)
+        assertEquals(listOf(140), delivered)
+
+        job.cancel()
+    }
+
+    @Test
+    fun `a settings read that fails at start is retried`() = runTest {
+        val env = createEnv()
+        // A valid preferences file with the Nightscout URL, written through a second store.
+        val validFile = java.io.File.createTempFile("valid_settings", ".preferences_pb").apply { deleteOnExit() }
+        SettingsRepository(context, WidgetSettingsRepository(context), PreferenceDataStoreFactory.create { validFile })
+            .setNightscoutUrl("https://ns.example.com")
+        // The follower's store starts on a file that is not valid protobuf, so every read throws.
+        val file = java.io.File.createTempFile("broken_settings", ".preferences_pb").apply { deleteOnExit() }
+        file.writeBytes(byteArrayOf(0x0A, 0x7F))
+        val settings = SettingsRepository(context, WidgetSettingsRepository(context), PreferenceDataStoreFactory.create { file })
+        settings.setNightscoutSecret("secret")
+        env.dao.insert(GlucoseReading(ts = System.currentTimeMillis() - 60_000, sgv = 100, direction = "Flat", delta = null, pushed = 1))
+
+        val follower = NightscoutFollower(env.fakeClient, env.dao, env.directionComputer, settings)
+        val job = follower.start(this) { }
+        advanceAndSettle(env)
+        assertEquals(IntegrationStatus.Error("Settings unreadable"), follower.status.value)
+
+        validFile.copyTo(file, overwrite = true)
+        advanceTimeBy(61_000)
+        advanceAndSettle(env)
+
+        assertTrue(follower.status.value is IntegrationStatus.Connected)
+
+        job.cancel()
+    }
+
+    @Test
+    fun `a callback that throws during a backfill still stores every page`() = runTest {
+        val env = createEnv()
+        env.settings.setNightscoutUrl("https://ns.example.com")
+        env.settings.setNightscoutSecret("secret")
+        val count = 6 * 1440
+        env.fakeClient.entries = (0 until count).map { i -> entry(100 + (i % 50), baseTs - i * 60_000L) }
+
+        val follower = NightscoutFollower(env.fakeClient, env.dao, env.directionComputer, env.settings)
+        val job = follower.start(this) { error("callback fails") }
+        advanceAndSettle(env)
+        repeat(10) { if (follower.status.value is IntegrationStatus.Connecting) advanceAndSettle(env) }
+
+        assertEquals(IntegrationStatus.Error("Backfill failed"), follower.status.value)
         assertEquals(count, env.dao.since(0).size)
 
         job.cancel()
@@ -372,6 +472,7 @@ class NightscoutFollowerIntegrationTest {
         var fetchReturnsNull = false
         var failOlderPages = false
         var ignoreBefore = false
+        var throwOnFetch = false
 
         // Answers the way a Nightscout server answers /api/v1/entries: newest first,
         // date after `since`, date before `before`, at most `count` entries.
@@ -382,6 +483,7 @@ class NightscoutFollowerIntegrationTest {
             count: Int,
             before: Long?
         ): List<NightscoutEntryResponse>? {
+            check(!throwOnFetch) { "fetch failed" }
             if (fetchReturnsNull) return null
             if (failOlderPages && before != null) return null
             val upper = if (ignoreBefore) null else before

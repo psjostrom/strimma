@@ -117,6 +117,7 @@ class NightscoutFollower @Inject constructor(
 
     companion object {
         private const val SEVEN_DAYS_MS = 7L * 24 * 60 * 60 * 1000
+        private const val SETTINGS_RETRY_MS = 60_000L
 
         fun filterValidEntries(entries: List<NightscoutEntryResponse>): List<NightscoutEntryResponse> {
             return entries
@@ -130,34 +131,65 @@ class NightscoutFollower @Inject constructor(
         return scope.launch {
             _status.value = IntegrationStatus.Connecting
 
-            val url = settings.nightscoutUrl.first()
-            val secret = settings.getNightscoutSecret()
+            // An exception from Room, DataStore or onNewReading ends one read, backfill or
+            // poll, not the follower. Nothing else restarts a follower job that has ended.
+            var connection: Pair<String, String>? = null
+            while (connection == null) {
+                connection = withNetworkBoundary("Follower settings", onError = { null }) {
+                    settings.nightscoutUrl.first() to settings.getNightscoutSecret()
+                }
+                if (connection == null) {
+                    _status.value = IntegrationStatus.Error("Settings unreadable")
+                    delay(SETTINGS_RETRY_MS)
+                }
+            }
+            val (url, secret) = connection
             if (url.isBlank() || secret.isBlank()) {
                 DebugLog.log(message = "Follower: URL or secret empty")
                 _status.value = IntegrationStatus.Idle
                 return@launch
             }
 
-            backfill(url, secret, onNewReading)
+            withNetworkBoundary(
+                "Follower backfill",
+                onError = { _status.value = IntegrationStatus.Error("Backfill failed") }
+            ) {
+                backfill(url, secret, onNewReading)
+            }
 
             while (isActive) {
-                val pollSeconds = settings.followerPollSeconds.first()
-                delay(pollSeconds * SECONDS_TO_MS)
-
-                val latestTs = dao.latestOnce()?.ts ?: (System.currentTimeMillis() - SEVEN_DAYS_MS)
-                val inserted = syncSince(url, secret, latestTs, onNewReading)
-                if (inserted == null) {
-                    if (_status.value !is IntegrationStatus.Error) {
-                        _status.value = IntegrationStatus.Error("Connection lost")
-                    }
-                    DebugLog.log(message = "Follower: poll failed")
-                    continue
+                val pollSeconds = withNetworkBoundary(
+                    "Follower poll interval",
+                    onError = { SettingsRepository.DEFAULT_FOLLOWER_POLL_SECONDS }
+                ) {
+                    settings.followerPollSeconds.first()
                 }
-
-                _status.value = IntegrationStatus.Connected(lastActivityTs = System.currentTimeMillis())
-                if (inserted > 0) DebugLog.log(message = "Follower: $inserted new readings")
+                delay(pollSeconds * SECONDS_TO_MS)
+                withNetworkBoundary(
+                    "Follower poll",
+                    onError = { _status.value = IntegrationStatus.Error("Poll failed") }
+                ) {
+                    poll(url, secret, onNewReading)
+                }
             }
         }
+    }
+
+    private suspend fun poll(url: String, secret: String, onNewReading: suspend (GlucoseReading) -> Unit) {
+        val latestTs = dao.latestOnce()?.ts ?: (System.currentTimeMillis() - SEVEN_DAYS_MS)
+        val result = syncSince(url, secret, latestTs, onNewReading)
+        if (result == null) {
+            _status.value = IntegrationStatus.Error("Connection lost")
+            DebugLog.log(message = "Follower: poll failed")
+            return
+        }
+
+        _status.value = if (result.callbackFailed) {
+            IntegrationStatus.Error("Poll failed")
+        } else {
+            IntegrationStatus.Connected(lastActivityTs = System.currentTimeMillis())
+        }
+        if (result.inserted > 0) DebugLog.log(message = "Follower: ${result.inserted} new readings")
     }
 
     fun stop() {
@@ -176,43 +208,54 @@ class NightscoutFollower @Inject constructor(
 
         DebugLog.log(message = "Follower: starting backfill")
         val since = if (latestTs > 0) latestTs else sevenDaysAgo
-        val inserted = syncSince(url, secret, since, onNewReading)
-        if (inserted == null) {
+        val result = syncSince(url, secret, since, onNewReading)
+        if (result == null) {
             _status.value = IntegrationStatus.Error("Backfill failed")
             DebugLog.log(message = "Follower: backfill fetch failed")
             return
         }
 
-        _status.value = IntegrationStatus.Connected(lastActivityTs = System.currentTimeMillis())
-        DebugLog.log(message = "Follower: backfill complete, $inserted readings")
+        _status.value = if (result.callbackFailed) {
+            IntegrationStatus.Error("Backfill failed")
+        } else {
+            IntegrationStatus.Connected(lastActivityTs = System.currentTimeMillis())
+        }
+        DebugLog.log(message = "Follower: backfill complete, ${result.inserted} readings")
     }
 
     /**
-     * Stores every entry newer than [since] and returns how many readings were new, or
-     * null when a fetch failed. Pages arrive newest first and each page is stored as it
+     * Stores every entry newer than [since] and returns how many readings were new and
+     * whether [onNewReading] threw, or null when a fetch failed. Pages arrive newest first and each page is stored as it
      * arrives, so the current BG is stored and alerted on before older pages download.
      * The oldest readings of each page have no earlier readings stored yet, so their
      * direction is NONE. [onNewReading] fires once, for the newest new reading, because
      * a catch-up of thousands of readings must not redraw the notification for each one.
+     * An exception from [onNewReading] is logged and reported in the result, and the
+     * older pages of the gap are still fetched and stored.
      */
     private suspend fun syncSince(
         url: String,
         secret: String,
         since: Long,
         onNewReading: suspend (GlucoseReading) -> Unit,
-    ): Int? {
+    ): SyncResult? {
         var inserted = 0
         var notified = false
+        var callbackFailed = false
         val ok = client.forEachEntryPage(url, secret, since) { page ->
             val newReadings = processNightscoutEntries(filterValidEntries(page), dao, directionComputer)
             inserted += newReadings.size
             val newest = newReadings.lastOrNull()
             if (!notified && newest != null) {
                 notified = true
-                onNewReading(newest)
+                withNetworkBoundary("Follower callback", onError = { callbackFailed = true }) {
+                    onNewReading(newest)
+                }
             }
         }
-        return if (ok) inserted else null
+        return if (ok) SyncResult(inserted, callbackFailed) else null
     }
+
+    private data class SyncResult(val inserted: Int, val callbackFailed: Boolean)
 
 }

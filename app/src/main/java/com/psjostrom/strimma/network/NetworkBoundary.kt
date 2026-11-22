@@ -6,7 +6,9 @@ import kotlin.coroutines.cancellation.CancellationException
 private const val MAX_LOG_LENGTH = 80
 
 /**
- * Wraps an HTTP/network call with the project's standard catch policy:
+ * Wraps an HTTP/network call with the project's standard catch policy. The followers also
+ * use it around each settings read, poll and reading callback, so one failure cannot end
+ * the follower job:
  *
  *  - `CancellationException` propagates so structured concurrency stays intact.
  *  - Any other `Exception` is logged (with class name and message) and converted

@@ -68,6 +68,32 @@ class ReadingDispatcherTest {
     }
 
     @Test
+    fun `an eager failure does not stop the alert and the other debounced effects`() = runTest {
+        val dispatcher = ReadingDispatcher(ReadingFanOut(StandardTestDispatcher(testScheduler)))
+        val spies = Spies()
+
+        val failure = runCatching {
+            dispatcher.dispatch(
+                reading = reading(100, 55),
+                cameFromNightscout = false,
+                eager = { error("notification update failed") },
+                alert = { settled -> spies.alerted.add(settled.sgv) },
+                push = { settled -> spies.pushed.add(settled.sgv) },
+                upload = { spies.uploadCount.incrementAndGet() },
+                broadcast = { settled -> spies.broadcasted.add(settled.sgv) },
+                hc = { settled -> spies.hcWritten.add(settled.sgv) },
+            )
+        }
+        advanceUntilIdle()
+
+        assertTrue(failure.isFailure)
+        assertEquals(listOf(55), spies.alerted)
+        assertEquals(listOf(55), spies.pushed)
+        assertEquals(listOf(55), spies.broadcasted)
+        assertEquals(listOf(55), spies.hcWritten)
+    }
+
+    @Test
     fun `cluster within debounce window - debounced effects fire once on NEW`() = runTest {
         val dispatcher = ReadingDispatcher(ReadingFanOut(StandardTestDispatcher(testScheduler)))
         val spies = Spies()
