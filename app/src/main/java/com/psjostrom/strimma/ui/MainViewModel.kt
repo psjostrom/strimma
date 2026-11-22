@@ -188,13 +188,11 @@ class MainViewModel @Inject constructor(
 
     // The Display fields save when they leave the screen. This ViewModel outlives the screen and activity
     // recreation, so those saves still land.
-    fun setBgLow(value: Float) {
-        viewModelScope.launch { settings.setBgLow(value) }
-    }
+    fun setBgLow(value: Float, onRejected: () -> Unit) =
+        viewModelScope.launch { if (!settings.setBgLow(value)) onRejected() }
 
-    fun setBgHigh(value: Float) {
-        viewModelScope.launch { settings.setBgHigh(value) }
-    }
+    fun setBgHigh(value: Float, onRejected: () -> Unit) =
+        viewModelScope.launch { if (!settings.setBgHigh(value)) onRejected() }
 
     val workoutMode: StateFlow<WorkoutMode> =
         workoutModeManager.state

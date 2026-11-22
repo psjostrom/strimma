@@ -134,6 +134,7 @@
     <string name="settings_display_graph_window">Diagrammfenster: %1$d Stunden</string>
     <string name="settings_display_low_threshold">Unterer Schwellenwert (%1$s)</string>
     <string name="settings_display_high_threshold">Oberer Schwellenwert (%1$s)</string>
+    <string name="settings_display_threshold_order_error">Der untere Schwellenwert muss unter dem oberen Schwellenwert liegen.</string>
     <string name="settings_display_language">Sprache</string>
     <string name="settings_display_language_system">Systemstandard</string>
     <string name="settings_display_theme">Design</string>

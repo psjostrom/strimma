@@ -514,6 +514,8 @@ Single-screen app in phase 1. Settings accessible via gear icon in toolbar. No d
 | BG Low Threshold  | Number        | 4.0 mmol/L  | Below this = red dots, low threshold line     |
 | BG High Threshold | Number        | 10.0 mmol/L | Above this = yellow dots, high threshold line |
 
+`SettingsRepository.setBgLow` and `setBgHigh` store a value only when BG High stays at least 0.1 mmol/L (1.8 mg/dL) above BG Low, checked and written in one DataStore edit. Each setter compares the new value with the stored value at the other end, so one edit can repair an inverted range. Imports are not checked.
+
 ### Storage
 
 Non-sensitive settings (thresholds, graph window) stored in Jetpack `DataStore` (Preferences). The API secret stored in `EncryptedSharedPreferences` (from `androidx.security.crypto`, backed by Android Keystore). This is the only sensitive field — no reason to encrypt threshold values.
