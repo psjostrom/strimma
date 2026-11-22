@@ -179,8 +179,10 @@ internal fun ThresholdField(
     val commit by rememberUpdatedState {
         if (edited) {
             edited = false
-            // Retyping the shown value must not save: "4.0" parses to 72.07, not the stored 72.
-            if (text != glucoseUnit.formatThreshold(threshold)) glucoseUnit.parseThreshold(text)?.let(onThresholdChange)
+            // Retyping the shown value must not save: "4", "4.0" and "4,0" parse to 72.07, not the stored 72.
+            glucoseUnit.parseThreshold(text)
+                ?.takeIf { glucoseUnit.formatThreshold(it) != glucoseUnit.formatThreshold(threshold) }
+                ?.let(onThresholdChange)
             // A rejected or unparseable edit leaves the stored threshold unchanged, so the field shows it again.
             text = glucoseUnit.formatThreshold(threshold)
         }

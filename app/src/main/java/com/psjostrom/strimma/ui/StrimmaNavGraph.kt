@@ -400,8 +400,8 @@ fun StrimmaNavGraph(
                 onGlucoseUnitChange = { scope.launch { viewModel.settings.setGlucoseUnit(it) } },
                 onHbA1cUnitChange = { scope.launch { viewModel.settings.setHbA1cUnit(it) } },
                 onGraphWindowChange = { scope.launch { viewModel.settings.setGraphWindowHours(it) } },
-                onBgLowChange = { scope.launch { viewModel.settings.setBgLow(it) } },
-                onBgHighChange = { scope.launch { viewModel.settings.setBgHigh(it) } },
+                onBgLowChange = viewModel::setBgLow,
+                onBgHighChange = viewModel::setBgHigh,
                 onThemeModeChange = { scope.launch { viewModel.settings.setThemeMode(it) } },
                 onCompressionLowDetectionChange = { scope.launch { viewModel.settings.setCompressionLowDetection(it) } },
                 onBack = { navController.popBackStack() }

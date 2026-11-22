@@ -281,8 +281,10 @@ class AlertsSettingsTest {
         renderLowField(saved)
 
         val field = composeRule.onNodeWithText("Low Alert (mmol/L)")
-        field.performTextReplacement("4.0")
-        field.performImeAction()
+        for (shown in listOf("4.0", "4", "4,0")) {
+            field.performTextReplacement(shown)
+            field.performImeAction()
+        }
 
         assertEquals(emptyList<Float>(), saved)
     }
