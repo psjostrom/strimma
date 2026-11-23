@@ -24,6 +24,8 @@ Strimma fetches this data from your Nightscout server. The data typically comes 
 
 Strimma polls for treatments every 5 minutes (24-hour window per poll). The first sync — and any sync after a long offline period — backfills up to 100 days from Nightscout.
 
+While the Nightscout URL or API secret is empty, treatment sync pauses. The **Treatments sync** setting stays on. When you change the URL or secret, sync restarts 3 seconds after the last change.
+
 ---
 
 ## What You See

@@ -43,7 +43,6 @@ import androidx.glance.appwidget.GlanceAppWidgetManager
 import com.psjostrom.strimma.widget.StrimmaWidget
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -54,7 +53,6 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.withIndex
 import javax.inject.Inject
 
 @Suppress("TooManyFunctions") // Service lifecycle + source management + side effects
@@ -70,7 +68,6 @@ class StrimmaService : Service() {
 
         private const val STALE_CHECK_INTERVAL_SECONDS = 60
         private const val SECONDS_TO_MS = 1000L
-        private const val CONNECTION_SETTLE_MS = 3_000L
         private const val MINUTES_PER_HOUR = 60
         private const val DEFAULT_WORKOUT_TRIGGER_MINUTES = 120
         private const val WORKOUT_GRACE_MINUTES = 15
@@ -383,20 +380,6 @@ class StrimmaService : Service() {
             try { unregisterReceiver(it) } catch (_: Exception) {}
             xdripReceiver = null
             DebugLog.log("xDrip broadcast receiver unregistered")
-        }
-    }
-
-    /**
-     * A follower reads its URL and credentials once, when it starts, so it must restart
-     * when they change. The settings screens save these fields on every keystroke, so
-     * a change restarts the follower only after the fields stop changing for
-     * [CONNECTION_SETTLE_MS]. Without the wait, typing a LibreLinkUp password would log
-     * in to Abbott once per character. The first start is immediate.
-     */
-    private suspend fun runPerConnection(connection: Flow<Any>, start: () -> Unit) {
-        connection.withIndex().collectLatest { (index, _) ->
-            if (index > 0) delay(CONNECTION_SETTLE_MS)
-            start()
         }
     }
 

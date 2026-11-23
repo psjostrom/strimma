@@ -41,8 +41,19 @@ class LibreLinkUpFollower @Inject constructor(
         return scope.launch {
             _status.value = IntegrationStatus.Connecting
 
-            val email = settings.getLluEmail()
-            val password = settings.getLluPassword()
+            // An exception from Room, the encrypted settings or onNewReading ends one read or
+            // poll, not the follower. Nothing else restarts a follower job that has ended.
+            var credentials: Pair<String, String>? = null
+            while (credentials == null) {
+                credentials = withNetworkBoundary("LLU settings", onError = { null }) {
+                    settings.getLluEmail() to settings.getLluPassword()
+                }
+                if (credentials == null) {
+                    _status.value = IntegrationStatus.Error("Settings unreadable")
+                    delay(POLL_INTERVAL_MS)
+                }
+            }
+            val (email, password) = credentials
             if (email.isBlank() || password.isBlank()) {
                 DebugLog.log(message = "LLU follower: email or password empty")
                 _status.value = IntegrationStatus.Idle
@@ -54,7 +65,9 @@ class LibreLinkUpFollower @Inject constructor(
             }
 
             while (isActive) {
-                poll(email, password, onNewReading)
+                withNetworkBoundary("LLU poll", onError = { _status.value = IntegrationStatus.Error("Poll failed") }) {
+                    poll(email, password, onNewReading)
+                }
                 delay(POLL_INTERVAL_MS)
             }
         }
@@ -87,9 +100,7 @@ class LibreLinkUpFollower @Inject constructor(
 
         val graphData = client.getGraph(activeSession, activePatientId)
         if (graphData == null) {
-            if (_status.value !is IntegrationStatus.Error) {
-                _status.value = IntegrationStatus.Error("Connection lost")
-            }
+            _status.value = IntegrationStatus.Error("Connection lost")
             DebugLog.log(message = "LLU: poll failed")
             return
         }
@@ -117,9 +128,9 @@ class LibreLinkUpFollower @Inject constructor(
 
         val newReadings = processNightscoutEntries(entries, dao, directionComputer, pushed = 0)
 
-        for (reading in newReadings) {
-            onNewReading(reading)
-        }
+        // ReadingFanOut debounces a burst to its last reading, so only the newest new
+        // reading is dispatched, as in the Nightscout follower.
+        newReadings.lastOrNull()?.let { onNewReading(it) }
 
         return newReadings.size
     }

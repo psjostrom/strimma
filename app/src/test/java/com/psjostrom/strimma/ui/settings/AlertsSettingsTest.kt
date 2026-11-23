@@ -1,5 +1,11 @@
 package com.psjostrom.strimma.ui.settings
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasClickAction
@@ -12,7 +18,10 @@ import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextClearance
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import com.psjostrom.strimma.data.GlucoseUnit
 import com.psjostrom.strimma.data.notification.SnoozeDuration
@@ -20,7 +29,7 @@ import com.psjostrom.strimma.data.workout.AlertProtocol
 import com.psjostrom.strimma.data.workout.AlertSet
 import com.psjostrom.strimma.data.workout.NightWindow
 import com.psjostrom.strimma.notification.AlertManager
-import kotlinx.coroutines.flow.emptyFlow
+import com.psjostrom.strimma.ui.theme.StrimmaTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -134,7 +143,6 @@ class AlertsSettingsTest {
                 onAlertSnoozeDurationChange = onAlertSnoozeDurationChange,
                 patternAlertsEnabled = patternAlertsEnabled,
                 onPatternAlertsEnabledChange = onPatternAlertsEnabledChange,
-                validationError = emptyFlow(),
                 onOpenAlertSound = onOpenAlertSound,
                 onBack = {},
             )
@@ -217,6 +225,91 @@ class AlertsSettingsTest {
         composeRule.onNodeWithText("Urgent Low (mmol/L)").performScrollTo().performClick()
 
         composeRule.onNodeWithText("Low Alert (mmol/L)").assert(hasText("4.0"))
+    }
+
+    // Hosts the field with a stored value that follows each save, as the screen does through the ViewModel.
+    private fun renderLowField(saved: MutableList<Float>) {
+        composeRule.setContent {
+            var low by remember { mutableFloatStateOf(72f) }
+            StrimmaTheme {
+                Column {
+                    AlertBlock(
+                        label = "Low",
+                        enabled = true,
+                        onToggle = {},
+                        threshold = low,
+                        onThresholdChange = {
+                            saved += it
+                            low = it
+                        },
+                        thresholdLabel = "Low Alert (mmol/L)",
+                        textColor = Color.Black,
+                    )
+                    AlertBlock(
+                        label = "High",
+                        enabled = true,
+                        onToggle = {},
+                        threshold = 180f,
+                        onThresholdChange = {},
+                        thresholdLabel = "High Alert (mmol/L)",
+                        textColor = Color.Black,
+                    )
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `typing a threshold keeps the typed text and saves it once on Done`() {
+        val saved = mutableListOf<Float>()
+        renderLowField(saved)
+
+        val field = composeRule.onNodeWithText("Low Alert (mmol/L)")
+        field.performTextClearance()
+        "4.5".forEach { field.performTextInput(it.toString()) }
+        field.assert(hasText("4.5"))
+        assertEquals(emptyList<Float>(), saved)
+
+        field.performImeAction()
+        assertEquals(listOf(GlucoseUnit.MMOL.parseThreshold("4.5")), saved)
+        field.assert(hasText("4.5"))
+    }
+
+    @Test
+    fun `retyping the shown threshold does not save`() {
+        val saved = mutableListOf<Float>()
+        renderLowField(saved)
+
+        val field = composeRule.onNodeWithText("Low Alert (mmol/L)")
+        for (shown in listOf("4.0", "4", "4,0")) {
+            field.performTextReplacement(shown)
+            field.performImeAction()
+        }
+
+        assertEquals(emptyList<Float>(), saved)
+    }
+
+    @Test
+    fun `leaving the field saves the typed threshold`() {
+        val saved = mutableListOf<Float>()
+        renderLowField(saved)
+
+        composeRule.onNodeWithText("Low Alert (mmol/L)").performTextReplacement("3.9")
+        composeRule.onNodeWithText("High Alert (mmol/L)").performClick()
+
+        assertEquals(listOf(GlucoseUnit.MMOL.parseThreshold("3.9")), saved)
+    }
+
+    @Test
+    fun `switching tab while editing saves the typed threshold`() {
+        var saved: Float? = null
+        render(dayCallbacks = callbacks().copy(onLowChange = { saved = it }))
+
+        composeRule.onNodeWithText("Low Alert (mmol/L)").performScrollTo().performTextReplacement("3.9")
+        composeRule.onNodeWithText("Exercise").performScrollTo().performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(GlucoseUnit.MMOL.parseThreshold("3.9"), saved)
     }
 
     @Test

@@ -4,13 +4,11 @@ import android.app.LocaleManager
 import android.os.LocaleList
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
@@ -80,30 +78,20 @@ fun DisplaySettings(
                 steps = 6
             )
 
-            var bgLowText by remember(bgLow, glucoseUnit) { mutableStateOf(glucoseUnit.formatThreshold(bgLow)) }
-            OutlinedTextField(
-                value = bgLowText,
-                onValueChange = { text ->
-                    bgLowText = text
-                    glucoseUnit.parseThreshold(text)?.let { onBgLowChange(it) }
-                },
-                label = { Text(stringResource(R.string.settings_display_low_threshold, glucoseUnit.label)) },
+            ThresholdField(
+                threshold = bgLow,
+                onThresholdChange = onBgLowChange,
+                glucoseUnit = glucoseUnit,
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                label = stringResource(R.string.settings_display_low_threshold, glucoseUnit.label),
             )
 
-            var bgHighText by remember(bgHigh, glucoseUnit) { mutableStateOf(glucoseUnit.formatThreshold(bgHigh)) }
-            OutlinedTextField(
-                value = bgHighText,
-                onValueChange = { text ->
-                    bgHighText = text
-                    glucoseUnit.parseThreshold(text)?.let { onBgHighChange(it) }
-                },
-                label = { Text(stringResource(R.string.settings_display_high_threshold, glucoseUnit.label)) },
+            ThresholdField(
+                threshold = bgHigh,
+                onThresholdChange = onBgHighChange,
+                glucoseUnit = glucoseUnit,
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                label = stringResource(R.string.settings_display_high_threshold, glucoseUnit.label),
             )
 
             Row(

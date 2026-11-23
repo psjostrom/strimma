@@ -40,31 +40,13 @@ class TidepoolUploader @Inject constructor(
 ) {
 
     companion object {
-        const val MAX_CHUNK_MS = 7L * 86_400_000L     // 7 days
         const val UPLOAD_BUFFER_MS = 15L * 60_000L    // 15 minutes
         private const val MAX_LOOKBACK_MS = 60L * 86_400_000L  // 2 months
+        // 7 days of 1-minute readings, the most one upload sends.
+        private const val MAX_RECORDS_PER_UPLOAD = 7 * 24 * 60
         private const val RATE_LIMIT_MS = 20L * 60_000L        // 20 minutes
         private const val MAX_LOG_ERROR_LENGTH = 80
         private const val MAX_USER_ERROR_LENGTH = 50
-
-        /**
-         * Computes the end timestamp for the next upload chunk.
-         * Caps at MAX_CHUNK_MS from start, or now minus buffer, whichever is earlier.
-         */
-        fun computeChunkEnd(start: Long, now: Long): Long {
-            val maxEnd = start + MAX_CHUNK_MS
-            val bufferedNow = now - UPLOAD_BUFFER_MS
-            return minOf(maxEnd, bufferedNow)
-        }
-
-        /**
-         * Clamps the last upload end timestamp to prevent excessive lookback.
-         * Returns max(stored, now - MAX_LOOKBACK_MS).
-         */
-        fun clampLastUploadEnd(stored: Long, now: Long): Long {
-            val earliest = now - MAX_LOOKBACK_MS
-            return maxOf(stored, earliest)
-        }
     }
 
     // Belt for anything that escapes the leaf catches in TidepoolClient and the
@@ -76,7 +58,8 @@ class TidepoolUploader @Inject constructor(
 
     private data class UploadPlan(
         val userId: String,
-        val chunkEnd: Long,
+        /** Every selected reading, including those [CbgRecord.isValidForUpload] skips. */
+        val readingTimestamps: List<Long>,
         val records: List<CbgRecord>
     )
 
@@ -156,30 +139,32 @@ class TidepoolUploader @Inject constructor(
             return null
         }
 
+        // Installs that uploaded with the old time cursor mark everything up to it once,
+        // so the update does not send those readings again.
+        settings.takeLegacyTidepoolUploadEnd()?.let { dao.markUploadedToTidepoolUpTo(it) }
+
+        // The newest UPLOAD_BUFFER_MS stay back, because an in-bucket replacement can
+        // still change them.
         val now = System.currentTimeMillis()
-        val storedLastEnd = settings.tidepoolLastUploadEnd.first()
-        val lastEnd = clampLastUploadEnd(storedLastEnd, now)
-        val chunkEnd = computeChunkEnd(lastEnd, now)
+        val selected = dao.notUploadedToTidepool(
+            from = now - MAX_LOOKBACK_MS,
+            to = now - UPLOAD_BUFFER_MS,
+            limit = MAX_RECORDS_PER_UPLOAD
+        )
+        val valid = selected.filter { CbgRecord.isValidForUpload(it) }
+        DebugLog.log(message = "Tidepool upload: ${selected.size} readings not uploaded, ${valid.size} valid")
 
-        DebugLog.log(message = "Tidepool uploadChunk: lastEnd=$lastEnd, chunkEnd=$chunkEnd, now=$now")
-
-        if (chunkEnd <= lastEnd) {
-            return null
-        }
-
-        val readings = dao.since(lastEnd).filter { reading ->
-            reading.ts <= chunkEnd && CbgRecord.isValidForUpload(reading)
-        }
-
-        if (readings.isEmpty()) {
-            settings.setTidepoolLastUploadEnd(chunkEnd)
+        if (valid.isEmpty()) {
+            // Invalid readings are never sent, so they are marked to keep them out of
+            // the next selection.
+            if (selected.isNotEmpty()) dao.markUploadedToTidepool(selected.map { it.ts })
             return null
         }
 
         return UploadPlan(
             userId = userId,
-            chunkEnd = chunkEnd,
-            records = readings.map { CbgRecord.fromReading(it) }
+            readingTimestamps = selected.map { it.ts },
+            records = valid.map { CbgRecord.fromReading(it) }
         )
     }
 
@@ -270,7 +255,7 @@ class TidepoolUploader @Inject constructor(
         val success = client.uploadData(TidepoolAuthManager.API_BASE, datasetId, token, plan.records)
 
         if (success) {
-            settings.setTidepoolLastUploadEnd(plan.chunkEnd)
+            dao.markUploadedToTidepool(plan.readingTimestamps)
             stampUploadAttempt()
             settings.setTidepoolLastError("")
             DebugLog.log(message = "Tidepool upload: ${plan.records.size} records uploaded")

@@ -13,6 +13,13 @@ data class AlertProtocol(
     val highSoonEnabled: Boolean,
     val staleEnabled: Boolean,
 ) {
-    fun hasOrderedThresholds(): Boolean =
-        urgentLowMgdl <= lowMgdl && lowMgdl <= highMgdl && highMgdl <= urgentHighMgdl
+    private fun orderedPairs(): List<Boolean> =
+        listOf(urgentLowMgdl <= lowMgdl, lowMgdl <= highMgdl, highMgdl <= urgentHighMgdl)
+
+    fun hasOrderedThresholds(): Boolean = orderedPairs().all { it }
+
+    // Imports and the Night copy can store a set out of order. Rejecting every edit that leaves the set out of order
+    // would block the fix when two pairs are wrong, so an edit is rejected only when it breaks a pair that was in order.
+    fun keepsOrderOf(before: AlertProtocol): Boolean =
+        before.orderedPairs().zip(orderedPairs()).none { (was, now) -> was && !now }
 }
