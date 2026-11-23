@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.lifecycle.viewModelScope
 import androidx.test.core.app.ApplicationProvider
 import com.psjostrom.strimma.createTestDataStore
+import com.psjostrom.strimma.R
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.workout.AlertSet
 import com.psjostrom.strimma.data.workout.NightWindow
@@ -14,10 +15,8 @@ import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.testutil.workout.FakeCalendarPoller
 import com.psjostrom.strimma.testutil.workout.MutableClock
 import com.psjostrom.strimma.widget.WidgetSettingsRepository
-import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.filterNotNull
@@ -35,6 +34,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.shadows.ShadowToast
 import java.time.Instant
 
 /**
@@ -82,7 +82,7 @@ class AlertsViewModelTest {
                 backgroundScope,
             )
             val alertManager = AlertManager(context, settings, workoutModeManager, backgroundScope)
-            val viewModel = AlertsViewModel(settings, alertManager, workoutModeManager)
+            val viewModel = AlertsViewModel(settings, alertManager, workoutModeManager, backgroundScope, context)
             vm = viewModel
             block(Fixture(context, notifManager, settings, viewModel))
         } finally {
@@ -156,12 +156,9 @@ class AlertsViewModelTest {
         rig.viewModel.setExerciseAlertLow(120f)
         rig.settings.exerciseAlertLow.first { it == 120f }
 
-        val validation = backgroundScope.async(start = CoroutineStart.UNDISPATCHED) {
-            rig.viewModel.validationError.first()
-        }
-        rig.viewModel.setExerciseAlertUrgentLow(130f)
+        rig.viewModel.setExerciseAlertUrgentLow(130f).join()
 
-        assertEquals(AlertsViewModel.ValidationError.Order, validation.await())
+        assertEquals(rig.context.getString(R.string.alert_threshold_order_error), ShadowToast.getTextOfLatestToast())
         assertEquals(90f, rig.settings.exerciseAlertUrgentLow.first())
     }
 
@@ -197,12 +194,9 @@ class AlertsViewModelTest {
 
     @Test
     fun `window edit making start equal end is rejected`() = runFixtureTest { rig ->
-        val validation = backgroundScope.async(start = CoroutineStart.UNDISPATCHED) {
-            rig.viewModel.validationError.first()
-        }
         rig.viewModel.setNightWindowEnd(23 * 60).join()
 
-        assertEquals(AlertsViewModel.ValidationError.EmptyWindow, validation.await())
+        assertEquals(rig.context.getString(R.string.settings_alerts_night_empty_window), ShadowToast.getTextOfLatestToast())
         assertEquals(NightWindow.DEFAULT, rig.settings.nightWindow.first())
     }
 
@@ -217,13 +211,68 @@ class AlertsViewModelTest {
     @Test
     fun `night threshold out of order is rejected`() = runFixtureTest { rig ->
         rig.viewModel.setNightAlertsEnabled(true).join()
-        val validation = backgroundScope.async(start = CoroutineStart.UNDISPATCHED) {
-            rig.viewModel.validationError.first()
-        }
         rig.viewModel.setNightAlertLow(300f).join()
 
-        assertEquals(AlertsViewModel.ValidationError.Order, validation.await())
+        assertEquals(rig.context.getString(R.string.alert_threshold_order_error), ShadowToast.getTextOfLatestToast())
         assertEquals(rig.settings.alertLow.first(), rig.settings.nightAlertProtocol.first().lowMgdl)
+    }
+
+    @Test
+    fun `day threshold out of order is rejected`() = runFixtureTest { rig ->
+        rig.viewModel.setAlertHigh(60f).join()
+
+        assertEquals(rig.context.getString(R.string.alert_threshold_order_error), ShadowToast.getTextOfLatestToast())
+        assertEquals(SettingsRepository.DEFAULT_ALERT_HIGH, rig.settings.alertHigh.first())
+    }
+
+    @Test
+    fun `day set stored with two pairs out of order can be repaired one field at a time`() = runFixtureTest(
+        setup = { settings ->
+            settings.setAlertUrgentLow(100f)
+            settings.setAlertHigh(300f)
+        },
+    ) { rig ->
+        rig.viewModel.setAlertLow(150f).join()
+        rig.viewModel.setAlertUrgentHigh(350f).join()
+
+        assertEquals(150f, rig.settings.alertLow.first())
+        assertEquals(350f, rig.settings.alertUrgentHigh.first())
+    }
+
+    @Test
+    fun `edit to a day set stored out of order is rejected when it breaks a pair that was in order`() = runFixtureTest(
+        setup = { settings -> settings.setAlertUrgentLow(100f) },
+    ) { rig ->
+        rig.viewModel.setAlertHigh(60f).join()
+
+        assertEquals(rig.context.getString(R.string.alert_threshold_order_error), ShadowToast.getTextOfLatestToast())
+        assertEquals(SettingsRepository.DEFAULT_ALERT_HIGH, rig.settings.alertHigh.first())
+    }
+
+    @Test
+    fun `threshold save finishes after the ViewModel is cleared`() = runFixtureTest { rig ->
+        val save = rig.viewModel.setAlertHigh(200f)
+        rig.viewModel.viewModelScope.cancel()
+        save.join()
+
+        assertEquals(200f, rig.settings.alertHigh.first())
+    }
+
+    @Test
+    fun `rejected save after the ViewModel is cleared still shows the message`() = runFixtureTest { rig ->
+        val save = rig.viewModel.setAlertHigh(60f)
+        rig.viewModel.viewModelScope.cancel()
+        save.join()
+
+        assertEquals(rig.context.getString(R.string.alert_threshold_order_error), ShadowToast.getTextOfLatestToast())
+        assertEquals(SettingsRepository.DEFAULT_ALERT_HIGH, rig.settings.alertHigh.first())
+    }
+
+    @Test
+    fun `valid day threshold persists`() = runFixtureTest { rig ->
+        rig.viewModel.setAlertHigh(200f).join()
+
+        assertEquals(200f, rig.settings.alertHigh.first())
     }
 
     @Test

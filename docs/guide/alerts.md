@@ -149,7 +149,8 @@ Each set has the same seven alert rows:
 
 - Each configurable alert has an independent toggle. Disabled alerts never fire, regardless of your glucose level.
 - The four glucose threshold alerts (Urgent Low, Low, High, Urgent High) each have an editable threshold in your configured unit (mmol/L or mg/dL).
-- In the Night and Exercise sets, the thresholds must stay in the order Urgent Low ≤ Low ≤ High ≤ Urgent High. Strimma rejects an edit that breaks this order and shows a message. When you leave the field, it shows the stored value again.
+- A threshold is saved when you leave its field or press Done on the keyboard.
+- In every set, the thresholds must stay in the order Urgent Low ≤ Low ≤ High ≤ Urgent High. Strimma rejects an edit that breaks this order, shows a message, and shows the stored value in the field again. If a set is already out of order, for example after an import, you can fix it one threshold at a time: Strimma rejects only an edit that puts two neighbouring thresholds out of order when they were in order.
 - Low Soon, High Soon, and Stale Data each have a toggle in every set.
 
 **Day** holds the alerts used outside the night window and outside Workout Mode.

@@ -186,6 +186,16 @@ class MainViewModel @Inject constructor(
         .map { it.displayHighMgdl }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 180f)
 
+    // The Display fields save when they leave the screen. This ViewModel outlives the screen and activity
+    // recreation, so those saves still land.
+    fun setBgLow(value: Float) {
+        viewModelScope.launch { settings.setBgLow(value) }
+    }
+
+    fun setBgHigh(value: Float) {
+        viewModelScope.launch { settings.setBgHigh(value) }
+    }
+
     val workoutMode: StateFlow<WorkoutMode> =
         workoutModeManager.state
 

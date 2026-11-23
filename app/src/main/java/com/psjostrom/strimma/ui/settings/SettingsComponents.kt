@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -13,7 +14,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -154,20 +158,48 @@ fun AlertBlock(
         )
     }
     if (enabled) {
-        var text by remember(threshold, glucoseUnit) { mutableStateOf(glucoseUnit.formatThreshold(threshold)) }
-        OutlinedTextField(
-            value = text,
-            onValueChange = { v ->
-                text = v
-                glucoseUnit.parseThreshold(v)?.let { onThresholdChange(it) }
-            },
-            label = { Text(thresholdLabel) },
-            // A rejected edit leaves the stored threshold unchanged, so leaving the field shows the stored value again.
-            modifier = Modifier.fillMaxWidth().onFocusChanged {
-                if (!it.isFocused) text = glucoseUnit.formatThreshold(threshold)
-            },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
-        )
+        ThresholdField(threshold, onThresholdChange, glucoseUnit, Modifier.fillMaxWidth(), label = thresholdLabel)
     }
+}
+
+// Saving on every keystroke would store partial values such as "3" on the way to "3.9", and each save would
+// reformat the text while the user types. The field saves once, when the user leaves it.
+@Composable
+internal fun ThresholdField(
+    threshold: Float,
+    onThresholdChange: (Float) -> Unit,
+    glucoseUnit: GlucoseUnit,
+    modifier: Modifier,
+    label: String? = null,
+    textStyle: TextStyle = LocalTextStyle.current,
+) {
+    var text by remember(threshold, glucoseUnit) { mutableStateOf(glucoseUnit.formatThreshold(threshold)) }
+    var edited by remember(threshold, glucoseUnit) { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current
+    val commit by rememberUpdatedState {
+        if (edited) {
+            edited = false
+            // Retyping the shown value must not save: "4", "4.0" and "4,0" parse to 72.07, not the stored 72.
+            glucoseUnit.parseThreshold(text)
+                ?.takeIf { glucoseUnit.formatThreshold(it) != glucoseUnit.formatThreshold(threshold) }
+                ?.let(onThresholdChange)
+            // A rejected or unparseable edit leaves the stored threshold unchanged, so the field shows it again.
+            text = glucoseUnit.formatThreshold(threshold)
+        }
+    }
+    // Switching tab, turning the alert off or leaving the screen removes the field without a focus change.
+    DisposableEffect(Unit) { onDispose { commit() } }
+    OutlinedTextField(
+        value = text,
+        onValueChange = {
+            text = it
+            edited = true
+        },
+        label = label?.let { { Text(it) } },
+        modifier = modifier.onFocusChanged { if (!it.isFocused) commit() },
+        singleLine = true,
+        textStyle = textStyle,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
+        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+    )
 }
