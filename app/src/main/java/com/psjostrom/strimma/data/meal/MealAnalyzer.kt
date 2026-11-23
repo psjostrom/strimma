@@ -56,7 +56,7 @@ class MealAnalyzer @Inject constructor() {
         val baseline = computeBaseline(readings, mealTime) ?: return null
 
         // 2. Determine postprandial window
-        val windowMinutes = determineWindow(readings, mealTime, baseline, params.nextMealTime)
+        val windowMinutes = determineWindow(readings, mealTime, baseline, params.bgLow, params.nextMealTime)
 
         // 3. Extract postprandial readings
         val windowEnd = mealTime + Duration.ofMinutes(windowMinutes).toMillis()
@@ -122,6 +122,7 @@ class MealAnalyzer @Inject constructor() {
         readings: List<GlucoseReading>,
         mealTime: Long,
         baseline: Double,
+        bgLow: Double,
         nextMealTime: Long?
     ): Long {
         val defaultEnd = mealTime + Duration.ofMinutes(DEFAULT_WINDOW_MINUTES).toMillis()
@@ -139,12 +140,15 @@ class MealAnalyzer @Inject constructor() {
             .filter { it.ts in (effectiveEnd - MS_PER_MINUTE * RECOVERY_CHECK_WINDOW_MINUTES)..effectiveEnd }
             .lastOrNull()
 
-        // Extend to 4h if BG hasn't recovered at 3h (and no next meal cutoff)
-        val shouldExtend = nextMealTime == null &&
-            bgAtDefaultEnd != null &&
-            !hasReturned(bgAtDefaultEnd.sgv.toDouble(), baseline)
+        // Extend toward 4h if BG at 3h has not come back down, or is below the Low threshold,
+        // so a low after the meal stays in the window. A next meal before 3h already ended
+        // the window; a next meal between 3h and 4h ends the extension.
+        val bgAt3h = bgAtDefaultEnd?.sgv?.toDouble()
+        val shouldExtend = (nextMealTime == null || nextMealTime >= defaultEnd) &&
+            bgAt3h != null &&
+            (!hasReturned(bgAt3h, baseline) || bgAt3h < bgLow)
 
-        val finalEnd = if (shouldExtend) extendedEnd else effectiveEnd
+        val finalEnd = if (shouldExtend) minOf(extendedEnd, nextMealTime ?: extendedEnd) else effectiveEnd
 
         return ((finalEnd - mealTime) / MS_PER_MINUTE)
     }
@@ -154,20 +158,30 @@ class MealAnalyzer @Inject constructor() {
         mealTime: Long,
         baseline: Double
     ): Int? {
-        // Find peak
+        // A meal without a rise has nothing to recover from.
         val peak = postprandialReadings.maxByOrNull { it.sgv } ?: return null
+        if (hasReturned(peak.sgv.toDouble(), baseline)) return null
 
-        // Find first reading after peak that returns to baseline ±5
+        // The first reading after the peak that is back down near the pre-meal level, and
+        // whose next reading is too. One low reading, such as sensor noise or a
+        // compression low, does not end recovery.
         val afterPeak = postprandialReadings.filter { it.ts > peak.ts }
-        val recoveryReading = afterPeak.firstOrNull { hasReturned(it.sgv.toDouble(), baseline) }
+        val recoveryReading = afterPeak.zipWithNext()
+            .firstOrNull { (reading, next) ->
+                hasReturned(reading.sgv.toDouble(), baseline) && hasReturned(next.sgv.toDouble(), baseline)
+            }
+            ?.first
 
         return recoveryReading?.let {
             ((it.ts - mealTime) / MS_PER_MINUTE).toInt()
         }
     }
 
+    // Glucose has recovered once it is at most 5 mg/dL (0.3 mmol/L) above the pre-meal
+    // level. Falling below the pre-meal level also counts: a reading that drops past the
+    // baseline between two samples has recovered.
     private fun hasReturned(bgMgdl: Double, baseline: Double): Boolean {
-        return bgMgdl in (baseline - BASELINE_TOLERANCE_MGDL)..(baseline + BASELINE_TOLERANCE_MGDL)
+        return bgMgdl <= baseline + BASELINE_TOLERANCE_MGDL
     }
 
     private fun computeTIR(

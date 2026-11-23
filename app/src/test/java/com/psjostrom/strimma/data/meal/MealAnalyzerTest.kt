@@ -143,7 +143,7 @@ class MealAnalyzerTest {
         assertNotNull(result)
         result!!
 
-        // BG returns to ~110 (within baseline ±5) around 150 min
+        // BG falls to ~110, at most 5 mg/dL above the baseline, around 150 min
         assertNotNull(result.recoveryMinutes)
         assertTrue("Recovery should be around 145-155 min", result.recoveryMinutes!! in 145..155)
     }
@@ -231,6 +231,135 @@ class MealAnalyzerTest {
 
         // Window extends because BG hasn't returned to baseline at 180 min
         assertEquals(240, result.windowMinutes)
+    }
+
+    @Test
+    fun `window extends to 240 when the next meal is hours later`() {
+        val preMeal = (-15L..-1L).map { reading(it, 108) }
+        val spikeAndStay = (1L..240L).map { reading(it, 200) }
+
+        val result = analyzer.analyze(
+            meal = meal(50.0),
+            readings = preMeal + spikeAndStay,
+            params = MealAnalysisParams(
+                bgLow = 72.0, bgHigh = 180.0,
+                nextMealTime = baseTime + minutes(360), allTreatments = emptyList(),
+                tauMinutes = 55.0)
+        )
+
+        assertEquals(240, result!!.windowMinutes)
+    }
+
+    @Test
+    fun `a next meal between 180 and 240 minutes ends the extended window`() {
+        val preMeal = (-15L..-1L).map { reading(it, 108) }
+        val spikeAndStay = (1L..240L).map { reading(it, 200) }
+
+        val result = analyzer.analyze(
+            meal = meal(50.0),
+            readings = preMeal + spikeAndStay,
+            params = MealAnalysisParams(
+                bgLow = 72.0, bgHigh = 180.0,
+                nextMealTime = baseTime + minutes(200), allTreatments = emptyList(),
+                tauMinutes = 55.0)
+        )
+
+        assertEquals(200, result!!.windowMinutes)
+    }
+
+    @Test
+    fun `recovery counts a reading that falls below the pre-meal level`() {
+        // Baseline 108. BG peaks at 180 and falls from 130 straight to 90 between two
+        // readings, so no reading lands within 5 mg/dL of the baseline.
+        val preMeal = (-15L..-1L step 5).map { reading(it, 108) }
+        val postMeal = listOf(
+            reading(30, 150), reading(60, 180), reading(90, 160),
+            reading(120, 130), reading(150, 90), reading(180, 95)
+        )
+
+        val result = analyzer.analyze(
+            meal = meal(50.0),
+            readings = preMeal + postMeal,
+            params = MealAnalysisParams(
+                bgLow = 72.0, bgHigh = 180.0,
+                nextMealTime = null, allTreatments = emptyList(),
+                tauMinutes = 55.0)
+        )
+
+        assertEquals(150, result!!.recoveryMinutes)
+    }
+
+    @Test
+    fun `a meal without a rise has no recovery time`() {
+        val preMeal = (-15L..-1L step 5).map { reading(it, 150) }
+        val falling = (5L..180L step 5).map { reading(it, (148 - it / 5 * 2).toInt()) }
+
+        val result = analyzer.analyze(
+            meal = meal(20.0),
+            readings = preMeal + falling,
+            params = MealAnalysisParams(
+                bgLow = 72.0, bgHigh = 180.0,
+                nextMealTime = null, allTreatments = emptyList(),
+                tauMinutes = 55.0)
+        )
+
+        assertNull(result!!.recoveryMinutes)
+    }
+
+    @Test
+    fun `one low reading after the peak does not end recovery`() {
+        // Baseline 110. A single dip to 75 at 90 min is followed by 170 again; glucose
+        // is back near baseline from 150 min.
+        val preMeal = (-15L..-1L step 5).map { reading(it, 110) }
+        val postMeal = listOf(
+            reading(30, 160), reading(60, 200), reading(90, 75), reading(120, 170),
+            reading(150, 112), reading(165, 110), reading(180, 108)
+        )
+
+        val result = analyzer.analyze(
+            meal = meal(50.0),
+            readings = preMeal + postMeal,
+            params = MealAnalysisParams(
+                bgLow = 72.0, bgHigh = 180.0,
+                nextMealTime = null, allTreatments = emptyList(),
+                tauMinutes = 55.0)
+        )
+
+        assertEquals(150, result!!.recoveryMinutes)
+    }
+
+    @Test
+    fun `a meal that is below Low at 180 minutes extends the window to 240`() {
+        val preMeal = (-15L..-1L step 5).map { reading(it, 108) }
+        val postMeal = (5L..240L step 5).map { t -> reading(t, if (t < 60) 160 else 60) }
+
+        val result = analyzer.analyze(
+            meal = meal(50.0),
+            readings = preMeal + postMeal,
+            params = MealAnalysisParams(
+                bgLow = 72.0, bgHigh = 180.0,
+                nextMealTime = null, allTreatments = emptyList(),
+                tauMinutes = 55.0)
+        )
+
+        assertEquals(240, result!!.windowMinutes)
+    }
+
+    @Test
+    fun `a meal below the pre-meal level but above Low at 180 minutes keeps the 180 minute window`() {
+        val preMeal = (-15L..-1L step 5).map { reading(it, 108) }
+        val postMeal = (5L..240L step 5).map { t -> reading(t, if (t < 60) 160 else 90) }
+
+        val result = analyzer.analyze(
+            meal = meal(50.0),
+            readings = preMeal + postMeal,
+            params = MealAnalysisParams(
+                bgLow = 72.0, bgHigh = 180.0,
+                nextMealTime = null, allTreatments = emptyList(),
+                tauMinutes = 55.0)
+        )
+
+        assertEquals(180, result!!.windowMinutes)
     }
 
     @Test

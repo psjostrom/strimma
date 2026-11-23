@@ -152,7 +152,6 @@ class StoryViewModel @Inject constructor(
             val readings = statsReadings.inRange(curStart, curEnd)
             val prevReadings = statsReadings.inRange(prevStart, prevEnd)
             val carbTreatments = treatmentDao.carbsInRange(curStart, curEnd)
-            val allTreatments = treatmentDao.allSince(curStart)
 
             // Use the user's standard targets, NOT workout-mode-affected runtime
             // thresholds. Workout mode is a moment-in-time runtime state; historical
@@ -163,6 +162,8 @@ class StoryViewModel @Inject constructor(
             val insulinType = settings.insulinType.first()
             val customDIA = settings.customDIA.first()
             val tauMinutes = IOBComputer.tauForInsulinType(insulinType, customDIA)
+            // IOB at the month's first meal counts insulin from before the month.
+            val allTreatments = treatmentDao.allSince(curStart - IOBComputer.lookbackMs(tauMinutes))
 
             val mealConfig = MealTimeSlotConfig(
                 breakfastStart = settings.mealBreakfastStart.first(),
