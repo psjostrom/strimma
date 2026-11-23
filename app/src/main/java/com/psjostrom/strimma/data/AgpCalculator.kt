@@ -57,7 +57,12 @@ object AgpCalculator {
     private const val MINUTES_PER_HOUR = 60
     private const val MAX_SENSOR_INTERVAL_MINUTES = 5L
 
-    fun compute(readings: List<GlucoseReading>): AgpResult? {
+    /**
+     * [periodStart] and [periodEnd] are the report period. Sensor active % counts expected
+     * readings over that whole period, so days without a sensor at its start or end count
+     * as inactive.
+     */
+    fun compute(readings: List<GlucoseReading>, periodStart: Long, periodEnd: Long): AgpResult? {
         if (readings.isEmpty()) return null
 
         val bucketMap = Array(BUCKETS_PER_DAY) { mutableListOf<Double>() }
@@ -86,11 +91,11 @@ object AgpCalculator {
             )
         }
 
-        val metrics = computeMetrics(readings)
+        val metrics = computeMetrics(readings, periodEnd - periodStart)
         return AgpResult(buckets = buckets, metrics = metrics)
     }
 
-    private fun computeMetrics(readings: List<GlucoseReading>): AgpMetrics {
+    private fun computeMetrics(readings: List<GlucoseReading>, periodMs: Long): AgpMetrics {
         val values = readings.map { it.sgv.toDouble() }
         val count = values.size
         val avg = values.average()
@@ -106,7 +111,7 @@ object AgpCalculator {
         val veryHigh = values.count { it > VERY_HIGH }
 
         // Sensor active %: estimate expected readings from observed interval
-        val sensorActivePercent = estimateSensorActive(readings)
+        val sensorActivePercent = estimateSensorActive(readings, periodMs)
 
         return AgpMetrics(
             veryLowPercent = (veryLow.toDouble() / count) * PERCENT,
@@ -122,25 +127,23 @@ object AgpCalculator {
         )
     }
 
-    private fun estimateSensorActive(readings: List<GlucoseReading>): Double {
-        if (readings.size < 2) return PERCENT
+    private fun estimateSensorActive(readings: List<GlucoseReading>, periodMs: Long): Double {
+        if (periodMs <= 0) return PERCENT
         val sorted = readings.sortedBy { it.ts }
-        val spanMs = sorted.last().ts - sorted.first().ts
-        if (spanMs <= 0) return PERCENT
 
-        // Find typical interval from median of gaps
-        val gaps = (1 until sorted.size).map { sorted[it].ts - sorted[it - 1].ts }
-        val sortedGaps = gaps.sorted()
-        val mid = sortedGaps.size / 2
-        val medianGapMs = if (sortedGaps.size % 2 == 0) {
-            (sortedGaps[mid - 1] + sortedGaps[mid]) / 2
-        } else {
-            sortedGaps[mid]
+        // Typical interval from the median gap. One reading has no gap, so the longest
+        // sensor interval is assumed.
+        val gaps = sorted.zipWithNext { a, b -> b.ts - a.ts }.sorted()
+        val mid = gaps.size / 2
+        val medianGapMs = when {
+            gaps.isEmpty() -> MAX_SENSOR_INTERVAL_MINUTES * MS_PER_MINUTE
+            gaps.size % 2 == 0 -> (gaps[mid - 1] + gaps[mid]) / 2
+            else -> gaps[mid]
         }
         // Clamp to reasonable range (1-5 min)
         val intervalMs = medianGapMs.coerceIn(MS_PER_MINUTE, MAX_SENSOR_INTERVAL_MINUTES * MS_PER_MINUTE)
 
-        val expectedReadings = spanMs / intervalMs + 1
+        val expectedReadings = periodMs / intervalMs
         return ((readings.size.toDouble() / expectedReadings) * PERCENT).coerceAtMost(PERCENT)
     }
 

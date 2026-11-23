@@ -14,6 +14,11 @@ import javax.inject.Singleton
  * - The remaining effects (alert, push, upload, broadcast, HC write) run via [fanOut] after
  *   the debounce window, with cluster supersession handling the Eversense OLD→NEW case.
  *
+ * The debounced effects are scheduled before **eager** runs. [ReadingFanOut.fire] only
+ * schedules them and returns at once, so the order does not delay the notification. An
+ * exception from the notification or widget update therefore cannot stop the alert from
+ * being scheduled.
+ *
  * `cameFromNightscout=true` skips [push] only — used by the Nightscout follower path so we
  * don't echo a reading back to the server we just got it from.
  */
@@ -32,7 +37,6 @@ class ReadingDispatcher @Inject constructor(
         broadcast: suspend (GlucoseReading) -> Unit,
         hc: suspend () -> Unit,
     ) {
-        eager()
         fanOut.fire(reading) { settled ->
             alert(settled)
             if (!cameFromNightscout) push(settled)
@@ -40,5 +44,6 @@ class ReadingDispatcher @Inject constructor(
             broadcast(settled)
             hc()
         }
+        eager()
     }
 }

@@ -20,14 +20,18 @@ class AgpCalculatorTest {
         return GlucoseReading(ts = cal.timeInMillis, sgv = sgv, direction = "Flat", delta = null)
     }
 
+    /** AGP over the span of [readings], for tests that do not check sensor active %. */
+    private fun agp(readings: List<GlucoseReading>): AgpResult? =
+        AgpCalculator.compute(readings, readings.minOfOrNull { it.ts } ?: 0L, readings.maxOfOrNull { it.ts } ?: 0L)
+
     @Test
     fun `compute returns null for empty readings`() {
-        assertNull(AgpCalculator.compute(emptyList()))
+        assertNull(agp(emptyList()))
     }
 
     @Test
     fun `compute returns result for single reading`() {
-        val result = AgpCalculator.compute(listOf(reading(12, 0, 120)))
+        val result = agp(listOf(reading(12, 0, 120)))
         assertNotNull(result)
         assertEquals(1, result!!.buckets.size)
         assertEquals(120.0, result.buckets[0].p50, 0.1)
@@ -41,7 +45,7 @@ class AgpCalculatorTest {
             reading(0, 15, 120),
             reading(6, 30, 140)
         )
-        val result = AgpCalculator.compute(readings)!!
+        val result = agp(readings)!!
         // 00:00 and 00:14 go in bucket 0 (minute 0), 00:15 in bucket 1 (minute 15), 06:30 in bucket 26 (minute 390)
         val bucket0 = result.buckets.first { it.minuteOfDay == 0 }
         assertEquals(2, bucket0.count)
@@ -76,7 +80,7 @@ class AgpCalculatorTest {
             reading(8, 45, 200), // high (180-250)
             reading(9, 0, 300)   // very high (>250)
         )
-        val result = AgpCalculator.compute(readings)!!
+        val result = agp(readings)!!
         val m = result.metrics
         assertEquals(20.0, m.veryLowPercent, 0.1)
         assertEquals(20.0, m.lowPercent, 0.1)
@@ -93,7 +97,7 @@ class AgpCalculatorTest {
             reading(8, 30, 180), // in range
             reading(8, 45, 250)  // high (>180, <=250) — NOT very high
         )
-        val result = AgpCalculator.compute(readings)!!
+        val result = agp(readings)!!
         val m = result.metrics
         assertEquals(0.0, m.veryLowPercent, 0.1)
         assertEquals(25.0, m.lowPercent, 0.1)
@@ -106,7 +110,7 @@ class AgpCalculatorTest {
     fun `GMI formula matches expected`() {
         // Average 150 mg/dL → GMI = 3.31 + 0.02392 * 150 = 6.898
         val readings = listOf(reading(8, 0, 150))
-        val result = AgpCalculator.compute(readings)!!
+        val result = agp(readings)!!
         assertEquals(6.898, result.metrics.gmi, 0.01)
     }
 
@@ -117,7 +121,7 @@ class AgpCalculatorTest {
             reading(8, 0, 100),
             reading(8, 15, 200)
         )
-        val result = AgpCalculator.compute(readings)!!
+        val result = agp(readings)!!
         assertEquals(33.3, result.metrics.cv, 0.5)
     }
 
@@ -128,20 +132,44 @@ class AgpCalculatorTest {
             reading(8, 0, 120, dayOffset = 1),
             reading(8, 0, 140, dayOffset = 2)
         )
-        val result = AgpCalculator.compute(readings)!!
+        val result = agp(readings)!!
         val bucket = result.buckets.first { it.minuteOfDay == 480 }
         assertEquals(3, bucket.count)
         assertEquals(120.0, bucket.p50, 0.1)
     }
 
     @Test
-    fun `sensor active percent is 100 for continuous data`() {
-        // 15 readings 1 minute apart
-        val baseTime = System.currentTimeMillis()
+    fun `sensor active percent is 100 for continuous data over the period`() {
+        // 15 readings 1 minute apart fill a 15-minute period.
+        val periodStart = System.currentTimeMillis()
         val readings = (0 until 15).map { i ->
-            GlucoseReading(ts = baseTime + i * 60_000L, sgv = 120, direction = "Flat", delta = null)
+            GlucoseReading(ts = periodStart + i * 60_000L, sgv = 120, direction = "Flat", delta = null)
         }
-        val result = AgpCalculator.compute(readings)!!
+        val result = AgpCalculator.compute(readings, periodStart, periodStart + 15 * 60_000L)!!
         assertEquals(100.0, result.metrics.sensorActivePercent, 1.0)
+    }
+
+    @Test
+    fun `sensor active percent is near zero for one reading in the period`() {
+        val periodEnd = System.currentTimeMillis()
+        val reading = GlucoseReading(ts = periodEnd, sgv = 120, direction = "Flat", delta = null)
+
+        val result = AgpCalculator.compute(listOf(reading), periodEnd - 14 * 86_400_000L, periodEnd)!!
+
+        assertEquals(0.0, result.metrics.sensorActivePercent, 0.1)
+    }
+
+    @Test
+    fun `sensor active percent counts days without a sensor in the period`() {
+        // 7 days of 5-minute readings at the end of a 14-day period.
+        val periodEnd = System.currentTimeMillis()
+        val periodStart = periodEnd - 14 * 86_400_000L
+        val readings = (0 until 7 * 288).map { i ->
+            GlucoseReading(ts = periodEnd - i * 300_000L, sgv = 120, direction = "Flat", delta = null)
+        }
+
+        val result = AgpCalculator.compute(readings, periodStart, periodEnd)!!
+
+        assertEquals(50.0, result.metrics.sensorActivePercent, 1.0)
     }
 }

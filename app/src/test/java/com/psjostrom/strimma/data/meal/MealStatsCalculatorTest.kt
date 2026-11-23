@@ -50,6 +50,12 @@ class MealStatsCalculatorTest {
         assertEquals(120, agg.avgRecoveryMinutes)
     }
 
+    @Test fun `aggregate has no recovery when no meal recovered`() {
+        val results = listOf(resultAt(7, 30.0, 40.0, 90.0, null), resultAt(8, 25.0, 50.0, 80.0, null))
+        val agg = MealStatsCalculator.aggregate(results)
+        assertNull(agg.avgRecoveryMinutes)
+    }
+
     @Test fun `groups by carb size`() {
         val results = listOf(
             resultAt(7, 10.0, 90.0, 20.0, 60),
