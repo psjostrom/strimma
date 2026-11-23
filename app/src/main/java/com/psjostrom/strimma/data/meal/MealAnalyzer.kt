@@ -42,12 +42,14 @@ class MealAnalyzer @Inject constructor() {
      * @param nextMealTime Timestamp of next meal (cuts window short), or null
      * @param allTreatments All treatments (for IOB computation)
      * @param tauMinutes Insulin time constant (for IOB computation)
-     * @return MealPostprandialResult or null if insufficient data
+     * @param now Current time; a meal whose window ends after it is not analyzed yet
+     * @return MealPostprandialResult or null if insufficient data or the window has not ended
      */
     fun analyze(
         meal: Treatment,
         readings: List<GlucoseReading>,
-        params: MealAnalysisParams
+        params: MealAnalysisParams,
+        now: Long = System.currentTimeMillis()
     ): MealPostprandialResult? {
         val mealTime = meal.createdAt
         val carbGrams = meal.carbs ?: return null
@@ -58,13 +60,14 @@ class MealAnalyzer @Inject constructor() {
         // 2. Determine postprandial window
         val windowMinutes = determineWindow(readings, mealTime, baseline, params.bgLow, params.nextMealTime)
 
-        // 3. Extract postprandial readings
+        // 3. Extract postprandial readings. A meal whose window has not ended would show
+        // partial TIR, peak and recovery as if they were final, so it waits until the end.
         val windowEnd = mealTime + Duration.ofMinutes(windowMinutes).toMillis()
         val postprandialReadings = readings
             .filter { it.ts > mealTime && it.ts <= windowEnd }
             .sortedBy { it.ts }
 
-        if (postprandialReadings.size < MIN_POSTPRANDIAL_READINGS) return null
+        if (windowEnd > now || postprandialReadings.size < MIN_POSTPRANDIAL_READINGS) return null
 
         // 4. Compute metrics
         val peak = postprandialReadings.maxByOrNull { it.sgv }!!
