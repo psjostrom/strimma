@@ -154,6 +154,7 @@
     <string name="settings_display_graph_window" tools:ignore="PluralsCandidate">Graph Window: %1$d hours</string>
     <string name="settings_display_low_threshold">Low Threshold (%1$s)</string>
     <string name="settings_display_high_threshold">High Threshold (%1$s)</string>
+    <string name="settings_display_threshold_order_error">Low Threshold must be below High Threshold.</string>
     <string name="settings_display_language">Language</string>
     <string name="settings_display_language_system">System default</string>
     <string name="settings_display_theme">Theme</string>

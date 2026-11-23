@@ -87,7 +87,7 @@ See [Treatments & IOB](treatments.md) for details.
 
 ## Display
 
-Configure units, graph window, thresholds, and theme. BG Low and BG High are saved when you leave the field or press Done on the keyboard.
+Configure units, graph window, thresholds, and theme. BG Low and BG High are saved when you leave the field or press Done on the keyboard. BG High must stay at least 0.1 mmol/L (1.8 mg/dL) above BG Low. Strimma rejects an edit that breaks this, shows a message, and shows the stored value in the field again.
 
 | Setting | Description | Default |
 |---------|-------------|---------|

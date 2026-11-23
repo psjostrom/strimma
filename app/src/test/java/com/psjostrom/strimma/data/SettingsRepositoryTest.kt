@@ -11,6 +11,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
@@ -114,5 +115,29 @@ class SettingsRepositoryTest {
 
         assertEquals(low, repo.exerciseTargetLow(ExerciseCategory.RUNNING).first())
         assertEquals(high, repo.exerciseTargetHigh(ExerciseCategory.RUNNING).first())
+    }
+
+    @Test
+    fun `BG range edit that puts low at or above high is not stored`() = runTest {
+        assertEquals(false, repo.setBgLow(SettingsRepository.DEFAULT_BG_HIGH))
+        assertEquals(false, repo.setBgHigh(60f))
+        // "4.0" typed in mmol/L is 72.07 mg/dL, which would show the same number as the default Low of 72.
+        assertEquals(false, repo.setBgHigh(GlucoseUnit.MMOL.parseThreshold("4.0")!!))
+        assertEquals(true, repo.setBgHigh(GlucoseUnit.MMOL.parseThreshold("4.1")!!))
+        assertEquals(true, repo.setBgHigh(SettingsRepository.DEFAULT_BG_HIGH))
+
+        assertEquals(SettingsRepository.DEFAULT_BG_LOW, repo.bgLow.first())
+        assertEquals(SettingsRepository.DEFAULT_BG_HIGH, repo.bgHigh.first())
+    }
+
+    @Test
+    fun `inverted BG range from a backup can be repaired with one edit`() = runTest {
+        val settings = JSONObject().put("bg_low", 234.0).put("bg_high", 180.0)
+        repo.importFromJson(JSONObject().put("version", 3).put("settings", settings).toString())
+
+        assertEquals(true, repo.setBgLow(72f))
+
+        assertEquals(72f, repo.bgLow.first())
+        assertEquals(180f, repo.bgHigh.first())
     }
 }
