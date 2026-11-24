@@ -77,9 +77,10 @@ class NightscoutPuller @Inject constructor(
                 direction = entry.direction ?: "NONE",
                 delta = entry.delta,
                 pushed = 1,
-                // Pulled history is not sent to Tidepool. It came from Nightscout, and
-                // the uploader that sent it there may already send it to Tidepool.
-                tidepoolUploaded = 1
+                // Pulled history is not sent to Tidepool or Health Connect. It came from
+                // Nightscout, and the uploader that sent it there may already send it to both.
+                tidepoolUploaded = 1,
+                hcWritten = 1
             )
         }
 

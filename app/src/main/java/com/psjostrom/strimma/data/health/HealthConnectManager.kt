@@ -150,26 +150,51 @@ class HealthConnectManager @Inject constructor(
         }
     }
 
-    suspend fun writeGlucoseReading(reading: GlucoseReading) {
-        val client = getClient() ?: return
-        try {
-            val instant = Instant.ofEpochMilli(reading.ts)
-            val record = BloodGlucoseRecord(
-                time = instant,
-                zoneOffset = ZoneOffset.systemDefault().rules.getOffset(instant),
-                metadata = HcMetadata.autoRecorded(
-                    device = Device(type = Device.TYPE_PHONE)
-                ),
-                level = BloodGlucose.milligramsPerDeciliter(reading.sgv.toDouble()),
-                specimenSource = BloodGlucoseRecord.SPECIMEN_SOURCE_INTERSTITIAL_FLUID
-            )
-            client.insertRecords(listOf(record))
+    /**
+     * Writes [readings] in one request. Returns the readings Health Connect now has, which
+     * includes readings it cannot store as a record, so they do not block later writes.
+     * Returns an empty list when the request fails, so the readings are retried.
+     *
+     * Each record's client record ID is the reading timestamp, and its version is the write
+     * time. Health Connect updates a record only when the version is higher, so writing a
+     * reading again updates its record instead of adding a duplicate.
+     */
+    suspend fun writeGlucoseReadings(readings: List<GlucoseReading>): List<GlucoseReading> {
+        val client = getClient() ?: return emptyList()
+        val version = System.currentTimeMillis()
+        val records = readings.mapNotNull { reading ->
+            try {
+                bloodGlucoseRecord(reading, version)
+            } catch (e: IllegalArgumentException) {
+                DebugLog.log("HC skipped reading ts=${reading.ts}: ${e.message}")
+                null
+            }
+        }
+        return try {
+            if (records.isNotEmpty()) client.insertRecords(records)
+            readings
         } catch (
             @Suppress("TooGenericExceptionCaught") // HC SDK can throw various platform exceptions
             e: Exception
         ) {
             DebugLog.log("HC write failed: ${e.javaClass.simpleName}: ${e.message}")
+            emptyList()
         }
+    }
+
+    private fun bloodGlucoseRecord(reading: GlucoseReading, version: Long): BloodGlucoseRecord {
+        val instant = Instant.ofEpochMilli(reading.ts)
+        return BloodGlucoseRecord(
+            time = instant,
+            zoneOffset = ZoneOffset.systemDefault().rules.getOffset(instant),
+            metadata = HcMetadata.autoRecorded(
+                device = Device(type = Device.TYPE_PHONE),
+                clientRecordId = "strimma-bg-${reading.ts}",
+                clientRecordVersion = version
+            ),
+            level = BloodGlucose.milligramsPerDeciliter(reading.sgv.toDouble()),
+            specimenSource = BloodGlucoseRecord.SPECIMEN_SOURCE_INTERSTITIAL_FLUID
+        )
     }
 
     suspend fun getChangesToken(): String? {
