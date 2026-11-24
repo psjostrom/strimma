@@ -134,6 +134,7 @@
     <string name="settings_display_graph_window">Graff\u00F6nster: %1$d timmar</string>
     <string name="settings_display_low_threshold">L\u00E5g tr\u00F6skel (%1$s)</string>
     <string name="settings_display_high_threshold">H\u00F6g tr\u00F6skel (%1$s)</string>
+    <string name="settings_display_threshold_order_error">L\u00E5g tr\u00F6skel m\u00E5ste vara l\u00E4gre \u00E4n h\u00F6g tr\u00F6skel.</string>
     <string name="settings_display_language">Språk</string>
     <string name="settings_display_language_system">Systemstandard</string>
     <string name="settings_display_theme">Tema</string>

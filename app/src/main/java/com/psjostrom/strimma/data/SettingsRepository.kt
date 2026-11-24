@@ -316,6 +316,8 @@ class SettingsRepository @Inject constructor(
         internal const val DEFAULT_GRAPH_WINDOW_HOURS = 4
         const val DEFAULT_BG_LOW = 72f
         const val DEFAULT_BG_HIGH = 180f
+        // 0.1 mmol/L, rounded down so two typed mmol/L values 0.1 apart pass despite float error.
+        const val MIN_BG_RANGE_MGDL = 1.8f
         const val DEFAULT_ALERT_LOW = 72f
         const val DEFAULT_ALERT_HIGH = 180f
         const val DEFAULT_ALERT_URGENT_LOW = 54f
@@ -484,8 +486,24 @@ class SettingsRepository @Inject constructor(
         dataStore.edit { it[KEY_NIGHTSCOUT_URL] = url.trim() }
     }
     suspend fun setGraphWindowHours(hours: Int) { dataStore.edit { it[KEY_GRAPH_WINDOW_HOURS] = hours } }
-    suspend fun setBgLow(value: Float) { dataStore.edit { it[KEY_BG_LOW] = value } }
-    suspend fun setBgHigh(value: Float) { dataStore.edit { it[KEY_BG_HIGH] = value } }
+    // An inverted range would swap the graph colours and the time-in-range counts. High must sit at least one
+    // 0.1 mmol/L step above Low, so the two fields never show the same number. The check and the write share one
+    // edit, so two quick edits cannot both pass against the same old value. Returns false when nothing was stored.
+    suspend fun setBgLow(value: Float): Boolean =
+        setBgRangeEnd(KEY_BG_LOW, value) { isBgRange(value, it[KEY_BG_HIGH] ?: DEFAULT_BG_HIGH) }
+    suspend fun setBgHigh(value: Float): Boolean =
+        setBgRangeEnd(KEY_BG_HIGH, value) { isBgRange(it[KEY_BG_LOW] ?: DEFAULT_BG_LOW, value) }
+
+    private fun isBgRange(low: Float, high: Float): Boolean = high - low >= MIN_BG_RANGE_MGDL
+
+    private suspend fun setBgRangeEnd(key: Preferences.Key<Float>, value: Float, ordered: (Preferences) -> Boolean): Boolean {
+        var stored = false
+        dataStore.edit {
+            stored = ordered(it)
+            if (stored) it[key] = value
+        }
+        return stored
+    }
 
     fun getNightscoutSecret(): String = encryptedPrefs.getString(KEY_NIGHTSCOUT_SECRET, "") ?: ""
     fun setNightscoutSecret(secret: String) {

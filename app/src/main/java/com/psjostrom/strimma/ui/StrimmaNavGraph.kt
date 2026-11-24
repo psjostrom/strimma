@@ -2,6 +2,7 @@ package com.psjostrom.strimma.ui
 
 import android.content.Intent
 import android.os.PowerManager
+import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -150,6 +151,11 @@ fun StrimmaNavGraph(
     activity: MainActivity,
 ) {
     val scope = rememberCoroutineScope()
+    // Application context: the toast can fire after this activity was recreated.
+    val appContext = activity.applicationContext
+    val showBgRangeError = {
+        Toast.makeText(appContext, R.string.settings_display_threshold_order_error, Toast.LENGTH_LONG).show()
+    }
     val bgLow by viewModel.bgLow.collectAsState()
     val bgHigh by viewModel.bgHigh.collectAsState()
     val graphWindowHours by viewModel.graphWindowHours.collectAsState()
@@ -400,8 +406,8 @@ fun StrimmaNavGraph(
                 onGlucoseUnitChange = { scope.launch { viewModel.settings.setGlucoseUnit(it) } },
                 onHbA1cUnitChange = { scope.launch { viewModel.settings.setHbA1cUnit(it) } },
                 onGraphWindowChange = { scope.launch { viewModel.settings.setGraphWindowHours(it) } },
-                onBgLowChange = viewModel::setBgLow,
-                onBgHighChange = viewModel::setBgHigh,
+                onBgLowChange = { viewModel.setBgLow(it, showBgRangeError) },
+                onBgHighChange = { viewModel.setBgHigh(it, showBgRangeError) },
                 onThemeModeChange = { scope.launch { viewModel.settings.setThemeMode(it) } },
                 onCompressionLowDetectionChange = { scope.launch { viewModel.settings.setCompressionLowDetection(it) } },
                 onBack = { navController.popBackStack() }
