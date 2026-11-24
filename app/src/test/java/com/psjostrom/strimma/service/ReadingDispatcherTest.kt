@@ -81,7 +81,7 @@ class ReadingDispatcherTest {
                 push = { settled -> spies.pushed.add(settled.sgv) },
                 upload = { spies.uploadCount.incrementAndGet() },
                 broadcast = { settled -> spies.broadcasted.add(settled.sgv) },
-                hc = { settled -> spies.hcWritten.add(settled.sgv) },
+                hc = { spies.hcCount.incrementAndGet() },
             )
         }
         advanceUntilIdle()
@@ -90,7 +90,7 @@ class ReadingDispatcherTest {
         assertEquals(listOf(55), spies.alerted)
         assertEquals(listOf(55), spies.pushed)
         assertEquals(listOf(55), spies.broadcasted)
-        assertEquals(listOf(55), spies.hcWritten)
+        assertEquals(1, spies.hcCount.get())
     }
 
     @Test
