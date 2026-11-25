@@ -56,6 +56,7 @@ The notification subtitle packs multiple pieces of information, separated by ` �
 2. **Prediction warning** (optional) — only shown when you're in range and a crossing is predicted: "Low 10m" or "High 5m".
 3. **IOB** (optional) — only shown when treatment sync is enabled and IOB > 0: "IOB 2.3U".
 4. **Workout indicator** (optional) — only shown when workout mode is on: "Workout" for the first minute, then "Workout 0:42" with elapsed time. See [Workout Mode](workout-mode.md).
+5. **Alerts paused** (optional) — only shown while alerts are paused. It names the paused alerts and the time left, with Low before High: "Low alerts paused 20m · High alerts paused 1h 30m". "Pause all" shows one segment: "All alerts paused 1h".
 
 Example: `+0.3 · Low 10m · IOB 2.3U · Workout 0:42`
 

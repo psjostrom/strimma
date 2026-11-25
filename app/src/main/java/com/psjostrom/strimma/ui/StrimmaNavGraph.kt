@@ -236,9 +236,8 @@ fun StrimmaNavGraph(
         }
         composable("main") {
             val alertsViewModel: AlertsViewModel = hiltViewModel()
-            val pauseLowExpiryMs by alertsViewModel.pauseLowExpiryMs.collectAsState()
-            val pauseHighExpiryMs by alertsViewModel.pauseHighExpiryMs.collectAsState()
-            val unifiedPauseExpiryMs by alertsViewModel.unifiedPauseExpiryMs.collectAsState()
+            val pauseLow by alertsViewModel.pauseLow.collectAsState()
+            val pauseHigh by alertsViewModel.pauseHigh.collectAsState()
             val activePatterns by viewModel.activePatterns.collectAsState()
             val storyReady by viewModel.storyReady.collectAsState()
             val lastMonth = java.time.YearMonth.now().minusMonths(1)
@@ -259,9 +258,8 @@ fun StrimmaNavGraph(
                 iobTauMinutes = viewModel.tauMinutes.collectAsState().value,
                 exerciseSessions = exerciseSessions,
                 guidanceState = guidanceState,
-                pauseLowExpiryMs = pauseLowExpiryMs,
-                pauseHighExpiryMs = pauseHighExpiryMs,
-                unifiedPauseExpiryMs = unifiedPauseExpiryMs,
+                pauseLow = pauseLow,
+                pauseHigh = pauseHigh,
                 onPauseAlerts = alertsViewModel::pauseAlerts,
                 onPauseAllAlerts = alertsViewModel::pauseAllAlerts,
                 onCancelPause = alertsViewModel::cancelAlertPause,

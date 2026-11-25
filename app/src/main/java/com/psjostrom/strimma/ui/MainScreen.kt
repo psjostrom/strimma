@@ -61,10 +61,14 @@ import com.psjostrom.strimma.graph.computeYRange
 import com.psjostrom.strimma.data.workout.WorkoutMode
 import com.psjostrom.strimma.notification.AlertCategory
 import com.psjostrom.strimma.notification.AlertManager
+import com.psjostrom.strimma.notification.AlertPause
+import com.psjostrom.strimma.notification.PauseScope
+import com.psjostrom.strimma.notification.activePauseIndicators
+import com.psjostrom.strimma.notification.formatPauseCountdown
+import com.psjostrom.strimma.notification.pillLabel
 import com.psjostrom.strimma.data.pattern.GlucosePattern
 import com.psjostrom.strimma.ui.components.InsightCard
 import com.psjostrom.strimma.ui.components.PauseAlertsSheet
-import com.psjostrom.strimma.ui.components.rememberCountdownText
 import com.psjostrom.strimma.ui.components.rememberTickingNowMs
 import com.psjostrom.strimma.ui.theme.BolusBlue
 import com.psjostrom.strimma.ui.theme.CarbGreen
@@ -82,7 +86,6 @@ import com.psjostrom.strimma.ui.theme.TintDanger
 import com.psjostrom.strimma.ui.theme.TintWarning
 import com.psjostrom.strimma.ui.theme.Warning
 import androidx.compose.ui.graphics.Path
-import kotlinx.coroutines.delay
 
 private const val MINIMAP_WINDOW_MS = 24L * 3600_000L
 private const val COMPRESSION_BAND_ALPHA = 0.12f
@@ -104,9 +107,8 @@ fun MainScreen(
     exerciseSessions: List<StoredExerciseSession> = emptyList(),
     guidanceState: GuidanceState = GuidanceState.NoWorkout,
     onComputeBGContext: (suspend (StoredExerciseSession) -> ExerciseBGContext?)? = null,
-    pauseLowExpiryMs: Long? = null,
-    pauseHighExpiryMs: Long? = null,
-    unifiedPauseExpiryMs: Long? = null,
+    pauseLow: AlertPause? = null,
+    pauseHigh: AlertPause? = null,
     onPauseAlerts: (AlertCategory, Long) -> Unit = { _, _ -> },
     onPauseAllAlerts: (Long) -> Unit = {},
     onCancelPause: (AlertCategory) -> Unit = {},
@@ -164,9 +166,8 @@ fun MainScreen(
 
     if (showPauseSheet) {
         PauseAlertsSheet(
-            pauseLowExpiryMs = pauseLowExpiryMs,
-            pauseHighExpiryMs = pauseHighExpiryMs,
-            unifiedExpiryMs = unifiedPauseExpiryMs,
+            pauseLow = pauseLow,
+            pauseHigh = pauseHigh,
             onPause = onPauseAlerts,
             onPauseAll = onPauseAllAlerts,
             onCancel = onCancelPause,
@@ -215,15 +216,17 @@ fun MainScreen(
                 PredictionComputer.compute(readings, predictionMinutes, bgLow.toDouble(), bgHigh.toDouble())
             }
             val crossing = prediction?.crossing
+            // One clock for the reading age, the pause pills and the pause icon, so the pills
+            // and the icon change at the same tick when a pause ends.
+            val nowMs = rememberTickingNowMs()
             Box(modifier = Modifier.fillMaxWidth()) {
                 BgHeader(
-                    latestReading, bgLow, bgHigh, glucoseUnit,
+                    latestReading, bgLow, bgHigh, glucoseUnit, nowMs,
                     modifier = Modifier.fillMaxWidth(),
                     prediction = prediction, readings = readings,
                     iob = iob, treatments = treatments, iobTauMinutes = iobTauMinutes,
-                    pauseLowExpiryMs = pauseLowExpiryMs,
-                    pauseHighExpiryMs = pauseHighExpiryMs,
-                    unifiedPauseExpiryMs = unifiedPauseExpiryMs,
+                    pauseLow = pauseLow,
+                    pauseHigh = pauseHigh,
                     onPausePillClick = { showPauseSheet = true },
                     onPauseAlerts = onPauseAlerts,
                     workoutMode = workoutMode,
@@ -238,11 +241,8 @@ fun MainScreen(
                                 InRange else MaterialTheme.colorScheme.outline
                         )
                     }
-                    // AlertManager nulls each expiry StateFlow the moment the pause expires,
-                    // so a non-null value is exactly equivalent to "currently paused" — no
-                    // wall-clock ticker needed to keep the icon in sync.
                     val anyPauseActive =
-                        pauseLowExpiryMs != null || pauseHighExpiryMs != null || unifiedPauseExpiryMs != null
+                        activePauseIndicators(pauseLow, pauseHigh, nowMs).isNotEmpty()
                     IconButton(onClick = { showPauseSheet = true }) {
                         Icon(
                             Icons.Outlined.NotificationsOff,
@@ -354,31 +354,25 @@ fun MainScreen(
 private fun BgHeader(
     reading: GlucoseReading?, bgLow: Float, bgHigh: Float,
     glucoseUnit: GlucoseUnit,
+    nowMs: Long,
     modifier: Modifier = Modifier,
     prediction: Prediction? = null,
     readings: List<GlucoseReading> = emptyList(),
     iob: Double = 0.0,
     treatments: List<Treatment> = emptyList(),
     iobTauMinutes: Double = 55.0,
-    pauseLowExpiryMs: Long? = null,
-    pauseHighExpiryMs: Long? = null,
-    unifiedPauseExpiryMs: Long? = null,
+    pauseLow: AlertPause? = null,
+    pauseHigh: AlertPause? = null,
     onPausePillClick: () -> Unit = {},
     onPauseAlerts: (AlertCategory, Long) -> Unit = { _, _ -> },
     workoutMode: WorkoutMode = WorkoutMode.Off,
     onWorkoutPillClick: () -> Unit = {},
 ) {
     val crossing = prediction?.crossing
-    var minutesAgo by remember { mutableIntStateOf(0) }
-
-    LaunchedEffect(reading?.ts) {
-        while (true) {
-            minutesAgo = if (reading != null) {
-                ((System.currentTimeMillis() - reading.ts) / 60_000).toInt()
-            } else -1
-            delay(60_000)
-        }
-    }
+    // nowMs refreshes when the screen resumes. A reading that aged while the phone slept
+    // must show its real age and the stale color as soon as the screen is on.
+    // A reading can be a few seconds newer than the last tick, so the age never goes below 0.
+    val minutesAgo = if (reading != null) ((nowMs - reading.ts) / 60_000).toInt().coerceAtLeast(0) else -1
 
     val isStale = minutesAgo > AlertManager.STALE_THRESHOLD_MINUTES
     val direction = reading?.let {
@@ -436,15 +430,10 @@ private fun BgHeader(
         var showPredictionDetail by remember { mutableStateOf(false) }
         val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
 
-        // AlertManager nulls each expiry StateFlow on natural expiry, so a non-null value
-        // is exactly equivalent to "currently paused" — no ticker needed for the gates.
-        // Each pill's countdown text still has its own internal ticker (rememberCountdownText).
-        val activeHigh = pauseHighExpiryMs != null
-        val activeLow = pauseLowExpiryMs != null
-        val unifiedActive = unifiedPauseExpiryMs != null
+        val pauseIndicators = activePauseIndicators(pauseLow, pauseHigh, nowMs)
 
         val workoutModeOn = workoutMode is WorkoutMode.On
-        val hasPills = crossing != null || iob > 0.0 || activeHigh || activeLow || workoutModeOn
+        val hasPills = crossing != null || iob > 0.0 || pauseIndicators.isNotEmpty() || workoutModeOn
 
         if (hasPills) {
             Spacer(modifier = Modifier.height(8.dp))
@@ -530,60 +519,28 @@ private fun BgHeader(
                     }
                 }
 
-                if (unifiedActive) {
-                    // Single "All alerts paused" pill. Reuses Danger — the existing palette's
-                    // most-severe color — because a unified pause silences urgent low (the most
-                    // dangerous category) along with high. This pill is mutually exclusive with
-                    // the per-category low pill, and the text disambiguates "All" from "Low".
-                    val countdownText = rememberCountdownText(unifiedPauseExpiryMs)
+                // One pill per active pause. High pauses use Warning. Low and All pauses use
+                // Danger, because they can silence urgent low, the most dangerous alert.
+                pauseIndicators.forEach { indicator ->
+                    val isHigh = indicator.scope == PauseScope.HIGH
                     Surface(
                         onClick = onPausePillClick,
                         shape = RoundedCornerShape(100),
-                        color = if (isDark) TintDanger else LightTintDanger
+                        color = when {
+                            isHigh -> if (isDark) TintWarning else LightTintWarning
+                            else -> if (isDark) TintDanger else LightTintDanger
+                        }
                     ) {
                         Text(
-                            text = stringResource(R.string.pause_all_active, countdownText),
-                            color = Danger,
+                            text = stringResource(
+                                indicator.pillLabel(),
+                                formatPauseCountdown(indicator.expiryMs, nowMs)
+                            ),
+                            color = if (isHigh) Warning else Danger,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
                         )
-                    }
-                } else {
-                    // Pause high pill
-                    if (activeHigh) {
-                        val countdownText = rememberCountdownText(pauseHighExpiryMs)
-                        Surface(
-                            onClick = onPausePillClick,
-                            shape = RoundedCornerShape(100),
-                            color = if (isDark) TintWarning else LightTintWarning
-                        ) {
-                            Text(
-                                text = stringResource(R.string.pause_high_active, countdownText),
-                                color = Warning,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
-                            )
-                        }
-                    }
-
-                    // Pause low pill
-                    if (activeLow) {
-                        val countdownText = rememberCountdownText(pauseLowExpiryMs)
-                        Surface(
-                            onClick = onPausePillClick,
-                            shape = RoundedCornerShape(100),
-                            color = if (isDark) TintDanger else LightTintDanger
-                        ) {
-                            Text(
-                                text = stringResource(R.string.pause_low_active, countdownText),
-                                color = Danger,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
-                            )
-                        }
                     }
                 }
             }
@@ -608,9 +565,11 @@ private fun BgHeader(
                 bgHigh = bgHigh,
                 onPauseAlerts = onPauseAlerts,
                 onDismiss = { showPredictionDetail = false },
-                isPaused = when (crossing.type) {
-                    CrossingType.LOW -> activeLow
-                    CrossingType.HIGH -> activeHigh
+                isPaused = pauseIndicators.any {
+                    it.scope == PauseScope.ALL || it.scope == when (crossing.type) {
+                        CrossingType.LOW -> PauseScope.LOW
+                        CrossingType.HIGH -> PauseScope.HIGH
+                    }
                 }
             )
         }

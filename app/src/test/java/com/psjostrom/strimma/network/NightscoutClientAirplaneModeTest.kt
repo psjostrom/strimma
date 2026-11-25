@@ -71,15 +71,15 @@ class NightscoutClientAirplaneModeTest {
         assertFalse(result.success)
     }
 
-    // fetchTreatments is the only HTTP method that intentionally rethrows after logging
+    // fetchTreatmentPage is the only HTTP method that intentionally rethrows after logging
     // (vs. swallowing and returning a failure value). The caller (TreatmentSyncer) owns
     // the outer catch that prevents the crash.
     @Test
-    fun `fetchTreatments rethrows network failure after logging`() = runTest {
+    fun `fetchTreatmentPage rethrows network failure after logging`() = runTest {
         val client = airplaneModeClient()
 
         try {
-            client.fetchTreatments("https://example.com", "secret", since = 0L)
+            client.fetchTreatmentPage("https://example.com", "secret", since = 0L, count = 100, before = null)
             fail("Expected UnresolvedAddressException")
         } catch (_: UnresolvedAddressException) {
             // pass

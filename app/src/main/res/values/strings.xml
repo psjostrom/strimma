@@ -190,6 +190,10 @@
     <string name="notif_alerts_paused_all">All alerts paused %1$s</string>
     <string name="notif_alerts_paused_high">High alerts paused %1$s</string>
     <string name="notif_alerts_paused_low">Low alerts paused %1$s</string>
+    <string name="notif_alerts_paused_low_regular">Low paused, urgent on %1$s</string>
+    <string name="notif_alerts_paused_low_soon">Low soon paused %1$s</string>
+    <string name="notif_alerts_paused_high_regular">High paused, urgent on %1$s</string>
+    <string name="notif_alerts_paused_high_soon">High soon paused %1$s</string>
     <string name="settings_notif_time_range_minutes">Time Range: %1$dm</string>
     <string name="settings_notif_time_range_hours">Time Range: %1$dh</string>
     <string name="settings_notif_prediction_off">Prediction: Off</string>
@@ -409,6 +413,10 @@
     <string name="pause_all_active">All alerts paused · %1$s</string>
     <string name="pause_low_active">Low alerts paused · %1$s</string>
     <string name="pause_high_active">High alerts paused · %1$s</string>
+    <string name="pause_low_regular_active">Low paused, urgent on · %1$s</string>
+    <string name="pause_low_soon_active">Low soon paused · %1$s</string>
+    <string name="pause_high_regular_active">High paused, urgent on · %1$s</string>
+    <string name="pause_high_soon_active">High soon paused · %1$s</string>
     <string name="pause_countdown">Paused · %1$s</string>
 
     <!-- Foreground Notification -->

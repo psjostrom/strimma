@@ -8,7 +8,6 @@ import com.psjostrom.strimma.data.GlucoseSource
 import com.psjostrom.strimma.data.ReadingDao
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.StrimmaDatabase
-import com.psjostrom.strimma.data.Treatment
 import com.psjostrom.strimma.createTestDataStore
 import com.psjostrom.strimma.widget.WidgetSettingsRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -305,11 +304,12 @@ class NightscoutPullerTest {
             readings: List<GlucoseReading>
         ): Boolean = true
 
-        override suspend fun fetchTreatments(
+        override suspend fun fetchTreatmentPage(
             baseUrl: String,
             secret: String,
             since: Long,
-            count: Int
-        ): List<Treatment> = emptyList()
+            count: Int,
+            before: Long?
+        ): TreatmentPage = TreatmentPage(emptyList(), 0, null)
     }
 }

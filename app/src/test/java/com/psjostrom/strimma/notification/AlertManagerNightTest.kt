@@ -64,7 +64,7 @@ class AlertManagerNightTest {
                 it !== WorkoutModeManager.PLACEHOLDER_THRESHOLDS && it.activeSet == expected
             }
         }
-        val alertManager = AlertManager(context, settings, manager, backgroundScope, clock)
+        val alertManager = AlertManager(context, settings, manager, clock)
         val notificationManager = context.getSystemService(NotificationManager::class.java)
         alertManager.createChannels()
         notificationManager.cancelAll()

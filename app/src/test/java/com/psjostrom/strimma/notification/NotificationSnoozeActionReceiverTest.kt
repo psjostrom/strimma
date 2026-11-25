@@ -49,7 +49,7 @@ class NotificationSnoozeActionReceiverTest {
         val settings = SettingsRepository(context, WidgetSettingsRepository(context), ds)
         val clock = MutableClock(System.currentTimeMillis())
         val workoutMgr = WorkoutModeManager(settings, FakeCalendarPoller(), clock, backgroundScope)
-        val mgr = AlertManager(context, settings, workoutMgr, backgroundScope)
+        val mgr = AlertManager(context, settings, workoutMgr)
         return Rig(mgr)
     }
 
@@ -105,7 +105,7 @@ class NotificationSnoozeActionReceiverTest {
         )
         val after = System.currentTimeMillis()
 
-        val expiry = r.mgr.alertPauseExpiryMs(AlertCategory.LOW)
+        val expiry = r.mgr.alertPause(AlertCategory.LOW)?.expiryMs
         assertNotNull(expiry)
         val twoHoursMs = SnoozeDuration.H2.durationMs
         assertTrue(
@@ -125,7 +125,7 @@ class NotificationSnoozeActionReceiverTest {
         assertTrue(r.mgr.isAlertCategoryPaused(AlertCategory.LOW))
         assertTrue(r.mgr.isAlertCategoryPaused(AlertCategory.HIGH))
         // Default duration is H1
-        val expiry = r.mgr.alertPauseExpiryMs(AlertCategory.LOW)
+        val expiry = r.mgr.alertPause(AlertCategory.LOW)?.expiryMs
         val oneHourMs = SnoozeDuration.H1.durationMs
         assertTrue(
             "expiry within now+1h window",

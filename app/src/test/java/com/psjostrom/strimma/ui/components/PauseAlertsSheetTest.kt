@@ -9,6 +9,8 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.psjostrom.strimma.notification.AlertCategory
+import com.psjostrom.strimma.notification.AlertManager
+import com.psjostrom.strimma.notification.AlertPause
 import com.psjostrom.strimma.ui.theme.StrimmaTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -25,14 +27,33 @@ class PauseAlertsSheetTest {
     @get:Rule
     val composeRule = createComposeRule()
 
+    private fun urgentPause(expiryMs: Long?) = expiryMs?.let { AlertPause(it, AlertManager.ALERT_LEVEL_URGENT) }
+
+    @Test
+    fun `a low soon snooze names the paused level in the low row`() {
+        composeRule.setContent {
+            StrimmaTheme {
+                PauseAlertsSheetContent(
+                    pauseLow = AlertPause(System.currentTimeMillis() + 1_800_000L, AlertManager.ALERT_LEVEL_SOON),
+                    pauseHigh = null,
+                    onPause = { _, _ -> },
+                    onPauseAll = {},
+                    onCancel = {},
+                    onCancelAll = {}
+                )
+            }
+        }
+        composeRule.onNode(hasText("Low soon paused", substring = true)).assertExists()
+        composeRule.onNode(hasText("Paused ·", substring = true)).assertDoesNotExist()
+    }
+
     @Test
     fun `shows both category rows when no pause active`() {
         composeRule.setContent {
             StrimmaTheme {
                 PauseAlertsSheetContent(
-                    pauseLowExpiryMs = null,
-                    pauseHighExpiryMs = null,
-                    unifiedExpiryMs = null,
+                    pauseLow = null,
+                    pauseHigh = null,
                     onPause = { _, _ -> },
                     onPauseAll = {},
                     onCancel = {},
@@ -53,9 +74,8 @@ class PauseAlertsSheetTest {
         composeRule.setContent {
             StrimmaTheme {
                 PauseAlertsSheetContent(
-                    pauseLowExpiryMs = null,
-                    pauseHighExpiryMs = null,
-                    unifiedExpiryMs = null,
+                    pauseLow = null,
+                    pauseHigh = null,
                     onPause = { cat, dur ->
                         pausedCategory = cat
                         pausedDuration = dur
@@ -80,9 +100,8 @@ class PauseAlertsSheetTest {
         composeRule.setContent {
             StrimmaTheme {
                 PauseAlertsSheetContent(
-                    pauseLowExpiryMs = null,
-                    pauseHighExpiryMs = futureExpiry,
-                    unifiedExpiryMs = null,
+                    pauseLow = null,
+                    pauseHigh = urgentPause(futureExpiry),
                     onPause = { _, _ -> },
                     onPauseAll = {},
                     onCancel = {},
@@ -101,9 +120,8 @@ class PauseAlertsSheetTest {
         composeRule.setContent {
             StrimmaTheme {
                 PauseAlertsSheetContent(
-                    pauseLowExpiryMs = futureExpiry,
-                    pauseHighExpiryMs = null,
-                    unifiedExpiryMs = null,
+                    pauseLow = urgentPause(futureExpiry),
+                    pauseHigh = null,
                     onPause = { _, _ -> },
                     onPauseAll = {},
                     onCancel = { cancelledCategory = it },
@@ -122,9 +140,8 @@ class PauseAlertsSheetTest {
         composeRule.setContent {
             StrimmaTheme {
                 PauseAlertsSheetContent(
-                    pauseLowExpiryMs = futureExpiry,
-                    pauseHighExpiryMs = null,
-                    unifiedExpiryMs = null,
+                    pauseLow = urgentPause(futureExpiry),
+                    pauseHigh = null,
                     onPause = { _, _ -> },
                     onPauseAll = {},
                     onCancel = {},
@@ -142,9 +159,8 @@ class PauseAlertsSheetTest {
         composeRule.setContent {
             StrimmaTheme {
                 PauseAlertsSheetContent(
-                    pauseLowExpiryMs = null,
-                    pauseHighExpiryMs = null,
-                    unifiedExpiryMs = null,
+                    pauseLow = null,
+                    pauseHigh = null,
                     onPause = { _, _ -> },
                     onPauseAll = {},
                     onCancel = {},
@@ -166,9 +182,8 @@ class PauseAlertsSheetTest {
         composeRule.setContent {
             StrimmaTheme {
                 PauseAlertsSheetContent(
-                    pauseLowExpiryMs = null,
-                    pauseHighExpiryMs = null,
-                    unifiedExpiryMs = null,
+                    pauseLow = null,
+                    pauseHigh = null,
                     onPause = { _, _ -> perCategoryCalls += 1 },
                     onPauseAll = { dur -> allDuration = dur },
                     onCancel = {},
@@ -189,9 +204,8 @@ class PauseAlertsSheetTest {
         composeRule.setContent {
             StrimmaTheme {
                 PauseAlertsSheetContent(
-                    pauseLowExpiryMs = sharedExpiry,
-                    pauseHighExpiryMs = sharedExpiry,
-                    unifiedExpiryMs = sharedExpiry,
+                    pauseLow = urgentPause(sharedExpiry),
+                    pauseHigh = urgentPause(sharedExpiry),
                     onPause = { _, _ -> },
                     onPauseAll = {},
                     onCancel = {},
@@ -216,9 +230,8 @@ class PauseAlertsSheetTest {
         composeRule.setContent {
             StrimmaTheme {
                 PauseAlertsSheetContent(
-                    pauseLowExpiryMs = sharedExpiry,
-                    pauseHighExpiryMs = sharedExpiry,
-                    unifiedExpiryMs = sharedExpiry,
+                    pauseLow = urgentPause(sharedExpiry),
+                    pauseHigh = urgentPause(sharedExpiry),
                     onPause = { _, _ -> },
                     onPauseAll = {},
                     onCancel = { cancelled.add(it) },
@@ -238,9 +251,8 @@ class PauseAlertsSheetTest {
         composeRule.setContent {
             StrimmaTheme {
                 PauseAlertsSheetContent(
-                    pauseLowExpiryMs = now + 1_800_000L,
-                    pauseHighExpiryMs = now + 3_600_000L,
-                    unifiedExpiryMs = null,
+                    pauseLow = urgentPause(now + 1_800_000L),
+                    pauseHigh = urgentPause(now + 3_600_000L),
                     onPause = { _, _ -> },
                     onPauseAll = {},
                     onCancel = {},
@@ -257,19 +269,17 @@ class PauseAlertsSheetTest {
 
     @Test
     fun `unified state collapsing back to a single category re-shows per-category rows`() {
-        // Pure rendering test: when unifiedExpiryMs flips to null while one per-category
-        // expiry is still set, the sheet must recompose into the split per-category view.
+        // Pure rendering test: when the low pause is cancelled out of a pause-all while the
+        // high pause is still set, the sheet must recompose into the split per-category view.
         // The "what produces the unified-vs-split flip" rule belongs in AlertsViewModelTest;
         // this test only verifies the sheet honors whatever props it receives.
         val sharedExpiry = System.currentTimeMillis() + 1_800_000L
         var lowExpiry by mutableStateOf<Long?>(sharedExpiry)
-        var unifiedExpiry by mutableStateOf<Long?>(sharedExpiry)
         composeRule.setContent {
             StrimmaTheme {
                 PauseAlertsSheetContent(
-                    pauseLowExpiryMs = lowExpiry,
-                    pauseHighExpiryMs = sharedExpiry,
-                    unifiedExpiryMs = unifiedExpiry,
+                    pauseLow = urgentPause(lowExpiry),
+                    pauseHigh = urgentPause(sharedExpiry),
                     onPause = { _, _ -> },
                     onPauseAll = {},
                     onCancel = {},
@@ -282,7 +292,6 @@ class PauseAlertsSheetTest {
 
         composeRule.runOnIdle {
             lowExpiry = null
-            unifiedExpiry = null
         }
         composeRule.waitForIdle()
         composeRule.onNodeWithText("All low alerts").assertExists()

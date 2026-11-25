@@ -210,14 +210,15 @@ class TreatmentSyncerIntegrationTest {
         var treatments: List<Treatment> = emptyList()
         var throwOnFetch = false
 
-        override suspend fun fetchTreatments(
+        override suspend fun fetchTreatmentPage(
             baseUrl: String,
             secret: String,
             since: Long,
-            count: Int
-        ): List<Treatment> {
+            count: Int,
+            before: Long?
+        ): TreatmentPage {
             if (throwOnFetch) throw java.io.IOException("Connection failed")
-            return treatments
+            return TreatmentPage(treatments, treatments.size, treatments.minOfOrNull { it.createdAt })
         }
 
         override suspend fun pushReadings(

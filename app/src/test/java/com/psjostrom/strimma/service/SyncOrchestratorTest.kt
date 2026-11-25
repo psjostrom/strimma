@@ -14,6 +14,7 @@ import com.psjostrom.strimma.data.health.StoredExerciseSession
 import com.psjostrom.strimma.data.health.HealthConnectManager
 import com.psjostrom.strimma.data.workout.WorkoutModeManager
 import com.psjostrom.strimma.network.NightscoutClient
+import com.psjostrom.strimma.network.TreatmentPage
 import com.psjostrom.strimma.network.NightscoutEntryResponse
 import com.psjostrom.strimma.network.NightscoutPuller
 import com.psjostrom.strimma.network.NightscoutPusher
@@ -87,7 +88,7 @@ class SyncOrchestratorTest {
         val poller = FakeCalendarPoller()
         val clock = MutableClock(System.currentTimeMillis())
         val workoutModeManager = WorkoutModeManager(settings, poller, clock, managerScope)
-        val alertManager = AlertManager(context, settings, workoutModeManager, managerScope)
+        val alertManager = AlertManager(context, settings, workoutModeManager)
         val nsClient = SilentNightscoutClient()
         val healthConnect = HealthConnectManager(context)
 
@@ -360,15 +361,16 @@ class SyncOrchestratorTest {
             readings: List<GlucoseReading>,
         ): Boolean = false
 
-        override suspend fun fetchTreatments(
+        override suspend fun fetchTreatmentPage(
             baseUrl: String,
             secret: String,
             since: Long,
             count: Int,
-        ): List<Treatment> {
+            before: Long?,
+        ): TreatmentPage {
             treatmentRequestUrls.add(baseUrl)
             treatmentRequestSecrets.add(secret)
-            return emptyList()
+            return TreatmentPage(emptyList(), 0, null)
         }
     }
 }

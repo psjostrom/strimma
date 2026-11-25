@@ -254,6 +254,25 @@ class StoryViewModelTest {
     }
 
     @Test
+    fun `a quick second month switch shows that month instead of an error`() = runBlocking {
+        val jan = (1..10).flatMap { fullDay(110, 2020, 1, it) }
+        val feb = (1..10).flatMap { fullDay(120, 2020, 2, it) }
+        val mar = (1..10).flatMap { fullDay(150, 2020, 3, it) }
+        db.readingDao().insertBatch(jan + feb + mar)
+
+        val vm = createViewModel(2020, 3)
+        awaitLoaded(vm)
+
+        // The second tap cancels the February load while it is still reading the DB.
+        vm.goToPreviousMonth()
+        vm.goToPreviousMonth()
+        awaitLoaded(vm)
+
+        assertNull(vm.error.value)
+        assertEquals(1, vm.story.value!!.month)
+    }
+
+    @Test
     fun `goToPreviousMonth is a no-op at the earliest boundary`() = runBlocking {
         db.readingDao().insertBatch(fullDay(120, 2020, 2, 1))
         val vm = createViewModel(2020, 2)

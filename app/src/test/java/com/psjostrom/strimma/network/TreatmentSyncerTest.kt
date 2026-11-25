@@ -1,10 +1,8 @@
 package com.psjostrom.strimma.network
 
 import com.psjostrom.strimma.data.MS_PER_DAY
-import com.psjostrom.strimma.network.TreatmentSyncer.Companion.FULL_LOOKBACK_DAYS
 import com.psjostrom.strimma.network.TreatmentSyncer.Companion.FULL_LOOKBACK_MS
 import com.psjostrom.strimma.network.TreatmentSyncer.Companion.POLL_LOOKBACK_MS
-import com.psjostrom.strimma.network.TreatmentSyncer.Companion.TREATMENTS_PER_DAY
 import com.psjostrom.strimma.network.TreatmentSyncer.Companion.computeStartupAction
 import com.psjostrom.strimma.network.TreatmentSyncer.Companion.sanitizeErrorMessage
 import com.psjostrom.strimma.network.TreatmentSyncer.StartupAction
@@ -43,35 +41,21 @@ class TreatmentSyncerTest {
     }
 
     @Test
-    fun `3-day gap computes correct since and count`() {
+    fun `3-day gap syncs from the last fetch`() {
         val gapMs = 3 * MS_PER_DAY
         val lastFetch = now - gapMs
         val action = computeStartupAction(lastFetch, now) as StartupAction.DeltaSync
 
         assertEquals(lastFetch, action.since)
-        // (3 * MS_PER_DAY / MS_PER_DAY + 1) = 4 days worth
-        assertEquals(4 * TREATMENTS_PER_DAY, action.count)
     }
 
     @Test
-    fun `7-day gap computes correct since and count`() {
+    fun `7-day gap syncs from the last fetch`() {
         val gapMs = 7 * MS_PER_DAY
         val lastFetch = now - gapMs
         val action = computeStartupAction(lastFetch, now) as StartupAction.DeltaSync
 
         assertEquals(lastFetch, action.since)
-        assertEquals(8 * TREATMENTS_PER_DAY, action.count)
-    }
-
-    @Test
-    fun `partial day gap rounds up`() {
-        val gapMs = 2 * MS_PER_DAY + 1 // 2 days + 1ms
-        val lastFetch = now - gapMs
-        val action = computeStartupAction(lastFetch, now) as StartupAction.DeltaSync
-
-        assertEquals(lastFetch, action.since)
-        // (2 + 1) = 3 days worth
-        assertEquals(3 * TREATMENTS_PER_DAY, action.count)
     }
 
     @Test
@@ -79,10 +63,8 @@ class TreatmentSyncerTest {
         val lastFetch = now - 150L * MS_PER_DAY // 150 days ago
         val action = computeStartupAction(lastFetch, now) as StartupAction.DeltaSync
 
-        // since capped at FULL_LOOKBACK_DAYS ago, not 150
+        // since capped at the full lookback, not 150 days
         assertEquals(now - FULL_LOOKBACK_MS, action.since)
-        // gapDays capped at FULL_LOOKBACK_DAYS
-        assertEquals(FULL_LOOKBACK_DAYS * TREATMENTS_PER_DAY, action.count)
     }
 
     @Test
@@ -93,13 +75,11 @@ class TreatmentSyncerTest {
     }
 
     @Test
-    fun `gap exactly at full lookback returns DeltaSync capped at full lookback`() {
+    fun `gap exactly at full lookback returns DeltaSync from the full lookback`() {
         val lastFetch = now - FULL_LOOKBACK_MS
         val action = computeStartupAction(lastFetch, now) as StartupAction.DeltaSync
 
         assertEquals(lastFetch, action.since)
-        // (FULL_LOOKBACK_DAYS + 1) coerced to FULL_LOOKBACK_DAYS
-        assertEquals(FULL_LOOKBACK_DAYS * TREATMENTS_PER_DAY, action.count)
     }
 
     @Test

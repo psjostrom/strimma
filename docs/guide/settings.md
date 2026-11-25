@@ -114,8 +114,8 @@ Configure the foreground notification graph, prediction window, and action butto
 | **Snooze Duration** | Only when Action Button = Snooze. How long the pause lasts — 15m, 30m, 1h, 2h, or 3h | 1h |
 
 When alerts are paused (via the action button or the in-app pause sheet), the
-foreground notification's subtitle includes a "paused" indicator showing how
-long remains.
+foreground notification's subtitle names which alerts are paused and how long
+remains for each, for example "Low soon paused 20m · High alerts paused 1h 30m".
 
 See [Notifications](notifications.md) for full details on the action button.
 

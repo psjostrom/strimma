@@ -90,14 +90,14 @@ class AlertManagerPauseTest {
     }
 
     @Test
-    fun `pauseExpiryMs returns expiry when active`() {
+    fun `activePause returns the expiry when active`() {
         val durationMs = 60 * 60 * 1000L // 1 hour
         val beforePause = System.currentTimeMillis()
 
         pauseCategoryDuration(AlertCategory.LOW, durationMs)
 
         val afterPause = System.currentTimeMillis()
-        val expiry = AlertManager.pauseExpiryMs(prefs, AlertCategory.LOW)
+        val expiry = AlertManager.activePause(prefs, AlertCategory.LOW)?.expiryMs
 
         assertTrue("Should return non-null expiry", expiry != null)
         assertTrue("Expiry should be in the future", expiry!! > beforePause)
@@ -106,18 +106,18 @@ class AlertManagerPauseTest {
     }
 
     @Test
-    fun `pauseExpiryMs returns null when not paused`() {
-        assertNull(AlertManager.pauseExpiryMs(prefs, AlertCategory.LOW))
+    fun `activePause returns null when not paused`() {
+        assertNull(AlertManager.activePause(prefs, AlertCategory.LOW)?.expiryMs)
     }
 
     @Test
-    fun `pauseExpiryMs returns null and clears expired pause`() {
+    fun `activePause returns null and clears an expired pause`() {
         // Set a pause that expired 1 hour ago
         val expiredTime = System.currentTimeMillis() - (60 * 60 * 1000L)
         prefs.edit().putLong("pause_low", expiredTime).apply()
 
         assertNull("Should return null for expired pause",
-            AlertManager.pauseExpiryMs(prefs, AlertCategory.LOW))
+            AlertManager.activePause(prefs, AlertCategory.LOW)?.expiryMs)
 
         assertEquals("Expired pause should be cleared from prefs",
             0L, prefs.getLong("pause_low", 0L))
