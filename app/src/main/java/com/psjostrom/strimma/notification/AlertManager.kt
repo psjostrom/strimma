@@ -27,16 +27,11 @@ import com.psjostrom.strimma.graph.PredictionComputer
 import com.psjostrom.strimma.receiver.DebugLog
 import com.psjostrom.strimma.ui.MainActivity
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -57,13 +52,20 @@ enum class AlertCategory(
     HIGH("pause_high", "pause_high_level", urgentId = 104, regularId = 102, soonId = 106)
 }
 
+/**
+ * A stored pause of one alert category. [level] is the highest alert level the pause
+ * silences: a snooze of a Low Soon alert silences only Low Soon, and Low and Urgent Low
+ * still fire. A pause stays stored after [expiryMs] has passed, so readers compare
+ * [expiryMs] with the wall clock.
+ */
+data class AlertPause(val expiryMs: Long, val level: Int)
+
 @Suppress("TooManyFunctions") // Alert channels + management methods
 @Singleton
 class AlertManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val settings: SettingsRepository,
     private val workoutModeManager: WorkoutModeManager,
-    private val cleanupScope: CoroutineScope,
     private val clock: Clock = SystemClock(),
 ) {
     companion object {
@@ -187,7 +189,7 @@ class AlertManager @Inject constructor(
             return alertLevel <= pausedLevel
         }
 
-        fun pauseExpiryMs(prefs: android.content.SharedPreferences, category: AlertCategory): Long? {
+        fun activePause(prefs: android.content.SharedPreferences, category: AlertCategory): AlertPause? {
             val expiryMs = prefs.getLong(category.prefsKey, 0L)
             if (expiryMs == 0L) return null
 
@@ -199,7 +201,7 @@ class AlertManager @Inject constructor(
                 }
                 return null
             }
-            return expiryMs
+            return AlertPause(expiryMs, prefs.getInt(category.levelKey, ALERT_LEVEL_URGENT))
         }
     }
 
@@ -658,29 +660,16 @@ class AlertManager @Inject constructor(
     private fun alertCategoryAndLevel(alertId: Int): Pair<AlertCategory, Int>? =
         alertIdToCategoryLevel[alertId]
 
-    // Declared before pauseExpiryFlows because the flow initializer below calls
-    // scheduleExpiryClear for any active pause, and scheduleExpiryClear touches
-    // expiryClearJobs. Kotlin property init runs top-down — flipping the order
-    // crashes AlertManager construction (NPE on a null ConcurrentHashMap) on any
-    // cold start where a pause is already in prefs, taking the foreground service
-    // and CGM coverage down with it.
-    private val expiryClearJobs = ConcurrentHashMap<AlertCategory, Job>()
-
     // One MutableStateFlow per category, keyed by the enum so iteration over
-    // AlertCategory.entries can never silently bypass a category. The flow's value
-    // is the source of truth for "is this category currently paused" — a delayed
-    // cleanup coroutine (see scheduleExpiryClear) nulls the value the moment the
-    // pause expires, so consumers (Compose UI, foreground notification) react to
-    // natural expiry without polling or wall-clock comparisons.
-    private val pauseExpiryFlows: Map<AlertCategory, MutableStateFlow<Long?>> =
-        AlertCategory.entries.associateWith { category ->
-            val expiry = alertPauseExpiryMs(category)
-            MutableStateFlow(expiry).also {
-                if (expiry != null) scheduleExpiryClear(category, expiry)
-            }
-        }
-    val pauseLowExpiryMs: StateFlow<Long?> = pauseExpiryFlows.getValue(AlertCategory.LOW)
-    val pauseHighExpiryMs: StateFlow<Long?> = pauseExpiryFlows.getValue(AlertCategory.HIGH)
+    // AlertCategory.entries can never silently bypass a category. The flow holds the
+    // pause as stored, and it keeps a pause after its expiry has passed. A timer cannot
+    // clear it reliably: coroutine delays count uptime, which stops in deep sleep. So
+    // every consumer decides what is active by comparing the expiry with the wall clock,
+    // through activePauseIndicators.
+    private val pauseFlows: Map<AlertCategory, MutableStateFlow<AlertPause?>> =
+        AlertCategory.entries.associateWith { category -> MutableStateFlow(alertPause(category)) }
+    val pauseLow: StateFlow<AlertPause?> = pauseFlows.getValue(AlertCategory.LOW)
+    val pauseHigh: StateFlow<AlertPause?> = pauseFlows.getValue(AlertCategory.HIGH)
 
     fun pauseAlertCategory(category: AlertCategory, durationMs: Long, level: Int = ALERT_LEVEL_URGENT) {
         pauseAlertCategoryAt(category, System.currentTimeMillis() + durationMs, level)
@@ -693,8 +682,7 @@ class AlertManager @Inject constructor(
 
     fun cancelAlertPause(category: AlertCategory) {
         cancelPause(snoozePrefs, category)
-        pauseExpiryFlows.getValue(category).value = null
-        expiryClearJobs.remove(category)?.cancel()
+        pauseFlows.getValue(category).value = null
     }
 
     fun cancelAllAlerts() {
@@ -703,36 +691,17 @@ class AlertManager @Inject constructor(
 
     private fun pauseAlertCategoryAt(category: AlertCategory, expiryMs: Long, level: Int) {
         pauseCategoryAt(snoozePrefs, category, expiryMs, level)
-        pauseExpiryFlows.getValue(category).value = expiryMs
-        scheduleExpiryClear(category, expiryMs)
+        pauseFlows.getValue(category).value = AlertPause(expiryMs, level)
         if (level >= ALERT_LEVEL_URGENT) notificationManager.cancel(category.urgentId)
         if (level >= ALERT_LEVEL_REGULAR) notificationManager.cancel(category.regularId)
         if (level >= ALERT_LEVEL_SOON) notificationManager.cancel(category.soonId)
     }
 
-    /**
-     * Sleep until the pause expires, then null the StateFlow so observers see the
-     * category as un-paused without having to compare expiry against wall time. The
-     * static [pauseExpiryMs] helper auto-clears the prefs row on read after expiry,
-     * so the re-check protects against a race where another pause was scheduled
-     * during the sleep (the new schedule call will have replaced this job's entry).
-     */
-    private fun scheduleExpiryClear(category: AlertCategory, expiryMs: Long) {
-        expiryClearJobs.remove(category)?.cancel()
-        expiryClearJobs[category] = cleanupScope.launch {
-            val delayMs = expiryMs - System.currentTimeMillis()
-            if (delayMs > 0) delay(delayMs)
-            if (alertPauseExpiryMs(category) == null) {
-                pauseExpiryFlows.getValue(category).value = null
-            }
-        }
-    }
-
     fun isAlertCategoryPaused(category: AlertCategory): Boolean =
         isCategoryPaused(snoozePrefs, category)
 
-    fun alertPauseExpiryMs(category: AlertCategory): Long? =
-        pauseExpiryMs(snoozePrefs, category)
+    fun alertPause(category: AlertCategory): AlertPause? =
+        activePause(snoozePrefs, category)
 
     private fun isSnoozed(alertId: Int, now: Long): Boolean {
         val until = snoozePrefs.getLong(alertId.toString(), 0L)

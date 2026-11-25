@@ -29,6 +29,9 @@ import com.psjostrom.strimma.graph.Prediction
 import com.psjostrom.strimma.graph.PredictionComputer
 import com.psjostrom.strimma.notification.AlertManager
 import com.psjostrom.strimma.notification.NotificationHelper
+import com.psjostrom.strimma.notification.activePauseIndicators
+import com.psjostrom.strimma.notification.formatPauseCountdown
+import com.psjostrom.strimma.notification.notificationLabel
 import com.psjostrom.strimma.receiver.DebugLog
 import com.psjostrom.strimma.receiver.GlucoseNotificationListener
 import com.psjostrom.strimma.receiver.XdripBroadcastReceiver
@@ -228,8 +231,9 @@ class StrimmaService : Service() {
 
     /**
      * When alerts are paused or unpaused (via the in-app sheet, the snooze action
-     * button, natural expiry of an existing pause, or restart), refresh the
-     * foreground notification so its subtitle reflects the current paused state.
+     * button, or restart), refresh the foreground notification so its subtitle
+     * reflects the current paused state. A pause that expires leaves the subtitle at
+     * the next minute tick of the stale check, which also refreshes the notification.
      * Without this observer the notification only shows the paused indicator after
      * the next CGM reading — long enough that a user who tapped Snooze from the
      * lock screen has no in-context confirmation that anything happened.
@@ -237,8 +241,8 @@ class StrimmaService : Service() {
     private fun observeAlertPausesForNotificationRefresh() {
         scope.launch {
             combine(
-                alertManager.pauseLowExpiryMs,
-                alertManager.pauseHighExpiryMs,
+                alertManager.pauseLow,
+                alertManager.pauseHigh,
             ) { low, high -> low to high }
                 .distinctUntilChanged()
                 .conflate()
@@ -496,34 +500,16 @@ class StrimmaService : Service() {
     }
 
     /**
-     * Build a one-line "alerts paused" indicator for the foreground notification.
-     * Mirrors the pill in [BgHeader]: prefer the unified "All alerts paused" line
-     * when both categories share the same expiry, otherwise enumerate the active
-     * categories. Returns null when no pause is active so the formatter omits the
-     * segment instead of rendering an empty " · ".
+     * Build the "alerts paused" segment of the foreground notification: one label per
+     * active pause, each with its own countdown, joined with " · ". Returns null when no
+     * pause is active, so the formatter omits the segment instead of rendering an empty
+     * " · ".
      */
-    private fun computeAlertsPausedText(nowMs: Long): String? {
-        val low = alertManager.pauseLowExpiryMs.value?.takeIf { it > nowMs }
-        val high = alertManager.pauseHighExpiryMs.value?.takeIf { it > nowMs }
-        if (low == null && high == null) return null
-
-        fun countdown(expiry: Long): String {
-            val totalMin = ((expiry - nowMs) / MS_PER_MINUTE).toInt().coerceAtLeast(0)
-            val h = totalMin / MINUTES_PER_HOUR
-            val m = totalMin % MINUTES_PER_HOUR
-            return if (h > 0) "${h}h ${m}m" else "${m}m"
-        }
-
-        return when {
-            low != null && low == high -> getString(R.string.notif_alerts_paused_all, countdown(low))
-            low != null && high != null -> {
-                val later = maxOf(low, high)
-                getString(R.string.notif_alerts_paused_all, countdown(later))
-            }
-            low != null -> getString(R.string.notif_alerts_paused_low, countdown(low))
-            else -> getString(R.string.notif_alerts_paused_high, countdown(high!!))
-        }
-    }
+    private fun computeAlertsPausedText(nowMs: Long): String? =
+        activePauseIndicators(alertManager.pauseLow.value, alertManager.pauseHigh.value, nowMs)
+            .map { getString(it.notificationLabel(), formatPauseCountdown(it.expiryMs, nowMs)) }
+            .takeIf { it.isNotEmpty() }
+            ?.joinToString(" · ")
 
     private fun formatElapsed(ms: Long): String {
         val totalMin = (ms.coerceAtLeast(0L) / MS_PER_MINUTE).toInt()

@@ -14,6 +14,7 @@ import com.psjostrom.strimma.data.workout.NightWindow
 import com.psjostrom.strimma.data.workout.WorkoutModeManager
 import com.psjostrom.strimma.notification.AlertCategory
 import com.psjostrom.strimma.notification.AlertManager
+import com.psjostrom.strimma.notification.AlertPause
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
@@ -22,7 +23,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -108,35 +108,13 @@ class AlertsViewModel @Inject constructor(
     val alertSnoozeDuration: StateFlow<SnoozeDuration> = settings.alertSnoozeDuration
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SnoozeDuration.M30)
 
-    val pauseLowExpiryMs: StateFlow<Long?> = alertManager.pauseLowExpiryMs
-    val pauseHighExpiryMs: StateFlow<Long?> = alertManager.pauseHighExpiryMs
+    val pauseLow: StateFlow<AlertPause?> = alertManager.pauseLow
+    val pauseHigh: StateFlow<AlertPause?> = alertManager.pauseHigh
 
     private val dayThresholdMutex = Mutex()
     private val exerciseThresholdMutex = Mutex()
     private val nightThresholdMutex = Mutex()
     private val nightWindowMutex = Mutex()
-
-    /**
-     * Single source of truth for "is the active pause unified?". Equal to the shared
-     * expiry timestamp when both categories are paused with identical expiries (the
-     * state [pauseAllAlerts] produces); null otherwise. Both the header pill and the
-     * pause sheet read this so the unified rule lives in exactly one place.
-     *
-     * Started eagerly so first-render readers (Compose `collectAsState`) see the
-     * already-computed value instead of the placeholder `null`. Without this, a user
-     * navigating to Main with a persisted unified pause sees a one-frame flash of the
-     * per-category pills before the pill collapses to "All alerts paused".
-     */
-    val unifiedPauseExpiryMs: StateFlow<Long?> = combine(
-        alertManager.pauseLowExpiryMs,
-        alertManager.pauseHighExpiryMs
-    ) { low, high -> if (low != null && low == high) low else null }
-        .stateIn(
-            viewModelScope,
-            SharingStarted.Eagerly,
-            alertManager.pauseLowExpiryMs.value
-                ?.takeIf { it == alertManager.pauseHighExpiryMs.value }
-        )
 
     fun setAlertLowEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertLowEnabled(enabled) }
     fun setAlertHighEnabled(enabled: Boolean) = viewModelScope.launch { settings.setAlertHighEnabled(enabled) }

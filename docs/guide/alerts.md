@@ -107,6 +107,7 @@ When an alert fires, the notification includes a **Snooze** button (label shows 
 This setting is independent of **Settings > Notifications → Action Button → Duration** (that control pauses ALL / High / Low from the foreground notification).
 
 - Snoozing a lower-severity alert does not suppress higher-severity alerts — snoozing Low Soon doesn't affect Low or Urgent Low, and snoozing Low doesn't affect Urgent Low
+- The header pill and the foreground notification name what a snooze silences. Snoozing Low Soon shows **Low soon paused**. Snoozing Low shows **Low paused, urgent on**, because Urgent Low still fires. Snoozing Urgent Low shows **Low alerts paused**. High alerts work the same way
 - After the configured duration, alerts can fire again if the condition persists
 - Snooze state is stored locally and survives app restarts
 
@@ -125,7 +126,7 @@ You can pause entire alert categories for a custom duration — useful during ex
 - Set a custom duration when pausing
 - The pause auto-clears when the duration expires
 - Pause state survives app restarts
-- The **All alerts** shortcut at the top of the pause sheet sets both Low and High to the same duration in one tap. The header shows a single **All alerts paused** pill while the two expiries match; cancelling or rescheduling one category from the sheet splits it back into per-category pills
+- The **All alerts** shortcut at the top of the pause sheet sets both Low and High to the same duration in one tap. The header shows a single **All alerts paused** pill while both categories are fully paused until the same time. Otherwise each paused category gets its own pill with its own countdown, and the notification lists each one the same way
 
 !!! note "Snooze vs Pause"
     **Snooze** silences an alert and any less severe alerts in the same category for the **Alert Snooze Duration**. **Pause** silences an entire category (all low alerts or all high alerts) for a duration you choose.

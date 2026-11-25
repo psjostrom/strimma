@@ -45,7 +45,7 @@ class AlertManagerWorkoutTest {
         val poller = FakeCalendarPoller()
         val clock = MutableClock(baseNowMs)
         val manager = WorkoutModeManager(settings, poller, clock, backgroundScope)
-        val alertManager = AlertManager(context, settings, manager, backgroundScope, clock)
+        val alertManager = AlertManager(context, settings, manager, clock)
         val notificationManager = context.getSystemService(NotificationManager::class.java)
         alertManager.createChannels()
         notificationManager.cancelAll()

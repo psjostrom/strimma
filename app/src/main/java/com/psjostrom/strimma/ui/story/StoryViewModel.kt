@@ -18,6 +18,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -199,9 +200,14 @@ class StoryViewModel @Inject constructor(
                 )
             }
         } catch (e: Exception) {
+            // A month switch cancels the previous load. That is not an error, and the new
+            // load owns the error and loading state, so a cancelled load rethrows here.
+            // A CancellationException from the data layer while this load is still active,
+            // such as from a closed database, is a real failure and is shown.
+            currentCoroutineContext().ensureActive()
             _error.value = e.message
         } finally {
-            _loading.value = false
+            if (currentCoroutineContext().isActive) _loading.value = false
         }
     }
 }

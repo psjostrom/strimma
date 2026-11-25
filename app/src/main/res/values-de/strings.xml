@@ -486,6 +486,10 @@
     <string name="pause_all_active">Alle Alarme pausiert · %1$s</string>
     <string name="pause_low_active">Tief-Alarme pausiert · %1$s</string>
     <string name="pause_high_active">Hoch-Alarme pausiert · %1$s</string>
+    <string name="pause_low_regular_active">Tief pausiert, Akut an · %1$s</string>
+    <string name="pause_low_soon_active">Bald-tief pausiert · %1$s</string>
+    <string name="pause_high_regular_active">Hoch pausiert, Akut an · %1$s</string>
+    <string name="pause_high_soon_active">Bald-hoch pausiert · %1$s</string>
     <string name="pause_countdown">Pausiert · %1$s</string>
 
     <string name="settings_sharing">Teilen</string>
@@ -597,4 +601,8 @@
     <string name="notif_alerts_paused_all">Alle Alarme pausiert %1$s</string>
     <string name="notif_alerts_paused_high">Hoch-Alarme pausiert %1$s</string>
     <string name="notif_alerts_paused_low">Tief-Alarme pausiert %1$s</string>
+    <string name="notif_alerts_paused_low_regular">Tief pausiert, Akut an %1$s</string>
+    <string name="notif_alerts_paused_low_soon">Bald-tief pausiert %1$s</string>
+    <string name="notif_alerts_paused_high_regular">Hoch pausiert, Akut an %1$s</string>
+    <string name="notif_alerts_paused_high_soon">Bald-hoch pausiert %1$s</string>
 </resources>

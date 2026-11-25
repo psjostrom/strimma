@@ -12,6 +12,10 @@ import com.psjostrom.strimma.data.workout.NightWindow
 import com.psjostrom.strimma.data.workout.WorkoutModeManager
 import com.psjostrom.strimma.notification.AlertCategory
 import com.psjostrom.strimma.notification.AlertManager
+import com.psjostrom.strimma.notification.PauseScope
+import com.psjostrom.strimma.notification.activePauseIndicators
+import com.psjostrom.strimma.notification.notificationLabel
+import com.psjostrom.strimma.notification.pillLabel
 import com.psjostrom.strimma.testutil.workout.FakeCalendarPoller
 import com.psjostrom.strimma.testutil.workout.MutableClock
 import com.psjostrom.strimma.widget.WidgetSettingsRepository
@@ -38,9 +42,9 @@ import org.robolectric.shadows.ShadowToast
 import java.time.Instant
 
 /**
- * Pins [AlertsViewModel.unifiedPauseExpiryMs] — the single owner of the "is the
- * pause unified?" rule. Both the BG-screen pill and the pause sheet read this; if
- * the derivation drifts, both surfaces flip silently.
+ * Pins the pause state the BG-screen pills, the header icon and the pause sheet show,
+ * which they all derive from the view model's stored pauses through
+ * activePauseIndicators.
  *
  * Real AlertManager + real SettingsRepository (Robolectric DataStore) per Strimma's
  * "no mocking internal modules" rule.
@@ -54,6 +58,7 @@ class AlertsViewModelTest {
         val notifManager: NotificationManager,
         val settings: SettingsRepository,
         val viewModel: AlertsViewModel,
+        val alertManager: AlertManager,
     )
 
     private fun runFixtureTest(
@@ -81,60 +86,88 @@ class AlertsViewModelTest {
                 MutableClock(nowMs),
                 backgroundScope,
             )
-            val alertManager = AlertManager(context, settings, workoutModeManager, backgroundScope)
+            val alertManager = AlertManager(context, settings, workoutModeManager)
             val viewModel = AlertsViewModel(settings, alertManager, workoutModeManager, backgroundScope, context)
             vm = viewModel
-            block(Fixture(context, notifManager, settings, viewModel))
+            block(Fixture(context, notifManager, settings, viewModel, alertManager))
         } finally {
             vm?.viewModelScope?.cancel()
             Dispatchers.resetMain()
         }
     }
 
+    private fun AlertsViewModel.pausesAt(nowMs: Long = System.currentTimeMillis()) =
+        activePauseIndicators(pauseLow.value, pauseHigh.value, nowMs)
+
     @Test
-    fun `pauseAllAlerts produces a unified expiry equal to both per-category expiries`() = runFixtureTest { rig ->
+    fun `pause all shows one All indicator`() = runFixtureTest { rig ->
         rig.viewModel.pauseAllAlerts(3_600_000L)
 
-        val unified = rig.viewModel.unifiedPauseExpiryMs.first { it != null }
-        assertEquals(rig.viewModel.pauseLowExpiryMs.first(), unified)
-        assertEquals(rig.viewModel.pauseHighExpiryMs.first(), unified)
+        assertEquals(listOf(PauseScope.ALL), rig.viewModel.pausesAt().map { it.scope })
     }
 
     @Test
-    fun `mismatched expiries leave unifiedPauseExpiryMs null`() = runFixtureTest { rig ->
-        rig.viewModel.pauseAlerts(AlertCategory.LOW, 3_600_000L)
-        rig.viewModel.pauseAlerts(AlertCategory.HIGH, 1_800_000L)
+    fun `low and high paused for different times show one indicator each with its own expiry`() =
+        runFixtureTest { rig ->
+            rig.viewModel.pauseAlerts(AlertCategory.LOW, 1_800_000L)
+            rig.viewModel.pauseAlerts(AlertCategory.HIGH, 7_200_000L)
 
-        assertNotNull(rig.viewModel.pauseLowExpiryMs.first())
-        assertNotNull(rig.viewModel.pauseHighExpiryMs.first())
-        assertNull(rig.viewModel.unifiedPauseExpiryMs.first())
+            val pauses = rig.viewModel.pausesAt()
+
+            assertEquals(listOf(PauseScope.LOW, PauseScope.HIGH), pauses.map { it.scope })
+            assertEquals(rig.viewModel.pauseLow.value!!.expiryMs, pauses[0].expiryMs)
+            assertEquals(rig.viewModel.pauseHigh.value!!.expiryMs, pauses[1].expiryMs)
+            assertEquals(
+                listOf(R.string.notif_alerts_paused_low, R.string.notif_alerts_paused_high),
+                pauses.map { it.notificationLabel() }
+            )
+        }
+
+    @Test
+    fun `snoozing a low soon alert shows only low soon as paused`() = runFixtureTest { rig ->
+        rig.alertManager.snooze(AlertManager.ALERT_LOW_SOON_ID, 1_800_000L)
+
+        val pause = rig.viewModel.pausesAt().single()
+
+        assertEquals("Low soon paused · 30m", rig.context.getString(pause.pillLabel(), "30m"))
     }
 
     @Test
-    fun `cancelAllAlertPauses clears low, high, and the unified flow`() = runFixtureTest { rig ->
+    fun `snoozing a low alert says that urgent low stays on`() = runFixtureTest { rig ->
+        rig.alertManager.snooze(AlertManager.ALERT_LOW_ID, 1_800_000L)
+
+        val pause = rig.viewModel.pausesAt().single()
+
+        assertEquals("Low paused, urgent on · 30m", rig.context.getString(pause.pillLabel(), "30m"))
+    }
+
+    @Test
+    fun `a pause stops showing when the wall clock passes its expiry`() = runFixtureTest { rig ->
+        rig.viewModel.pauseAlerts(AlertCategory.LOW, 1_800_000L)
+        val expiry = rig.viewModel.pauseLow.value!!.expiryMs
+
+        assertEquals(1, rig.viewModel.pausesAt(expiry - 1).size)
+        assertTrue(rig.viewModel.pausesAt(expiry).isEmpty())
+    }
+
+    @Test
+    fun `cancelAllAlertPauses clears every pause`() = runFixtureTest { rig ->
         rig.viewModel.pauseAllAlerts(3_600_000L)
-        rig.viewModel.unifiedPauseExpiryMs.first { it != null }
 
         rig.viewModel.cancelAllAlertPauses()
 
-        assertNull(rig.viewModel.pauseLowExpiryMs.first())
-        assertNull(rig.viewModel.pauseHighExpiryMs.first())
-        assertNull(rig.viewModel.unifiedPauseExpiryMs.first())
+        assertTrue(rig.viewModel.pausesAt().isEmpty())
     }
 
     @Test
-    fun `cancelling a single category under a unified pause collapses unified to null`() = runFixtureTest { rig ->
-        // The most important transition for the sheet: when one category is cancelled
-        // out of a unified pause, the unified state must collapse so per-category rows
-        // reappear and the user can manage the still-paused side.
+    fun `cancelling one category under pause all leaves the other category paused`() = runFixtureTest { rig ->
+        // When one category is cancelled out of a pause-all, the sheet must fall back to
+        // per-category rows so the user can manage the side that is still paused.
         rig.viewModel.pauseAllAlerts(3_600_000L)
-        rig.viewModel.unifiedPauseExpiryMs.first { it != null }
 
         rig.viewModel.cancelAlertPause(AlertCategory.LOW)
 
-        assertNull(rig.viewModel.pauseLowExpiryMs.first())
-        assertNotNull(rig.viewModel.pauseHighExpiryMs.first())
-        assertNull(rig.viewModel.unifiedPauseExpiryMs.first())
+        assertEquals(listOf(PauseScope.HIGH), rig.viewModel.pausesAt().map { it.scope })
     }
 
     @Test

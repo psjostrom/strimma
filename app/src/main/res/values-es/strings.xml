@@ -486,6 +486,10 @@
     <string name="pause_all_active">Todas las alertas pausadas · %1$s</string>
     <string name="pause_low_active">Alertas de bajo pausadas · %1$s</string>
     <string name="pause_high_active">Alertas de alto pausadas · %1$s</string>
+    <string name="pause_low_regular_active">Bajo pausado, urgente activo · %1$s</string>
+    <string name="pause_low_soon_active">Bajo pronto pausado · %1$s</string>
+    <string name="pause_high_regular_active">Alto pausado, urgente activo · %1$s</string>
+    <string name="pause_high_soon_active">Alto pronto pausado · %1$s</string>
     <string name="pause_countdown">Pausado · %1$s</string>
 
     <string name="settings_sharing">Compartir</string>
@@ -598,4 +602,8 @@
     <string name="notif_alerts_paused_all">Todas las alertas pausadas %1$s</string>
     <string name="notif_alerts_paused_high">Alertas altas pausadas %1$s</string>
     <string name="notif_alerts_paused_low">Alertas bajas pausadas %1$s</string>
+    <string name="notif_alerts_paused_low_regular">Bajo pausado, urgente activo %1$s</string>
+    <string name="notif_alerts_paused_low_soon">Bajo pronto pausado %1$s</string>
+    <string name="notif_alerts_paused_high_regular">Alto pausado, urgente activo %1$s</string>
+    <string name="notif_alerts_paused_high_soon">Alto pronto pausado %1$s</string>
 </resources>

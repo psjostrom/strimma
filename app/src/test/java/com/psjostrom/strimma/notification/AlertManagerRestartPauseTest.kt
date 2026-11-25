@@ -13,26 +13,18 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
 /**
- * Regression test for the AlertManager construction crash that took CGM coverage
- * down on every cold start when a pause was already in prefs.
- *
- * Root cause: pauseExpiryFlows' initializer called scheduleExpiryClear for any
- * active pause, and scheduleExpiryClear touches expiryClearJobs — but
- * expiryClearJobs was declared *after* pauseExpiryFlows, so Kotlin's top-down
- * property init left it null at the moment of use → NPE → StrimmaService.onCreate
- * fails → ActivityManager backs off restarts up to an hour.
- *
- * The default AlertManagerTest @Before constructs the instance with an empty
- * snooze prefs, which is why the regression never tripped a unit test. This test
- * pre-populates an active pause *before* construction.
+ * A pause must survive a restart of the foreground service, including the alert level it
+ * silences, because the pause indicators name that level. This test writes a pause to the
+ * snooze prefs before AlertManager exists, the way a cold start finds it.
  */
 @RunWith(RobolectricTestRunner::class)
-class AlertManagerInitOrderTest {
+class AlertManagerRestartPauseTest {
 
     private val managerScope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
 
@@ -42,15 +34,13 @@ class AlertManagerInitOrderTest {
     }
 
     @Test
-    fun `construction succeeds when an active pause is already in prefs`() {
+    fun `a pause stored before construction is exposed with its level`() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        // Write an active pause directly to the snooze prefs that the production
-        // AlertManager reads from in alertPauseExpiryMs (-> pauseExpiryMs).
-        // An hour out, well in the future, so scheduleExpiryClear will treat it
-        // as live and try to register an expiry job.
+        val expiry = System.currentTimeMillis() + 60 * 60 * 1000L
         context.getSharedPreferences("strimma_snooze", Context.MODE_PRIVATE)
             .edit()
-            .putLong("pause_low", System.currentTimeMillis() + 60 * 60 * 1000L)
+            .putLong("pause_low", expiry)
+            .putInt("pause_low_level", AlertManager.ALERT_LEVEL_SOON)
             .commit()
 
         val widgetSettings = WidgetSettingsRepository(context)
@@ -62,7 +52,8 @@ class AlertManagerInitOrderTest {
             managerScope,
         )
 
-        // Will throw NullPointerException with the regressed declaration order.
-        AlertManager(context, settings, workoutModeManager, managerScope)
+        val alertManager = AlertManager(context, settings, workoutModeManager)
+
+        assertEquals(AlertPause(expiry, AlertManager.ALERT_LEVEL_SOON), alertManager.pauseLow.value)
     }
 }

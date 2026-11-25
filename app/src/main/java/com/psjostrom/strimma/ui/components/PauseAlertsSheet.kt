@@ -11,7 +11,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.psjostrom.strimma.R
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import com.psjostrom.strimma.notification.AlertCategory
+import com.psjostrom.strimma.notification.AlertManager
+import com.psjostrom.strimma.notification.AlertPause
+import com.psjostrom.strimma.notification.PauseIndicator
+import com.psjostrom.strimma.notification.PauseScope
+import com.psjostrom.strimma.notification.activePauseIndicators
+import com.psjostrom.strimma.notification.formatPauseCountdown
+import com.psjostrom.strimma.notification.pillLabel
 import com.psjostrom.strimma.ui.theme.Danger
 import com.psjostrom.strimma.ui.theme.Warning
 import kotlinx.coroutines.delay
@@ -25,13 +34,15 @@ private val DURATIONS = listOf(
 )
 
 /**
- * Wall-clock time that recomposes its readers every [intervalMs]. Used by the pause
- * countdown text and by surfaces that need to react when an expiry passes (e.g. hide
- * a "Cancel" button after the pause expires while the sheet stays open).
+ * Wall-clock time that recomposes its readers every [intervalMs], and at once when the
+ * screen resumes. A coroutine delay counts uptime, which stops while the phone sleeps,
+ * so without the resume refresh a pause that ended during sleep would keep showing
+ * until the next tick.
  */
 @Composable
 fun rememberTickingNowMs(intervalMs: Long = 10_000): Long {
     var nowMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { nowMs = System.currentTimeMillis() }
     LaunchedEffect(intervalMs) {
         while (true) {
             delay(intervalMs)
@@ -41,35 +52,11 @@ fun rememberTickingNowMs(intervalMs: Long = 10_000): Long {
     return nowMs
 }
 
-@Composable
-fun rememberCountdownText(expiryMs: Long): String {
-    var text by remember(expiryMs) {
-        val remaining = expiryMs - System.currentTimeMillis()
-        val totalMin = (remaining / 60_000).toInt().coerceAtLeast(0)
-        val hours = totalMin / 60
-        val min = totalMin % 60
-        mutableStateOf(if (hours > 0) "${hours}h ${min}m" else "${min}m")
-    }
-    LaunchedEffect(expiryMs) {
-        while (true) {
-            delay(10_000)
-            val remaining = expiryMs - System.currentTimeMillis()
-            if (remaining <= 0) break
-            val totalMin = (remaining / 60_000).toInt()
-            val hours = totalMin / 60
-            val min = totalMin % 60
-            text = if (hours > 0) "${hours}h ${min}m" else "${min}m"
-        }
-    }
-    return text
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PauseAlertsSheet(
-    pauseLowExpiryMs: Long?,
-    pauseHighExpiryMs: Long?,
-    unifiedExpiryMs: Long?,
+    pauseLow: AlertPause?,
+    pauseHigh: AlertPause?,
     onPause: (AlertCategory, Long) -> Unit,
     onPauseAll: (Long) -> Unit,
     onCancel: (AlertCategory) -> Unit,
@@ -81,9 +68,8 @@ fun PauseAlertsSheet(
         containerColor = MaterialTheme.colorScheme.surface
     ) {
         PauseAlertsSheetContent(
-            pauseLowExpiryMs = pauseLowExpiryMs,
-            pauseHighExpiryMs = pauseHighExpiryMs,
-            unifiedExpiryMs = unifiedExpiryMs,
+            pauseLow = pauseLow,
+            pauseHigh = pauseHigh,
             onPause = { cat, dur ->
                 onPause(cat, dur)
                 onDismiss()
@@ -100,9 +86,8 @@ fun PauseAlertsSheet(
 
 @Composable
 fun PauseAlertsSheetContent(
-    pauseLowExpiryMs: Long?,
-    pauseHighExpiryMs: Long?,
-    unifiedExpiryMs: Long?,
+    pauseLow: AlertPause?,
+    pauseHigh: AlertPause?,
     onPause: (AlertCategory, Long) -> Unit,
     onPauseAll: (Long) -> Unit,
     onCancel: (AlertCategory) -> Unit,
@@ -111,7 +96,8 @@ fun PauseAlertsSheetContent(
     // Tick the wall clock so a pause that expires while the sheet is open clears the
     // "Cancel" affordance instead of leaving a stale countdown next to a useless button.
     val nowMs = rememberTickingNowMs()
-    val unifiedActive = unifiedExpiryMs != null && unifiedExpiryMs > nowMs
+    val indicators = activePauseIndicators(pauseLow, pauseHigh, nowMs)
+    val unified = indicators.singleOrNull { it.scope == PauseScope.ALL }
 
     Column(
         modifier = Modifier
@@ -127,7 +113,8 @@ fun PauseAlertsSheetContent(
         )
 
         PauseAllRow(
-            unifiedExpiryMs = unifiedExpiryMs?.takeIf { unifiedActive },
+            unified = unified,
+            nowMs = nowMs,
             onPauseAll = onPauseAll,
             onCancelAll = onCancelAll
         )
@@ -135,13 +122,13 @@ fun PauseAlertsSheetContent(
         // While the unified pause is active the per-category rows would just duplicate
         // a control the user already silenced together; hide them so the only Cancel is
         // the one matching the original "Pause all" intent.
-        if (!unifiedActive) {
+        if (unified == null) {
             HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
 
             PauseCategoryRow(
                 label = stringResource(R.string.pause_high_alerts),
                 color = Warning,
-                expiryMs = pauseHighExpiryMs,
+                indicator = indicators.firstOrNull { it.scope == PauseScope.HIGH },
                 nowMs = nowMs,
                 category = AlertCategory.HIGH,
                 onPause = onPause,
@@ -153,7 +140,7 @@ fun PauseAlertsSheetContent(
             PauseCategoryRow(
                 label = stringResource(R.string.pause_low_alerts),
                 color = Danger,
-                expiryMs = pauseLowExpiryMs,
+                indicator = indicators.firstOrNull { it.scope == PauseScope.LOW },
                 nowMs = nowMs,
                 category = AlertCategory.LOW,
                 onPause = onPause,
@@ -165,7 +152,8 @@ fun PauseAlertsSheetContent(
 
 @Composable
 private fun PauseAllRow(
-    unifiedExpiryMs: Long?,
+    unified: PauseIndicator?,
+    nowMs: Long,
     onPauseAll: (Long) -> Unit,
     onCancelAll: () -> Unit
 ) {
@@ -177,14 +165,13 @@ private fun PauseAllRow(
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(bottom = 8.dp)
         )
-        if (unifiedExpiryMs != null) {
+        if (unified != null) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                val countdownText = rememberCountdownText(unifiedExpiryMs)
                 Text(
-                    text = stringResource(R.string.pause_countdown, countdownText),
+                    text = stringResource(R.string.pause_countdown, formatPauseCountdown(unified.expiryMs, nowMs)),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 14.sp,
                     modifier = Modifier.weight(1f)
@@ -216,7 +203,7 @@ private fun PauseAllRow(
 private fun PauseCategoryRow(
     label: String,
     color: androidx.compose.ui.graphics.Color,
-    expiryMs: Long?,
+    indicator: PauseIndicator?,
     nowMs: Long,
     category: AlertCategory,
     onPause: (AlertCategory, Long) -> Unit,
@@ -231,15 +218,21 @@ private fun PauseCategoryRow(
             modifier = Modifier.padding(bottom = 8.dp)
         )
 
-        if (expiryMs != null && expiryMs > nowMs) {
-            // Active pause — show countdown + cancel
+        if (indicator != null) {
+            // Active pause — show countdown + cancel. A pause below Urgent names the paused
+            // level, because the row's heading alone would claim every alert in it is paused.
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                val countdownText = rememberCountdownText(expiryMs)
+                val countdownText = formatPauseCountdown(indicator.expiryMs, nowMs)
+                val statusRes = if (indicator.level == AlertManager.ALERT_LEVEL_URGENT) {
+                    R.string.pause_countdown
+                } else {
+                    indicator.pillLabel()
+                }
                 Text(
-                    text = stringResource(R.string.pause_countdown, countdownText),
+                    text = stringResource(statusRes, countdownText),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 14.sp,
                     modifier = Modifier.weight(1f)

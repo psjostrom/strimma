@@ -58,7 +58,6 @@ class AlertManagerSnoozeDurationTest {
                     MutableClock(System.currentTimeMillis()),
                     scope,
                 ),
-                scope,
             ).also { it.createChannels() }
             block(ctx, am, nm)
         } finally {
@@ -72,7 +71,7 @@ class AlertManagerSnoozeDurationTest {
             am.checkReading(reading(60), emptyList(), 0)
             val before = System.currentTimeMillis()
             am.snooze(AlertManager.ALERT_LOW_ID, SnoozeDuration.H1.durationMs)
-            val expiry = am.alertPauseExpiryMs(AlertCategory.LOW)
+            val expiry = am.alertPause(AlertCategory.LOW)?.expiryMs
             assertNotNull(expiry)
             val expectedMin = before + SnoozeDuration.H1.durationMs - 5_000
             val expectedMax = before + SnoozeDuration.H1.durationMs + 5_000
@@ -86,7 +85,7 @@ class AlertManagerSnoozeDurationTest {
             am.checkReading(reading(60), emptyList(), 0)
             val before = System.currentTimeMillis()
             am.snooze(AlertManager.ALERT_LOW_ID)
-            val expiry = am.alertPauseExpiryMs(AlertCategory.LOW)
+            val expiry = am.alertPause(AlertCategory.LOW)?.expiryMs
             assertNotNull(expiry)
             val expectedMin = before + SnoozeDuration.M30.durationMs - 5_000
             val expectedMax = before + SnoozeDuration.M30.durationMs + 5_000

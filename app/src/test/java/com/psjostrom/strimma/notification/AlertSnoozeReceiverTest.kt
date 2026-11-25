@@ -33,7 +33,7 @@ class AlertSnoozeReceiverTest {
                 MutableClock(System.currentTimeMillis()),
                 scope,
             )
-            val alertManager = AlertManager(context, settings, workoutModeManager, scope)
+            val alertManager = AlertManager(context, settings, workoutModeManager)
             context.getSharedPreferences("strimma_snooze", Context.MODE_PRIVATE).edit().clear().apply()
             block(context, alertManager)
         } finally {

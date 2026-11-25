@@ -3,6 +3,7 @@ package com.psjostrom.strimma.network
 import android.database.sqlite.SQLiteException
 import com.psjostrom.strimma.data.SettingsRepository
 import com.psjostrom.strimma.data.MS_PER_DAY
+import com.psjostrom.strimma.data.Treatment
 import com.psjostrom.strimma.data.TreatmentDao
 import com.psjostrom.strimma.receiver.DebugLog
 import kotlinx.coroutines.CoroutineScope
@@ -29,7 +30,7 @@ class TreatmentSyncer @Inject constructor(
     internal sealed class StartupAction {
         data object FullSync : StartupAction()
         data object PollSync : StartupAction()
-        data class DeltaSync(val since: Long, val count: Int) : StartupAction()
+        data class DeltaSync(val since: Long) : StartupAction()
     }
 
     companion object {
@@ -42,10 +43,6 @@ class TreatmentSyncer @Inject constructor(
         internal const val FULL_LOOKBACK_DAYS = 100
         internal const val FULL_LOOKBACK_MS = FULL_LOOKBACK_DAYS * 24 * 60 * 60 * 1000L
         internal const val POLL_LOOKBACK_MS = 24 * 60 * 60 * 1000L // 24h for regular polls
-        // Looping systems (CamAPS, AndroidAPS, Loop) generate temp basals every 5 min
-        // (~288/day) plus boluses/carbs (~10-20/day). 500/day covers aggressive configurations.
-        internal const val TREATMENTS_PER_DAY = 500
-        private const val FULL_SYNC_COUNT = FULL_LOOKBACK_DAYS * TREATMENTS_PER_DAY
 
         internal fun sanitizeErrorMessage(e: Exception): String {
             val msg = e.message ?: return "Sync failed"
@@ -62,10 +59,7 @@ class TreatmentSyncer @Inject constructor(
             if (lastFetch == null) return StartupAction.FullSync
             val gapMs = (now - lastFetch).coerceIn(0, FULL_LOOKBACK_MS)
             if (gapMs <= POLL_LOOKBACK_MS) return StartupAction.PollSync
-            val since = now - gapMs
-            val gapDays = (gapMs / MS_PER_DAY + 1).toInt().coerceAtMost(FULL_LOOKBACK_DAYS)
-            val count = gapDays * TREATMENTS_PER_DAY
-            return StartupAction.DeltaSync(since, count)
+            return StartupAction.DeltaSync(now - gapMs)
         }
     }
 
@@ -83,7 +77,7 @@ class TreatmentSyncer @Inject constructor(
         when (val action = computeStartupAction(dao.latestFetchedAt(), System.currentTimeMillis())) {
             is StartupAction.FullSync -> sync(fullSync = true)
             is StartupAction.PollSync -> sync(fullSync = false)
-            is StartupAction.DeltaSync -> syncSince(action.since, action.count)
+            is StartupAction.DeltaSync -> syncSince(action.since)
         }
     }
 
@@ -95,12 +89,9 @@ class TreatmentSyncer @Inject constructor(
         }
 
         val since = System.currentTimeMillis() - days.toLong() * MS_PER_DAY
-        val count = days * TREATMENTS_PER_DAY
         return withNetworkBoundary<Result<Int>>(label = "Treatment pull", onError = { Result.failure(it) }) {
-            val treatments = client.fetchTreatments(url, secret, since, count)
-            if (treatments.isNotEmpty()) {
-                dao.upsert(treatments)
-            }
+            val treatments = fetchAll(url, secret, since)
+            dao.upsert(treatments)
             DebugLog.log(message = "Treatment pull: ${treatments.size} treatments for $days days")
             Result.success(treatments.size)
         }
@@ -108,13 +99,13 @@ class TreatmentSyncer @Inject constructor(
 
     private suspend fun sync(fullSync: Boolean) {
         if (fullSync) {
-            syncSince(System.currentTimeMillis() - FULL_LOOKBACK_MS, FULL_SYNC_COUNT)
+            syncSince(System.currentTimeMillis() - FULL_LOOKBACK_MS)
         } else {
-            syncSince(System.currentTimeMillis() - POLL_LOOKBACK_MS, TREATMENTS_PER_DAY)
+            syncSince(System.currentTimeMillis() - POLL_LOOKBACK_MS)
         }
     }
 
-    private suspend fun syncSince(since: Long, count: Int) {
+    private suspend fun syncSince(since: Long) {
         val url = settings.nightscoutUrl.first()
         val secret = settings.getNightscoutSecret()
         if (url.isBlank() || secret.isBlank()) return
@@ -132,17 +123,23 @@ class TreatmentSyncer @Inject constructor(
                 _status.value = IntegrationStatus.Error(msg)
             }
         ) {
-            val treatments = client.fetchTreatments(url, secret, since, count)
-
-            if (treatments.isEmpty()) {
-                _status.value = IntegrationStatus.Connected(lastActivityTs = System.currentTimeMillis())
-                return@withNetworkBoundary
-            }
-
+            val treatments = fetchAll(url, secret, since)
             dao.upsert(treatments)
-            DebugLog.log(message = "Treatments synced: ${treatments.size}")
+            if (treatments.isNotEmpty()) DebugLog.log(message = "Treatments synced: ${treatments.size}")
 
             _status.value = IntegrationStatus.Connected(lastActivityTs = System.currentTimeMillis())
         }
+    }
+
+    /**
+     * Fetches every page before anything is stored. The startup sync picks a full sync or a
+     * short poll from the newest stored `fetchedAt`, so storing the pages of a sync that
+     * then fails would make the next start skip the treatments that were never fetched.
+     * Neighbouring pages share their boundary rows, so the result is keyed by id.
+     */
+    private suspend fun fetchAll(url: String, secret: String, since: Long): List<Treatment> {
+        val byId = LinkedHashMap<String, Treatment>()
+        client.forEachTreatmentPage(url, secret, since) { page -> page.associateByTo(byId) { it.id } }
+        return byId.values.toList()
     }
 }

@@ -130,7 +130,7 @@ class NightscoutClientFetchTest {
     }
 
     @Test
-    fun `fetchTreatments throws on HTTP error instead of returning empty success`() = runTest {
+    fun `fetchTreatmentPage throws on HTTP error instead of returning empty success`() = runTest {
         val client = mockClient {
             respond(
                 content = "server error",
@@ -140,13 +140,14 @@ class NightscoutClientFetchTest {
         }
 
         try {
-            client.fetchTreatments(
+            client.fetchTreatmentPage(
                 baseUrl = "https://ns.example.com",
                 secret = "secret",
                 since = 1710700000000L,
-                count = 100
+                count = 100,
+                before = null
             )
-            fail("Expected fetchTreatments to throw on HTTP 500")
+            fail("Expected fetchTreatmentPage to throw on HTTP 500")
         } catch (e: IOException) {
             assertEquals("HTTP 500", e.message)
         }
@@ -191,7 +192,7 @@ class NightscoutClientFetchTest {
     }
 
     @Test
-    fun `fetchTreatments returns empty list on 404 unsupported treatments`() = runTest {
+    fun `fetchTreatmentPage returns an empty page on 404 unsupported treatments`() = runTest {
         val client = mockClient {
             respond(
                 content = "not found",
@@ -200,13 +201,14 @@ class NightscoutClientFetchTest {
             )
         }
 
-        val treatments = client.fetchTreatments(
+        val page = client.fetchTreatmentPage(
             baseUrl = "https://ns.example.com",
             secret = "secret",
             since = 1710700000000L,
-            count = 100
+            count = 100,
+            before = null
         )
 
-        assertTrue(treatments.isEmpty())
+        assertTrue(page.treatments.isEmpty())
     }
 }

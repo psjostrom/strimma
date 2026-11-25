@@ -486,6 +486,10 @@
     <string name="pause_all_active">Alla larm pausade · %1$s</string>
     <string name="pause_low_active">Låga larm pausade · %1$s</string>
     <string name="pause_high_active">Höga larm pausade · %1$s</string>
+    <string name="pause_low_regular_active">Lågt pausat, akut på · %1$s</string>
+    <string name="pause_low_soon_active">Snart lågt pausat · %1$s</string>
+    <string name="pause_high_regular_active">Högt pausat, akut på · %1$s</string>
+    <string name="pause_high_soon_active">Snart högt pausat · %1$s</string>
     <string name="pause_countdown">Pausad · %1$s</string>
     <string name="settings_sharing">Delning</string>
     <string name="settings_sharing_subtitle">Broadcast, webbserver, export</string>
@@ -596,4 +600,8 @@
     <string name="notif_alerts_paused_all">Alla larm pausade %1$s</string>
     <string name="notif_alerts_paused_high">H\u00F6ga larm pausade %1$s</string>
     <string name="notif_alerts_paused_low">L\u00E5ga larm pausade %1$s</string>
+    <string name="notif_alerts_paused_low_regular">Lågt pausat, akut på %1$s</string>
+    <string name="notif_alerts_paused_low_soon">Snart lågt pausat %1$s</string>
+    <string name="notif_alerts_paused_high_regular">Högt pausat, akut på %1$s</string>
+    <string name="notif_alerts_paused_high_soon">Snart högt pausat %1$s</string>
 </resources>

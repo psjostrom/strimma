@@ -52,7 +52,7 @@ class AlertManagerTest {
         // Cancelled in @After so the eager ticker doesn't leak across tests.
         managerScope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
         workoutModeManager = WorkoutModeManager(settings, poller, clock, managerScope)
-        alertManager = AlertManager(context, settings, workoutModeManager, managerScope)
+        alertManager = AlertManager(context, settings, workoutModeManager)
         alertManager.createChannels()
         notificationManager = context.getSystemService(NotificationManager::class.java)
 
@@ -479,8 +479,8 @@ class AlertManagerTest {
         // the two pause pills into a single "All alerts paused" pill via exact equality.
         alertManager.pauseAllAlerts(3_600_000L)
 
-        val low = alertManager.pauseLowExpiryMs.value
-        val high = alertManager.pauseHighExpiryMs.value
+        val low = alertManager.pauseLow.value?.expiryMs
+        val high = alertManager.pauseHigh.value?.expiryMs
         assertTrue("LOW expiry should be set", low != null)
         assertTrue("HIGH expiry should be set", high != null)
         org.junit.Assert.assertEquals(low, high)
@@ -489,14 +489,14 @@ class AlertManagerTest {
     @Test
     fun `pauseAllAlerts called twice replaces the previous expiry on both categories`() {
         alertManager.pauseAllAlerts(3_600_000L) // 1h
-        val firstExpiry = alertManager.pauseLowExpiryMs.value!!
+        val firstExpiry = alertManager.pauseLow.value!!.expiryMs
 
         val before2 = System.currentTimeMillis()
         alertManager.pauseAllAlerts(1_800_000L) // 30m — shorter than the first
-        val secondExpiry = alertManager.pauseLowExpiryMs.value!!
+        val secondExpiry = alertManager.pauseLow.value!!.expiryMs
 
         // Same expiry on both categories (the unified property the sheet/pill rely on)
-        org.junit.Assert.assertEquals(secondExpiry, alertManager.pauseHighExpiryMs.value)
+        org.junit.Assert.assertEquals(secondExpiry, alertManager.pauseHigh.value?.expiryMs)
         // The second call must actually shift the expiry — a silent no-op would leave
         // both flows on the first 1h timestamp and `secondExpiry == firstExpiry` would
         // pass a weaker `low == high` assertion.
@@ -512,8 +512,8 @@ class AlertManagerTest {
         alertManager.pauseAllAlerts(3_600_000L)
         alertManager.cancelAllAlerts()
 
-        org.junit.Assert.assertNull(alertManager.pauseLowExpiryMs.value)
-        org.junit.Assert.assertNull(alertManager.pauseHighExpiryMs.value)
+        org.junit.Assert.assertNull(alertManager.pauseLow.value)
+        org.junit.Assert.assertNull(alertManager.pauseHigh.value)
     }
 
     // -- Push failure --

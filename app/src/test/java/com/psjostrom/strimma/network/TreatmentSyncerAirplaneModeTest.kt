@@ -24,7 +24,7 @@ import java.nio.channels.UnresolvedAddressException
 /**
  * Regression tests for the airplane-mode boot crash, applied at the
  * `TreatmentSyncer` level. Unlike `NightscoutClient.fetchEntries`,
- * `fetchTreatments` intentionally rethrows after logging — the catch
+ * `fetchTreatmentPage` intentionally rethrows after logging — the catch
  * widening in `TreatmentSyncer.pullHistory` and `syncSince` is therefore on
  * the primary regression path: an airplane-mode boot reaches these methods as
  * a thrown `UnresolvedAddressException`, and they must convert it to
@@ -47,7 +47,7 @@ class TreatmentSyncerAirplaneModeTest {
         settings = SettingsRepository(context, WidgetSettingsRepository(context), createTestDataStore())
 
         // Real NightscoutClient with a MockEngine that throws on every request,
-        // so fetchTreatments rethrows UnresolvedAddressException to TreatmentSyncer.
+        // so fetchTreatmentPage rethrows UnresolvedAddressException to TreatmentSyncer.
         val httpClient = HttpClient(MockEngine) {
             engine {
                 addHandler { throw UnresolvedAddressException() }
