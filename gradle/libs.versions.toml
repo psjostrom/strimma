@@ -1,7 +1,7 @@
 [versions]
-agp = "9.5.1"
+agp = "9.5.3"
 kotlin = "2.4.21"
-compose-bom = "2026.09.00"
+compose-bom = "2026.11.01"
 room = "2.8.5"
 hilt = "2.60.1"
 ktor = "3.6.1"
@@ -71,7 +71,7 @@ bottomsheetdialog-compose = { module = "com.holix.android:bottomsheetdialog-comp
 
 junit = { module = "junit:junit", version = "4.13.2" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
-robolectric = { module = "org.robolectric:robolectric", version = "4.18" }
+robolectric = { module = "org.robolectric:robolectric", version = "4.18.1" }
 androidx-test-core = { module = "androidx.test:core-ktx", version = "1.7.0" }
 room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
 ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor" }
